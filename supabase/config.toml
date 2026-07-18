@@ -1,0 +1,21 @@
+project_id = "jriyeblycrzpozjuexvr"
+
+# Union auth email templates.
+#
+# Sign-in uses a 6-digit one-time code (Supabase `signInWithOtp` +
+# `verifyOtp`, see apps/web/lib/auth.tsx and apps/mobile/lib/auth.tsx).
+# New users hit the "confirmation" template; returning users hit the
+# "magic_link" template. Both must render `{{ .Token }}` — the default
+# `{{ .ConfirmationURL }}` link is what caused the "click to confirm"
+# email instead of a code.
+#
+# To apply to the remote project:
+#   supabase link --project-ref jriyeblycrzpozjuexvr
+#   supabase config push
+[auth.email.template.confirmation]
+subject = "Your Union verification code"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.magic_link]
+subject = "Your Union sign-in code"
+content_path = "./supabase/templates/magic_link.html"
