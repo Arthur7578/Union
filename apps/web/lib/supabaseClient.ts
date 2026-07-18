@@ -2,8 +2,13 @@
 
 import { createUnionClient, type UnionClient } from "@union/shared";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const DEFAULT_SUPABASE_URL = "https://jriyeblycrzpozjuexvr.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY =
+  "sb_publishable_G0fMYmSyYm4hJWterPh3eg_GLdE92V-";
+
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const anonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
 let client: UnionClient | null = null;
 

@@ -70,7 +70,7 @@ export default function Landing() {
           }}
         >
           <Link
-            href="/today"
+            href="/sign-in"
             style={{
               minHeight: 50,
               display: "inline-flex",
@@ -84,7 +84,7 @@ export default function Landing() {
               boxShadow: "0 6px 16px rgba(67,53,58,.16)",
             }}
           >
-            Open Union
+            Get started
           </Link>
           <Link
             href="/sign-in"
