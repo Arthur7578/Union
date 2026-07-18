@@ -1,0 +1,18 @@
+{
+  "name": "union",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Union — wedding planning: Expo mobile app + web RSVP app + Supabase backend",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "mobile": "npm run start --workspace apps/mobile",
+    "web": "npm run dev --workspace apps/web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

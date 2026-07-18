@@ -1,0 +1,42 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# expo
+.expo/
+dist/
+web-build/
+*.orig.*
+apps/mobile/.expo/
+
+# next.js
+.next/
+apps/web/.next/
+out/
+
+# native
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# env
+.env
+.env*.local
+!.env.example
+
+# misc
+.DS_Store
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
