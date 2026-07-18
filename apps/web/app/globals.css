@@ -1,14 +1,15 @@
 :root {
-  --bg: #fbf7f4;
-  --surface: #ffffff;
+  /* RSVP portal palette (kept for the public /rsvp flow) */
+  --bg: #faf5f1;
+  --surface: #fffcfa;
   --surface-alt: #f3ebe4;
-  --text: #2b2724;
+  --text: #43353a;
   --muted: #8a817c;
   --border: #e7ded6;
-  --primary: #b5896f;
-  --primary-dark: #9a6f58;
-  --success: #4e8d6e;
-  --success-bg: #e4f0ea;
+  --primary: #b07c82;
+  --primary-dark: #9a626a;
+  --success: #6e8a72;
+  --success-bg: #e7efe6;
   --danger: #c0553b;
   --danger-bg: #f7e6e1;
 }
@@ -26,12 +27,148 @@ body {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
+  font-family: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
 }
 
+a {
+  color: #9a626a;
+  text-decoration: none;
+}
+a:hover {
+  color: #b07c82;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+@keyframes unionpulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(2.1);
+    opacity: 0.25;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   App shell — responsive: sidebar on desktop, bottom tabs on mobile
+   ───────────────────────────────────────────────────────────── */
+.u-app {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f2ece5 0%, #e7ddd3 100%);
+  background-attachment: fixed;
+}
+
+.u-sidebar {
+  display: none;
+}
+
+.u-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: rgba(250, 245, 241, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(67, 53, 58, 0.06);
+  padding: 9px 8px calc(14px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.u-main {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 22px 18px 120px;
+}
+
+/* Content column can go a touch wider for map/timeline screens */
+.u-main.wide {
+  max-width: 720px;
+}
+
+@media (min-width: 960px) {
+  .u-tabbar {
+    display: none;
+  }
+  .u-sidebar {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 248px;
+    padding: 30px 18px 22px;
+    background: rgba(250, 245, 241, 0.7);
+    border-right: 1px solid rgba(67, 53, 58, 0.08);
+    z-index: 40;
+  }
+  .u-shell {
+    padding-left: 248px;
+  }
+  .u-main {
+    padding: 42px 32px 80px;
+  }
+}
+
+/* Utility bits reused across screens */
+.u-serif {
+  font-family: "Cormorant Garamond", Georgia, serif;
+}
+.u-kicker {
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #bbaca5;
+}
+.u-section-label {
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #bbaca5;
+}
+.u-link {
+  font-weight: 600;
+  font-size: 14px;
+  color: #9a626a;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+/* Focusable rows/cards */
+.u-tap {
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  text-align: left;
+}
+.u-tap:hover {
+  transform: translateY(-1px);
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RSVP portal styles (public /rsvp flow) — unchanged
+   ───────────────────────────────────────────────────────────── */
 .page {
   min-height: 100vh;
   display: flex;
@@ -92,6 +229,7 @@ label {
 }
 
 input[type="text"],
+input[type="email"],
 input[type="number"],
 textarea,
 select {
