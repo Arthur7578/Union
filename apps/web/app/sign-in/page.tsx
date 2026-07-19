@@ -9,11 +9,10 @@ import { Button } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 
 export default function SignInPage() {
-  const { session, signInWithOtp, verifyOtp } = useAuth();
+  const { session, signInWithMagicLink } = useAuth();
   const router = useRouter();
-  const [step, setStep] = useState<"email" | "code">("email");
+  const [step, setStep] = useState<"email" | "sent">("email");
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,29 +20,15 @@ export default function SignInPage() {
     if (session) router.replace("/today");
   }, [session, router]);
 
-  const sendCode = async (e: React.FormEvent) => {
+  const sendLink = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setBusy(true);
     try {
-      await signInWithOtp(email);
-      setStep("code");
+      await signInWithMagicLink(email);
+      setStep("sent");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't send the code.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const confirm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setBusy(true);
-    try {
-      await verifyOtp(email, code);
-      router.replace("/today");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "That code didn't work.");
+      setError(err instanceof Error ? err.message : "Couldn't send the link.");
     } finally {
       setBusy(false);
     }
@@ -69,13 +54,13 @@ export default function SignInPage() {
           </h1>
           <p className="muted" style={{ margin: 0, textAlign: "center", fontSize: 14 }}>
             {step === "email"
-              ? "Sign in with your email — we'll send a one-time code."
-              : `Enter the 6-digit code we sent to ${email}.`}
+              ? "Sign in with your email — we'll send you a secure link."
+              : `We sent a sign-in link to ${email}.`}
           </p>
         </div>
 
         {step === "email" ? (
-          <form onSubmit={sendCode}>
+          <form onSubmit={sendLink}>
             <div className="field">
               <label htmlFor="email">Email address</label>
               <input
@@ -90,42 +75,26 @@ export default function SignInPage() {
             </div>
             {error && <div className="error">{error}</div>}
             <Button type="submit" disabled={busy || !email} style={{ width: "100%" }}>
-              {busy ? "Sending…" : "Send code"}
+              {busy ? "Sending…" : "Email me a sign-in link"}
             </Button>
           </form>
         ) : (
-          <form onSubmit={confirm}>
-            <div className="field">
-              <label htmlFor="code">One-time code</label>
-              <input
-                id="code"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                required
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="123456"
-              />
-            </div>
-            {error && <div className="error">{error}</div>}
-            <Button type="submit" disabled={busy || !code} style={{ width: "100%" }}>
-              {busy ? "Verifying…" : "Verify & continue"}
+          <div>
+            <p style={{ fontSize: 14, color: T.faint, textAlign: "center", margin: "0 0 18px" }}>
+              Open the email on this device and click the link to finish signing
+              in. The link expires in 1 hour.
+            </p>
+            <Button
+              type="button"
+              onClick={() => {
+                setStep("email");
+                setError(null);
+              }}
+              style={{ width: "100%" }}
+            >
+              Use a different email
             </Button>
-            <div style={{ textAlign: "center", marginTop: 14 }}>
-              <button
-                type="button"
-                className="u-link"
-                onClick={() => {
-                  setStep("email");
-                  setCode("");
-                  setError(null);
-                }}
-              >
-                Use a different email
-              </button>
-            </div>
-          </form>
+          </div>
         )}
 
         <p

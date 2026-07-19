@@ -22,7 +22,8 @@ export const supabase = createUnionClient(supabaseUrl, supabaseAnonKey, {
     storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
-    // Deep-link session detection is not used; we sign in with email OTP codes.
+    // Deep-link session detection is handled manually in lib/auth.tsx via
+    // expo-linking, because Supabase's built-in URL detection is web-only.
     detectSessionInUrl: false,
   },
 });
