@@ -23,8 +23,13 @@ export type Database = {
           id: string
           invite_token: string
           last_name: string | null
+          notes: string | null
           party_size: number
           phone: string | null
+          role: string | null
+          room_block_id: string | null
+          rsvp_reminder_sent_at: string | null
+          seating_table_id: string | null
           wedding_id: string
         }
         Insert: {
@@ -35,8 +40,13 @@ export type Database = {
           id?: string
           invite_token?: string
           last_name?: string | null
+          notes?: string | null
           party_size?: number
           phone?: string | null
+          role?: string | null
+          room_block_id?: string | null
+          rsvp_reminder_sent_at?: string | null
+          seating_table_id?: string | null
           wedding_id: string
         }
         Update: {
@@ -47,13 +57,161 @@ export type Database = {
           id?: string
           invite_token?: string
           last_name?: string | null
+          notes?: string | null
           party_size?: number
           phone?: string | null
+          role?: string | null
+          room_block_id?: string | null
+          rsvp_reminder_sent_at?: string | null
+          seating_table_id?: string | null
           wedding_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "guests_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guests_room_block_id_fkey"
+            columns: ["room_block_id"]
+            isOneToOne: false
+            referencedRelation: "room_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guests_seating_table_id_fkey"
+            columns: ["seating_table_id"]
+            isOneToOne: false
+            referencedRelation: "seating_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guest_groups: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          wedding_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          wedding_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_groups_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_blocks: {
+        Row: {
+          booked_rooms: number
+          capacity_rooms: number
+          created_at: string
+          id: string
+          name: string
+          note: string | null
+          price_note: string | null
+          sort_order: number
+          status: string | null
+          tone: string
+          wedding_id: string
+        }
+        Insert: {
+          booked_rooms?: number
+          capacity_rooms?: number
+          created_at?: string
+          id?: string
+          name: string
+          note?: string | null
+          price_note?: string | null
+          sort_order?: number
+          status?: string | null
+          tone?: string
+          wedding_id: string
+        }
+        Update: {
+          booked_rooms?: number
+          capacity_rooms?: number
+          created_at?: string
+          id?: string
+          name?: string
+          note?: string | null
+          price_note?: string | null
+          sort_order?: number
+          status?: string | null
+          tone?: string
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_blocks_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seating_tables: {
+        Row: {
+          capacity: number
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          tone: string
+          wedding_id: string
+          x_pct: number
+          y_pct: number
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          tone?: string
+          wedding_id: string
+          x_pct?: number
+          y_pct?: number
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          tone?: string
+          wedding_id?: string
+          x_pct?: number
+          y_pct?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seating_tables_wedding_id_fkey"
             columns: ["wedding_id"]
             isOneToOne: false
             referencedRelation: "weddings"
@@ -125,6 +283,7 @@ export type Database = {
           owner_id: string
           partner_one: string | null
           partner_two: string | null
+          rsvp_form_questions: Json | null
           venue_address: string | null
           venue_name: string | null
         }
@@ -135,6 +294,7 @@ export type Database = {
           owner_id: string
           partner_one?: string | null
           partner_two?: string | null
+          rsvp_form_questions?: Json | null
           venue_address?: string | null
           venue_name?: string | null
         }
@@ -145,6 +305,7 @@ export type Database = {
           owner_id?: string
           partner_one?: string | null
           partner_two?: string | null
+          rsvp_form_questions?: Json | null
           venue_address?: string | null
           venue_name?: string | null
         }

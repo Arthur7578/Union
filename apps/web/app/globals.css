@@ -231,6 +231,8 @@ label {
 input[type="text"],
 input[type="email"],
 input[type="number"],
+input[type="tel"],
+input[type="search"],
 textarea,
 select {
   width: 100%;
