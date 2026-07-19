@@ -18,6 +18,18 @@ export type Wedding = Tables<"weddings">;
 export type Guest = Tables<"guests">;
 export type Rsvp = Tables<"rsvps">;
 export type RsvpStatus = Enums<"rsvp_status">;
+export type GuestGroup = Tables<"guest_groups">;
+export type RoomBlock = Tables<"room_blocks">;
+export type SeatingTable = Tables<"seating_tables">;
+
+/** One entry in the couple's custom RSVP-form config (stored on weddings.rsvp_form_questions). */
+export type RsvpQuestion = {
+  id: string;
+  kind: "single" | "multi" | "short" | "comment";
+  title: string;
+  required: boolean;
+  options?: string[];
+};
 
 /** Row shape returned by the `get_invitation` RPC. */
 export type Invitation = {

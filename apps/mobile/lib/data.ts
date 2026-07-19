@@ -17,7 +17,9 @@ export async function fetchWedding(ownerId: string): Promise<Wedding | null> {
 }
 
 export async function createWedding(
-  input: Omit<Wedding, "id" | "created_at">,
+  input: Omit<Wedding, "id" | "created_at" | "rsvp_form_questions"> & {
+    rsvp_form_questions?: Wedding["rsvp_form_questions"];
+  },
 ): Promise<Wedding> {
   const { data, error } = await supabase
     .from("weddings")
