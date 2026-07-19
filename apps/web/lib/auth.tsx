@@ -75,12 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 const noopAuth: AuthContextValue = {
   session: null,
   loading: false,
-  async signInWithOtp() {
-    throw new Error(
-      "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-    );
-  },
-  async verifyOtp() {
+  async signInWithMagicLink() {
     throw new Error(
       "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
     );
