@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { T } from "@/lib/theme";
 import { Spark } from "@/components/icons";
-import { SessionRedirect } from "@/components/SessionRedirect";
+import { LandingCTAs } from "@/components/LandingCTAs";
 
 export default function Landing() {
   return (
@@ -17,7 +16,6 @@ export default function Landing() {
         textAlign: "center",
       }}
     >
-      <SessionRedirect to="/today" />
       <div style={{ maxWidth: 560 }}>
         <div
           style={{
@@ -62,50 +60,7 @@ export default function Landing() {
           control.
         </p>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            justifyContent: "center",
-            flexWrap: "wrap",
-            marginTop: 30,
-          }}
-        >
-          <Link
-            href="/sign-in"
-            style={{
-              minHeight: 50,
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "0 26px",
-              borderRadius: 15,
-              background: T.accent,
-              color: "#fff",
-              fontWeight: 600,
-              fontSize: 16,
-              boxShadow: "0 6px 16px rgba(67,53,58,.16)",
-            }}
-          >
-            Get started
-          </Link>
-          <Link
-            href="/sign-in"
-            style={{
-              minHeight: 50,
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "0 26px",
-              borderRadius: 15,
-              background: "transparent",
-              border: `1px solid ${T.line3}`,
-              color: T.ink,
-              fontWeight: 600,
-              fontSize: 16,
-            }}
-          >
-            Sign in
-          </Link>
-        </div>
+        <LandingCTAs to="/today" />
 
         <p style={{ fontSize: 13, color: T.faint, marginTop: 28 }}>
           Here to RSVP? Use the personal invitation link the couple sent you.
