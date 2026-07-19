@@ -50,9 +50,11 @@ export const T = {
   blueInk: "#5C648A",
   blueBg: "#E4E7EE",
 
-  // Type
-  serif: "'Cormorant Garamond', Georgia, 'Times New Roman', serif",
-  sans: "'Instrument Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  // Type — resolves to the self-hosted next/font families (see app/layout.tsx),
+  // with graceful system fallbacks.
+  serif:
+    "var(--font-serif), 'Cormorant Garamond', Georgia, 'Times New Roman', serif",
+  sans: "var(--font-sans), 'Instrument Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
 } as const;
 
 /** hex + alpha -> rgba() string (for accent tints computed at runtime). */

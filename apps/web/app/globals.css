@@ -16,21 +16,53 @@
 
 * {
   box-sizing: border-box;
+  /* No blue flash on tap — feels native, not web. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 html,
 body {
   margin: 0;
   padding: 0;
+  height: 100%;
+  /* Kill the rubber-band / pull-to-refresh bounce on mobile. */
+  overscroll-behavior-y: none;
+  /* Keep font sizes stable when rotating the device. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans), "Instrument Sans", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
+  /* App chrome shouldn't feel selectable/long-pressable like a web page. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Re-enable selection where it actually helps the user (real content + fields),
+   so people can still copy vendor details, notes, addresses, etc. */
+.u-main,
+.card,
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* Smooth momentum scrolling on iOS for the main scroll surfaces. */
+.u-main,
+.page {
+  -webkit-overflow-scrolling: touch;
 }
 
 a {
@@ -62,7 +94,8 @@ button {
    App shell — responsive: sidebar on desktop, bottom tabs on mobile
    ───────────────────────────────────────────────────────────── */
 .u-app {
-  min-height: 100vh;
+  min-height: 100vh; /* fallback for older browsers */
+  min-height: 100dvh; /* dynamic viewport — no jump when the URL bar hides */
   background: linear-gradient(180deg, #f2ece5 0%, #e7ddd3 100%);
   background-attachment: fixed;
 }
@@ -90,7 +123,11 @@ button {
 .u-main {
   max-width: 620px;
   margin: 0 auto;
-  padding: 22px 18px 120px;
+  /* Clear the (translucent) status bar up top and the fixed tab bar at the
+     bottom, honoring the device safe-area insets when installed. */
+  padding: calc(22px + env(safe-area-inset-top, 0px))
+    calc(18px + env(safe-area-inset-right, 0px)) 120px
+    calc(18px + env(safe-area-inset-left, 0px));
 }
 
 /* Content column can go a touch wider for map/timeline screens */
@@ -125,7 +162,7 @@ button {
 
 /* Utility bits reused across screens */
 .u-serif {
-  font-family: "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-serif), "Cormorant Garamond", Georgia, serif;
 }
 .u-kicker {
   font-weight: 600;
@@ -170,11 +207,15 @@ select {
    RSVP portal styles (public /rsvp flow) — unchanged
    ───────────────────────────────────────────────────────────── */
 .page {
-  min-height: 100vh;
+  min-height: 100vh; /* fallback */
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
+  padding: calc(24px + env(safe-area-inset-top, 0px))
+    calc(16px + env(safe-area-inset-right, 0px))
+    calc(24px + env(safe-area-inset-bottom, 0px))
+    calc(16px + env(safe-area-inset-left, 0px));
 }
 
 .card {
