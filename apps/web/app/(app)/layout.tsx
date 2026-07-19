@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Providers } from "@/components/Providers";
 import { AppShell } from "@/components/AppShell";
+import { UserJotIdentify } from "@/components/UserJotIdentify";
 import { Loading } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { useWedding } from "@/lib/wedding";
@@ -47,6 +48,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!supabaseConfigured) return <ConfigNotice />;
   return (
     <Providers>
+      <UserJotIdentify />
       <Guard>{children}</Guard>
     </Providers>
   );
