@@ -21,7 +21,7 @@ type WeddingContextValue = {
 const WeddingContext = createContext<WeddingContextValue | undefined>(undefined);
 
 export function WeddingProvider({ children }: { children: React.ReactNode }) {
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
   const [wedding, setWedding] = useState<Wedding | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,9 +41,12 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
 
+  // Wait for auth to resolve; otherwise loading briefly flips false with
+  // session still null, and the /(app) Guard redirects back to /onboarding.
   useEffect(() => {
+    if (authLoading) return;
     void refresh();
-  }, [refresh]);
+  }, [authLoading, refresh]);
 
   return (
     <WeddingContext.Provider value={{ wedding, loading, refresh, setWedding }}>
