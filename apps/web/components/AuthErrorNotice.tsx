@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import Link from "next/link";
+import React, { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
 import { Spark } from "@/components/icons";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { LAST_EMAIL_KEY, sendMagicLink } from "@/lib/auth";
 
 /**
  * When a magic / confirmation link is stale, Supabase bounces the browser
@@ -51,7 +51,10 @@ export function AuthErrorNotice() {
   const [error, setError] = useState<AuthError | null>(null);
   // null = still checking; the notice waits so it can pick the right variant.
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = window.location.hash.replace(/^#/, "");
@@ -67,9 +70,13 @@ export function AuthErrorNotice() {
       description: params.get("error_description")?.replace(/\+/g, " ") ?? null,
     });
 
-    // If the address rode along on the redirect (?email=…) keep it so the new
-    // link can be requested without retyping.
-    setEmail(new URLSearchParams(window.location.search).get("email"));
+    // Show the visitor which address the new link will go to — from the one
+    // we forwarded on the redirect (?email=…), or the last one used on this
+    // browser — but keep it editable in case it was the wrong inbox.
+    const known =
+      new URLSearchParams(window.location.search).get("email") ||
+      safeLocalStorageGet(LAST_EMAIL_KEY);
+    if (known) setEmail(known);
 
     // The link may have expired for someone who's already signed in on this
     // device — in that case there's nothing to fix, so we reassure instead of
@@ -102,51 +109,113 @@ export function AuthErrorNotice() {
     );
   }
 
+  if (sent) {
+    return (
+      <NoticeShell
+        title="Check your inbox"
+        body={`We sent a fresh sign-in link to ${email}. Open it on this device to finish signing in — it expires in 1 hour.`}
+      >
+        <button
+          type="button"
+          onClick={() => setError(null)}
+          style={dismissStyle}
+        >
+          Close
+        </button>
+      </NoticeShell>
+    );
+  }
+
   const { title, body } = friendlyMessage(error);
-  const signInHref = email
-    ? `/sign-in?email=${encodeURIComponent(email)}`
-    : "/sign-in";
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSendError(null);
+    setBusy(true);
+    try {
+      await sendMagicLink(email);
+      setSent(true);
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Couldn't send the link.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <NoticeShell title={title} body={body}>
-      <Link
-        href={signInHref}
-        onClick={() => setError(null)}
-        style={{
-          minHeight: 48,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: "100%",
-          padding: "0 22px",
-          borderRadius: 14,
-          background: T.accent,
-          color: "#fff",
-          fontWeight: 600,
-          fontSize: 15,
-          boxShadow: "0 6px 16px rgba(67,53,58,.16)",
-        }}
-      >
-        Send me a new link
-      </Link>
+      <form onSubmit={submit} style={{ textAlign: "left" }}>
+        <label
+          htmlFor="auth-error-email"
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 600,
+            color: T.muted,
+            margin: "0 0 6px 2px",
+          }}
+        >
+          Send the new link to
+        </label>
+        <input
+          id="auth-error-email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          style={{ marginBottom: 14 }}
+        />
+        {sendError && (
+          <div className="error" style={{ marginTop: 0 }}>
+            {sendError}
+          </div>
+        )}
+        <button
+          type="submit"
+          disabled={busy || !email}
+          style={{
+            minHeight: 48,
+            width: "100%",
+            border: "none",
+            borderRadius: 14,
+            background: T.accent,
+            color: "#fff",
+            fontWeight: 600,
+            fontSize: 15,
+            cursor: busy || !email ? "default" : "pointer",
+            opacity: busy || !email ? 0.6 : 1,
+            boxShadow: "0 6px 16px rgba(67,53,58,.16)",
+          }}
+        >
+          {busy ? "Sending…" : "Send me a new link"}
+        </button>
+      </form>
 
-      <button
-        type="button"
-        onClick={() => setError(null)}
-        style={{
-          marginTop: 14,
-          background: "transparent",
-          border: "none",
-          color: T.faint,
-          fontWeight: 600,
-          fontSize: 14,
-          cursor: "pointer",
-        }}
-      >
+      <button type="button" onClick={() => setError(null)} style={dismissStyle}>
         Back to home
       </button>
     </NoticeShell>
   );
+}
+
+const dismissStyle: React.CSSProperties = {
+  marginTop: 14,
+  background: "transparent",
+  border: "none",
+  color: T.faint,
+  fontWeight: 600,
+  fontSize: 14,
+  cursor: "pointer",
+};
+
+function safeLocalStorageGet(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
 }
 
 /** The centered overlay card shared by both variants. */
