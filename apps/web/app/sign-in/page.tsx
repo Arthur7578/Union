@@ -6,7 +6,7 @@ import Link from "next/link";
 import { T } from "@/lib/theme";
 import { Spark } from "@/components/icons";
 import { Button } from "@/components/ui";
-import { useAuth } from "@/lib/auth";
+import { useAuth, LAST_EMAIL_KEY } from "@/lib/auth";
 
 export default function SignInPage() {
   const { session, signInWithMagicLink } = useAuth();
@@ -19,6 +19,21 @@ export default function SignInPage() {
   useEffect(() => {
     if (session) router.replace("/today");
   }, [session, router]);
+
+  // Prefill from the address we forwarded on the link (?email=…), falling back
+  // to the last email used on this browser, so an expired-link visitor doesn't
+  // have to retype it.
+  useEffect(() => {
+    const fromQuery = new URLSearchParams(window.location.search).get("email");
+    let stored: string | null = null;
+    try {
+      stored = window.localStorage.getItem(LAST_EMAIL_KEY);
+    } catch {
+      stored = null;
+    }
+    const prefill = fromQuery || stored;
+    if (prefill) setEmail((cur) => cur || prefill);
+  }, []);
 
   const sendLink = async (e: React.FormEvent) => {
     e.preventDefault();

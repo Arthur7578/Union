@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
 import { Spark } from "@/components/icons";
+import { getBrowserSupabase } from "@/lib/supabaseClient";
 
 /**
  * When a magic / confirmation link is stale, Supabase bounces the browser
@@ -45,7 +47,11 @@ function friendlyMessage(err: AuthError): { title: string; body: string } {
 }
 
 export function AuthErrorNotice() {
+  const router = useRouter();
   const [error, setError] = useState<AuthError | null>(null);
+  // null = still checking; the notice waits so it can pick the right variant.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = window.location.hash.replace(/^#/, "");
@@ -61,16 +67,98 @@ export function AuthErrorNotice() {
       description: params.get("error_description")?.replace(/\+/g, " ") ?? null,
     });
 
+    // If the address rode along on the redirect (?email=…) keep it so the new
+    // link can be requested without retyping.
+    setEmail(new URLSearchParams(window.location.search).get("email"));
+
+    // The link may have expired for someone who's already signed in on this
+    // device — in that case there's nothing to fix, so we reassure instead of
+    // pushing them to request a link they don't need.
+    getBrowserSupabase()
+      .auth.getSession()
+      .then(({ data }) => setSignedIn(Boolean(data.session)))
+      .catch(() => setSignedIn(false));
+
     // Strip the error fragment so a refresh (or Supabase's own URL parsing)
     // doesn't resurface it, and the address bar reads cleanly.
     const { pathname, search } = window.location;
     window.history.replaceState(null, "", pathname + search);
   }, []);
 
-  if (!error) return null;
+  // Wait until we know whether there's a session before rendering, so we don't
+  // flash the wrong message.
+  if (!error || signedIn === null) return null;
+
+  if (signedIn) {
+    return (
+      <NoticeShell
+        title="You're already signed in"
+        body="That link was for signing in — and you already are, so there's nothing more to do. It had simply expired."
+      >
+        <PrimaryButton onClick={() => { setError(null); router.push("/today"); }}>
+          Continue to Union
+        </PrimaryButton>
+      </NoticeShell>
+    );
+  }
 
   const { title, body } = friendlyMessage(error);
+  const signInHref = email
+    ? `/sign-in?email=${encodeURIComponent(email)}`
+    : "/sign-in";
 
+  return (
+    <NoticeShell title={title} body={body}>
+      <Link
+        href={signInHref}
+        onClick={() => setError(null)}
+        style={{
+          minHeight: 48,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          padding: "0 22px",
+          borderRadius: 14,
+          background: T.accent,
+          color: "#fff",
+          fontWeight: 600,
+          fontSize: 15,
+          boxShadow: "0 6px 16px rgba(67,53,58,.16)",
+        }}
+      >
+        Send me a new link
+      </Link>
+
+      <button
+        type="button"
+        onClick={() => setError(null)}
+        style={{
+          marginTop: 14,
+          background: "transparent",
+          border: "none",
+          color: T.faint,
+          fontWeight: 600,
+          fontSize: 14,
+          cursor: "pointer",
+        }}
+      >
+        Back to home
+      </button>
+    </NoticeShell>
+  );
+}
+
+/** The centered overlay card shared by both variants. */
+function NoticeShell({
+  title,
+  body,
+  children,
+}: {
+  title: string;
+  body: string;
+  children: ReactNode;
+}) {
   return (
     <div
       role="alertdialog"
@@ -139,43 +227,38 @@ export function AuthErrorNotice() {
           {body}
         </p>
 
-        <Link
-          href="/sign-in"
-          onClick={() => setError(null)}
-          style={{
-            minHeight: 48,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "100%",
-            padding: "0 22px",
-            borderRadius: 14,
-            background: T.accent,
-            color: "#fff",
-            fontWeight: 600,
-            fontSize: 15,
-            boxShadow: "0 6px 16px rgba(67,53,58,.16)",
-          }}
-        >
-          Send me a new link
-        </Link>
-
-        <button
-          type="button"
-          onClick={() => setError(null)}
-          style={{
-            marginTop: 14,
-            background: "transparent",
-            border: "none",
-            color: T.faint,
-            fontWeight: 600,
-            fontSize: 14,
-            cursor: "pointer",
-          }}
-        >
-          Back to home
-        </button>
+        {children}
       </div>
     </div>
+  );
+}
+
+/** Full-width primary action used inside the notice card. */
+function PrimaryButton({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        minHeight: 48,
+        width: "100%",
+        border: "none",
+        borderRadius: 14,
+        background: T.accent,
+        color: "#fff",
+        fontWeight: 600,
+        fontSize: 15,
+        cursor: "pointer",
+        boxShadow: "0 6px 16px rgba(67,53,58,.16)",
+      }}
+    >
+      {children}
+    </button>
   );
 }
