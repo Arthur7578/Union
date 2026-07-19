@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { UserJot } from "@/components/UserJot";
+import { AuthErrorNotice } from "@/components/AuthErrorNotice";
 
 export const metadata: Metadata = {
   title: "Union — Wedding planning",
@@ -29,6 +30,7 @@ export default function RootLayout({
       </head>
       <body>
         {children}
+        <AuthErrorNotice />
         <UserJot />
       </body>
     </html>
