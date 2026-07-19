@@ -6,13 +6,14 @@ export default function Landing() {
   return (
     <main
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         background: `linear-gradient(180deg, ${T.bgTop} 0%, ${T.bgBottom} 100%)`,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "56px 24px",
+        padding:
+          "max(56px, calc(24px + env(safe-area-inset-top))) max(24px, env(safe-area-inset-right)) max(56px, calc(24px + env(safe-area-inset-bottom))) max(24px, env(safe-area-inset-left))",
         textAlign: "center",
       }}
     >
