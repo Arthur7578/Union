@@ -180,7 +180,9 @@ export type Database = {
           capacity: number
           created_at: string
           id: string
+          is_head: boolean
           name: string
+          shape: string
           sort_order: number
           tone: string
           wedding_id: string
@@ -191,7 +193,9 @@ export type Database = {
           capacity?: number
           created_at?: string
           id?: string
+          is_head?: boolean
           name: string
+          shape?: string
           sort_order?: number
           tone?: string
           wedding_id: string
@@ -202,7 +206,9 @@ export type Database = {
           capacity?: number
           created_at?: string
           id?: string
+          is_head?: boolean
           name?: string
+          shape?: string
           sort_order?: number
           tone?: string
           wedding_id?: string
