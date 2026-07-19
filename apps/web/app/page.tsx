@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { T } from "@/lib/theme";
 import { Spark } from "@/components/icons";
+import { SessionRedirect } from "@/components/SessionRedirect";
 
 export default function Landing() {
   return (
@@ -16,6 +17,7 @@ export default function Landing() {
         textAlign: "center",
       }}
     >
+      <SessionRedirect to="/today" />
       <div style={{ maxWidth: 560 }}>
         <div
           style={{

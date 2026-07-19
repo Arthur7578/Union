@@ -13,8 +13,7 @@ import { getBrowserSupabase } from "./supabaseClient";
 type AuthContextValue = {
   session: Session | null;
   loading: boolean;
-  signInWithOtp: (email: string) => Promise<void>;
-  verifyOtp: (email: string, token: string) => Promise<void>;
+  signInWithMagicLink: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -50,20 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       session,
       loading,
-      signInWithOtp: async (email: string) => {
+      signInWithMagicLink: async (email: string) => {
         const supabase = getBrowserSupabase();
         const { error } = await supabase.auth.signInWithOtp({
           email: email.trim(),
-          options: { shouldCreateUser: true },
-        });
-        if (error) throw error;
-      },
-      verifyOtp: async (email: string, token: string) => {
-        const supabase = getBrowserSupabase();
-        const { error } = await supabase.auth.verifyOtp({
-          email: email.trim(),
-          token: token.trim(),
-          type: "email",
+          options: {
+            shouldCreateUser: true,
+            emailRedirectTo: `${window.location.origin}/sign-in`,
+          },
         });
         if (error) throw error;
       },
@@ -82,12 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 const noopAuth: AuthContextValue = {
   session: null,
   loading: false,
-  async signInWithOtp() {
-    throw new Error(
-      "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-    );
-  },
-  async verifyOtp() {
+  async signInWithMagicLink() {
     throw new Error(
       "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
     );
