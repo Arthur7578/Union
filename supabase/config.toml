@@ -1,1 +1,14 @@
 project_id = "jriyeblycrzpozjuexvr"
+
+# Send a 6-digit code instead of a magic link for passwordless email
+# sign-in. Supabase picks the flow based on which template variables the
+# `magic_link` email template contains — `{{ .Token }}` alone means the
+# email carries only the code, no clickable link.
+#
+# This block configures local development. For the hosted project, mirror
+# the same subject + template in the Supabase dashboard under
+# Authentication → Email Templates → Magic Link (or via the Management API
+# `mailer_subjects_magic_link` / `mailer_templates_magic_link_content`).
+[auth.email.template.magic_link]
+subject = "{{ .Token }} is your Union sign-in code"
+content_path = "./supabase/templates/magic_link.html"
