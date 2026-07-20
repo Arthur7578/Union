@@ -21,6 +21,7 @@ import {
 } from "@/lib/data";
 import { BackHeader } from "@/components/BackHeader";
 import { Card, SectionLabel, UnionNote, Button, Loading } from "@/components/ui";
+import { initial } from "@/lib/format";
 
 type ToneKey = "accent" | "green" | "amber" | "sand";
 type Shape = "round" | "rect";
@@ -91,6 +92,10 @@ export default function SeatingPage() {
 
   // Ceremony prefs (per-wedding, client-side)
   const [ceremony, setCeremony] = useState<CeremonyPrefs>(DEFAULT_CEREMONY);
+  const [selectedPew, setSelectedPew] = useState<{
+    row: number;
+    side: "left" | "right";
+  } | null>(null);
 
   // Optional visual guide overlays on the floor plan
   const [showDanceFloor, setShowDanceFloor] = useState(true);
@@ -194,6 +199,42 @@ export default function SeatingPage() {
       (a, b) => Number(a.is_head) - Number(b.is_head),
     );
   }, [tables]);
+
+  // Ceremony: pew index -> guests assigned to it.
+  const ceremonyByPew = useMemo(() => {
+    const map = new Map<string, GuestWithRsvp[]>();
+    for (const g of guests ?? []) {
+      if (g.ceremony_row == null || g.ceremony_side == null) continue;
+      const key = `${g.ceremony_row}:${g.ceremony_side}`;
+      const list = map.get(key) ?? [];
+      list.push(g);
+      map.set(key, list);
+    }
+    return map;
+  }, [guests]);
+
+  // Guests assigned to a row that's now beyond the visible layout.
+  const ceremonyOffPlan = useMemo(
+    () =>
+      (guests ?? []).filter(
+        (g) => g.ceremony_row != null && g.ceremony_row >= ceremony.rows,
+      ),
+    [guests, ceremony.rows],
+  );
+
+  const ceremonyAssignedCount = useMemo(
+    () =>
+      (guests ?? []).reduce(
+        (s, g) => s + (g.ceremony_row != null ? g.party_size ?? 1 : 0),
+        0,
+      ),
+    [guests],
+  );
+
+  const selectedPewMembers = useMemo(() => {
+    if (!selectedPew) return [];
+    return ceremonyByPew.get(`${selectedPew.row}:${selectedPew.side}`) ?? [];
+  }, [selectedPew, ceremonyByPew]);
 
   if (!wedding) return null;
 
@@ -308,6 +349,22 @@ export default function SeatingPage() {
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't assign.");
+    }
+  };
+
+  const assignPew = async (
+    guestId: string,
+    row: number | null,
+    side: "left" | "right" | null,
+  ) => {
+    try {
+      await updateGuest(guestId, {
+        ceremony_row: row,
+        ceremony_side: side,
+      });
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't assign pew.");
     }
   };
 
@@ -783,6 +840,7 @@ export default function SeatingPage() {
                       <label htmlFor="en">Name</label>
                       <input
                         id="en"
+                        type="text"
                         required
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
@@ -1111,6 +1169,7 @@ export default function SeatingPage() {
                     <label htmlFor="tn">Table name</label>
                     <input
                       id="tn"
+                      type="text"
                       required
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
@@ -1424,31 +1483,110 @@ export default function SeatingPage() {
               >
                 {Array.from({ length: ceremony.rows }).map((_, r) => (
                   <div key={r} style={{ display: "flex", gap: 26 }}>
-                    {[0, 1].map((c) => {
+                    {(["left", "right"] as const).map((side) => {
                       const isReserved = r < ceremony.reserved;
+                      const members = ceremonyByPew.get(`${r}:${side}`) ?? [];
+                      const people = seatsUsed(members);
+                      const isOn =
+                        selectedPew?.row === r && selectedPew.side === side;
                       return (
-                        <div
-                          key={c}
+                        <button
+                          key={side}
+                          onClick={() => setSelectedPew({ row: r, side })}
+                          aria-label={`Row ${r + 1} · ${
+                            side === "left"
+                              ? wedding.partner_one ?? "Partner"
+                              : wedding.partner_two ?? "Partner"
+                          }'s side`}
                           style={{
                             flex: 1,
-                            height: isReserved ? 18 : 16,
+                            minHeight: isReserved ? 26 : 22,
                             borderRadius: isReserved ? 6 : 5,
                             background: isReserved ? T.accentSoft : "#EBE1D8",
                             border: isReserved
                               ? `1px solid ${T.accentBorder}`
                               : "1px solid rgba(67,53,58,.08)",
+                            outline: isOn ? `2px solid ${T.ink}` : "none",
+                            outlineOffset: 1,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
+                            gap: 4,
+                            padding: "3px 6px",
                             fontWeight: 600,
-                            fontSize: 8.5,
-                            letterSpacing: "0.1em",
+                            fontSize: 9,
+                            letterSpacing: "0.06em",
                             textTransform: "uppercase",
-                            color: T.accentInk,
+                            color: isReserved ? T.accentInk : T.muted2,
+                            cursor: "pointer",
+                            fontFamily: T.sans,
+                            overflow: "hidden",
                           }}
+                          title={
+                            members.length > 0
+                              ? members
+                                  .map(
+                                    (m) => `${m.first_name} ${m.last_name ?? ""}`.trim(),
+                                  )
+                                  .join(", ")
+                              : isReserved
+                                ? "Reserved"
+                                : "Empty"
+                          }
                         >
-                          {isReserved ? "Reserved" : ""}
-                        </div>
+                          {members.length === 0 ? (
+                            <span style={{ opacity: isReserved ? 1 : 0.5 }}>
+                              {isReserved ? "Reserved" : ""}
+                            </span>
+                          ) : (
+                            <>
+                              {members.slice(0, 3).map((m) => (
+                                <span
+                                  key={m.id}
+                                  style={{
+                                    fontFamily: T.serif,
+                                    fontWeight: 700,
+                                    fontSize: 11,
+                                    lineHeight: 1,
+                                    padding: "2px 5px",
+                                    borderRadius: 999,
+                                    background: "#fff",
+                                    color: T.ink,
+                                    border: `1px solid ${T.line3}`,
+                                    letterSpacing: 0,
+                                  }}
+                                >
+                                  {initial(m.first_name)}
+                                </span>
+                              ))}
+                              {members.length > 3 && (
+                                <span
+                                  style={{
+                                    fontFamily: T.sans,
+                                    fontSize: 9.5,
+                                    fontWeight: 700,
+                                    color: T.muted2,
+                                  }}
+                                >
+                                  +{members.length - 3}
+                                </span>
+                              )}
+                              {people > members.length && (
+                                <span
+                                  style={{
+                                    fontFamily: T.sans,
+                                    fontSize: 9,
+                                    fontWeight: 600,
+                                    color: T.faint,
+                                    letterSpacing: 0,
+                                  }}
+                                >
+                                  ({people})
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </button>
                       );
                     })}
                   </div>
@@ -1456,6 +1594,206 @@ export default function SeatingPage() {
               </div>
             </div>
           </Card>
+
+          {/* Selected pew — assign / unassign guests */}
+          {selectedPew && (
+            <div style={{ marginTop: 14 }}>
+              <Card style={{ padding: 15 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      className="u-serif"
+                      style={{ fontWeight: 600, fontSize: 20, color: T.ink }}
+                    >
+                      Row {selectedPew.row + 1}
+                      {selectedPew.row < ceremony.reserved && (
+                        <span
+                          style={{
+                            fontFamily: T.sans,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            padding: "2px 8px",
+                            borderRadius: 999,
+                            background: T.accentSoft,
+                            color: T.accentInk,
+                            border: `1px solid ${T.accentBorder}`,
+                            marginLeft: 8,
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          Reserved
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>
+                      {selectedPew.side === "left"
+                        ? wedding.partner_one ?? "Partner"
+                        : wedding.partner_two ?? "Partner"}
+                      &apos;s side ·{" "}
+                      {seatsUsed(selectedPewMembers)}{" "}
+                      seat{seatsUsed(selectedPewMembers) === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedPew(null)}
+                    className="u-link"
+                    style={{ fontSize: 13 }}
+                    aria-label="Close selected pew"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                {selectedPewMembers.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 6,
+                    }}
+                  >
+                    {selectedPewMembers.map((m) => {
+                      const party = m.party_size ?? 1;
+                      return (
+                        <div
+                          key={m.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            padding: "6px 8px",
+                            borderRadius: 10,
+                            background: "#FFFCFA",
+                            border: `1px solid ${T.line}`,
+                          }}
+                        >
+                          <div style={{ flex: 1, fontSize: 13, color: T.ink }}>
+                            {m.first_name} {m.last_name ?? ""}
+                            {party > 1 && (
+                              <span
+                                style={{
+                                  color: T.faint,
+                                  marginLeft: 6,
+                                  fontSize: 12,
+                                }}
+                              >
+                                · party of {party}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => assignPew(m.id, null, null)}
+                            className="u-link"
+                            style={{ fontSize: 12, color: T.muted2 }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {(guests ?? []).length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <label
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: T.muted,
+                      }}
+                      htmlFor="pew-picker"
+                    >
+                      Add a guest
+                    </label>
+                    <select
+                      id="pew-picker"
+                      value=""
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        if (id) assignPew(id, selectedPew.row, selectedPew.side);
+                      }}
+                      style={{
+                        marginTop: 4,
+                        minHeight: 40,
+                        padding: "6px 12px",
+                        fontSize: 14,
+                      }}
+                    >
+                      <option value="">Choose a guest…</option>
+                      {(guests ?? [])
+                        .filter(
+                          (g) =>
+                            !(
+                              g.ceremony_row === selectedPew.row &&
+                              g.ceremony_side === selectedPew.side
+                            ),
+                        )
+                        .map((g) => {
+                          const party = g.party_size ?? 1;
+                          const currentlyIn =
+                            g.ceremony_row != null && g.ceremony_side != null;
+                          return (
+                            <option key={g.id} value={g.id}>
+                              {g.first_name} {g.last_name ?? ""}
+                              {party > 1 ? ` · party of ${party}` : ""}
+                              {g.guest_group ? ` · ${g.guest_group}` : ""}
+                              {currentlyIn
+                                ? ` · in row ${(g.ceremony_row ?? 0) + 1}`
+                                : ""}
+                            </option>
+                          );
+                        })}
+                    </select>
+                  </div>
+                )}
+              </Card>
+            </div>
+          )}
+
+          {ceremonyOffPlan.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <UnionNote
+                action={
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      saveCeremony({
+                        rows: Math.max(
+                          ...ceremonyOffPlan.map((g) => (g.ceremony_row ?? 0) + 1),
+                          ceremony.rows,
+                        ),
+                        reserved: ceremony.reserved,
+                      })
+                    }
+                    style={{
+                      minHeight: 36,
+                      fontSize: 12.5,
+                      padding: "0 12px",
+                    }}
+                  >
+                    Grow layout
+                  </Button>
+                }
+              >
+                <b style={{ color: T.ink }}>
+                  {ceremonyOffPlan.length} guest
+                  {ceremonyOffPlan.length === 1 ? "" : "s"}
+                </b>{" "}
+                sit past the last visible row. Grow the layout to see them.
+              </UnionNote>
+            </div>
+          )}
 
           {/* Ceremony controls */}
           <Card style={{ marginTop: 13, padding: 13 }}>
@@ -1497,8 +1835,11 @@ export default function SeatingPage() {
               value={(guests ?? []).reduce((s, g) => s + (g.party_size ?? 1), 0)}
               label="seats needed"
             />
-            <StatTile value={totalSeatsUsed} label="placed at tables" />
-            <StatTile value={totalCapacity} label="table capacity" />
+            <StatTile
+              value={ceremonyAssignedCount}
+              label="in a pew"
+            />
+            <StatTile value={totalSeatsUsed} label="at a table" />
           </div>
         </>
       )}

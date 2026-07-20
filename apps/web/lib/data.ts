@@ -101,6 +101,8 @@ export type NewGuest = {
   notes?: string | null;
   room_block_id?: string | null;
   seating_table_id?: string | null;
+  ceremony_row?: number | null;
+  ceremony_side?: "left" | "right" | null;
 };
 
 export async function addGuest(input: NewGuest): Promise<Guest> {
