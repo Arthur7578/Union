@@ -13,6 +13,7 @@ import {
   fetchGuests,
   removeGuestFromGroup,
   renameGuestGroup,
+  updateGuest,
   updateGuestGroup,
   type GuestWithRsvp,
 } from "@/lib/data";
@@ -85,6 +86,13 @@ export default function GroupsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");
+
+  // Role administration state (kept local — nothing goes to the URL).
+  const [editingRoleFor, setEditingRoleFor] = useState<string | null>(null);
+  const [roleDraft, setRoleDraft] = useState("");
+  const [assignRoleOpen, setAssignRoleOpen] = useState(false);
+  const [assignRoleGuestId, setAssignRoleGuestId] = useState<string>("");
+  const [assignRoleValue, setAssignRoleValue] = useState<string>("");
 
   const reload = async () => {
     if (!wedding) return;
@@ -314,6 +322,33 @@ export default function GroupsPage() {
       setError(err instanceof Error ? err.message : "Couldn't update groups.");
       await reload();
     }
+  };
+
+  const assignRole = async (guestId: string, nextRole: string | null) => {
+    const trimmed = nextRole?.trim() || null;
+    // Optimistic — the roles list re-derives from guests.
+    setGuests((prev) =>
+      prev
+        ? prev.map((x) => (x.id === guestId ? { ...x, role: trimmed } : x))
+        : prev,
+    );
+    try {
+      await updateGuest(guestId, { role: trimmed });
+      setFlash(trimmed ? `Role set to ${trimmed}.` : "Role cleared.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't save role.");
+      await reload();
+    }
+  };
+
+  const submitAssignRole = async () => {
+    const gid = assignRoleGuestId;
+    const role = assignRoleValue.trim();
+    if (!gid || !role) return;
+    await assignRole(gid, role);
+    setAssignRoleGuestId("");
+    setAssignRoleValue("");
+    setAssignRoleOpen(false);
   };
 
   const loading = groups === null || guests === null;
@@ -1078,67 +1113,310 @@ export default function GroupsPage() {
       )}
 
       {/* ---------------- Roles ---------------- */}
-      <SectionLabel>The people with a role</SectionLabel>
+      <SectionLabel>Wedding-party roles</SectionLabel>
       {loading ? null : totalGuests === 0 ? (
         <Card soft style={{ padding: 16 }}>
           <div style={{ fontSize: 13.5, color: T.muted }}>
             Add guests first, then give the wedding party their roles here.
           </div>
         </Card>
-      ) : roles.length === 0 ? (
-        <Card style={{ padding: 16 }}>
-          <div style={{ fontSize: 13.5, color: T.muted, marginBottom: 10 }}>
-            No roles assigned yet — open a guest to give them a role.
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {SUGGESTED_ROLES.slice(0, 6).map((r) => (
-              <Chip key={r} style={{ fontWeight: 500, opacity: 0.7 }}>
-                {r}
-              </Chip>
-            ))}
-          </div>
-        </Card>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {roles.map((r) => (
-            <Card
-              key={r.id}
+        <>
+          {roles.length === 0 ? (
+            <Card style={{ padding: 16, marginBottom: 10 }}>
+              <div
+                style={{ fontSize: 13.5, color: T.muted, marginBottom: 10 }}
+              >
+                No roles assigned yet — pick a guest and give them a role.
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {SUGGESTED_ROLES.slice(0, 6).map((r) => (
+                  <Chip key={r} style={{ fontWeight: 500, opacity: 0.7 }}>
+                    {r}
+                  </Chip>
+                ))}
+              </div>
+            </Card>
+          ) : (
+            <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "13px 15px",
+                flexDirection: "column",
+                gap: 10,
+                marginBottom: 10,
               }}
             >
-              <Avatar
-                letter={(r.first_name || "?").charAt(0).toUpperCase()}
-                tint="green"
-                size={36}
-              />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <Link
-                  href={`/guests/${r.id}`}
-                  style={{ textDecoration: "none", color: T.ink }}
-                >
-                  <div
+              {roles.map((r) => {
+                const isEditing = editingRoleFor === r.id;
+                return (
+                  <Card
+                    key={r.id}
                     style={{
-                      fontWeight: 600,
-                      fontSize: 14,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "13px 15px",
                     }}
                   >
-                    {r.first_name} {r.last_name ?? ""}
-                  </div>
-                </Link>
-                <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
-                  {r.groups && r.groups.length > 0
-                    ? r.groups.map((x) => x.name).join(" · ")
-                    : "Ungrouped"}
+                    <Avatar
+                      letter={(r.first_name || "?").charAt(0).toUpperCase()}
+                      tint="green"
+                      size={36}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <Link
+                        href={`/guests/${r.id}`}
+                        style={{ textDecoration: "none", color: T.ink }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 14,
+                          }}
+                        >
+                          {r.first_name} {r.last_name ?? ""}
+                        </div>
+                      </Link>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: T.faint,
+                          marginTop: 1,
+                        }}
+                      >
+                        {r.groups && r.groups.length > 0
+                          ? r.groups.map((x) => x.name).join(" · ")
+                          : "Ungrouped"}
+                      </div>
+                    </div>
+
+                    {isEditing ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <input
+                          autoFocus
+                          list="role-suggestions"
+                          value={roleDraft}
+                          onChange={(e) => setRoleDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              assignRole(r.id, roleDraft);
+                              setEditingRoleFor(null);
+                            } else if (e.key === "Escape") {
+                              setEditingRoleFor(null);
+                            }
+                          }}
+                          aria-label={`Edit role for ${r.first_name}`}
+                          style={{
+                            minHeight: 32,
+                            padding: "4px 8px",
+                            fontSize: 12.5,
+                            borderRadius: 8,
+                            border: `1px solid ${T.line3}`,
+                            width: 140,
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="u-link"
+                          style={{ fontSize: 12 }}
+                          onClick={() => {
+                            assignRole(r.id, roleDraft);
+                            setEditingRoleFor(null);
+                          }}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingRoleFor(r.id);
+                          setRoleDraft(r.role ?? "");
+                        }}
+                        aria-label={`Change ${r.first_name}'s role`}
+                        style={{
+                          background: T.blueBg,
+                          color: T.blueInk,
+                          fontWeight: 600,
+                          fontSize: 11,
+                          padding: "5px 11px",
+                          borderRadius: 20,
+                          border: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {r.role}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => assignRole(r.id, null)}
+                      aria-label={`Clear ${r.first_name}'s role`}
+                      title="Clear role"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: T.faint,
+                        fontSize: 16,
+                        cursor: "pointer",
+                        padding: "0 4px",
+                      }}
+                    >
+                      ×
+                    </button>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Assign-role admin panel */}
+          <Card soft style={{ padding: 12 }}>
+            {assignRoleOpen ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 13,
+                    color: T.ink,
+                  }}
+                >
+                  Assign a role
+                </div>
+                <select
+                  value={assignRoleGuestId}
+                  onChange={(e) => setAssignRoleGuestId(e.target.value)}
+                  aria-label="Choose a guest"
+                  style={{
+                    minHeight: 36,
+                    borderRadius: 10,
+                    border: `1px solid ${T.line3}`,
+                    background: "#fff",
+                    color: T.ink,
+                    fontSize: 13,
+                    padding: "0 8px",
+                  }}
+                >
+                  <option value="" disabled>
+                    Choose a guest…
+                  </option>
+                  {(guests ?? [])
+                    .slice()
+                    .sort((a, b) =>
+                      (a.first_name ?? "").localeCompare(b.first_name ?? ""),
+                    )
+                    .map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.first_name} {g.last_name ?? ""}
+                        {g.role ? ` — ${g.role}` : ""}
+                      </option>
+                    ))}
+                </select>
+                <input
+                  type="text"
+                  list="role-suggestions"
+                  value={assignRoleValue}
+                  onChange={(e) => setAssignRoleValue(e.target.value)}
+                  placeholder="Role (e.g., Maid of honor)"
+                  aria-label="Role"
+                  style={{
+                    minHeight: 36,
+                    padding: "6px 10px",
+                    fontSize: 13,
+                    borderRadius: 10,
+                    border: `1px solid ${T.line3}`,
+                  }}
+                />
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                  {SUGGESTED_ROLES.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setAssignRoleValue(s)}
+                      style={{
+                        padding: "5px 10px",
+                        borderRadius: 20,
+                        border: `1px solid ${T.line3}`,
+                        background:
+                          assignRoleValue === s ? T.accentSoft : "#fff",
+                        color: T.muted,
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                  <Button
+                    type="button"
+                    onClick={submitAssignRole}
+                    disabled={!assignRoleGuestId || !assignRoleValue.trim()}
+                    style={{ minHeight: 38, fontSize: 13, flex: 1 }}
+                  >
+                    Assign role
+                  </Button>
+                  <button
+                    type="button"
+                    className="u-link"
+                    style={{ color: T.muted, fontSize: 12 }}
+                    onClick={() => {
+                      setAssignRoleOpen(false);
+                      setAssignRoleGuestId("");
+                      setAssignRoleValue("");
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
-              <StatusPill tone="blue">{r.role!}</StatusPill>
-            </Card>
-          ))}
-        </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAssignRoleOpen(true)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  textAlign: "left",
+                  cursor: "pointer",
+                  width: "100%",
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: 13.5, color: T.muted }}>
+                  + Assign a role
+                </div>
+                <div style={{ fontSize: 12, color: T.faint, marginTop: 4 }}>
+                  Pick a guest and give them a role — Maid of honor, Best
+                  man, Officiant…
+                </div>
+              </button>
+            )}
+          </Card>
+
+          {/* Shared datalist for role autocompletion */}
+          <datalist id="role-suggestions">
+            {SUGGESTED_ROLES.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        </>
       )}
     </main>
   );
