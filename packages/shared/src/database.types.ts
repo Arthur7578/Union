@@ -90,6 +90,39 @@ export type Database = {
           },
         ]
       }
+      guest_group_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          guest_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          guest_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          guest_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "guest_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_group_members_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guest_groups: {
         Row: {
           color: string | null
