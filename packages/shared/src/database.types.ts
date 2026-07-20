@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       guests: {
         Row: {
+          ceremony_row: number | null
+          ceremony_side: string | null
           created_at: string
           email: string | null
           first_name: string
@@ -33,6 +35,8 @@ export type Database = {
           wedding_id: string
         }
         Insert: {
+          ceremony_row?: number | null
+          ceremony_side?: string | null
           created_at?: string
           email?: string | null
           first_name: string
@@ -50,6 +54,8 @@ export type Database = {
           wedding_id: string
         }
         Update: {
+          ceremony_row?: number | null
+          ceremony_side?: string | null
           created_at?: string
           email?: string | null
           first_name?: string
@@ -180,7 +186,9 @@ export type Database = {
           capacity: number
           created_at: string
           id: string
+          is_head: boolean
           name: string
+          shape: string
           sort_order: number
           tone: string
           wedding_id: string
@@ -191,7 +199,9 @@ export type Database = {
           capacity?: number
           created_at?: string
           id?: string
+          is_head?: boolean
           name: string
+          shape?: string
           sort_order?: number
           tone?: string
           wedding_id: string
@@ -202,7 +212,9 @@ export type Database = {
           capacity?: number
           created_at?: string
           id?: string
+          is_head?: boolean
           name?: string
+          shape?: string
           sort_order?: number
           tone?: string
           wedding_id?: string
