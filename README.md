@@ -20,7 +20,7 @@ supabase/
 
 ### Current feature scope (v1)
 
-- **Auth + onboarding** — passwordless email magic-link sign-in (Supabase), then wedding setup.
+- **Auth + onboarding** — passwordless email sign-in via 6-digit code (Supabase), then wedding setup.
 - **Guest list + RSVP tracking** — add/edit guests, share a personal invite link,
   see live RSVP status and confirmed headcount.
 - **Web RSVP** — guests open their link and accept/decline (no account needed).
@@ -36,12 +36,12 @@ Budget, checklist, and AI vendor negotiation are planned for later iterations.
 
 The web app is a true responsive web experience — **bottom tab bar on mobile, a
 left sidebar on desktop** — not a phone frame. It shares the same Supabase
-backend and magic-link email auth as the mobile app.
+backend and 6-digit email code auth as the mobile app.
 
 Routes:
 
 - `/` — marketing landing.
-- `/sign-in`, `/onboarding` — email magic-link auth, then wedding setup.
+- `/sign-in`, `/onboarding` — email 6-digit code auth, then wedding setup.
 - `/today` — greeting, live countdown, and a live snapshot of your guests.
 - `/guests` — real guest list with add/edit/detail, live RSVP stats, invite links.
 - `/vendors` — vendor board, negotiation thread, add-a-vendor, and the
@@ -109,8 +109,8 @@ Config is read from `apps/mobile/.env` (`EXPO_PUBLIC_SUPABASE_URL`,
 npm run web          # or: npm run dev --workspace apps/web
 ```
 
-Open `http://localhost:3000` for the planning app (sign in with an email
-magic link), or `http://localhost:3000/rsvp/<invite-token>` for a guest's
+Open `http://localhost:3000` for the planning app (sign in with a 6-digit
+email code), or `http://localhost:3000/rsvp/<invite-token>` for a guest's
 RSVP page. Config is read from `apps/web/.env.local`
 (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`). Deploy to Vercel
 with root directory `apps/web` (set the two `NEXT_PUBLIC_SUPABASE_*` env vars

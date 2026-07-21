@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { Screen } from "../../components/Screen";
@@ -13,13 +14,15 @@ import { useAuth } from "../../lib/auth";
 import { colors, fontSize, fontWeight, spacing } from "../../theme/theme";
 
 export default function SignIn() {
-  const { signInWithMagicLink } = useAuth();
-  const [step, setStep] = useState<"email" | "sent">("email");
+  const { sendEmailOtp, verifyEmailOtp } = useAuth();
+  const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const codeInputRef = useRef<TextInput>(null);
 
-  const sendLink = async () => {
+  const sendCode = async () => {
     if (!email.trim()) {
       setError("Please enter your email address.");
       return;
@@ -27,10 +30,46 @@ export default function SignIn() {
     setBusy(true);
     setError(null);
     try {
-      await signInWithMagicLink(email);
-      setStep("sent");
+      await sendEmailOtp(email);
+      setCode("");
+      setStep("code");
+      // Small delay so the field mounts before we try to focus it.
+      setTimeout(() => codeInputRef.current?.focus(), 50);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not send the link.");
+      setError(e instanceof Error ? e.message : "Could not send the code.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const verifyCode = async () => {
+    if (code.length !== 6) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await verifyEmailOtp(email, code);
+      // AuthProvider's onAuthStateChange picks up the new session and the
+      // (auth) group's route guard redirects out.
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "That code didn't work — try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resend = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await sendEmailOtp(email);
+      setCode("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not send the code.");
     } finally {
       setBusy(false);
     }
@@ -61,29 +100,54 @@ export default function SignIn() {
               inputMode="email"
               autoCorrect={false}
               returnKeyType="go"
-              onSubmitEditing={sendLink}
+              onSubmitEditing={sendCode}
             />
             {error ? <Text style={styles.error}>{error}</Text> : null}
             <Button
-              label="Email me a sign-in link"
-              onPress={sendLink}
+              label="Email me a code"
+              onPress={sendCode}
               loading={busy}
             />
           </View>
         ) : (
           <View>
             <Text style={styles.helper}>
-              We sent a sign-in link to {email}. Open it on this phone and
-              you'll come back here signed in. The link expires in 1 hour.
+              We sent a 6-digit code to {email}. Enter it below to finish
+              signing in.
             </Text>
+            <Input
+              ref={codeInputRef}
+              label="6-digit code"
+              placeholder="123456"
+              value={code}
+              onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
+              keyboardType="number-pad"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              textContentType="oneTimeCode"
+              autoCorrect={false}
+              maxLength={6}
+              returnKeyType="go"
+              onSubmitEditing={verifyCode}
+              style={styles.codeInput}
+            />
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+            <Button label="Sign in" onPress={verifyCode} loading={busy} />
+            <Button
+              label="Resend code"
+              variant="ghost"
+              onPress={resend}
+              disabled={busy}
+              style={styles.ghostSpacing}
+            />
             <Button
               label="Use a different email"
               variant="ghost"
               onPress={() => {
                 setStep("email");
                 setError(null);
+                setCode("");
               }}
-              style={styles.ghostSpacing}
             />
           </View>
         )}
@@ -122,5 +186,11 @@ const styles = StyleSheet.create({
   },
   ghostSpacing: {
     marginTop: spacing.sm,
+  },
+  codeInput: {
+    letterSpacing: 6,
+    textAlign: "center",
+    fontSize: fontSize.xl,
+    fontVariant: ["tabular-nums"],
   },
 });

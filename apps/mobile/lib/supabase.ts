@@ -22,8 +22,8 @@ export const supabase = createUnionClient(supabaseUrl, supabaseAnonKey, {
     storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
-    // Deep-link session detection is handled manually in lib/auth.tsx via
-    // expo-linking, because Supabase's built-in URL detection is web-only.
+    // We authenticate with a 6-digit email code (verifyOtp), so no URL
+    // fragment ever carries a session — leave URL detection off.
     detectSessionInUrl: false,
   },
 });
