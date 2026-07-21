@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Instrument_Sans } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { UserJot } from "@/components/UserJot";
 import { AuthErrorNotice } from "@/components/AuthErrorNotice";
@@ -83,6 +84,7 @@ export default function RootLayout({
         <AuthErrorNotice />
         <UserJot />
         <ServiceWorkerRegister />
+        <SpeedInsights />
       </body>
     </html>
   );
