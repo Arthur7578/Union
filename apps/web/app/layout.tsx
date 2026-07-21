@@ -4,6 +4,7 @@ import "./globals.css";
 import { UserJot } from "@/components/UserJot";
 import { AuthErrorNotice } from "@/components/AuthErrorNotice";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Self-hosted fonts — no render-blocking <link>, zero layout shift.
 const serif = Cormorant_Garamond({
@@ -83,6 +84,7 @@ export default function RootLayout({
         <AuthErrorNotice />
         <UserJot />
         <ServiceWorkerRegister />
+        <SpeedInsights />
       </body>
     </html>
   );
