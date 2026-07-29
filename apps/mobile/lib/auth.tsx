@@ -5,8 +5,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { AppState, Linking } from "react-native";
-import * as ExpoLinking from "expo-linking";
+import { AppState } from "react-native";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 
@@ -19,25 +18,11 @@ AppState.addEventListener("change", (state) => {
   }
 });
 
-const REDIRECT_URL = ExpoLinking.createURL("/auth/callback");
-
-async function consumeAuthUrl(url: string | null) {
-  if (!url) return;
-  // Supabase implicit flow returns tokens in the URL fragment
-  // (#access_token=...&refresh_token=...). Parse and hydrate the session.
-  const hashIndex = url.indexOf("#");
-  if (hashIndex === -1) return;
-  const params = new URLSearchParams(url.slice(hashIndex + 1));
-  const access_token = params.get("access_token");
-  const refresh_token = params.get("refresh_token");
-  if (!access_token || !refresh_token) return;
-  await supabase.auth.setSession({ access_token, refresh_token });
-}
-
 type AuthContextValue = {
   session: Session | null;
   loading: boolean;
-  signInWithMagicLink: (email: string) => Promise<void>;
+  sendEmailOtp: (email: string) => Promise<void>;
+  verifyEmailOtp: (email: string, token: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -62,18 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(nextSession);
     });
 
-    // Handle a magic-link URL that opened the app cold.
-    Linking.getInitialURL().then(consumeAuthUrl);
-
-    // Handle a magic-link URL delivered while the app is already running.
-    const linkingSub = Linking.addEventListener("url", ({ url }) => {
-      void consumeAuthUrl(url);
-    });
-
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      linkingSub.remove();
     };
   }, []);
 
@@ -81,13 +57,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       session,
       loading,
-      signInWithMagicLink: async (email: string) => {
+      sendEmailOtp: async (email: string) => {
         const { error } = await supabase.auth.signInWithOtp({
           email: email.trim(),
           options: {
             shouldCreateUser: true,
-            emailRedirectTo: REDIRECT_URL,
           },
+        });
+        if (error) throw error;
+      },
+      verifyEmailOtp: async (email: string, token: string) => {
+        const { error } = await supabase.auth.verifyOtp({
+          email: email.trim(),
+          token: token.trim(),
+          type: "email",
         });
         if (error) throw error;
       },

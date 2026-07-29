@@ -3,7 +3,6 @@ import { Cormorant_Garamond, Instrument_Sans } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { UserJot } from "@/components/UserJot";
-import { AuthErrorNotice } from "@/components/AuthErrorNotice";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 // Self-hosted fonts — no render-blocking <link>, zero layout shift.
@@ -81,7 +80,6 @@ export default function RootLayout({
     <html lang="en" className={`${serif.variable} ${sans.variable}`}>
       <body>
         {children}
-        <AuthErrorNotice />
         <UserJot />
         <ServiceWorkerRegister />
         <SpeedInsights />

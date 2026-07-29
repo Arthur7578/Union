@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -13,11 +13,15 @@ type Props = TextInputProps & {
   hint?: string;
 };
 
-export function Input({ label, hint, style, ...rest }: Props) {
+export const Input = forwardRef<TextInput, Props>(function Input(
+  { label, hint, style, ...rest },
+  ref,
+) {
   return (
     <View style={styles.wrapper}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <TextInput
+        ref={ref}
         placeholderTextColor={colors.textMuted}
         style={[styles.input, style]}
         {...rest}
@@ -25,7 +29,7 @@ export function Input({ label, hint, style, ...rest }: Props) {
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrapper: {
