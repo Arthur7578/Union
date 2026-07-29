@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n/client";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import {
   TodayIcon,
   VendorsIcon,
@@ -18,19 +20,20 @@ type NavKey = "today" | "vendors" | "union" | "guests" | "plan";
 const ON = "#43353A";
 const OFF = "#C1B4AD";
 
-const TABS: {
+type Tab = {
   key: NavKey;
-  label: string;
   href: string;
   match: string[];
   Icon?: (p: { size?: number; stroke?: string }) => React.ReactElement;
   center?: boolean;
-}[] = [
-  { key: "today", label: "Today", href: "/today", match: ["/today"], Icon: TodayIcon },
-  { key: "vendors", label: "Vendors", href: "/vendors", match: ["/vendors"], Icon: VendorsIcon },
-  { key: "union", label: "Union", href: "/vendors/search", match: ["/vendors/search"], center: true },
-  { key: "guests", label: "Guests", href: "/guests", match: ["/guests"], Icon: GuestsIcon },
-  { key: "plan", label: "Plan", href: "/plan", match: ["/plan"], Icon: PlanIcon },
+};
+
+const TABS: Tab[] = [
+  { key: "today", href: "/today", match: ["/today"], Icon: TodayIcon },
+  { key: "vendors", href: "/vendors", match: ["/vendors"], Icon: VendorsIcon },
+  { key: "union", href: "/vendors/search", match: ["/vendors/search"], center: true },
+  { key: "guests", href: "/guests", match: ["/guests"], Icon: GuestsIcon },
+  { key: "plan", href: "/plan", match: ["/plan"], Icon: PlanIcon },
 ];
 
 function useActive(): NavKey {
@@ -46,6 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const active = useActive();
   const { signOut } = useAuth();
   const router = useRouter();
+  const dict = useT();
 
   const doSignOut = async () => {
     await signOut();
@@ -76,12 +80,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
 
         <nav style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {TABS.map((t) => {
-            const isActive = active === t.key;
+          {TABS.map((tab) => {
+            const isActive = active === tab.key;
             return (
               <Link
-                key={t.key}
-                href={t.href}
+                key={tab.key}
+                href={tab.href}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -101,19 +105,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     justifyContent: "center",
                   }}
                 >
-                  {t.center ? (
+                  {tab.center ? (
                     <Spark size={20} color={isActive ? T.accent : OFF} />
-                  ) : t.Icon ? (
-                    <t.Icon size={22} stroke={isActive ? ON : OFF} />
+                  ) : tab.Icon ? (
+                    <tab.Icon size={22} stroke={isActive ? ON : OFF} />
                   ) : null}
                 </span>
-                {t.label}
+                {dict.nav[tab.key]}
               </Link>
             );
           })}
         </nav>
 
-        <div style={{ marginTop: "auto" }}>
+        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ padding: "0 6px" }}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: T.faint,
+                marginBottom: 8,
+              }}
+            >
+              {dict.lang.switchTo}
+            </div>
+            <LanguageSwitcher />
+          </div>
           <button
             onClick={doSignOut}
             style={{
@@ -126,9 +145,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               color: T.faint,
               fontWeight: 600,
               fontSize: 14,
+              cursor: "pointer",
             }}
           >
-            Sign out
+            {dict.common.signOut}
           </button>
         </div>
       </aside>
@@ -138,13 +158,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom tab bar */}
       <nav className="u-tabbar">
-        {TABS.map((t) => {
-          const isActive = active === t.key;
-          if (t.center) {
+        {TABS.map((tab) => {
+          const isActive = active === tab.key;
+          if (tab.center) {
             return (
               <Link
-                key={t.key}
-                href={t.href}
+                key={tab.key}
+                href={tab.href}
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -176,16 +196,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     color: isActive ? ON : "#BBACA5",
                   }}
                 >
-                  {t.label}
+                  {dict.nav[tab.key]}
                 </span>
               </Link>
             );
           }
-          const Icon = t.Icon!;
+          const Icon = tab.Icon!;
           return (
             <Link
-              key={t.key}
-              href={t.href}
+              key={tab.key}
+              href={tab.href}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -203,7 +223,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   color: isActive ? ON : OFF,
                 }}
               >
-                {t.label}
+                {dict.nav[tab.key]}
               </span>
             </Link>
           );

@@ -1,8 +1,13 @@
+"use client";
+
 import { T } from "@/lib/theme";
 import { Spark } from "@/components/icons";
 import { LandingCTAs } from "@/components/LandingCTAs";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useT } from "@/lib/i18n/client";
 
 export default function Landing() {
+  const t = useT();
   return (
     <main
       style={{
@@ -15,8 +20,19 @@ export default function Landing() {
         padding:
           "max(56px, calc(24px + env(safe-area-inset-top))) max(24px, env(safe-area-inset-right)) max(56px, calc(24px + env(safe-area-inset-bottom))) max(24px, env(safe-area-inset-left))",
         textAlign: "center",
+        position: "relative",
       }}
     >
+      <div
+        style={{
+          position: "absolute",
+          top: "max(20px, env(safe-area-inset-top))",
+          right: "max(20px, env(safe-area-inset-right))",
+        }}
+      >
+        <LanguageSwitcher compact />
+      </div>
+
       <div style={{ maxWidth: 560 }}>
         <div
           style={{
@@ -30,7 +46,7 @@ export default function Landing() {
             color: T.label,
           }}
         >
-          <Spark size={15} color={T.accent} /> The AI wedding negotiator
+          <Spark size={15} color={T.accent} /> {t.landing.kicker}
         </div>
 
         <h1
@@ -56,15 +72,13 @@ export default function Landing() {
             maxWidth: 460,
           }}
         >
-          The AI that doesn&apos;t just help you plan the wedding — it negotiates
-          with vendors, closes the deals, and keeps everything calmly under
-          control.
+          {t.landing.tagline}
         </p>
 
         <LandingCTAs to="/today" />
 
         <p style={{ fontSize: 13, color: T.faint, marginTop: 28 }}>
-          Here to RSVP? Use the personal invitation link the couple sent you.
+          {t.landing.rsvpHint}
         </p>
       </div>
     </main>

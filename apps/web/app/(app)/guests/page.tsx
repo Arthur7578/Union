@@ -21,6 +21,7 @@ import {
   UnionNote,
   Chip,
 } from "@/components/ui";
+import { useT } from "@/lib/i18n/client";
 
 type Filter = "all" | "coming" | "waiting" | "declined";
 
@@ -30,14 +31,30 @@ const STATUS_DOT: Record<string, string> = {
   pending: "#DDB27C",
 };
 
-const TOOLS = [
-  { href: "/guests/groups", label: "Groups & roles", sub: "Colour-code your list" },
-  { href: "/guests/seating", label: "Seating", sub: "Floor plan & ceremony" },
-  { href: "/guests/stays", label: "Stays & travel", sub: "Room blocks" },
-  { href: "/guests/rsvp-form", label: "RSVP form", sub: "Design what you ask" },
-];
-
 export default function GuestsPage() {
+  const t = useT();
+  const TOOLS = [
+    {
+      href: "/guests/groups",
+      label: t.guests.tools.groupsLabel,
+      sub: t.guests.tools.groupsSub,
+    },
+    {
+      href: "/guests/seating",
+      label: t.guests.tools.seatingLabel,
+      sub: t.guests.tools.seatingSub,
+    },
+    {
+      href: "/guests/stays",
+      label: t.guests.tools.staysLabel,
+      sub: t.guests.tools.staysSub,
+    },
+    {
+      href: "/guests/rsvp-form",
+      label: t.guests.tools.formLabel,
+      sub: t.guests.tools.formSub,
+    },
+  ];
   const { wedding } = useWedding();
   const router = useRouter();
   const [guests, setGuests] = useState<GuestWithRsvp[] | null>(null);
@@ -89,27 +106,27 @@ export default function GuestsPage() {
       const origin =
         typeof window !== "undefined" ? window.location.origin : "";
       const to = waitingWithEmail.map((g) => g.email!).filter(Boolean).join(",");
-      const partners = [wedding.partner_one, wedding.partner_two]
-        .filter(Boolean)
-        .join(" & ") || "the couple";
-      const subject = `A gentle nudge — RSVP for ${partners}`;
+      const partners =
+        [wedding.partner_one, wedding.partner_two]
+          .filter(Boolean)
+          .join(" & ") || t.guests.theCouple;
+      const subject = t.guests.emailSubject(partners);
       const linksLine =
         waitingWithEmail.length === 1
-          ? `\nHere's your invitation link: ${origin}/rsvp/${waitingWithEmail[0].invite_token}\n`
-          : "\nYour personal invitation link is inside the email we sent — reply to this if you need it again.\n";
-      const body = `Hi there,\n\nJust a friendly note — we'd love to know if you can join us${linksLine}\nThank you!\n${partners}`;
+          ? t.guests.emailBody.singleLink(
+              `${origin}/rsvp/${waitingWithEmail[0].invite_token}`,
+            )
+          : t.guests.emailBody.multipleLinks;
+      const body = `${t.guests.emailBody.hello}\n\n${t.guests.emailBody.lead}${linksLine}\n${t.guests.emailBody.thanks}\n${partners}`;
       const mailto = `mailto:?bcc=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       await markRemindersSent(waitingWithEmail.map((g) => g.id));
-      // Refresh the local list so timestamps reflect what we just wrote.
       const fresh = await fetchGuests(wedding.id);
       setGuests(fresh);
       if (typeof window !== "undefined") window.location.href = mailto;
-      setReminderNote(
-        `Opened your email app with ${waitingWithEmail.length} recipient${waitingWithEmail.length === 1 ? "" : "s"}.`,
-      );
+      setReminderNote(t.guests.reminderSummary(waitingWithEmail.length));
     } catch (err) {
       setReminderNote(
-        err instanceof Error ? err.message : "Couldn't send reminders.",
+        err instanceof Error ? err.message : t.guests.reminderFail,
       );
     } finally {
       setReminderBusy(false);
@@ -119,23 +136,39 @@ export default function GuestsPage() {
   return (
     <main className="u-main">
       <PageHeader
-        kicker={stats ? `${stats.invited} invited` : "Guest list"}
-        title="Guests"
+        kicker={stats ? `${stats.invited} ${t.guests.kicker}` : t.guests.kickerFallback}
+        title={t.guests.title}
         right={
           <Link href="/guests/new">
-            <Button style={{ minHeight: 40, fontSize: 14 }}>+ Add</Button>
+            <Button style={{ minHeight: 40, fontSize: 14 }}>
+              {t.guests.addShort}
+            </Button>
           </Link>
         }
       />
 
       {/* Real stat tiles */}
       <div style={{ display: "flex", gap: 9, marginTop: 16 }}>
-        <StatTile value={stats?.coming} label="Coming" bg={T.greenBg} fg={T.greenDeep} />
-        <StatTile value={stats?.declined} label="Can't" bg={T.roseBg} fg={T.rose} />
-        <StatTile value={stats?.waiting} label="Waiting" bg={T.amberBg} fg={T.amberInk} />
+        <StatTile
+          value={stats?.coming}
+          label={t.today.guestStatsComing}
+          bg={T.greenBg}
+          fg={T.greenDeep}
+        />
+        <StatTile
+          value={stats?.declined}
+          label={t.today.guestStatsCant}
+          bg={T.roseBg}
+          fg={T.rose}
+        />
+        <StatTile
+          value={stats?.waiting}
+          label={t.today.guestStatsWaiting}
+          bg={T.amberBg}
+          fg={T.amberInk}
+        />
       </div>
 
-      {/* Real reminder nudge (only when there's a real "waiting" cohort we can email) */}
       {stats && stats.waiting > 0 && (
         <div style={{ marginTop: 14 }}>
           <UnionNote
@@ -145,23 +178,25 @@ export default function GuestsPage() {
                 disabled={reminderBusy || waitingWithEmail.length === 0}
                 style={{ minHeight: 38, fontSize: 12.5, padding: "0 13px" }}
               >
-                {reminderBusy ? "Opening…" : "Send a nudge"}
+                {reminderBusy ? t.guests.opening : t.guests.sendNudge}
               </Button>
             }
           >
             {waitingWithEmail.length > 0 ? (
               <>
-                Want me to gently remind the{" "}
+                {t.guests.reminderPromptLead}{" "}
                 <b style={{ color: T.ink }}>
-                  {waitingWithEmail.length} still deciding
+                  {t.guests.reminderPromptStrong(waitingWithEmail.length)}
                 </b>
-                ? I'll open your email with them all.
+                {t.guests.reminderPromptTail}
               </>
             ) : (
               <>
-                <b style={{ color: T.ink }}>{stats.waiting}</b> guests still haven't
-                RSVP'd. Add an email to nudge them, or copy their invite link from the
-                guest page.
+                {t.guests.reminderNoEmail.before}
+                <b style={{ color: T.ink }}>
+                  {t.guests.reminderNoEmail.strong(stats.waiting)}
+                </b>
+                {t.guests.reminderNoEmail.after}
               </>
             )}
           </UnionNote>
@@ -180,17 +215,17 @@ export default function GuestsPage() {
         </div>
       )}
 
-      {/* Planning tools — now operational */}
-      <SectionLabel>Planning tools</SectionLabel>
+      {/* Planning tools */}
+      <SectionLabel>{t.guests.planningTools}</SectionLabel>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {TOOLS.map((t) => (
-          <Link key={t.href} href={t.href}>
+        {TOOLS.map((tool) => (
+          <Link key={tool.href} href={tool.href}>
             <Card onClick={() => {}} style={{ padding: 14 }}>
               <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>
-                {t.label}
+                {tool.label}
               </div>
               <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>
-                {t.sub}
+                {tool.sub}
               </div>
             </Card>
           </Link>
@@ -198,17 +233,17 @@ export default function GuestsPage() {
       </div>
 
       {/* Real guest list */}
-      <SectionLabel>Guest list</SectionLabel>
+      <SectionLabel>{t.guests.guestList}</SectionLabel>
 
       {guests !== null && guests.length > 0 && (
         <>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
             {(
               [
-                ["all", "All", stats?.invited],
-                ["coming", "Coming", stats?.coming],
-                ["waiting", "Waiting", stats?.waiting],
-                ["declined", "Can't", stats?.declined],
+                ["all", t.guests.filterAll, stats?.invited],
+                ["coming", t.guests.filterComing, stats?.coming],
+                ["waiting", t.guests.filterWaiting, stats?.waiting],
+                ["declined", t.guests.filterCant, stats?.declined],
               ] as const
             ).map(([key, label, n]) => (
               <button
@@ -232,7 +267,7 @@ export default function GuestsPage() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, email, group…"
+            placeholder={t.guests.searchPlaceholder}
             style={{
               width: "100%",
               boxSizing: "border-box",
@@ -250,23 +285,23 @@ export default function GuestsPage() {
       )}
 
       {guests === null ? (
-        <Loading label="Loading your guests…" />
+        <Loading label={t.guests.loadingList} />
       ) : guests.length === 0 ? (
         <Card style={{ textAlign: "center", padding: "28px 20px" }}>
           <div className="u-serif" style={{ fontSize: 22, color: T.ink }}>
-            No guests yet
+            {t.guests.noGuestsTitle}
           </div>
           <div style={{ fontSize: 14, color: T.muted, margin: "6px 0 16px" }}>
-            Add the first person you&apos;re inviting to get started.
+            {t.guests.noGuestsBody}
           </div>
           <Link href="/guests/new">
-            <Button>Add a guest</Button>
+            <Button>{t.guests.add}</Button>
           </Link>
         </Card>
       ) : filtered.length === 0 ? (
         <Card style={{ textAlign: "center", padding: "22px 20px" }}>
           <div style={{ fontSize: 14, color: T.muted }}>
-            No matching guests.
+            {t.guests.noMatches}
           </div>
         </Card>
       ) : (
@@ -309,7 +344,7 @@ export default function GuestsPage() {
                     {g.first_name} {g.last_name ?? ""}
                   </div>
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
-                    Party of {g.party_size ?? 1}
+                    {t.guests.partyOf(g.party_size ?? 1)}
                     {group}
                     {role}
                   </div>
@@ -354,7 +389,10 @@ function StatTile({
         textAlign: "center",
       }}
     >
-      <div className="u-serif" style={{ fontWeight: 600, fontSize: 28, color: fg, lineHeight: 1 }}>
+      <div
+        className="u-serif"
+        style={{ fontWeight: 600, fontSize: 28, color: fg, lineHeight: 1 }}
+      >
         {value ?? "—"}
       </div>
       <div style={{ fontWeight: 600, fontSize: 11, color: fg, marginTop: 4 }}>

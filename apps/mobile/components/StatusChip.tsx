@@ -1,19 +1,22 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { RsvpStatus } from "@union/shared";
+import { useT } from "../lib/i18n";
 import { colors, fontSize, fontWeight, radius, spacing } from "../theme/theme";
 
-const CONFIG: Record<RsvpStatus, { label: string; bg: string; fg: string }> = {
-  attending: { label: "Attending", bg: colors.successBg, fg: colors.success },
-  declined: { label: "Declined", bg: colors.dangerBg, fg: colors.danger },
-  pending: { label: "Awaiting reply", bg: colors.surfaceAlt, fg: colors.textMuted },
+const TONE: Record<RsvpStatus, { bg: string; fg: string }> = {
+  attending: { bg: colors.successBg, fg: colors.success },
+  declined: { bg: colors.dangerBg, fg: colors.danger },
+  pending: { bg: colors.surfaceAlt, fg: colors.textMuted },
 };
 
 export function StatusChip({ status }: { status: RsvpStatus }) {
-  const cfg = CONFIG[status] ?? CONFIG.pending;
+  const t = useT();
+  const tone = TONE[status] ?? TONE.pending;
+  const label = t.guests.status[status] ?? t.guests.status.pending;
   return (
-    <View style={[styles.chip, { backgroundColor: cfg.bg }]}>
-      <Text style={[styles.text, { color: cfg.fg }]}>{cfg.label}</Text>
+    <View style={[styles.chip, { backgroundColor: tone.bg }]}>
+      <Text style={[styles.text, { color: tone.fg }]}>{label}</Text>
     </View>
   );
 }

@@ -11,6 +11,7 @@ import { Link, useFocusEffect, useRouter } from "expo-router";
 import { StatusChip } from "../../../components/StatusChip";
 import { useWedding } from "../../../lib/wedding";
 import { fetchGuests, type GuestWithRsvp } from "../../../lib/data";
+import { useT } from "../../../lib/i18n";
 import {
   colors,
   fontSize,
@@ -23,6 +24,7 @@ import {
 export default function GuestList() {
   const { wedding } = useWedding();
   const router = useRouter();
+  const t = useT();
   const [guests, setGuests] = useState<GuestWithRsvp[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,10 +58,8 @@ export default function GuestList() {
                 size={48}
                 color={colors.textMuted}
               />
-              <Text style={styles.emptyTitle}>No guests yet</Text>
-              <Text style={styles.emptyText}>
-                Add your first guest to start tracking RSVPs.
-              </Text>
+              <Text style={styles.emptyTitle}>{t.guests.emptyTitle}</Text>
+              <Text style={styles.emptyText}>{t.guests.emptyBody}</Text>
             </View>
           )
         }
@@ -74,8 +74,8 @@ export default function GuestList() {
               </Text>
               <Text style={styles.meta}>
                 {item.party_size === 1
-                  ? "1 guest"
-                  : `${item.party_size} guests`}
+                  ? t.guests.partyOne
+                  : t.guests.party(item.party_size)}
                 {item.guest_group ? ` · ${item.guest_group}` : ""}
               </Text>
               <View style={styles.chipWrap}>
@@ -92,7 +92,7 @@ export default function GuestList() {
       />
 
       <Link href="/(tabs)/guests/new" asChild>
-        <Pressable style={styles.fab} accessibilityRole="button" accessibilityLabel="Add guest">
+        <Pressable style={styles.fab} accessibilityRole="button" accessibilityLabel={t.guests.addGuest}>
           <Ionicons name="add" size={28} color={colors.primaryContrast} />
         </Pressable>
       </Link>

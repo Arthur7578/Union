@@ -6,19 +6,10 @@ import { useWedding } from "@/lib/wedding";
 import { addGuest, fetchGuestGroups } from "@/lib/data";
 import { Button } from "@/components/ui";
 import { BackHeader } from "@/components/BackHeader";
-
-const SUGGESTED_ROLES = [
-  "Maid of honor",
-  "Best man",
-  "Bridesmaid",
-  "Groomsman",
-  "Officiant",
-  "Ring bearer",
-  "Flower girl",
-  "Witness",
-];
+import { useT } from "@/lib/i18n/client";
 
 export default function NewGuestPage() {
+  const t = useT();
   const { wedding } = useWedding();
   const router = useRouter();
   const [firstNameV, setFirstNameV] = useState("");
@@ -65,44 +56,79 @@ export default function NewGuestPage() {
       });
       router.replace("/guests");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't add. Try again.");
+      setError(err instanceof Error ? err.message : t.guests.errAdd);
       setBusy(false);
     }
   };
 
   return (
     <main className="u-main">
-      <BackHeader title="Add a guest" subtitle="They'll be added to your list" fallback="/guests" />
+      <BackHeader
+        title={t.guests.addTitle}
+        subtitle={t.guests.addSubtitle}
+        fallback="/guests"
+      />
       <form onSubmit={submit}>
         <div className="field">
-          <label htmlFor="fn">First name</label>
-          <input id="fn" type="text" required value={firstNameV} onChange={(e) => setFirstNameV(e.target.value)} placeholder="Priya" />
+          <label htmlFor="fn">{t.guests.fields.firstName}</label>
+          <input
+            id="fn"
+            type="text"
+            required
+            value={firstNameV}
+            onChange={(e) => setFirstNameV(e.target.value)}
+            placeholder={t.guests.placeholders.firstName}
+          />
         </div>
         <div className="field">
-          <label htmlFor="ln">Last name</label>
-          <input id="ln" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Shah" />
+          <label htmlFor="ln">{t.guests.fields.lastName}</label>
+          <input
+            id="ln"
+            type="text"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder={t.guests.placeholders.lastName}
+          />
         </div>
         <div className="field">
-          <label htmlFor="em">Email (for their invite)</label>
-          <input id="em" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="priya@example.com" />
+          <label htmlFor="em">{t.guests.fields.email}</label>
+          <input
+            id="em"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t.guests.placeholders.email}
+          />
         </div>
         <div className="field">
-          <label htmlFor="ph">Phone</label>
-          <input id="ph" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 555 123 4567" />
+          <label htmlFor="ph">{t.guests.fields.phone}</label>
+          <input
+            id="ph"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder={t.guests.placeholders.phone}
+          />
         </div>
         <div className="field">
-          <label htmlFor="ps">Party size</label>
-          <input id="ps" type="number" min={1} value={partySize} onChange={(e) => setPartySize(e.target.value)} />
+          <label htmlFor="ps">{t.guests.fields.partySize}</label>
+          <input
+            id="ps"
+            type="number"
+            min={1}
+            value={partySize}
+            onChange={(e) => setPartySize(e.target.value)}
+          />
         </div>
         <div className="field">
-          <label htmlFor="gr">Group (optional)</label>
+          <label htmlFor="gr">{t.guests.fields.group}</label>
           <input
             id="gr"
             type="text"
             list="gr-list"
             value={group}
             onChange={(e) => setGroup(e.target.value)}
-            placeholder="College friends"
+            placeholder={t.guests.placeholders.group}
           />
           {options.length > 0 && (
             <datalist id="gr-list">
@@ -113,34 +139,38 @@ export default function NewGuestPage() {
           )}
         </div>
         <div className="field">
-          <label htmlFor="rl">Role in the wedding (optional)</label>
+          <label htmlFor="rl">{t.guests.fields.role}</label>
           <input
             id="rl"
             type="text"
             list="rl-list"
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            placeholder="Maid of honor, officiant…"
+            placeholder={t.guests.placeholders.role}
           />
           <datalist id="rl-list">
-            {SUGGESTED_ROLES.map((r) => (
+            {t.guests.suggestedRoles.map((r) => (
               <option key={r} value={r} />
             ))}
           </datalist>
         </div>
         <div className="field">
-          <label htmlFor="nt">Notes (private to you)</label>
+          <label htmlFor="nt">{t.guests.fields.notes}</label>
           <textarea
             id="nt"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Plus-one confirmed on the phone, allergic to shellfish…"
+            placeholder={t.guests.placeholders.notes}
             rows={3}
           />
         </div>
         {error && <div className="error">{error}</div>}
-        <Button type="submit" disabled={busy || !firstNameV.trim()} style={{ width: "100%" }}>
-          {busy ? "Adding…" : "Add guest"}
+        <Button
+          type="submit"
+          disabled={busy || !firstNameV.trim()}
+          style={{ width: "100%" }}
+        >
+          {busy ? t.common.adding : t.guests.submitAdd}
         </Button>
       </form>
     </main>

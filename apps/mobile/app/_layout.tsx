@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { WeddingProvider, useWedding } from "../lib/wedding";
+import { LocaleProvider } from "../lib/i18n";
 import { colors } from "../theme/theme";
 
 function RootNavigator() {
@@ -53,12 +54,14 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.flex}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <WeddingProvider>
-            <StatusBar style="dark" />
-            <RootNavigator />
-          </WeddingProvider>
-        </AuthProvider>
+        <LocaleProvider>
+          <AuthProvider>
+            <WeddingProvider>
+              <StatusBar style="dark" />
+              <RootNavigator />
+            </WeddingProvider>
+          </AuthProvider>
+        </LocaleProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

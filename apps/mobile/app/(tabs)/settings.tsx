@@ -4,15 +4,18 @@ import { Screen } from "../../components/Screen";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { Card } from "../../components/Card";
+import { LanguageSwitcher } from "../../components/LanguageSwitcher";
 import { useAuth } from "../../lib/auth";
 import { useWedding } from "../../lib/wedding";
 import { updateWedding } from "../../lib/data";
 import { isValidISODate } from "../../lib/format";
+import { useT } from "../../lib/i18n";
 import { colors, fontSize, fontWeight, spacing } from "../../theme/theme";
 
 export default function Settings() {
   const { session, signOut } = useAuth();
   const { wedding, setWedding, refresh } = useWedding();
+  const t = useT();
   const [partnerOne, setPartnerOne] = useState("");
   const [partnerTwo, setPartnerTwo] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -32,7 +35,7 @@ export default function Settings() {
   const save = async () => {
     if (!wedding) return;
     if (eventDate.trim() && !isValidISODate(eventDate.trim())) {
-      Alert.alert("Invalid date", "Use the format YYYY-MM-DD.");
+      Alert.alert(t.common.invalidDate, t.common.invalidDateBody);
       return;
     }
     setBusy(true);
@@ -45,9 +48,9 @@ export default function Settings() {
         venue_address: venueAddress.trim() || null,
       });
       setWedding(updated);
-      Alert.alert("Saved");
+      Alert.alert(t.common.saved);
     } catch (e) {
-      Alert.alert("Could not save", e instanceof Error ? e.message : "");
+      Alert.alert(t.common.couldNotSave, e instanceof Error ? e.message : "");
     } finally {
       setBusy(false);
     }
@@ -55,34 +58,59 @@ export default function Settings() {
 
   return (
     <Screen scroll>
-      <Text style={styles.sectionTitle}>Wedding details</Text>
-      <Input label="Partner 1" value={partnerOne} onChangeText={setPartnerOne} autoCapitalize="words" />
-      <Input label="Partner 2" value={partnerTwo} onChangeText={setPartnerTwo} autoCapitalize="words" />
+      <Text style={styles.sectionTitle}>{t.settings.language}</Text>
+      <Text style={styles.helper}>{t.settings.languageHint}</Text>
+      <View style={styles.switcherBox}>
+        <LanguageSwitcher />
+      </View>
+
+      <Text style={styles.sectionTitle}>{t.settings.weddingDetails}</Text>
       <Input
-        label="Wedding date"
-        hint="Format: YYYY-MM-DD"
+        label={t.settings.partnerOne}
+        value={partnerOne}
+        onChangeText={setPartnerOne}
+        autoCapitalize="words"
+      />
+      <Input
+        label={t.settings.partnerTwo}
+        value={partnerTwo}
+        onChangeText={setPartnerTwo}
+        autoCapitalize="words"
+      />
+      <Input
+        label={t.settings.weddingDate}
+        hint={t.settings.dateHint}
         value={eventDate}
         onChangeText={setEventDate}
         keyboardType="numbers-and-punctuation"
         autoCapitalize="none"
       />
-      <Input label="Venue" value={venueName} onChangeText={setVenueName} autoCapitalize="words" />
-      <Input label="Venue address" value={venueAddress} onChangeText={setVenueAddress} />
-      <Button label="Save" onPress={save} loading={busy} />
+      <Input
+        label={t.settings.venue}
+        value={venueName}
+        onChangeText={setVenueName}
+        autoCapitalize="words"
+      />
+      <Input
+        label={t.settings.venueAddress}
+        value={venueAddress}
+        onChangeText={setVenueAddress}
+      />
+      <Button label={t.settings.save} onPress={save} loading={busy} />
 
       <Card style={styles.accountCard}>
-        <Text style={styles.accountLabel}>Signed in as</Text>
+        <Text style={styles.accountLabel}>{t.settings.signedInAs}</Text>
         <Text style={styles.accountValue}>{session?.user.email}</Text>
       </Card>
 
       <Button
-        label="Sign out"
+        label={t.common.signOut}
         variant="ghost"
         onPress={() =>
-          Alert.alert("Sign out", "Are you sure you want to sign out?", [
-            { text: "Cancel", style: "cancel" },
+          Alert.alert(t.common.signOutTitle, t.common.signOutConfirm, [
+            { text: t.common.cancel, style: "cancel" },
             {
-              text: "Sign out",
+              text: t.common.signOut,
               style: "destructive",
               onPress: async () => {
                 await signOut();
@@ -101,6 +129,16 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
     color: colors.text,
+    marginTop: spacing.md,
+  },
+  helper: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  switcherBox: {
+    marginBottom: spacing.lg,
   },
   accountCard: { marginTop: spacing.lg, gap: spacing.xs },
   accountLabel: { fontSize: fontSize.xs, color: colors.textMuted },

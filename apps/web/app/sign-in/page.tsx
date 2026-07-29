@@ -6,9 +6,12 @@ import Link from "next/link";
 import { T } from "@/lib/theme";
 import { Spark } from "@/components/icons";
 import { Button, Loading } from "@/components/ui";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useAuth, LAST_EMAIL_KEY } from "@/lib/auth";
+import { useT } from "@/lib/i18n/client";
 
 export default function SignInPage() {
+  const t = useT();
   const { session, loading: authLoading, sendEmailOtp, verifyEmailOtp, signOut } =
     useAuth();
   const router = useRouter();
@@ -21,8 +24,6 @@ export default function SignInPage() {
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const codeInputRef = useRef<HTMLInputElement>(null);
 
-  // Prefill from the last email used on this browser so returning visitors
-  // don't have to retype it.
   useEffect(() => {
     let stored: string | null = null;
     try {
@@ -48,7 +49,7 @@ export default function SignInPage() {
       setCode("");
       setStep("code");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't send the code.");
+      setError(err instanceof Error ? err.message : t.signIn.errSend);
     } finally {
       setBusy(false);
     }
@@ -60,12 +61,8 @@ export default function SignInPage() {
     setBusy(true);
     try {
       await verifyEmailOtp(email, code);
-      // onAuthStateChange fires and the already-signed-in branch below picks
-      // up the new session on the next render.
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "That code didn't work — try again.",
-      );
+      setError(err instanceof Error ? err.message : t.signIn.errVerify);
     } finally {
       setBusy(false);
     }
@@ -78,7 +75,7 @@ export default function SignInPage() {
       await sendEmailOtp(email);
       setCode("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't send the code.");
+      setError(err instanceof Error ? err.message : t.signIn.errSend);
     } finally {
       setBusy(false);
     }
@@ -106,23 +103,28 @@ export default function SignInPage() {
     </div>
   );
 
-  // Auth hasn't resolved yet — don't flash the sign-in form to someone who is
-  // in fact already signed in.
+  const switcherRow = (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        marginTop: 22,
+      }}
+    >
+      <LanguageSwitcher compact />
+    </div>
+  );
+
   if (authLoading) {
     return (
       <main className="page">
         <div className="card">
-          <Loading label="Checking your sign-in…" />
+          <Loading label={t.signIn.checking} />
         </div>
       </main>
     );
   }
 
-  // Already signed in. Skip the redirect and show an explicit panel: the
-  // visitor may have arrived here on purpose (a stale bookmark, hitting Back
-  // after signing out) — an auto-nav steals their click if what they actually
-  // wanted was to switch accounts. Landing (`/`) still auto-redirects, so
-  // nobody who just wants the app has to click.
   if (session) {
     const who = session.user?.email;
     const doSignOut = async () => {
@@ -132,7 +134,7 @@ export default function SignInPage() {
         await signOut();
       } catch (err) {
         setSignOutError(
-          err instanceof Error ? err.message : "Couldn't sign you out.",
+          err instanceof Error ? err.message : t.signIn.errSignOut,
         );
       } finally {
         setSigningOut(false);
@@ -143,17 +145,17 @@ export default function SignInPage() {
       <main className="page">
         <div className="card">
           {header(
-            "You're already signed in",
+            t.signIn.alreadyTitle,
             who
-              ? `Signed in as ${who}. Head into Union — or sign out to use a different email.`
-              : "You're signed in. Head into Union — or sign out to use a different email.",
+              ? t.signIn.alreadySubWithEmail(who)
+              : t.signIn.alreadySubNoEmail,
           )}
           <Button
             type="button"
             onClick={() => router.replace("/today")}
             style={{ width: "100%" }}
           >
-            Continue to Union
+            {t.signIn.continue}
           </Button>
           <Button
             type="button"
@@ -162,7 +164,7 @@ export default function SignInPage() {
             disabled={signingOut}
             style={{ width: "100%", marginTop: 10 }}
           >
-            {signingOut ? "Signing out…" : "Sign out and use a different email"}
+            {signingOut ? t.common.signingOut : t.signIn.signOutAndSwitch}
           </Button>
           {signOutError && <div className="error">{signOutError}</div>}
           <p
@@ -173,8 +175,9 @@ export default function SignInPage() {
               color: T.faint,
             }}
           >
-            <Link href="/">← Back to home</Link>
+            <Link href="/">{t.common.backHome}</Link>
           </p>
+          {switcherRow}
         </div>
       </main>
     );
@@ -184,16 +187,14 @@ export default function SignInPage() {
     <main className="page">
       <div className="card">
         {header(
-          "Union",
-          step === "email"
-            ? "Sign in with your email — we'll send you an 8-digit code."
-            : `Enter the 8-digit code we sent to ${email}.`,
+          t.signIn.title,
+          step === "email" ? t.signIn.subEmail : t.signIn.subCode(email),
         )}
 
         {step === "email" ? (
           <form onSubmit={sendCode}>
             <div className="field">
-              <label htmlFor="email">Email address</label>
+              <label htmlFor="email">{t.signIn.emailLabel}</label>
               <input
                 id="email"
                 type="email"
@@ -201,18 +202,18 @@ export default function SignInPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t.signIn.emailPlaceholder}
               />
             </div>
             {error && <div className="error">{error}</div>}
             <Button type="submit" disabled={busy || !email} style={{ width: "100%" }}>
-              {busy ? "Sending…" : "Email me a code"}
+              {busy ? t.signIn.sending : t.signIn.sendCode}
             </Button>
           </form>
         ) : (
           <form onSubmit={verifyCode}>
             <div className="field">
-              <label htmlFor="code">8-digit code</label>
+              <label htmlFor="code">{t.signIn.codeLabel}</label>
               <input
                 id="code"
                 ref={codeInputRef}
@@ -224,7 +225,7 @@ export default function SignInPage() {
                 required
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                placeholder="12345678"
+                placeholder={t.signIn.codePlaceholder}
                 style={{
                   letterSpacing: "0.35em",
                   textAlign: "center",
@@ -238,7 +239,7 @@ export default function SignInPage() {
               disabled={busy || code.length !== 8}
               style={{ width: "100%" }}
             >
-              {busy ? "Verifying…" : "Sign in"}
+              {busy ? t.signIn.verifying : t.signIn.submit}
             </Button>
             <div
               style={{
@@ -264,7 +265,7 @@ export default function SignInPage() {
                   padding: 0,
                 }}
               >
-                Use a different email
+                {t.signIn.useDifferentEmail}
               </button>
               <button
                 type="button"
@@ -279,7 +280,7 @@ export default function SignInPage() {
                   padding: 0,
                 }}
               >
-                Resend code
+                {t.signIn.resend}
               </button>
             </div>
           </form>
@@ -293,8 +294,9 @@ export default function SignInPage() {
             color: T.faint,
           }}
         >
-          <Link href="/">← Back to home</Link>
+          <Link href="/">{t.common.backHome}</Link>
         </p>
+        {switcherRow}
       </div>
     </main>
   );

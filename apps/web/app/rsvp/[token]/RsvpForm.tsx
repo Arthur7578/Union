@@ -3,15 +3,18 @@
 import { useState } from "react";
 import type { Database } from "@union/shared";
 import { getSupabase } from "@/lib/supabase";
+import { useLocale } from "@/lib/i18n/client";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 type Invitation =
   Database["public"]["Functions"]["get_invitation"]["Returns"][number];
 
-function formatDate(iso: string | null): string {
+function formatDate(iso: string | null, locale: string): string {
   if (!iso) return "";
   const d = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, {
+  const tag = locale === "fr" ? "fr-FR" : "en-US";
+  return d.toLocaleDateString(tag, {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -26,6 +29,7 @@ export function RsvpForm({
   token: string;
   invitation: Invitation;
 }) {
+  const { t, locale } = useLocale();
   const alreadyResponded = invitation.rsvp_status !== "pending";
   const [choice, setChoice] = useState<"attending" | "declined" | null>(
     alreadyResponded
@@ -42,10 +46,11 @@ export function RsvpForm({
   const [done, setDone] = useState(false);
 
   const partySize = invitation.party_size ?? 1;
+  const couple = `${invitation.partner_one ?? ""} & ${invitation.partner_two ?? ""}`.trim();
 
   const submit = async () => {
     if (!choice) {
-      setError("Please let us know if you can make it.");
+      setError(t.common.error);
       return;
     }
     setBusy(true);
@@ -62,9 +67,7 @@ export function RsvpForm({
       if (rpcError) throw rpcError;
       setDone(true);
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Something went wrong. Please retry.",
-      );
+      setError(e instanceof Error ? e.message : t.common.error);
     } finally {
       setBusy(false);
     }
@@ -75,12 +78,15 @@ export function RsvpForm({
       <main className="page">
         <div className="card confirmation">
           <div className="icon">{choice === "attending" ? "🎉" : "💌"}</div>
-          <h1>Thank you!</h1>
+          <h1>{t.rsvp.submit}</h1>
           <p>
             {choice === "attending"
-              ? "Your RSVP is confirmed. We can't wait to celebrate with you."
-              : "Your response has been recorded. You'll be missed!"}
+              ? t.rsvp.thanksAccept(couple)
+              : t.rsvp.thanksDecline(couple)}
           </p>
+          <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
+            <LanguageSwitcher compact />
+          </div>
         </div>
       </main>
     );
@@ -89,18 +95,20 @@ export function RsvpForm({
   return (
     <main className="page">
       <div className="card">
-        <div className="brand">You&apos;re invited</div>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+          <LanguageSwitcher compact />
+        </div>
+        <div className="brand">Union</div>
         <h1 className="couple">
           {invitation.partner_one} &amp; {invitation.partner_two}
         </h1>
         <p className="event-meta">
-          {formatDate(invitation.event_date)}
+          {formatDate(invitation.event_date, locale)}
           {invitation.venue_name ? ` · ${invitation.venue_name}` : ""}
         </p>
 
         <p className="greeting">
-          Hello <strong>{invitation.guest_first_name}</strong>, will you be
-          joining us?
+          <strong>{invitation.guest_first_name}</strong> — {t.rsvp.joinPrompt(couple)}
         </p>
 
         <div className="field">
@@ -110,21 +118,21 @@ export function RsvpForm({
               className={`choice ${choice === "attending" ? "selected-yes" : ""}`}
               onClick={() => setChoice("attending")}
             >
-              Joyfully accept
+              {t.rsvp.accept}
             </button>
             <button
               type="button"
               className={`choice ${choice === "declined" ? "selected-no" : ""}`}
               onClick={() => setChoice("declined")}
             >
-              Regretfully decline
+              {t.rsvp.decline}
             </button>
           </div>
         </div>
 
         {choice === "attending" && partySize > 1 ? (
           <div className="field">
-            <label htmlFor="num">Number attending</label>
+            <label htmlFor="num">{t.rsvp.numAttendingLabel}</label>
             <select
               id="num"
               value={numAttending}
@@ -141,25 +149,25 @@ export function RsvpForm({
 
         {choice === "attending" ? (
           <div className="field">
-            <label htmlFor="dietary">Dietary notes (optional)</label>
+            <label htmlFor="dietary">{t.rsvp.dietaryLabel}</label>
             <input
               id="dietary"
               type="text"
               value={dietary}
               onChange={(e) => setDietary(e.target.value)}
-              placeholder="Allergies, vegetarian, etc."
+              placeholder={t.rsvp.dietaryPlaceholder}
             />
           </div>
         ) : null}
 
         {choice ? (
           <div className="field">
-            <label htmlFor="message">A note for the couple (optional)</label>
+            <label htmlFor="message">{t.rsvp.messageLabel}</label>
             <textarea
               id="message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Say something sweet…"
+              placeholder={t.rsvp.messagePlaceholder}
             />
           </div>
         ) : null}
@@ -167,7 +175,11 @@ export function RsvpForm({
         {error ? <p className="error">{error}</p> : null}
 
         <button className="btn" onClick={submit} disabled={busy}>
-          {busy ? "Sending…" : alreadyResponded ? "Update my response" : "Send RSVP"}
+          {busy
+            ? t.rsvp.submitting
+            : alreadyResponded
+              ? t.rsvp.update
+              : t.rsvp.submit}
         </button>
       </div>
     </main>

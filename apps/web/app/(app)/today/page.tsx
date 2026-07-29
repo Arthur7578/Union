@@ -11,14 +11,16 @@ import {
   formatLongDate,
   todayKicker,
 } from "@/lib/format";
-import { Card, SectionLabel, Button, StatusPill } from "@/components/ui";
+import { Card, SectionLabel, Button } from "@/components/ui";
 import { SampleBadge } from "@/components/SampleBadge";
 import { Spark, Check } from "@/components/icons";
-import { SAMPLE_HANDLING } from "@/lib/sample";
+import { getSample } from "@/lib/sample";
+import { useLocale } from "@/lib/i18n/client";
 
 export default function TodayPage() {
   const { wedding } = useWedding();
   const [guests, setGuests] = useState<GuestWithRsvp[] | null>(null);
+  const { locale, t } = useLocale();
 
   useEffect(() => {
     if (!wedding) return;
@@ -33,9 +35,10 @@ export default function TodayPage() {
 
   if (!wedding) return null;
   const stats = guests ? guestStats(guests) : null;
+  const handling = getSample(t).handling;
   const days = daysUntil(wedding.event_date);
-  const name = firstName(wedding.partner_one);
-  const venueLine = [wedding.venue_name, formatLongDate(wedding.event_date)]
+  const name = firstName(wedding.partner_one, locale);
+  const venueLine = [wedding.venue_name, formatLongDate(wedding.event_date, locale)]
     .filter(Boolean)
     .join(" · ");
 
@@ -43,7 +46,7 @@ export default function TodayPage() {
     <main className="u-main">
       {/* Greeting */}
       <div style={{ padding: "0 2px" }}>
-        <div className="u-kicker">{todayKicker()}</div>
+        <div className="u-kicker">{todayKicker(locale)}</div>
         <h1
           className="u-serif"
           style={{
@@ -54,9 +57,7 @@ export default function TodayPage() {
             margin: "9px 0 0",
           }}
         >
-          Good morning,
-          <br />
-          {name}.
+          {t.today.goodMorning(name)}
         </h1>
       </div>
 
@@ -83,7 +84,7 @@ export default function TodayPage() {
               color: T.greenInk,
             }}
           >
-            On track
+            {t.today.onTrack}
           </span>
         </div>
         <div
@@ -98,7 +99,7 @@ export default function TodayPage() {
         >
           {days !== null && days >= 0 ? days : "—"}{" "}
           <span style={{ fontSize: 22, color: T.faint, fontWeight: 500 }}>
-            {days !== null && days >= 0 ? "days to go" : "set your date"}
+            {days !== null && days >= 0 ? t.today.daysToGo : t.today.setYourDate}
           </span>
         </div>
         {venueLine && (
@@ -108,15 +109,15 @@ export default function TodayPage() {
         )}
         <div style={{ height: 1, background: "rgba(67,53,58,.09)", margin: "16px 0 14px" }} />
         <div style={{ fontSize: 14, lineHeight: 1.55, color: T.ink2 }}>
-          Union is handling <b style={{ color: T.ink }}>three things</b> for you
-          right now. Nothing needs to worry you today — except one happy
-          decision.
+          {t.today.handlingLead.before}{" "}
+          <b style={{ color: T.ink }}>{t.today.handlingLead.strong}</b>{" "}
+          {t.today.handlingLead.after}
         </div>
       </div>
 
       {/* Needs you today (sample task) */}
       <SectionLabel style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>Needs you today</span>
+        <span>{t.today.needsYou}</span>
         <SampleBadge />
       </SectionLabel>
       <Card style={{ padding: 18, boxShadow: "0 10px 26px rgba(67,53,58,.06)" }}>
@@ -124,45 +125,49 @@ export default function TodayPage() {
           className="u-serif"
           style={{ fontWeight: 600, fontSize: 23, lineHeight: 1.15, color: T.ink }}
         >
-          Approve the florist&apos;s final quote
+          {t.today.approveFlorist}
         </div>
         <div style={{ fontSize: 14, lineHeight: 1.55, color: T.muted, marginTop: 8 }}>
-          Union negotiated The Wild Stem down to <b style={{ color: T.ink }}>$3,300</b>{" "}
-          — <span style={{ color: T.greenInk, fontWeight: 600 }}>$540 under</span>{" "}
-          your florals budget, same garden-style arrangements you loved.
+          {t.today.floristBody.before}{" "}
+          <b style={{ color: T.ink }}>{t.today.floristBody.priceHighlight}</b>
+          {t.today.floristBody.middle}
+          <span style={{ color: T.greenInk, fontWeight: 600 }}>
+            {t.today.floristBody.savings}
+          </span>
+          {t.today.floristBody.end}
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
           <Link href="/vendors/the-wild-stem" style={{ flex: 1.4 }}>
-            <Button style={{ width: "100%" }}>Approve</Button>
+            <Button style={{ width: "100%" }}>{t.today.approve}</Button>
           </Link>
           <Link href="/vendors/the-wild-stem" style={{ flex: 1 }}>
             <Button variant="secondary" style={{ width: "100%" }}>
-              Review
+              {t.today.review}
             </Button>
           </Link>
         </div>
       </Card>
 
       {/* Live guest snapshot (real data) */}
-      <SectionLabel>Your guests</SectionLabel>
+      <SectionLabel>{t.today.yourGuests}</SectionLabel>
       <Link href="/guests">
         <Card onClick={() => {}} style={{ padding: 0, overflow: "hidden" }}>
           <div style={{ display: "flex", textAlign: "center" }}>
             <SnapStat
               value={stats ? stats.coming : "—"}
-              label="Coming"
+              label={t.today.guestStatsComing}
               color={T.greenDeep}
             />
             <Divider />
             <SnapStat
               value={stats ? stats.waiting : "—"}
-              label="Waiting"
+              label={t.today.guestStatsWaiting}
               color={T.amberInk}
             />
             <Divider />
             <SnapStat
               value={stats ? stats.declined : "—"}
-              label="Can't"
+              label={t.today.guestStatsCant}
               color={T.rose}
             />
           </div>
@@ -177,20 +182,24 @@ export default function TodayPage() {
             }}
           >
             <span>
-              {stats ? `${stats.parties} parties · ${stats.invited} invited` : "Loading…"}
+              {stats
+                ? t.today.guestStatsSummary(stats.parties, stats.invited)
+                : t.common.loading}
             </span>
-            <span style={{ color: T.accentInk, fontWeight: 600 }}>Open guests →</span>
+            <span style={{ color: T.accentInk, fontWeight: 600 }}>
+              {t.today.openGuests}
+            </span>
           </div>
         </Card>
       </Link>
 
       {/* Union is handling (sample) */}
       <SectionLabel style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>Union is handling</span>
+        <span>{t.today.unionHandling}</span>
         <SampleBadge />
       </SectionLabel>
       <Card style={{ padding: 0, overflow: "hidden" }}>
-        {SAMPLE_HANDLING.map((item, i) => (
+        {handling.map((item, i) => (
           <div
             key={item.title}
             style={{
@@ -199,7 +208,7 @@ export default function TodayPage() {
               gap: 13,
               padding: "15px 16px",
               borderBottom:
-                i < SAMPLE_HANDLING.length - 1 ? `1px solid ${T.line}` : "none",
+                i < handling.length - 1 ? `1px solid ${T.line}` : "none",
             }}
           >
             <PulseDot delay={i * 0.6} />
@@ -220,7 +229,7 @@ export default function TodayPage() {
 
       {/* Just closed (sample) */}
       <SectionLabel style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>Just closed</span>
+        <span>{t.today.justClosed}</span>
         <SampleBadge />
       </SectionLabel>
       <Card style={{ display: "flex", alignItems: "center", gap: 13 }}>
@@ -240,10 +249,10 @@ export default function TodayPage() {
         </span>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 500, fontSize: 14.5, color: T.ink }}>
-            Venue deposit paid — it&apos;s yours
+            {t.today.venueDepositPaid}
           </div>
           <div style={{ fontSize: 12.5, color: T.faint, marginTop: 2 }}>
-            Wildflower Barn · approved by {name} · 2 days ago
+            {t.today.venueDepositMeta(wedding.venue_name ?? "Wildflower Barn", name)}
           </div>
         </div>
       </Card>

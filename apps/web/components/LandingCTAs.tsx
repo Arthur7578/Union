@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * Renders the landing-page CTAs and steers signed-in visitors into the app.
@@ -18,6 +19,7 @@ import { getBrowserSupabase } from "@/lib/supabaseClient";
 export function LandingCTAs({ to }: { to: string }) {
   const router = useRouter();
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const t = useT();
 
   useEffect(() => {
     const supabase = getBrowserSupabase();
@@ -80,7 +82,7 @@ export function LandingCTAs({ to }: { to: string }) {
     return (
       <div style={row}>
         <Link href={to} style={primary}>
-          Open Union →
+          {t.landing.openUnion}
         </Link>
       </div>
     );
@@ -89,10 +91,10 @@ export function LandingCTAs({ to }: { to: string }) {
   return (
     <div style={row}>
       <Link href="/sign-in" style={primary}>
-        Get started
+        {t.landing.getStarted}
       </Link>
       <Link href="/sign-in" style={secondary}>
-        Sign in
+        {t.landing.signIn}
       </Link>
     </div>
   );
