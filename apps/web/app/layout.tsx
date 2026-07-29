@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Instrument_Sans } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { UserJot } from "@/components/UserJot";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
@@ -81,6 +82,7 @@ export default function RootLayout({
         {children}
         <UserJot />
         <ServiceWorkerRegister />
+        <SpeedInsights />
       </body>
     </html>
   );

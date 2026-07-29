@@ -3,14 +3,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
-import type { RoomBlock, RsvpStatus, SeatingTable } from "@union/shared";
+import type { GuestGroup, RoomBlock, RsvpStatus, SeatingTable } from "@union/shared";
 import {
+  addGuestToGroup,
   clearRsvp,
   deleteGuest,
   fetchGuest,
   fetchGuestGroups,
   fetchRoomBlocks,
   fetchSeatingTables,
+  removeGuestFromGroup,
   updateGuest,
   upsertRsvp,
   type GuestWithRsvp,
@@ -51,7 +53,6 @@ export default function GuestDetailPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [partySize, setPartySize] = useState("1");
-  const [group, setGroup] = useState("");
   const [role, setRole] = useState("");
   const [notes, setNotes] = useState("");
   const [roomBlockId, setRoomBlockId] = useState<string>("");
@@ -69,9 +70,10 @@ export default function GuestDetailPage() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [groupNames, setGroupNames] = useState<string[]>([]);
+  const [allGroups, setAllGroups] = useState<GuestGroup[]>([]);
   const [rooms, setRooms] = useState<RoomBlock[]>([]);
   const [tables, setTables] = useState<SeatingTable[]>([]);
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -84,7 +86,6 @@ export default function GuestDetailPage() {
           setEmail(g.email ?? "");
           setPhone(g.phone ?? "");
           setPartySize(String(g.party_size ?? 1));
-          setGroup(g.guest_group ?? "");
           setRole(g.role ?? "");
           setNotes(g.notes ?? "");
           setRoomBlockId(g.room_block_id ?? "");
@@ -112,7 +113,7 @@ export default function GuestDetailPage() {
     ])
       .then(([gs, rb, st]) => {
         if (!ok) return;
-        setGroupNames(gs.map((g) => g.name));
+        setAllGroups(gs);
         setRooms(rb);
         setTables(st);
       })
@@ -122,12 +123,15 @@ export default function GuestDetailPage() {
     };
   }, [wedding]);
 
-  const groupOptions = useMemo(() => {
-    // Merge stored group meta with the free-text one on this guest, dedup.
-    const set = new Set<string>(groupNames);
-    if (group) set.add(group);
-    return [...set].sort((a, b) => a.localeCompare(b));
-  }, [groupNames, group]);
+  const currentGroups = guest?.groups ?? [];
+  const currentGroupIds = useMemo(
+    () => new Set(currentGroups.map((g) => g.id)),
+    [currentGroups],
+  );
+  const currentGroupNames = useMemo(
+    () => new Set(currentGroups.map((g) => g.name)),
+    [currentGroups],
+  );
 
   if (guest === undefined)
     return (
@@ -150,13 +154,15 @@ export default function GuestDetailPage() {
     setError(null);
     setBusy(true);
     try {
+      // Groups are managed live via toggleGroup below; save() covers the
+      // rest of the guest record. guest_group (the primary text label) is
+      // maintained automatically by the group helpers.
       const updated = await updateGuest(guest.id, {
         first_name: firstNameV.trim(),
         last_name: lastName.trim() || null,
         email: email.trim() || null,
         phone: phone.trim() || null,
         party_size: Math.max(1, parseInt(partySize, 10) || 1),
-        guest_group: group.trim() || null,
         role: role.trim() || null,
         notes: notes.trim() || null,
         room_block_id: roomBlockId || null,
@@ -479,21 +485,187 @@ export default function GuestDetailPage() {
           />
         </div>
         <div className="field">
-          <label htmlFor="gr">Group</label>
-          <input
-            id="gr"
-            type="text"
-            list="gr-list"
-            value={group}
-            onChange={(e) => setGroup(e.target.value)}
-            placeholder="College friends"
-          />
-          {groupOptions.length > 0 && (
-            <datalist id="gr-list">
-              {groupOptions.map((n) => (
-                <option key={n} value={n} />
-              ))}
-            </datalist>
+          <label>Groups</label>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 6,
+              alignItems: "center",
+            }}
+          >
+            {currentGroups.length === 0 && (
+              <span style={{ fontSize: 13, color: T.faint }}>
+                Not in any group yet.
+              </span>
+            )}
+            {currentGroups.map((cg) => (
+              <span
+                key={cg.id}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "5px 10px",
+                  borderRadius: 20,
+                  background: cg.color ?? T.accentSoft,
+                  border: `1px solid rgba(67,53,58,.12)`,
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  color: T.ink,
+                }}
+              >
+                {cg.name}
+                <button
+                  type="button"
+                  aria-label={`Remove ${cg.name}`}
+                  onClick={async () => {
+                    try {
+                      await removeGuestFromGroup(guest.id, {
+                        id: cg.id,
+                        name: cg.name,
+                      });
+                      const refreshed = await fetchGuest(guest.id);
+                      if (refreshed) setGuest(refreshed);
+                    } catch (err) {
+                      setError(
+                        err instanceof Error
+                          ? err.message
+                          : "Couldn't update groups.",
+                      );
+                    }
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: T.muted,
+                    fontSize: 14,
+                    lineHeight: 1,
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <button
+              type="button"
+              onClick={() => setGroupPickerOpen((v) => !v)}
+              aria-expanded={groupPickerOpen}
+              style={{
+                padding: "5px 10px",
+                borderRadius: 20,
+                border: `1px dashed ${T.line3}`,
+                background: "#fff",
+                color: T.muted,
+                fontSize: 12.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              + Add group
+            </button>
+          </div>
+          {groupPickerOpen && (
+            <div
+              style={{
+                marginTop: 8,
+                padding: 10,
+                borderRadius: 12,
+                border: `1px solid ${T.line3}`,
+                background: "#fff",
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+                maxHeight: 240,
+                overflowY: "auto",
+              }}
+            >
+              {allGroups.length === 0 && (
+                <div style={{ fontSize: 13, color: T.faint }}>
+                  No groups yet. Create one from the Groups screen.
+                </div>
+              )}
+              {allGroups.map((g) => {
+                const isMember =
+                  currentGroupIds.has(g.id) || currentGroupNames.has(g.name);
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        if (isMember) {
+                          await removeGuestFromGroup(guest.id, {
+                            id: g.id,
+                            name: g.name,
+                          });
+                        } else {
+                          await addGuestToGroup(guest.id, {
+                            id: g.id,
+                            name: g.name,
+                          });
+                        }
+                        const refreshed = await fetchGuest(guest.id);
+                        if (refreshed) setGuest(refreshed);
+                      } catch (err) {
+                        setError(
+                          err instanceof Error
+                            ? err.message
+                            : "Couldn't update groups.",
+                        );
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      background: isMember ? T.accentSoft : "transparent",
+                      border: "none",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      color: T.ink,
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: 3,
+                        border: `1.5px solid ${isMember ? T.ink : T.line3}`,
+                        background: isMember ? T.ink : "#fff",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#fff",
+                        fontSize: 10,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {isMember ? "✓" : ""}
+                    </span>
+                    {g.color && (
+                      <span
+                        aria-hidden
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          background: g.color,
+                          border: `1px solid rgba(67,53,58,.15)`,
+                        }}
+                      />
+                    )}
+                    <span>{g.name}</span>
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
         <div className="field">
