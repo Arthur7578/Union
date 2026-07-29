@@ -10,11 +10,13 @@ import { useAuth } from "@/lib/auth";
 import { useWedding } from "@/lib/wedding";
 import { supabaseConfigured } from "@/lib/supabaseClient";
 import { ConfigNotice } from "@/components/ConfigNotice";
+import { useT } from "@/lib/i18n/client";
 
 function Guard({ children }: { children: React.ReactNode }) {
   const { session, loading: authLoading } = useAuth();
   const { wedding, loading: wLoading } = useWedding();
   const router = useRouter();
+  const t = useT();
 
   useEffect(() => {
     if (authLoading) return;
@@ -30,14 +32,14 @@ function Guard({ children }: { children: React.ReactNode }) {
   if (authLoading || (session && wLoading)) {
     return (
       <div className="u-app">
-        <Loading label="Opening Union…" />
+        <Loading label={t.today.openingUnion} />
       </div>
     );
   }
   if (!session || !wedding) {
     return (
       <div className="u-app">
-        <Loading label="One moment…" />
+        <Loading label={t.common.oneMoment} />
       </div>
     );
   }

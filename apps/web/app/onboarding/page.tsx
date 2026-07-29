@@ -8,8 +8,10 @@ import { Button, Loading } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { useWedding } from "@/lib/wedding";
 import { createWedding } from "@/lib/data";
+import { useT } from "@/lib/i18n/client";
 
 export default function OnboardingPage() {
+  const t = useT();
   const { session, loading: authLoading } = useAuth();
   const { wedding, loading: wLoading, setWedding } = useWedding();
   const router = useRouter();
@@ -30,7 +32,7 @@ export default function OnboardingPage() {
   if (authLoading || (session && wLoading) || (session && wedding)) {
     return (
       <main className="page">
-        <Loading label="One moment…" />
+        <Loading label={t.common.oneMoment} />
       </main>
     );
   }
@@ -52,7 +54,7 @@ export default function OnboardingPage() {
       setWedding(w);
       router.replace("/today");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't save. Try again.");
+      setError(err instanceof Error ? err.message : t.onboarding.errSave);
       setBusy(false);
     }
   };
@@ -66,37 +68,37 @@ export default function OnboardingPage() {
             className="u-serif"
             style={{ fontSize: 32, fontWeight: 600, color: T.ink, margin: "8px 0 4px" }}
           >
-            Let&apos;s set up your wedding
+            {t.onboarding.title}
           </h1>
           <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-            Just the basics — you can change any of this later.
+            {t.onboarding.sub}
           </p>
         </div>
 
         <form onSubmit={submit}>
           <div className="field">
-            <label htmlFor="p1">Your name</label>
+            <label htmlFor="p1">{t.onboarding.yourName}</label>
             <input
               id="p1"
               type="text"
               value={partnerOne}
               onChange={(e) => setPartnerOne(e.target.value)}
-              placeholder="Maya"
+              placeholder={t.onboarding.yourNamePlaceholder}
               required
             />
           </div>
           <div className="field">
-            <label htmlFor="p2">Partner&apos;s name</label>
+            <label htmlFor="p2">{t.onboarding.partnerName}</label>
             <input
               id="p2"
               type="text"
               value={partnerTwo}
               onChange={(e) => setPartnerTwo(e.target.value)}
-              placeholder="Daniel"
+              placeholder={t.onboarding.partnerNamePlaceholder}
             />
           </div>
           <div className="field">
-            <label htmlFor="date">Wedding date</label>
+            <label htmlFor="date">{t.onboarding.weddingDate}</label>
             <input
               id="date"
               type="date"
@@ -105,13 +107,13 @@ export default function OnboardingPage() {
             />
           </div>
           <div className="field">
-            <label htmlFor="venue">Venue (if you have one)</label>
+            <label htmlFor="venue">{t.onboarding.venue}</label>
             <input
               id="venue"
               type="text"
               value={venueName}
               onChange={(e) => setVenueName(e.target.value)}
-              placeholder="Wildflower Barn"
+              placeholder={t.onboarding.venuePlaceholder}
             />
           </div>
           {error && <div className="error">{error}</div>}
@@ -120,7 +122,7 @@ export default function OnboardingPage() {
             disabled={busy || !partnerOne.trim()}
             style={{ width: "100%" }}
           >
-            {busy ? "Setting up…" : "Start planning"}
+            {busy ? t.onboarding.saving : t.onboarding.submit}
           </Button>
         </form>
       </div>

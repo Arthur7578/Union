@@ -8,6 +8,7 @@ import { PageHeader, Card, Chip, StatusPill, Avatar, UnionNote } from "@/compone
 import { DemoBanner } from "@/components/SampleBadge";
 import { ChevronRight } from "@/components/icons";
 import { SAMPLE_VENDORS, type VendorStatus } from "@/lib/sample";
+import { useT } from "@/lib/i18n/client";
 
 const FILTERS: { key: "all" | VendorStatus; label: string }[] = [
   { key: "all", label: "All" },
@@ -27,6 +28,7 @@ const TONE: Record<string, "green" | "amber" | "accent" | "sand"> = {
 export default function VendorsPage() {
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | VendorStatus>("all");
+  const t = useT();
 
   const vendors =
     filter === "all"
@@ -41,12 +43,12 @@ export default function VendorsPage() {
     <main className="u-main">
       <DemoBanner />
       <PageHeader
-        kicker="12 vendors"
-        title="Vendors"
+        kicker={t.vendors.kicker}
+        title={t.vendors.title}
         sub="2 booked · Union working 3 · 1 waiting on you"
         right={
           <Link href="/vendors/new">
-            <Chip active>+ Add</Chip>
+            <Chip active>+ {t.common.add}</Chip>
           </Link>
         }
       />

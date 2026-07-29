@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { T } from "@/lib/theme";
 import { Spark } from "@/components/icons";
+import { resolveLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "You're offline",
 };
 
-export default function Offline() {
+export default async function Offline() {
+  const locale = await resolveLocale();
+  const t = getDictionary(locale);
   return (
     <main
       style={{
@@ -33,7 +37,7 @@ export default function Offline() {
             margin: "16px 0 0",
           }}
         >
-          You&apos;re offline
+          {t.offline.title}
         </h1>
         <p
           style={{
@@ -44,8 +48,7 @@ export default function Offline() {
             maxWidth: 340,
           }}
         >
-          Union needs a connection for this screen. Check your network — anything
-          you&apos;ve already opened is still available.
+          {t.offline.body}
         </p>
       </div>
     </main>

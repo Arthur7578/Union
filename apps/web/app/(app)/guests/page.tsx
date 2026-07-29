@@ -21,6 +21,7 @@ import {
   UnionNote,
   Chip,
 } from "@/components/ui";
+import { useT } from "@/lib/i18n/client";
 
 type Filter = "all" | "coming" | "waiting" | "declined";
 
@@ -30,14 +31,14 @@ const STATUS_DOT: Record<string, string> = {
   pending: "#DDB27C",
 };
 
-const TOOLS = [
-  { href: "/guests/groups", label: "Groups & roles", sub: "Colour-code your list" },
-  { href: "/guests/seating", label: "Seating", sub: "Floor plan & ceremony" },
-  { href: "/guests/stays", label: "Stays & travel", sub: "Room blocks" },
-  { href: "/guests/rsvp-form", label: "RSVP form", sub: "Design what you ask" },
-];
-
 export default function GuestsPage() {
+  const t = useT();
+  const TOOLS = [
+    { href: "/guests/groups", label: "Groups & roles", sub: "Colour-code your list" },
+    { href: "/guests/seating", label: "Seating", sub: "Floor plan & ceremony" },
+    { href: "/guests/stays", label: "Stays & travel", sub: "Room blocks" },
+    { href: "/guests/rsvp-form", label: "RSVP form", sub: "Design what you ask" },
+  ];
   const { wedding } = useWedding();
   const router = useRouter();
   const [guests, setGuests] = useState<GuestWithRsvp[] | null>(null);
@@ -119,20 +120,20 @@ export default function GuestsPage() {
   return (
     <main className="u-main">
       <PageHeader
-        kicker={stats ? `${stats.invited} invited` : "Guest list"}
-        title="Guests"
+        kicker={stats ? `${stats.invited} ${t.guests.kicker}` : t.guests.kicker}
+        title={t.guests.title}
         right={
           <Link href="/guests/new">
-            <Button style={{ minHeight: 40, fontSize: 14 }}>+ Add</Button>
+            <Button style={{ minHeight: 40, fontSize: 14 }}>+ {t.common.add}</Button>
           </Link>
         }
       />
 
       {/* Real stat tiles */}
       <div style={{ display: "flex", gap: 9, marginTop: 16 }}>
-        <StatTile value={stats?.coming} label="Coming" bg={T.greenBg} fg={T.greenDeep} />
-        <StatTile value={stats?.declined} label="Can't" bg={T.roseBg} fg={T.rose} />
-        <StatTile value={stats?.waiting} label="Waiting" bg={T.amberBg} fg={T.amberInk} />
+        <StatTile value={stats?.coming} label={t.today.guestStatsComing} bg={T.greenBg} fg={T.greenDeep} />
+        <StatTile value={stats?.declined} label={t.today.guestStatsCant} bg={T.roseBg} fg={T.rose} />
+        <StatTile value={stats?.waiting} label={t.today.guestStatsWaiting} bg={T.amberBg} fg={T.amberInk} />
       </div>
 
       {/* Real reminder nudge (only when there's a real "waiting" cohort we can email) */}
@@ -205,10 +206,10 @@ export default function GuestsPage() {
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
             {(
               [
-                ["all", "All", stats?.invited],
-                ["coming", "Coming", stats?.coming],
-                ["waiting", "Waiting", stats?.waiting],
-                ["declined", "Can't", stats?.declined],
+                ["all", t.guests.filterAll, stats?.invited],
+                ["coming", t.guests.filterComing, stats?.coming],
+                ["waiting", t.guests.filterWaiting, stats?.waiting],
+                ["declined", t.guests.filterCant, stats?.declined],
               ] as const
             ).map(([key, label, n]) => (
               <button

@@ -6,18 +6,19 @@ import { T } from "@/lib/theme";
 import { PageHeader, Card, SectionLabel, Button, Chip, UnionNote } from "@/components/ui";
 import { DemoBanner } from "@/components/SampleBadge";
 import { SAMPLE_THIS_WEEK, SAMPLE_BOOK_SOON, SAMPLE_LATER } from "@/lib/sample";
-
-const SUBNAV = [
-  { href: "/plan/budget", label: "Budget" },
-  { href: "/plan/weekend", label: "The weekend" },
-  { href: "/plan/team", label: "Plan together" },
-];
+import { useT } from "@/lib/i18n/client";
 
 export default function PlanPage() {
+  const t = useT();
+  const SUBNAV = [
+    { href: "/plan/budget", label: t.plan.budget },
+    { href: "/plan/weekend", label: t.plan.weekend },
+    { href: "/plan/team", label: t.plan.team },
+  ];
   return (
     <main className="u-main">
       <DemoBanner />
-      <PageHeader kicker="68 days out" title="What's next" />
+      <PageHeader kicker={t.plan.kicker} title={t.plan.title} />
 
       <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
         {SUBNAV.map((s) => (

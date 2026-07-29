@@ -1,5 +1,7 @@
 import { getSupabase } from "@/lib/supabase";
 import { RsvpForm } from "./RsvpForm";
+import { resolveLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n";
 
 // Always fetch fresh invitation data (no static caching of personal links).
 export const dynamic = "force-dynamic";
@@ -18,15 +20,14 @@ export default async function RsvpPage({
   const invitation = !error && data && data.length > 0 ? data[0] : null;
 
   if (!invitation) {
+    const locale = await resolveLocale();
+    const t = getDictionary(locale);
     return (
       <main className="page">
         <div className="card" style={{ textAlign: "center" }}>
           <div className="brand">Union</div>
-          <h1 className="couple">Invitation not found</h1>
-          <p className="muted">
-            This link doesn&apos;t match an invitation. Please double-check the
-            link the couple sent you.
-          </p>
+          <h1 className="couple">{t.rsvp.invalidTitle}</h1>
+          <p className="muted">{t.rsvp.invalidBody}</p>
         </div>
       </main>
     );

@@ -7,11 +7,13 @@ import { useAuth } from "../../lib/auth";
 import { useWedding } from "../../lib/wedding";
 import { createWedding } from "../../lib/data";
 import { isValidISODate } from "../../lib/format";
+import { useT } from "../../lib/i18n";
 import { colors, fontSize, fontWeight, spacing } from "../../theme/theme";
 
 export default function Onboarding() {
   const { session } = useAuth();
   const { refresh } = useWedding();
+  const t = useT();
   const [partnerOne, setPartnerOne] = useState("");
   const [partnerTwo, setPartnerTwo] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -21,15 +23,15 @@ export default function Onboarding() {
 
   const submit = async () => {
     if (!partnerOne.trim() || !partnerTwo.trim()) {
-      setError("Add both partners' names.");
+      setError(t.onboarding.errMissingPartners);
       return;
     }
     if (eventDate.trim() && !isValidISODate(eventDate.trim())) {
-      setError("Wedding date must be in YYYY-MM-DD format.");
+      setError(t.onboarding.errDate);
       return;
     }
     if (!session?.user) {
-      setError("Your session expired. Please sign in again.");
+      setError(t.onboarding.errSession);
       return;
     }
     setBusy(true);
@@ -43,9 +45,9 @@ export default function Onboarding() {
         venue_name: venueName.trim() || null,
         venue_address: null,
       });
-      await refresh(); // gate redirects to the tabs once the wedding exists
+      await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save. Try again.");
+      setError(e instanceof Error ? e.message : t.onboarding.errSave);
     } finally {
       setBusy(false);
     }
@@ -54,38 +56,36 @@ export default function Onboarding() {
   return (
     <Screen scroll>
       <View style={styles.header}>
-        <Text style={styles.title}>Let's set the scene</Text>
-        <Text style={styles.subtitle}>
-          A few details so Union can help you plan the big day.
-        </Text>
+        <Text style={styles.title}>{t.onboarding.title}</Text>
+        <Text style={styles.subtitle}>{t.onboarding.subtitle}</Text>
       </View>
 
       <Input
-        label="Partner 1"
-        placeholder="e.g. Alex"
+        label={t.onboarding.partnerOne}
+        placeholder={t.onboarding.partnerOnePlaceholder}
         value={partnerOne}
         onChangeText={setPartnerOne}
         autoCapitalize="words"
       />
       <Input
-        label="Partner 2"
-        placeholder="e.g. Sam"
+        label={t.onboarding.partnerTwo}
+        placeholder={t.onboarding.partnerTwoPlaceholder}
         value={partnerTwo}
         onChangeText={setPartnerTwo}
         autoCapitalize="words"
       />
       <Input
-        label="Wedding date (optional)"
-        placeholder="2026-09-12"
-        hint="Format: YYYY-MM-DD"
+        label={t.onboarding.weddingDate}
+        placeholder={t.onboarding.weddingDatePlaceholder}
+        hint={t.onboarding.dateHint}
         value={eventDate}
         onChangeText={setEventDate}
         keyboardType="numbers-and-punctuation"
         autoCapitalize="none"
       />
       <Input
-        label="Venue (optional)"
-        placeholder="e.g. Willow Creek Barn"
+        label={t.onboarding.venue}
+        placeholder={t.onboarding.venuePlaceholder}
         value={venueName}
         onChangeText={setVenueName}
         autoCapitalize="words"
@@ -93,7 +93,7 @@ export default function Onboarding() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Button label="Start planning" onPress={submit} loading={busy} />
+      <Button label={t.onboarding.submit} onPress={submit} loading={busy} />
     </Screen>
   );
 }

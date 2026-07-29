@@ -10,11 +10,14 @@ import {
 import { Screen } from "../../components/Screen";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
+import { LanguageSwitcher } from "../../components/LanguageSwitcher";
 import { useAuth } from "../../lib/auth";
+import { useT } from "../../lib/i18n";
 import { colors, fontSize, fontWeight, spacing } from "../../theme/theme";
 
 export default function SignIn() {
   const { sendEmailOtp, verifyEmailOtp } = useAuth();
+  const t = useT();
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -24,7 +27,7 @@ export default function SignIn() {
 
   const sendCode = async () => {
     if (!email.trim()) {
-      setError("Please enter your email address.");
+      setError(t.signIn.errEmail);
       return;
     }
     setBusy(true);
@@ -33,10 +36,9 @@ export default function SignIn() {
       await sendEmailOtp(email);
       setCode("");
       setStep("code");
-      // Small delay so the field mounts before we try to focus it.
       setTimeout(() => codeInputRef.current?.focus(), 50);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not send the code.");
+      setError(e instanceof Error ? e.message : t.signIn.errSend);
     } finally {
       setBusy(false);
     }
@@ -44,19 +46,15 @@ export default function SignIn() {
 
   const verifyCode = async () => {
     if (code.length !== 8) {
-      setError("Enter the 8-digit code from your email.");
+      setError(t.signIn.errCodeLength);
       return;
     }
     setBusy(true);
     setError(null);
     try {
       await verifyEmailOtp(email, code);
-      // AuthProvider's onAuthStateChange picks up the new session and the
-      // (auth) group's route guard redirects out.
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "That code didn't work — try again.",
-      );
+      setError(e instanceof Error ? e.message : t.signIn.errVerify);
     } finally {
       setBusy(false);
     }
@@ -69,7 +67,7 @@ export default function SignIn() {
       await sendEmailOtp(email);
       setCode("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not send the code.");
+      setError(e instanceof Error ? e.message : t.signIn.errSend);
     } finally {
       setBusy(false);
     }
@@ -80,18 +78,20 @@ export default function SignIn() {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
+        <View style={styles.switcherRow}>
+          <LanguageSwitcher />
+        </View>
+
         <View style={styles.header}>
           <Text style={styles.brand}>Union</Text>
-          <Text style={styles.tagline}>
-            Plan your wedding, calmly and in control.
-          </Text>
+          <Text style={styles.tagline}>{t.signIn.tagline}</Text>
         </View>
 
         {step === "email" ? (
           <View>
             <Input
-              label="Email address"
-              placeholder="you@example.com"
+              label={t.signIn.emailLabel}
+              placeholder={t.signIn.emailPlaceholder}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -103,22 +103,15 @@ export default function SignIn() {
               onSubmitEditing={sendCode}
             />
             {error ? <Text style={styles.error}>{error}</Text> : null}
-            <Button
-              label="Email me a code"
-              onPress={sendCode}
-              loading={busy}
-            />
+            <Button label={t.signIn.sendCode} onPress={sendCode} loading={busy} />
           </View>
         ) : (
           <View>
-            <Text style={styles.helper}>
-              We sent an 8-digit code to {email}. Enter it below to finish
-              signing in.
-            </Text>
+            <Text style={styles.helper}>{t.signIn.codeHelper(email)}</Text>
             <Input
               ref={codeInputRef}
-              label="8-digit code"
-              placeholder="12345678"
+              label={t.signIn.codeLabel}
+              placeholder={t.signIn.codePlaceholder}
               value={code}
               onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 8))}
               keyboardType="number-pad"
@@ -132,16 +125,16 @@ export default function SignIn() {
               style={styles.codeInput}
             />
             {error ? <Text style={styles.error}>{error}</Text> : null}
-            <Button label="Sign in" onPress={verifyCode} loading={busy} />
+            <Button label={t.signIn.submit} onPress={verifyCode} loading={busy} />
             <Button
-              label="Resend code"
+              label={t.signIn.resend}
               variant="ghost"
               onPress={resend}
               disabled={busy}
               style={styles.ghostSpacing}
             />
             <Button
-              label="Use a different email"
+              label={t.signIn.useDifferentEmail}
               variant="ghost"
               onPress={() => {
                 setStep("email");
@@ -157,8 +150,12 @@ export default function SignIn() {
 }
 
 const styles = StyleSheet.create({
+  switcherRow: {
+    alignItems: "flex-end",
+    marginTop: spacing.md,
+  },
   header: {
-    marginTop: spacing.xxxl,
+    marginTop: spacing.xl,
     marginBottom: spacing.xxl,
     alignItems: "center",
   },

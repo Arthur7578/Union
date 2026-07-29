@@ -6,10 +6,12 @@ import { Card } from "../../components/Card";
 import { useWedding } from "../../lib/wedding";
 import { fetchGuests, type GuestWithRsvp } from "../../lib/data";
 import { daysUntil, formatLongDate } from "../../lib/format";
+import { useLocale } from "../../lib/i18n";
 import { colors, fontSize, fontWeight, spacing } from "../../theme/theme";
 
 export default function Dashboard() {
   const { wedding } = useWedding();
+  const { t, locale } = useLocale();
   const [guests, setGuests] = useState<GuestWithRsvp[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -59,7 +61,7 @@ export default function Dashboard() {
             {wedding?.partner_one} & {wedding?.partner_two}
           </Text>
           <Text style={styles.date}>
-            {formatLongDate(wedding?.event_date ?? null)}
+            {formatLongDate(wedding?.event_date ?? null, locale)}
           </Text>
           {wedding?.venue_name ? (
             <Text style={styles.venue}>{wedding.venue_name}</Text>
@@ -68,27 +70,27 @@ export default function Dashboard() {
             <View style={styles.countdownPill}>
               <Text style={styles.countdownNumber}>{countdown}</Text>
               <Text style={styles.countdownLabel}>
-                {countdown === 1 ? "day to go" : "days to go"}
+                {countdown === 1 ? t.home.countdownDay : t.home.countdownDays}
               </Text>
             </View>
           ) : null}
         </Card>
 
-        <Text style={styles.sectionTitle}>RSVP overview</Text>
+        <Text style={styles.sectionTitle}>{t.home.rsvpOverview}</Text>
         <View style={styles.statRow}>
-          <StatCard value={attending.length} label="Attending" color={colors.success} />
-          <StatCard value={pending.length} label="Awaiting" color={colors.textMuted} />
-          <StatCard value={declined.length} label="Declined" color={colors.danger} />
+          <StatCard value={attending.length} label={t.home.attending} color={colors.success} />
+          <StatCard value={pending.length} label={t.home.awaiting} color={colors.textMuted} />
+          <StatCard value={declined.length} label={t.home.declined} color={colors.danger} />
         </View>
 
         <Card>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Invited parties</Text>
+            <Text style={styles.summaryLabel}>{t.home.invitedParties}</Text>
             <Text style={styles.summaryValue}>{guests.length}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Confirmed headcount</Text>
+            <Text style={styles.summaryLabel}>{t.home.confirmedHeadcount}</Text>
             <Text style={styles.summaryValue}>{headcount}</Text>
           </View>
         </Card>

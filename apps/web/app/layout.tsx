@@ -4,6 +4,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { UserJot } from "@/components/UserJot";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { LocaleProvider } from "@/lib/i18n/client";
+import { resolveLocale } from "@/lib/i18n/server";
 
 // Self-hosted fonts — no render-blocking <link>, zero layout shift.
 const serif = Cormorant_Garamond({
@@ -71,18 +73,21 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await resolveLocale();
   return (
-    <html lang="en" className={`${serif.variable} ${sans.variable}`}>
+    <html lang={locale} className={`${serif.variable} ${sans.variable}`}>
       <body>
-        {children}
-        <UserJot />
-        <ServiceWorkerRegister />
-        <SpeedInsights />
+        <LocaleProvider initialLocale={locale}>
+          {children}
+          <UserJot />
+          <ServiceWorkerRegister />
+          <SpeedInsights />
+        </LocaleProvider>
       </body>
     </html>
   );
