@@ -208,7 +208,7 @@ export const fr: Dictionary = {
       email: "E-mail (pour son invitation)",
       phone: "Téléphone",
       partySize: "Nombre de personnes",
-      group: "Groupe (facultatif)",
+      group: "Groupes (facultatif)",
       role: "Rôle dans le mariage (facultatif)",
       notes: "Notes (privées)",
     },

@@ -1,11 +1,18 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { GuestGroup } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
-import { addGuest, fetchGuestGroups } from "@/lib/data";
+import {
+  addGuest,
+  addGuestGroup,
+  addGuestToGroup,
+  fetchGuestGroups,
+} from "@/lib/data";
 import { Button } from "@/components/ui";
 import { BackHeader } from "@/components/BackHeader";
+import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
 import { useT } from "@/lib/i18n/client";
 
 export default function NewGuestPage() {
@@ -17,24 +24,23 @@ export default function NewGuestPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [partySize, setPartySize] = useState("1");
-  const [group, setGroup] = useState("");
   const [role, setRole] = useState("");
   const [notes, setNotes] = useState("");
-  const [groupOptions, setGroupOptions] = useState<string[]>([]);
+  const [allGroups, setAllGroups] = useState<GuestGroup[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<GroupChip[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!wedding) return;
+    let ok = true;
     fetchGuestGroups(wedding.id)
-      .then((gs) => setGroupOptions(gs.map((g) => g.name)))
+      .then((gs) => ok && setAllGroups(gs))
       .catch(() => {});
+    return () => {
+      ok = false;
+    };
   }, [wedding]);
-
-  const options = useMemo(
-    () => [...groupOptions].sort((a, b) => a.localeCompare(b)),
-    [groupOptions],
-  );
 
   if (!wedding) return null;
 
@@ -43,22 +49,35 @@ export default function NewGuestPage() {
     setError(null);
     setBusy(true);
     try {
-      await addGuest({
+      const primary = selectedGroups[0] ?? null;
+      const guest = await addGuest({
         wedding_id: wedding.id,
         first_name: firstNameV.trim(),
         last_name: lastName.trim() || null,
         email: email.trim() || null,
         phone: phone.trim() || null,
         party_size: Math.max(1, parseInt(partySize, 10) || 1),
-        guest_group: group.trim() || null,
+        guest_group: primary?.name ?? null,
         role: role.trim() || null,
         notes: notes.trim() || null,
       });
+      for (const g of selectedGroups.slice(1)) {
+        await addGuestToGroup(guest.id, { id: g.id, name: g.name });
+      }
       router.replace("/guests");
     } catch (err) {
       setError(err instanceof Error ? err.message : t.guests.errAdd);
       setBusy(false);
     }
+  };
+
+  const createGroup = async (name: string): Promise<GroupChip> => {
+    const created = await addGuestGroup({
+      wedding_id: wedding.id,
+      name,
+    });
+    setAllGroups((prev) => [...prev, created]);
+    return { id: created.id, name: created.name, color: created.color };
   };
 
   return (
@@ -121,22 +140,20 @@ export default function NewGuestPage() {
           />
         </div>
         <div className="field">
-          <label htmlFor="gr">{t.guests.fields.group}</label>
-          <input
-            id="gr"
-            type="text"
-            list="gr-list"
-            value={group}
-            onChange={(e) => setGroup(e.target.value)}
-            placeholder={t.guests.placeholders.group}
+          <label>{t.guests.fields.group}</label>
+          <GroupPicker
+            allGroups={allGroups}
+            selected={selectedGroups}
+            onSelect={(g) =>
+              setSelectedGroups((prev) =>
+                prev.some((p) => p.id === g.id) ? prev : [...prev, g],
+              )
+            }
+            onDeselect={(g) =>
+              setSelectedGroups((prev) => prev.filter((p) => p.id !== g.id))
+            }
+            onCreate={createGroup}
           />
-          {options.length > 0 && (
-            <datalist id="gr-list">
-              {options.map((n) => (
-                <option key={n} value={n} />
-              ))}
-            </datalist>
-          )}
         </div>
         <div className="field">
           <label htmlFor="rl">{t.guests.fields.role}</label>
