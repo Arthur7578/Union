@@ -5,11 +5,12 @@ import Link from "next/link";
 import { T } from "@/lib/theme";
 import { PageHeader, Card, SectionLabel, Button, Chip, UnionNote } from "@/components/ui";
 import { DemoBanner } from "@/components/SampleBadge";
-import { SAMPLE_THIS_WEEK, SAMPLE_BOOK_SOON, SAMPLE_LATER } from "@/lib/sample";
+import { getSample } from "@/lib/sample";
 import { useT } from "@/lib/i18n/client";
 
 export default function PlanPage() {
   const t = useT();
+  const sample = getSample(t);
   const SUBNAV = [
     { href: "/plan/budget", label: t.plan.budget },
     { href: "/plan/weekend", label: t.plan.weekend },
@@ -29,31 +30,49 @@ export default function PlanPage() {
       </div>
 
       <div style={{ marginTop: 16 }}>
-        <UnionNote>
-          These are ordered by what has the least breathing room. Hand any of them
-          to me.
-        </UnionNote>
+        <UnionNote>{t.plan.unionOrder}</UnionNote>
       </div>
 
-      <SectionLabel style={{ color: T.accentInk }}>This week</SectionLabel>
+      <SectionLabel style={{ color: T.accentInk }}>{t.plan.thisWeek}</SectionLabel>
       <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-        {SAMPLE_THIS_WEEK.map((t) => (
+        {sample.thisWeek.map((item) => (
           <Card
-            key={t.title}
+            key={item.title}
             style={{
               padding: 16,
-              border: t.primary ? `1px solid ${T.accentBorder}` : `1px solid ${T.line}`,
-              boxShadow: t.primary ? "0 8px 20px rgba(67,53,58,.06)" : "none",
+              border: item.primary
+                ? `1px solid ${T.accentBorder}`
+                : `1px solid ${T.line}`,
+              boxShadow: item.primary
+                ? "0 8px 20px rgba(67,53,58,.06)"
+                : "none",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-              <div className="u-serif" style={{ fontWeight: 600, fontSize: 20, color: T.ink, lineHeight: 1.15 }}>
-                {t.title}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: 10,
+              }}
+            >
+              <div
+                className="u-serif"
+                style={{
+                  fontWeight: 600,
+                  fontSize: 20,
+                  color: T.ink,
+                  lineHeight: 1.15,
+                }}
+              >
+                {item.title}
               </div>
               <span
                 style={{
-                  background: t.owner === "You" ? T.accentSoft : T.greenBg,
-                  color: t.owner === "You" ? T.accentInk : T.greenInk,
+                  background:
+                    item.owner === t.plan.ownerYou ? T.accentSoft : T.greenBg,
+                  color:
+                    item.owner === t.plan.ownerYou ? T.accentInk : T.greenInk,
                   fontWeight: 600,
                   fontSize: 10.5,
                   padding: "4px 9px",
@@ -62,39 +81,69 @@ export default function PlanPage() {
                   whiteSpace: "nowrap",
                 }}
               >
-                {t.owner}
+                {item.owner}
               </span>
             </div>
-            <div style={{ fontSize: 13, color: T.muted, marginTop: 6 }}>{t.sub}</div>
+            <div style={{ fontSize: 13, color: T.muted, marginTop: 6 }}>
+              {item.sub}
+            </div>
             <Button
-              variant={t.primary ? "primary" : "secondary"}
+              variant={item.primary ? "primary" : "secondary"}
               style={{ width: "100%", marginTop: 13, height: 42, fontSize: 14 }}
             >
-              {t.cta}
+              {item.cta}
             </Button>
           </Card>
         ))}
       </div>
 
-      <SectionLabel>Book soon · Union suggests</SectionLabel>
+      <SectionLabel>{t.plan.bookSoon}</SectionLabel>
       <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-        {SAMPLE_BOOK_SOON.map((b) => (
-          <Card key={b.title} style={{ display: "flex", alignItems: "center", gap: 13, padding: 15 }}>
+        {sample.bookSoon.map((b) => (
+          <Card
+            key={b.title}
+            style={{ display: "flex", alignItems: "center", gap: 13, padding: 15 }}
+          >
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 15, color: T.ink }}>{b.title}</div>
-              <div style={{ fontSize: 12.5, color: T.faint, marginTop: 1 }}>{b.sub}</div>
+              <div style={{ fontWeight: 600, fontSize: 15, color: T.ink }}>
+                {b.title}
+              </div>
+              <div style={{ fontSize: 12.5, color: T.faint, marginTop: 1 }}>
+                {b.sub}
+              </div>
             </div>
-            <span style={{ fontWeight: 600, fontSize: 12.5, color: T.accentInk, flexShrink: 0 }}>Handle</span>
+            <span
+              style={{
+                fontWeight: 600,
+                fontSize: 12.5,
+                color: T.accentInk,
+                flexShrink: 0,
+              }}
+            >
+              {t.common.handle}
+            </span>
           </Card>
         ))}
       </div>
 
-      <SectionLabel>Later — I&apos;ll remind you</SectionLabel>
+      <SectionLabel>{t.plan.later}</SectionLabel>
       <Card soft style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-        {SAMPLE_LATER.map((l) => (
-          <div key={l} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#C7BAB2" }} />
-            <span style={{ fontWeight: 500, fontSize: 14, color: T.muted }}>{l}</span>
+        {sample.later.map((l) => (
+          <div
+            key={l}
+            style={{ display: "flex", alignItems: "center", gap: 10 }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: "#C7BAB2",
+              }}
+            />
+            <span style={{ fontWeight: 500, fontSize: 14, color: T.muted }}>
+              {l}
+            </span>
           </div>
         ))}
       </Card>

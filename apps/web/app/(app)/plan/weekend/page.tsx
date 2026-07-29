@@ -5,19 +5,26 @@ import { T } from "@/lib/theme";
 import { BackHeader } from "@/components/BackHeader";
 import { DemoBanner } from "@/components/SampleBadge";
 import { UnionNote } from "@/components/ui";
-import { SAMPLE_SCHEDULE } from "@/lib/sample";
-
-const DAYS = [
-  { code: "FRI", label: "Welcome", active: false },
-  { code: "SAT", label: "The day", active: true },
-  { code: "SUN", label: "Brunch", active: false },
-];
+import { getSample } from "@/lib/sample";
+import { useT } from "@/lib/i18n/client";
 
 export default function WeekendPage() {
+  const t = useT();
+  const sample = getSample(t);
+  const DAYS = [
+    { code: t.plan.days.fri.code, label: t.plan.days.fri.label, active: false },
+    { code: t.plan.days.sat.code, label: t.plan.days.sat.label, active: true },
+    { code: t.plan.days.sun.code, label: t.plan.days.sun.label, active: false },
+  ];
+
   return (
     <main className="u-main wide">
       <DemoBanner />
-      <BackHeader title="The weekend" subtitle="Sept 19 – 21 · run-of-show" fallback="/plan" />
+      <BackHeader
+        title={t.plan.weekendTitle}
+        subtitle={t.plan.weekendSubtitle}
+        fallback="/plan"
+      />
 
       {/* Day selector */}
       <div style={{ display: "flex", gap: 8 }}>
@@ -33,8 +40,23 @@ export default function WeekendPage() {
               padding: "9px 0",
             }}
           >
-            <div style={{ fontWeight: 700, fontSize: 11, color: d.active ? T.ink : T.muted2 }}>{d.code}</div>
-            <div style={{ fontWeight: 600, fontSize: 12, color: d.active ? T.accentInk : T.faint, marginTop: 2 }}>
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: 11,
+                color: d.active ? T.ink : T.muted2,
+              }}
+            >
+              {d.code}
+            </div>
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: 12,
+                color: d.active ? T.accentInk : T.faint,
+                marginTop: 2,
+              }}
+            >
               {d.label}
             </div>
           </div>
@@ -43,8 +65,17 @@ export default function WeekendPage() {
 
       {/* Timeline */}
       <div style={{ position: "relative", paddingLeft: 74, marginTop: 24 }}>
-        <div style={{ position: "absolute", left: 62, top: 8, bottom: 14, width: 2, background: "rgba(67,53,58,.08)" }} />
-        {SAMPLE_SCHEDULE.map((m, i) => (
+        <div
+          style={{
+            position: "absolute",
+            left: 62,
+            top: 8,
+            bottom: 14,
+            width: 2,
+            background: "rgba(67,53,58,.08)",
+          }}
+        />
+        {sample.schedule.map((m, i) => (
           <div key={i} style={{ position: "relative", paddingBottom: 22 }}>
             <span
               style={{
@@ -76,11 +107,17 @@ export default function WeekendPage() {
             </span>
             <div
               className={m.accent ? "u-serif" : undefined}
-              style={{ fontWeight: 600, fontSize: m.accent ? 19 : 15, color: T.ink }}
+              style={{
+                fontWeight: 600,
+                fontSize: m.accent ? 19 : 15,
+                color: T.ink,
+              }}
             >
               {m.title}
             </div>
-            <div style={{ fontSize: 12.5, color: T.faint, marginTop: 2 }}>{m.sub}</div>
+            <div style={{ fontSize: 12.5, color: T.faint, marginTop: 2 }}>
+              {m.sub}
+            </div>
             <div style={{ marginTop: 7 }}>
               <span
                 style={{
@@ -102,10 +139,7 @@ export default function WeekendPage() {
         ))}
       </div>
 
-      <UnionNote>
-        Union sends each vendor only their slice of this — arrival time, location,
-        contact — one week out.
-      </UnionNote>
+      <UnionNote>{t.plan.weekendNote}</UnionNote>
     </main>
   );
 }

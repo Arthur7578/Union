@@ -6,7 +6,8 @@ import { BackHeader } from "@/components/BackHeader";
 import { DemoBanner } from "@/components/SampleBadge";
 import { Card, SectionLabel, Button, Avatar, StatusPill } from "@/components/ui";
 import { Spark } from "@/components/icons";
-import { SAMPLE_TEAM, SAMPLE_ACTIVITY } from "@/lib/sample";
+import { getSample } from "@/lib/sample";
+import { useT } from "@/lib/i18n/client";
 
 const ROLE_TONE: Record<string, "accent" | "green" | "amber"> = {
   Owner: "accent",
@@ -15,22 +16,38 @@ const ROLE_TONE: Record<string, "accent" | "green" | "amber"> = {
 };
 
 export default function TeamPage() {
+  const t = useT();
+  const sample = getSample(t);
   return (
     <main className="u-main">
       <DemoBanner />
-      <BackHeader title="Plan together" subtitle="Your team · 2" fallback="/plan" />
+      <BackHeader
+        title={t.plan.teamTitle}
+        subtitle={t.plan.teamSubtitle}
+        fallback="/plan"
+      />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {SAMPLE_TEAM.map((m) => (
-          <Card key={m.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 15px" }}>
+        {sample.team.map((m) => (
+          <Card
+            key={m.name}
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 15px" }}
+          >
             <Avatar letter={m.monogram} tint={m.tone as "accent" | "green" | "amber"} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>
-                {m.name} {m.you && <span style={{ fontWeight: 400, color: T.faint }}>· you</span>}
+                {m.name}{" "}
+                {m.you && (
+                  <span style={{ fontWeight: 400, color: T.faint }}>
+                    · {t.plan.you}
+                  </span>
+                )}
               </div>
-              <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>{m.sub}</div>
+              <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
+                {m.sub}
+              </div>
             </div>
-            <StatusPill tone={ROLE_TONE[m.role]}>{m.role}</StatusPill>
+            <StatusPill tone={ROLE_TONE[m.roleKey]}>{m.role}</StatusPill>
           </Card>
         ))}
       </div>
@@ -45,23 +62,41 @@ export default function TeamPage() {
           boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
         }}
       >
-        <div className="u-serif" style={{ fontWeight: 600, fontSize: 19, color: T.ink }}>
-          Invite someone to help
+        <div
+          className="u-serif"
+          style={{ fontWeight: 600, fontSize: 19, color: T.ink }}
+        >
+          {t.plan.inviteHelper}
         </div>
-        <div style={{ fontSize: 13, color: T.ink2, marginTop: 4, lineHeight: 1.45 }}>
-          They&apos;ll see everything and can act with you.
+        <div
+          style={{ fontSize: 13, color: T.ink2, marginTop: 4, lineHeight: 1.45 }}
+        >
+          {t.plan.inviteBody}
         </div>
         <div style={{ display: "flex", gap: 9, marginTop: 13 }}>
-          <input type="email" placeholder="Email address…" style={{ flex: 1, minHeight: 44 }} />
-          <Button style={{ flexShrink: 0 }}>Invite</Button>
+          <input
+            type="email"
+            placeholder={t.plan.invitePlaceholder}
+            style={{ flex: 1, minHeight: 44 }}
+          />
+          <Button style={{ flexShrink: 0 }}>{t.common.invite}</Button>
         </div>
       </div>
 
       {/* Activity */}
-      <SectionLabel>Who did what</SectionLabel>
+      <SectionLabel>{t.plan.whoDidWhat}</SectionLabel>
       <div style={{ position: "relative", paddingLeft: 26 }}>
-        <div style={{ position: "absolute", left: 8, top: 6, bottom: 12, width: 2, background: "rgba(67,53,58,.08)" }} />
-        {SAMPLE_ACTIVITY.map((a, i) => (
+        <div
+          style={{
+            position: "absolute",
+            left: 8,
+            top: 6,
+            bottom: 12,
+            width: 2,
+            background: "rgba(67,53,58,.08)",
+          }}
+        />
+        {sample.activity.map((a, i) => (
           <div key={i} style={{ position: "relative", paddingBottom: 17 }}>
             <span
               style={{
@@ -81,12 +116,25 @@ export default function TeamPage() {
                 color: T.accentInk,
               }}
             >
-              {a.kind === "union" ? <Spark size={11} color={T.accent} /> : a.who.charAt(0)}
+              {a.kind === "union" ? (
+                <Spark size={11} color={T.accent} />
+              ) : (
+                a.who.charAt(0)
+              )}
             </span>
-            <div style={{ fontWeight: 500, fontSize: 14, color: T.ink, lineHeight: 1.4 }}>
+            <div
+              style={{
+                fontWeight: 500,
+                fontSize: 14,
+                color: T.ink,
+                lineHeight: 1.4,
+              }}
+            >
               <b style={{ fontWeight: 600 }}>{a.who}</b> {a.text}
             </div>
-            <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{a.sub}</div>
+            <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>
+              {a.sub}
+            </div>
           </div>
         ))}
       </div>

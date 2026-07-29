@@ -7,15 +7,8 @@ import { T } from "@/lib/theme";
 import { PageHeader, Card, Chip, StatusPill, Avatar, UnionNote } from "@/components/ui";
 import { DemoBanner } from "@/components/SampleBadge";
 import { ChevronRight } from "@/components/icons";
-import { SAMPLE_VENDORS, type VendorStatus } from "@/lib/sample";
+import { getSample, type VendorStatus } from "@/lib/sample";
 import { useT } from "@/lib/i18n/client";
-
-const FILTERS: { key: "all" | VendorStatus; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "booked", label: "Booked" },
-  { key: "comparing", label: "In motion" },
-  { key: "todo", label: "To do" },
-];
 
 const TONE: Record<string, "green" | "amber" | "accent" | "sand"> = {
   booked: "green",
@@ -29,11 +22,19 @@ export default function VendorsPage() {
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | VendorStatus>("all");
   const t = useT();
+  const sample = getSample(t);
+
+  const FILTERS: { key: "all" | VendorStatus; label: string }[] = [
+    { key: "all", label: t.vendors.filters.all },
+    { key: "booked", label: t.vendors.filters.booked },
+    { key: "comparing", label: t.vendors.filters.comparing },
+    { key: "todo", label: t.vendors.filters.todo },
+  ];
 
   const vendors =
     filter === "all"
-      ? SAMPLE_VENDORS
-      : SAMPLE_VENDORS.filter((v) =>
+      ? sample.vendors
+      : sample.vendors.filter((v) =>
           filter === "comparing"
             ? v.status === "comparing" || v.status === "contract" || v.status === "approve"
             : v.status === filter,
@@ -45,7 +46,7 @@ export default function VendorsPage() {
       <PageHeader
         kicker={t.vendors.kicker}
         title={t.vendors.title}
-        sub="2 booked · Union working 3 · 1 waiting on you"
+        sub={t.vendors.sub}
         right={
           <Link href="/vendors/new">
             <Chip active>+ {t.common.add}</Chip>
@@ -91,14 +92,15 @@ export default function VendorsPage() {
 
       <div style={{ marginTop: 18 }}>
         <UnionNote>
-          Union is quietly working on <b style={{ color: T.ink }}>3 of these</b>{" "}
-          right now. You&apos;ll only hear from it when a decision is yours.
+          {t.vendors.unionQuiet.before}{" "}
+          <b style={{ color: T.ink }}>{t.vendors.unionQuiet.strong}</b>
+          {t.vendors.unionQuiet.after}
         </UnionNote>
       </div>
 
       <div style={{ marginTop: 20, display: "flex", justifyContent: "center" }}>
         <Link href="/vendors/search" className="u-link">
-          Set a new search in motion →
+          {t.vendors.setNewSearch}
         </Link>
       </div>
     </main>

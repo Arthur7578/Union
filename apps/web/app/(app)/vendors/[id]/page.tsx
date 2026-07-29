@@ -7,19 +7,22 @@ import { BackHeader } from "@/components/BackHeader";
 import { DemoBanner } from "@/components/SampleBadge";
 import { Button } from "@/components/ui";
 import { Spark, UpArrow } from "@/components/icons";
-import { SAMPLE_VENDORS, SAMPLE_NEGOTIATION } from "@/lib/sample";
+import { getSample } from "@/lib/sample";
+import { useT } from "@/lib/i18n/client";
 
 export default function VendorDetailPage() {
   const params = useParams<{ id: string }>();
+  const t = useT();
+  const sample = getSample(t);
   const vendor =
-    SAMPLE_VENDORS.find((v) => v.id === params?.id) ?? SAMPLE_VENDORS[2];
+    sample.vendors.find((v) => v.id === params?.id) ?? sample.vendors[2];
 
   return (
     <main className="u-main">
       <DemoBanner />
       <BackHeader
         title={vendor.name}
-        subtitle={`${vendor.category} · Union is negotiating`}
+        subtitle={t.vendors.isNegotiating(vendor.category)}
         fallback="/vendors"
         right={
           <span
@@ -32,21 +35,25 @@ export default function VendorDetailPage() {
               padding: "5px 10px",
             }}
           >
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.amber }} />
-            <span style={{ fontWeight: 600, fontSize: 11, color: T.amberInk }}>Live</span>
+            <span
+              style={{ width: 6, height: 6, borderRadius: "50%", background: T.amber }}
+            />
+            <span style={{ fontWeight: 600, fontSize: 11, color: T.amberInk }}>
+              {t.common.live}
+            </span>
           </span>
         }
       />
 
       <div style={{ textAlign: "center", margin: "2px 0 10px" }}>
         <span style={{ fontWeight: 500, fontSize: 11.5, color: T.label }}>
-          Union opened on your behalf · Mon 9:12 AM
+          {t.vendors.openedOnYourBehalf}
         </span>
       </div>
 
       {/* Chat thread */}
       <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-        {SAMPLE_NEGOTIATION.map((turn, i) => {
+        {sample.negotiation.map((turn, i) => {
           const mine = turn.from === "union";
           return (
             <div
@@ -128,7 +135,9 @@ export default function VendorDetailPage() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.green }} />
+          <span
+            style={{ width: 7, height: 7, borderRadius: "50%", background: T.green }}
+          />
           <span
             style={{
               fontWeight: 600,
@@ -138,7 +147,7 @@ export default function VendorDetailPage() {
               color: T.greenInk,
             }}
           >
-            Agreed
+            {t.vendors.agreedLabel}
           </span>
         </div>
         <div
@@ -146,16 +155,25 @@ export default function VendorDetailPage() {
           style={{ fontWeight: 600, fontSize: 30, lineHeight: 1, color: T.ink, marginTop: 10 }}
         >
           $3,300{" "}
-          <span style={{ fontSize: 16, color: T.faint, fontWeight: 500, textDecoration: "line-through" }}>
+          <span
+            style={{
+              fontSize: 16,
+              color: T.faint,
+              fontWeight: 500,
+              textDecoration: "line-through",
+            }}
+          >
             $3,840
           </span>
         </div>
         <div style={{ fontSize: 13.5, lineHeight: 1.5, color: T.ink2, marginTop: 8 }}>
-          Union held your budget and found{" "}
-          <b style={{ color: T.greenInk }}>$540 in savings</b>. Approve to lock it
-          in and release the deposit.
+          {t.vendors.agreedBody.before}{" "}
+          <b style={{ color: T.greenInk }}>{t.vendors.agreedBody.strong}</b>
+          {t.vendors.agreedBody.after}
         </div>
-        <Button style={{ width: "100%", marginTop: 14 }}>Approve &amp; send deposit</Button>
+        <Button style={{ width: "100%", marginTop: 14 }}>
+          {t.vendors.approveDeposit}
+        </Button>
       </div>
 
       {/* Composer (sample) */}
@@ -174,7 +192,7 @@ export default function VendorDetailPage() {
             color: T.label,
           }}
         >
-          Ask Union to counter or adjust…
+          {t.vendors.composerPlaceholder}
         </div>
         <span
           style={{

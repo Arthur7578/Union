@@ -1,15 +1,18 @@
+"use client";
+
 import React from "react";
 import { T } from "@/lib/theme";
-import { SAMPLE_NOTICE } from "@/lib/sample";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * Small "Sample" pill placed on any card/section that renders mock data, so
  * it's always clear in the UI which content isn't tied to the real account.
  */
 export function SampleBadge({ style }: { style?: React.CSSProperties }) {
+  const t = useT();
   return (
     <span
-      title={SAMPLE_NOTICE}
+      title={t.sample.notice}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -34,16 +37,17 @@ export function SampleBadge({ style }: { style?: React.CSSProperties }) {
           background: T.blueInk,
         }}
       />
-      Sample
+      {t.common.sample}
     </span>
   );
 }
 
 /**
  * A full-width notice for screens that are entirely a preview. Sits at the top
- * of the content column with the shared SAMPLE_NOTICE wording.
+ * of the content column with the shared sample notice wording.
  */
 export function DemoBanner({ children }: { children?: React.ReactNode }) {
+  const t = useT();
   return (
     <div
       role="note"
@@ -80,7 +84,7 @@ export function DemoBanner({ children }: { children?: React.ReactNode }) {
       >
         i
       </span>
-      <span>{children ?? SAMPLE_NOTICE}</span>
+      <span>{children ?? t.sample.notice}</span>
     </div>
   );
 }

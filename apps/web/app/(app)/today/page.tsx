@@ -14,7 +14,7 @@ import {
 import { Card, SectionLabel, Button } from "@/components/ui";
 import { SampleBadge } from "@/components/SampleBadge";
 import { Spark, Check } from "@/components/icons";
-import { SAMPLE_HANDLING } from "@/lib/sample";
+import { getSample } from "@/lib/sample";
 import { useLocale } from "@/lib/i18n/client";
 
 export default function TodayPage() {
@@ -35,6 +35,7 @@ export default function TodayPage() {
 
   if (!wedding) return null;
   const stats = guests ? guestStats(guests) : null;
+  const handling = getSample(t).handling;
   const days = daysUntil(wedding.event_date);
   const name = firstName(wedding.partner_one, locale);
   const venueLine = [wedding.venue_name, formatLongDate(wedding.event_date, locale)]
@@ -198,7 +199,7 @@ export default function TodayPage() {
         <SampleBadge />
       </SectionLabel>
       <Card style={{ padding: 0, overflow: "hidden" }}>
-        {SAMPLE_HANDLING.map((item, i) => (
+        {handling.map((item, i) => (
           <div
             key={item.title}
             style={{
@@ -207,7 +208,7 @@ export default function TodayPage() {
               gap: 13,
               padding: "15px 16px",
               borderBottom:
-                i < SAMPLE_HANDLING.length - 1 ? `1px solid ${T.line}` : "none",
+                i < handling.length - 1 ? `1px solid ${T.line}` : "none",
             }}
           >
             <PulseDot delay={i * 0.6} />

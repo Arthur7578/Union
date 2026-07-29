@@ -6,40 +6,50 @@ import { BackHeader } from "@/components/BackHeader";
 import { DemoBanner } from "@/components/SampleBadge";
 import { Button, Card, SectionLabel, Chip, UnionNote } from "@/components/ui";
 import { Check } from "@/components/icons";
-
-const CATEGORIES = ["Photography", "Video", "Florals", "Music", "Other"];
+import { useT } from "@/lib/i18n/client";
 
 export default function AddVendorPage() {
-  const [category, setCategory] = useState("Photography");
+  const t = useT();
+  const [category, setCategory] = useState(t.vendors.categories[0]);
   const [addToDirectory, setAddToDirectory] = useState(true);
   const [saved, setSaved] = useState(false);
 
   return (
     <main className="u-main">
       <DemoBanner />
-      <BackHeader title="Add a vendor" subtitle="New to Union" fallback="/vendors" />
+      <BackHeader
+        title={t.vendors.addTitle}
+        subtitle={t.vendors.addSubtitle}
+        fallback="/vendors"
+      />
 
       <div
         className="u-serif"
-        style={{ fontWeight: 600, fontSize: 31, lineHeight: 1.08, color: T.ink, padding: "2px 2px 0" }}
+        style={{
+          fontWeight: 600,
+          fontSize: 31,
+          lineHeight: 1.08,
+          color: T.ink,
+          padding: "2px 2px 0",
+        }}
       >
-        Add a vendor we don&apos;t know yet.
+        {t.vendors.addHeadline}
       </div>
 
       <div style={{ marginTop: 15 }}>
         <UnionNote>
-          Once you add them, they join the <b style={{ color: T.ink }}>Union directory</b>.
-          I can start a conversation on your behalf — and future couples can find
-          them too.
+          {t.vendors.addNote.before}{" "}
+          <b style={{ color: T.ink }}>{t.vendors.addNote.strong}</b>
+          {t.vendors.addNote.after}
         </UnionNote>
       </div>
 
-      <SectionLabel>Vendor name</SectionLabel>
-      <input type="text" defaultValue="Fernwood Film Co." />
+      <SectionLabel>{t.vendors.vendorName}</SectionLabel>
+      <input type="text" defaultValue={t.vendors.vendorNameDefault} />
 
-      <SectionLabel>Category</SectionLabel>
+      <SectionLabel>{t.vendors.category}</SectionLabel>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {CATEGORIES.map((c) => (
+        {t.vendors.categories.map((c) => (
           <button
             key={c}
             onClick={() => setCategory(c)}
@@ -50,17 +60,17 @@ export default function AddVendorPage() {
         ))}
       </div>
 
-      <SectionLabel>Where they&apos;re based</SectionLabel>
-      <input type="text" defaultValue="Hudson Valley, NY" />
+      <SectionLabel>{t.vendors.whereBased}</SectionLabel>
+      <input type="text" defaultValue={t.vendors.whereBasedDefault} />
 
-      <SectionLabel>How to reach them</SectionLabel>
+      <SectionLabel>{t.vendors.howToReach}</SectionLabel>
       <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-        <input type="text" defaultValue="fernwoodfilm.co" />
-        <input type="text" placeholder="Email or phone (optional)" />
+        <input type="text" defaultValue={t.vendors.reachWebsiteDefault} />
+        <input type="text" placeholder={t.vendors.reachContactPlaceholder} />
       </div>
 
-      <SectionLabel>Why you love them</SectionLabel>
-      <textarea defaultValue="Shot my sister's wedding on film — unreal with natural light. Not sure they're on any platform yet." />
+      <SectionLabel>{t.vendors.whyYouLove}</SectionLabel>
+      <textarea defaultValue={t.vendors.whyYouLoveDefault} />
 
       <Card
         onClick={() => setAddToDirectory((v) => !v)}
@@ -81,18 +91,37 @@ export default function AddVendorPage() {
         >
           {addToDirectory && <Check stroke="#fff" />}
         </span>
-        <span style={{ flex: 1, fontWeight: 500, fontSize: 13, lineHeight: 1.4, color: T.ink2 }}>
-          Add to the Union directory so other couples can discover them.
+        <span
+          style={{
+            flex: 1,
+            fontWeight: 500,
+            fontSize: 13,
+            lineHeight: 1.4,
+            color: T.ink2,
+          }}
+        >
+          {t.vendors.addToDirectory}
         </span>
       </Card>
 
       <div style={{ marginTop: 20 }}>
-        <Button style={{ width: "100%", height: 50 }} onClick={() => setSaved(true)}>
-          Add &amp; let Union reach out
+        <Button
+          style={{ width: "100%", height: 50 }}
+          onClick={() => setSaved(true)}
+        >
+          {t.vendors.addAndReach}
         </Button>
         {saved && (
-          <div style={{ textAlign: "center", marginTop: 12, fontSize: 13, color: T.greenInk, fontWeight: 600 }}>
-            Preview only — nothing was saved to your account.
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: 12,
+              fontSize: 13,
+              color: T.greenInk,
+              fontWeight: 600,
+            }}
+          >
+            {t.vendors.previewOnly}
           </div>
         )}
       </div>
