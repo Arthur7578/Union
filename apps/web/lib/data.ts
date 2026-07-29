@@ -40,8 +40,17 @@ export async function fetchWedding(ownerId: string): Promise<Wedding | null> {
 }
 
 export async function createWedding(
-  input: Omit<Wedding, "id" | "created_at" | "rsvp_form_questions"> & {
+  input: Omit<
+    Wedding,
+    | "id"
+    | "created_at"
+    | "rsvp_form_questions"
+    | "ceremony_rows"
+    | "ceremony_reserved_rows"
+  > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
+    ceremony_rows?: number;
+    ceremony_reserved_rows?: number;
   },
 ): Promise<Wedding> {
   const supabase = getBrowserSupabase();
@@ -155,6 +164,8 @@ export type NewGuest = {
   notes?: string | null;
   room_block_id?: string | null;
   seating_table_id?: string | null;
+  ceremony_row?: number | null;
+  ceremony_side?: "left" | "right" | null;
 };
 
 /**
@@ -564,6 +575,8 @@ export async function addSeatingTable(input: {
   x_pct?: number;
   y_pct?: number;
   tone?: string;
+  is_head?: boolean;
+  shape?: "round" | "rect";
 }): Promise<SeatingTable> {
   const supabase = getBrowserSupabase();
   const { data, error } = await supabase
@@ -575,6 +588,8 @@ export async function addSeatingTable(input: {
       x_pct: input.x_pct ?? 50,
       y_pct: input.y_pct ?? 50,
       tone: input.tone ?? "accent",
+      is_head: input.is_head ?? false,
+      shape: input.shape ?? "round",
     })
     .select("*")
     .single();
