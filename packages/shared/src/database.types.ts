@@ -14,88 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      guests: {
-        Row: {
-          ceremony_row: number | null
-          ceremony_side: string | null
-          created_at: string
-          email: string | null
-          first_name: string
-          guest_group: string | null
-          id: string
-          invite_token: string
-          last_name: string | null
-          notes: string | null
-          party_size: number
-          phone: string | null
-          role: string | null
-          room_block_id: string | null
-          rsvp_reminder_sent_at: string | null
-          seating_table_id: string | null
-          wedding_id: string
-        }
-        Insert: {
-          ceremony_row?: number | null
-          ceremony_side?: string | null
-          created_at?: string
-          email?: string | null
-          first_name: string
-          guest_group?: string | null
-          id?: string
-          invite_token?: string
-          last_name?: string | null
-          notes?: string | null
-          party_size?: number
-          phone?: string | null
-          role?: string | null
-          room_block_id?: string | null
-          rsvp_reminder_sent_at?: string | null
-          seating_table_id?: string | null
-          wedding_id: string
-        }
-        Update: {
-          ceremony_row?: number | null
-          ceremony_side?: string | null
-          created_at?: string
-          email?: string | null
-          first_name?: string
-          guest_group?: string | null
-          id?: string
-          invite_token?: string
-          last_name?: string | null
-          notes?: string | null
-          party_size?: number
-          phone?: string | null
-          role?: string | null
-          room_block_id?: string | null
-          rsvp_reminder_sent_at?: string | null
-          seating_table_id?: string | null
-          wedding_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "guests_wedding_id_fkey"
-            columns: ["wedding_id"]
-            isOneToOne: false
-            referencedRelation: "weddings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "guests_room_block_id_fkey"
-            columns: ["room_block_id"]
-            isOneToOne: false
-            referencedRelation: "room_blocks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "guests_seating_table_id_fkey"
-            columns: ["seating_table_id"]
-            isOneToOne: false
-            referencedRelation: "seating_tables"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       guest_group_members: {
         Row: {
           created_at: string
@@ -164,6 +82,178 @@ export type Database = {
           },
         ]
       }
+      guest_relationships: {
+        Row: {
+          created_at: string
+          from_guest: string
+          kind: Database["public"]["Enums"]["guest_relationship_kind"]
+          to_guest: string
+          wedding_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_guest: string
+          kind: Database["public"]["Enums"]["guest_relationship_kind"]
+          to_guest: string
+          wedding_id: string
+        }
+        Update: {
+          created_at?: string
+          from_guest?: string
+          kind?: Database["public"]["Enums"]["guest_relationship_kind"]
+          to_guest?: string
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_relationships_from_guest_fkey"
+            columns: ["from_guest"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_relationships_to_guest_fkey"
+            columns: ["to_guest"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_relationships_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guests: {
+        Row: {
+          added_by_guest_id: string | null
+          can_add_kids: boolean | null
+          can_add_partner: boolean | null
+          ceremony_row: number | null
+          ceremony_side: string | null
+          created_at: string
+          email: string | null
+          first_name: string
+          guest_group: string | null
+          id: string
+          invite_token: string
+          kind: Database["public"]["Enums"]["guest_kind"]
+          last_name: string | null
+          notes: string | null
+          phone: string | null
+          profile_id: string | null
+          role: string | null
+          room_block_id: string | null
+          rsvp_reminder_sent_at: string | null
+          seating_table_id: string | null
+          wedding_id: string
+        }
+        Insert: {
+          added_by_guest_id?: string | null
+          can_add_kids?: boolean | null
+          can_add_partner?: boolean | null
+          ceremony_row?: number | null
+          ceremony_side?: string | null
+          created_at?: string
+          email?: string | null
+          first_name: string
+          guest_group?: string | null
+          id?: string
+          invite_token?: string
+          kind?: Database["public"]["Enums"]["guest_kind"]
+          last_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          profile_id?: string | null
+          role?: string | null
+          room_block_id?: string | null
+          rsvp_reminder_sent_at?: string | null
+          seating_table_id?: string | null
+          wedding_id: string
+        }
+        Update: {
+          added_by_guest_id?: string | null
+          can_add_kids?: boolean | null
+          can_add_partner?: boolean | null
+          ceremony_row?: number | null
+          ceremony_side?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          guest_group?: string | null
+          id?: string
+          invite_token?: string
+          kind?: Database["public"]["Enums"]["guest_kind"]
+          last_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          profile_id?: string | null
+          role?: string | null
+          room_block_id?: string | null
+          rsvp_reminder_sent_at?: string | null
+          seating_table_id?: string | null
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guests_added_by_guest_id_fkey"
+            columns: ["added_by_guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guests_room_block_id_fkey"
+            columns: ["room_block_id"]
+            isOneToOne: false
+            referencedRelation: "room_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guests_seating_table_id_fkey"
+            columns: ["seating_table_id"]
+            isOneToOne: false
+            referencedRelation: "seating_tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guests_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       room_blocks: {
         Row: {
           booked_rooms: number
@@ -210,6 +300,41 @@ export type Database = {
             columns: ["wedding_id"]
             isOneToOne: false
             referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rsvps: {
+        Row: {
+          dietary_notes: string | null
+          guest_id: string
+          id: string
+          message: string | null
+          responded_at: string | null
+          status: Database["public"]["Enums"]["rsvp_status"]
+        }
+        Insert: {
+          dietary_notes?: string | null
+          guest_id: string
+          id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["rsvp_status"]
+        }
+        Update: {
+          dietary_notes?: string | null
+          guest_id?: string
+          id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["rsvp_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rsvps_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: true
+            referencedRelation: "guests"
             referencedColumns: ["id"]
           },
         ]
@@ -264,69 +389,16 @@ export type Database = {
           },
         ]
       }
-      profiles: {
-        Row: {
-          created_at: string
-          full_name: string | null
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          full_name?: string | null
-          id: string
-        }
-        Update: {
-          created_at?: string
-          full_name?: string | null
-          id?: string
-        }
-        Relationships: []
-      }
-      rsvps: {
-        Row: {
-          dietary_notes: string | null
-          guest_id: string
-          id: string
-          message: string | null
-          num_attending: number | null
-          responded_at: string | null
-          status: Database["public"]["Enums"]["rsvp_status"]
-        }
-        Insert: {
-          dietary_notes?: string | null
-          guest_id: string
-          id?: string
-          message?: string | null
-          num_attending?: number | null
-          responded_at?: string | null
-          status?: Database["public"]["Enums"]["rsvp_status"]
-        }
-        Update: {
-          dietary_notes?: string | null
-          guest_id?: string
-          id?: string
-          message?: string | null
-          num_attending?: number | null
-          responded_at?: string | null
-          status?: Database["public"]["Enums"]["rsvp_status"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rsvps_guest_id_fkey"
-            columns: ["guest_id"]
-            isOneToOne: true
-            referencedRelation: "guests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       weddings: {
         Row: {
+          allow_guests_add_kids: boolean
+          allow_guests_add_partner: boolean
           ceremony_reserved_rows: number
           ceremony_rows: number
           created_at: string
           event_date: string | null
           id: string
+          max_kids_per_guest: number | null
           owner_id: string
           partner_one: string | null
           partner_two: string | null
@@ -335,11 +407,14 @@ export type Database = {
           venue_name: string | null
         }
         Insert: {
+          allow_guests_add_kids?: boolean
+          allow_guests_add_partner?: boolean
           ceremony_reserved_rows?: number
           ceremony_rows?: number
           created_at?: string
           event_date?: string | null
           id?: string
+          max_kids_per_guest?: number | null
           owner_id: string
           partner_one?: string | null
           partner_two?: string | null
@@ -348,11 +423,14 @@ export type Database = {
           venue_name?: string | null
         }
         Update: {
+          allow_guests_add_kids?: boolean
+          allow_guests_add_partner?: boolean
           ceremony_reserved_rows?: number
           ceremony_rows?: number
           created_at?: string
           event_date?: string | null
           id?: string
+          max_kids_per_guest?: number | null
           owner_id?: string
           partner_one?: string | null
           partner_two?: string | null
@@ -375,29 +453,34 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_invitation: {
-        Args: { p_token: string }
-        Returns: {
-          dietary_notes: string
-          event_date: string
-          guest_first_name: string
-          guest_id: string
-          guest_last_name: string
-          message: string
-          num_attending: number
-          partner_one: string
-          partner_two: string
-          party_size: number
-          rsvp_status: Database["public"]["Enums"]["rsvp_status"]
-          venue_address: string
-          venue_name: string
-        }[]
+      get_invitation: { Args: { p_token: string }; Returns: Json }
+      rsvp_merge_into: {
+        Args: { p_target_guest_id: string; p_token: string }
+        Returns: Json
+      }
+      rsvp_register_companion: {
+        Args: {
+          p_first_name: string
+          p_kind: string
+          p_last_name?: string
+          p_resolve?: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      submit_companion_rsvp: {
+        Args: {
+          p_companion_guest_id: string
+          p_dietary_notes?: string
+          p_status: string
+          p_token: string
+        }
+        Returns: Json
       }
       submit_rsvp: {
         Args: {
           p_dietary_notes?: string
           p_message?: string
-          p_num_attending?: number
           p_status: string
           p_token: string
         }
@@ -405,6 +488,8 @@ export type Database = {
       }
     }
     Enums: {
+      guest_kind: "adult" | "child"
+      guest_relationship_kind: "parent_of" | "partner_of"
       rsvp_status: "pending" | "attending" | "declined"
     }
     CompositeTypes: {
@@ -533,6 +618,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      guest_kind: ["adult", "child"],
+      guest_relationship_kind: ["parent_of", "partner_of"],
       rsvp_status: ["pending", "attending", "declined"],
     },
   },
