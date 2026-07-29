@@ -289,6 +289,8 @@ export type Database = {
       }
       weddings: {
         Row: {
+          ceremony_reserved_rows: number
+          ceremony_rows: number
           created_at: string
           event_date: string | null
           id: string
@@ -300,6 +302,8 @@ export type Database = {
           venue_name: string | null
         }
         Insert: {
+          ceremony_reserved_rows?: number
+          ceremony_rows?: number
           created_at?: string
           event_date?: string | null
           id?: string
@@ -311,6 +315,8 @@ export type Database = {
           venue_name?: string | null
         }
         Update: {
+          ceremony_reserved_rows?: number
+          ceremony_rows?: number
           created_at?: string
           event_date?: string | null
           id?: string

@@ -29,8 +29,17 @@ export async function fetchWedding(ownerId: string): Promise<Wedding | null> {
 }
 
 export async function createWedding(
-  input: Omit<Wedding, "id" | "created_at" | "rsvp_form_questions"> & {
+  input: Omit<
+    Wedding,
+    | "id"
+    | "created_at"
+    | "rsvp_form_questions"
+    | "ceremony_rows"
+    | "ceremony_reserved_rows"
+  > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
+    ceremony_rows?: number;
+    ceremony_reserved_rows?: number;
   },
 ): Promise<Wedding> {
   const supabase = getBrowserSupabase();

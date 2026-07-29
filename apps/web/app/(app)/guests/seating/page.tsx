@@ -17,6 +17,7 @@ import {
   fetchSeatingTables,
   updateGuest,
   updateSeatingTable,
+  updateWedding,
   type GuestWithRsvp,
 } from "@/lib/data";
 import { BackHeader } from "@/components/BackHeader";
@@ -38,11 +39,15 @@ const TONE_STYLE: Record<
 
 const TONE_KEYS = Object.keys(TONE_STYLE) as ToneKey[];
 
-const CEREMONY_KEY = (weddingId: string) => `union:ceremony:${weddingId}`;
-
 type CeremonyPrefs = { rows: number; reserved: number };
 
 const DEFAULT_CEREMONY: CeremonyPrefs = { rows: 6, reserved: 1 };
+
+function clampCeremony(rows: number, reserved: number): CeremonyPrefs {
+  const r = Math.max(2, Math.min(24, Math.round(rows) || DEFAULT_CEREMONY.rows));
+  const res = Math.max(0, Math.min(r, Math.round(reserved) || 0));
+  return { rows: r, reserved: res };
+}
 
 function toneKey(v: string | null | undefined): ToneKey {
   return v && (v as ToneKey) in TONE_STYLE ? (v as ToneKey) : "accent";
@@ -63,7 +68,7 @@ function clampPct(v: number, min = 8, max = 92): number {
 }
 
 export default function SeatingPage() {
-  const { wedding } = useWedding();
+  const { wedding, setWedding } = useWedding();
   const [view, setView] = useState<"reception" | "ceremony">("reception");
   const [tables, setTables] = useState<SeatingTable[] | null>(null);
   const [guests, setGuests] = useState<GuestWithRsvp[] | null>(null);
@@ -90,8 +95,12 @@ export default function SeatingPage() {
   // Unassigned panel state
   const [unassignedQuery, setUnassignedQuery] = useState("");
 
-  // Ceremony prefs (per-wedding, client-side)
-  const [ceremony, setCeremony] = useState<CeremonyPrefs>(DEFAULT_CEREMONY);
+  // Ceremony layout is driven by the shared wedding row so every
+  // collaborator sees the same shape.
+  const ceremony: CeremonyPrefs = clampCeremony(
+    wedding?.ceremony_rows ?? DEFAULT_CEREMONY.rows,
+    wedding?.ceremony_reserved_rows ?? DEFAULT_CEREMONY.reserved,
+  );
   const [selectedPew, setSelectedPew] = useState<{
     row: number;
     side: "left" | "right";
@@ -122,28 +131,25 @@ export default function SeatingPage() {
     );
   }, [reload]);
 
-  // Load persisted ceremony prefs.
-  useEffect(() => {
-    if (!wedding || typeof window === "undefined") return;
+  const saveCeremony = async (next: CeremonyPrefs) => {
+    if (!wedding) return;
+    const clamped = clampCeremony(next.rows, next.reserved);
+    const prev = wedding;
+    // Optimistic — the stepper feels instant while the DB write is in flight.
+    setWedding({
+      ...wedding,
+      ceremony_rows: clamped.rows,
+      ceremony_reserved_rows: clamped.reserved,
+    });
     try {
-      const raw = window.localStorage.getItem(CEREMONY_KEY(wedding.id));
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<CeremonyPrefs>;
-      const rows = Math.max(2, Math.min(24, Number(parsed.rows) || DEFAULT_CEREMONY.rows));
-      const reserved = Math.max(0, Math.min(rows, Number(parsed.reserved) || 0));
-      setCeremony({ rows, reserved });
-    } catch {
-      /* ignore bad JSON */
-    }
-  }, [wedding]);
-
-  const saveCeremony = (next: CeremonyPrefs) => {
-    setCeremony(next);
-    if (!wedding || typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(CEREMONY_KEY(wedding.id), JSON.stringify(next));
-    } catch {
-      /* storage may be blocked; ignore */
+      const updated = await updateWedding(wedding.id, {
+        ceremony_rows: clamped.rows,
+        ceremony_reserved_rows: clamped.reserved,
+      });
+      setWedding(updated);
+    } catch (err) {
+      setWedding(prev);
+      setError(err instanceof Error ? err.message : "Couldn't save layout.");
     }
   };
 
