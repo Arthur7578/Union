@@ -344,7 +344,7 @@ export default function GuestsPage() {
                     {g.first_name} {g.last_name ?? ""}
                   </div>
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
-                    {t.guests.partyOf(g.party_size ?? 1)}
+                    {g.kind === "child" ? "Child" : "Adult"}
                     {group}
                     {role}
                   </div>

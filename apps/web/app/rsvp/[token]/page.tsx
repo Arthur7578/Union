@@ -1,3 +1,4 @@
+import type { Invitation } from "@union/shared";
 import { getSupabase } from "@/lib/supabase";
 import { RsvpForm } from "./RsvpForm";
 import { resolveLocale } from "@/lib/i18n/server";
@@ -17,7 +18,12 @@ export default async function RsvpPage({
     p_token: token,
   });
 
-  const invitation = !error && data && data.length > 0 ? data[0] : null;
+  // get_invitation returns a JSONB payload keyed by 'guest'; any other shape
+  // (or an error) is treated as an unknown/expired token.
+  const invitation =
+    !error && data && typeof data === "object" && !Array.isArray(data) && "guest" in data
+      ? (data as unknown as Invitation)
+      : null;
 
   if (!invitation) {
     const locale = await resolveLocale();

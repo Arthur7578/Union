@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { T } from "@/lib/theme";
 import type { RsvpQuestion } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
-import { readRsvpQuestions, saveRsvpQuestions } from "@/lib/data";
+import { readRsvpQuestions, saveRsvpQuestions, updateWedding } from "@/lib/data";
 import { BackHeader } from "@/components/BackHeader";
 import { Card, Chip, Button, Loading } from "@/components/ui";
 
@@ -139,6 +139,8 @@ export default function RsvpFormPage() {
         subtitle={dirty ? "Unsaved changes" : "Saved"}
         fallback="/guests"
       />
+
+      <WeddingInviteToggles />
 
       <div
         style={{
@@ -441,5 +443,95 @@ export default function RsvpFormPage() {
         </Button>
       </div>
     </main>
+  );
+}
+
+// Small block: wedding-level toggles for who guests may add
+// to their own party from the RSVP screen (partner, kids, and a cap on kids).
+// Saves inline via updateWedding on every toggle change.
+function WeddingInviteToggles() {
+  const { wedding, refresh } = useWedding();
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (!wedding) return null;
+
+  const patch = async (p: Partial<{
+    allow_guests_add_partner: boolean;
+    allow_guests_add_kids: boolean;
+    max_kids_per_guest: number | null;
+  }>) => {
+    setSaving(true);
+    setErr(null);
+    try {
+      await updateWedding(wedding.id, p);
+      await refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't save.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        border: `1px solid ${T.line}`,
+        borderRadius: 14,
+        padding: 14,
+        marginBottom: 14,
+      }}
+    >
+      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}>
+        Who guests can add
+      </div>
+      <div style={{ fontSize: 12.5, color: T.muted, marginBottom: 12 }}>
+        Defaults for the whole wedding. Any guest can be given a different rule
+        from their own page.
+      </div>
+
+      <label
+        style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}
+      >
+        <input
+          type="checkbox"
+          checked={wedding.allow_guests_add_partner}
+          onChange={(e) => patch({ allow_guests_add_partner: e.target.checked })}
+          disabled={saving}
+        />
+        <span style={{ fontSize: 13.5 }}>Guests may add a partner from their RSVP</span>
+      </label>
+
+      <label
+        style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}
+      >
+        <input
+          type="checkbox"
+          checked={wedding.allow_guests_add_kids}
+          onChange={(e) => patch({ allow_guests_add_kids: e.target.checked })}
+          disabled={saving}
+        />
+        <span style={{ fontSize: 13.5 }}>Guests may add children from their RSVP</span>
+      </label>
+
+      {wedding.allow_guests_add_kids && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+          <label style={{ fontSize: 13, color: T.muted2 }}>Max children per guest</label>
+          <input
+            type="number"
+            min={0}
+            value={wedding.max_kids_per_guest ?? ""}
+            placeholder="No cap"
+            onChange={(e) => {
+              const v = e.target.value.trim();
+              patch({ max_kids_per_guest: v === "" ? null : Math.max(0, parseInt(v, 10) || 0) });
+            }}
+            disabled={saving}
+            style={{ width: 90 }}
+          />
+        </div>
+      )}
+
+      {err && <div style={{ color: "#C0553B", fontSize: 12, marginTop: 6 }}>{err}</div>}
+    </div>
   );
 }

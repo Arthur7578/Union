@@ -3,19 +3,24 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
-import type { GuestGroup, RoomBlock, RsvpStatus, SeatingTable } from "@union/shared";
+import type { GuestGroup, GuestKind, RoomBlock, RsvpStatus, SeatingTable } from "@union/shared";
 import {
   addGuestGroup,
+  addGuestRelationship,
   addGuestToGroup,
   clearRsvp,
   deleteGuest,
   fetchGuest,
   fetchGuestGroups,
+  fetchGuestLinks,
+  fetchGuests,
   fetchRoomBlocks,
   fetchSeatingTables,
   removeGuestFromGroup,
+  removeGuestRelationship,
   updateGuest,
   upsertRsvp,
+  type GuestLink,
   type GuestWithRsvp,
 } from "@/lib/data";
 import { useWedding } from "@/lib/wedding";
@@ -54,15 +59,21 @@ export default function GuestDetailPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [partySize, setPartySize] = useState("1");
+  const [kind, setKind] = useState<GuestKind>("adult");
+  const [canAddPartner, setCanAddPartner] = useState<"inherit" | "yes" | "no">("inherit");
+  const [canAddKids, setCanAddKids] = useState<"inherit" | "yes" | "no">("inherit");
   const [role, setRole] = useState("");
   const [notes, setNotes] = useState("");
   const [roomBlockId, setRoomBlockId] = useState<string>("");
   const [seatingTableId, setSeatingTableId] = useState<string>("");
 
+  // Relationships
+  const [links, setLinks] = useState<GuestLink[]>([]);
+  const [otherGuests, setOtherGuests] = useState<GuestWithRsvp[]>([]);
+  const [linksBusy, setLinksBusy] = useState(false);
+
   // RSVP recording form (owner side).
   const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus | "">("");
-  const [rsvpCount, setRsvpCount] = useState<string>("");
   const [rsvpDiet, setRsvpDiet] = useState("");
   const [rsvpMessage, setRsvpMessage] = useState("");
   const [rsvpBusy, setRsvpBusy] = useState(false);
@@ -86,22 +97,22 @@ export default function GuestDetailPage() {
           setLastName(g.last_name ?? "");
           setEmail(g.email ?? "");
           setPhone(g.phone ?? "");
-          setPartySize(String(g.party_size ?? 1));
+          setKind(g.kind);
+          setCanAddPartner(g.can_add_partner == null ? "inherit" : g.can_add_partner ? "yes" : "no");
+          setCanAddKids(g.can_add_kids == null ? "inherit" : g.can_add_kids ? "yes" : "no");
           setRole(g.role ?? "");
           setNotes(g.notes ?? "");
           setRoomBlockId(g.room_block_id ?? "");
           setSeatingTableId(g.seating_table_id ?? "");
           if (g.rsvps) {
             setRsvpStatus(g.rsvps.status);
-            setRsvpCount(
-              g.rsvps.num_attending != null ? String(g.rsvps.num_attending) : "",
-            );
             setRsvpDiet(g.rsvps.dietary_notes ?? "");
             setRsvpMessage(g.rsvps.message ?? "");
           }
         }
       })
       .catch(() => setGuest(null));
+    fetchGuestLinks(id).then(setLinks).catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -111,18 +122,20 @@ export default function GuestDetailPage() {
       fetchGuestGroups(wedding.id),
       fetchRoomBlocks(wedding.id),
       fetchSeatingTables(wedding.id),
+      fetchGuests(wedding.id),
     ])
-      .then(([gs, rb, st]) => {
+      .then(([gs, rb, st, allGuests]) => {
         if (!ok) return;
         setAllGroups(gs);
         setRooms(rb);
         setTables(st);
+        setOtherGuests(allGuests.filter((x) => x.id !== id));
       })
       .catch(() => {});
     return () => {
       ok = false;
     };
-  }, [wedding]);
+  }, [wedding, id]);
 
   const currentGroups: GroupChip[] = (guest?.groups ?? []).map((g) => ({
     id: g.id,
@@ -157,9 +170,13 @@ export default function GuestDetailPage() {
       const updated = await updateGuest(guest.id, {
         first_name: firstNameV.trim(),
         last_name: lastName.trim() || null,
-        email: email.trim() || null,
-        phone: phone.trim() || null,
-        party_size: Math.max(1, parseInt(partySize, 10) || 1),
+        email: kind === "adult" ? email.trim() || null : null,
+        phone: kind === "adult" ? phone.trim() || null : null,
+        kind,
+        can_add_partner:
+          canAddPartner === "inherit" ? null : canAddPartner === "yes",
+        can_add_kids:
+          canAddKids === "inherit" ? null : canAddKids === "yes",
         role: role.trim() || null,
         notes: notes.trim() || null,
         room_block_id: roomBlockId || null,
@@ -221,11 +238,9 @@ export default function GuestDetailPage() {
     setRsvpBusy(true);
     setRsvpNote(null);
     try {
-      const n = rsvpCount ? parseInt(rsvpCount, 10) : null;
       const saved = await upsertRsvp({
         guest_id: guest.id,
         status: rsvpStatus as RsvpStatus,
-        num_attending: rsvpStatus === "declined" ? 0 : (Number.isFinite(n as number) ? n : null),
         dietary_notes: rsvpDiet.trim() || null,
         message: rsvpMessage.trim() || null,
       });
@@ -245,7 +260,6 @@ export default function GuestDetailPage() {
       await clearRsvp(guest.id);
       setGuest((prev) => (prev ? { ...prev, rsvps: null } : prev));
       setRsvpStatus("");
-      setRsvpCount("");
       setRsvpDiet("");
       setRsvpMessage("");
       setRsvpNote("RSVP cleared.");
@@ -256,11 +270,80 @@ export default function GuestDetailPage() {
     }
   };
 
+  const refreshLinks = async () => {
+    const l = await fetchGuestLinks(guest.id);
+    setLinks(l);
+  };
+
+  const addPartnerLink = async (otherId: string) => {
+    if (!wedding) return;
+    setLinksBusy(true);
+    try {
+      await addGuestRelationship({
+        wedding_id: wedding.id,
+        from_guest: guest.id,
+        to_guest: otherId,
+        kind: "partner_of",
+      });
+      await refreshLinks();
+    } finally {
+      setLinksBusy(false);
+    }
+  };
+
+  const addKidLink = async (otherId: string) => {
+    if (!wedding) return;
+    setLinksBusy(true);
+    try {
+      await addGuestRelationship({
+        wedding_id: wedding.id,
+        from_guest: guest.id,
+        to_guest: otherId,
+        kind: "parent_of",
+      });
+      await refreshLinks();
+    } finally {
+      setLinksBusy(false);
+    }
+  };
+
+  const addParentLink = async (otherId: string) => {
+    if (!wedding) return;
+    setLinksBusy(true);
+    try {
+      await addGuestRelationship({
+        wedding_id: wedding.id,
+        from_guest: otherId,
+        to_guest: guest.id,
+        kind: "parent_of",
+      });
+      await refreshLinks();
+    } finally {
+      setLinksBusy(false);
+    }
+  };
+
+  const removeLink = async (link: GuestLink) => {
+    setLinksBusy(true);
+    try {
+      const from = link.direction === "outgoing" ? guest.id : link.guest.id;
+      const to = link.direction === "outgoing" ? link.guest.id : guest.id;
+      await removeGuestRelationship({
+        from_guest: from,
+        to_guest: to,
+        kind: link.kind,
+      });
+      await refreshLinks();
+    } finally {
+      setLinksBusy(false);
+    }
+  };
+
   return (
     <main className="u-main">
       <BackHeader
         title={`${guest.first_name} ${guest.last_name ?? ""}`.trim()}
-        subtitle={`Party of ${guest.party_size ?? 1}`}
+        subtitle={guest.kind === "child" ? "Child" : "Adult"}
         fallback="/guests"
         right={<StatusPill tone={sl.tone}>{sl.text}</StatusPill>}
       />
@@ -365,23 +448,6 @@ export default function GuestDetailPage() {
             );
           })}
         </div>
-        {rsvpStatus === "attending" && (
-          <div className="field" style={{ marginTop: 14 }}>
-            <label htmlFor="rc">How many attending?</label>
-            <input
-              id="rc"
-              type="number"
-              min={1}
-              max={guest.party_size ?? 1}
-              value={rsvpCount}
-              onChange={(e) => setRsvpCount(e.target.value)}
-              placeholder={String(guest.party_size ?? 1)}
-            />
-            <div style={{ fontSize: 12, color: T.faint, marginTop: 4 }}>
-              Party of {guest.party_size ?? 1}. Leave blank to record their whole party.
-            </div>
-          </div>
-        )}
         {(rsvpStatus === "attending" || rsvpStatus === "declined") && (
           <>
             <div className="field" style={{ marginTop: 14 }}>
@@ -432,6 +498,159 @@ export default function GuestDetailPage() {
         )}
       </Card>
 
+      <SectionLabel>Relationships</SectionLabel>
+      <Card>
+        {links.length === 0 && (
+          <div style={{ fontSize: 13, color: T.muted, marginBottom: 8 }}>
+            No linked guests yet.
+          </div>
+        )}
+        {links.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+            {links.map((l) => {
+              const label =
+                l.kind === "partner_of"
+                  ? "partner"
+                  : l.direction === "outgoing"
+                    ? "child"
+                    : "parent";
+              return (
+                <span
+                  key={`${l.direction}-${l.kind}-${l.guest.id}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "rgba(224,204,177,.35)",
+                    border: "1px solid rgba(67,53,58,.12)",
+                    borderRadius: 20,
+                    padding: "5px 10px",
+                    fontSize: 13,
+                  }}
+                >
+                  <b>{label}:</b>{" "}
+                  <a
+                    href={`/guests/${l.guest.id}`}
+                    style={{ color: T.ink, textDecoration: "none" }}
+                  >
+                    {l.guest.first_name} {l.guest.last_name ?? ""}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => removeLink(l)}
+                    disabled={linksBusy}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: T.muted,
+                      cursor: "pointer",
+                      fontSize: 14,
+                      lineHeight: 1,
+                    }}
+                    aria-label="Remove link"
+                  >
+                    ×
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        )}
+        {kind === "adult" ? (
+          <div style={{ display: "grid", gap: 8 }}>
+            <label style={{ fontSize: 13, color: T.muted }}>
+              Link as partner
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    void addPartnerLink(e.target.value);
+                    e.currentTarget.value = "";
+                  }
+                }}
+                disabled={linksBusy}
+                defaultValue=""
+                style={{ marginTop: 4 }}
+              >
+                <option value="">— Choose a guest —</option>
+                {otherGuests
+                  .filter((g) => g.kind === "adult")
+                  .filter((g) => !links.some((l) => l.kind === "partner_of" && l.guest.id === g.id))
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.first_name} {g.last_name ?? ""}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label style={{ fontSize: 13, color: T.muted }}>
+              Add as parent of
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    void addKidLink(e.target.value);
+                    e.currentTarget.value = "";
+                  }
+                }}
+                disabled={linksBusy}
+                defaultValue=""
+                style={{ marginTop: 4 }}
+              >
+                <option value="">— Choose a child —</option>
+                {otherGuests
+                  .filter((g) => g.kind === "child")
+                  .filter(
+                    (g) =>
+                      !links.some(
+                        (l) =>
+                          l.kind === "parent_of" &&
+                          l.direction === "outgoing" &&
+                          l.guest.id === g.id,
+                      ),
+                  )
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.first_name} {g.last_name ?? ""}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          </div>
+        ) : (
+          <label style={{ fontSize: 13, color: T.muted }}>
+            Link a parent
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  void addParentLink(e.target.value);
+                  e.currentTarget.value = "";
+                }
+              }}
+              disabled={linksBusy}
+              defaultValue=""
+              style={{ marginTop: 4 }}
+            >
+              <option value="">— Choose a parent —</option>
+              {otherGuests
+                .filter((g) => g.kind === "adult")
+                .filter(
+                  (g) =>
+                    !links.some(
+                      (l) =>
+                        l.kind === "parent_of" &&
+                        l.direction === "incoming" &&
+                        l.guest.id === g.id,
+                    ),
+                )
+                .map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.first_name} {g.last_name ?? ""}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
+      </Card>
+
       <SectionLabel>Details</SectionLabel>
       <form onSubmit={save}>
         <div className="field">
@@ -472,15 +691,66 @@ export default function GuestDetailPage() {
           />
         </div>
         <div className="field">
-          <label htmlFor="ps">Party size</label>
-          <input
-            id="ps"
-            type="number"
-            min={1}
-            value={partySize}
-            onChange={(e) => setPartySize(e.target.value)}
-          />
+          <label>Kind</label>
+          <div style={{ display: "flex", gap: 8 }}>
+            {(
+              [
+                ["adult", "Adult"],
+                ["child", "Child"],
+              ] as const
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setKind(k)}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border:
+                    kind === k
+                      ? "1px solid rgba(67,53,58,.35)"
+                      : "1px solid rgba(67,53,58,.12)",
+                  background: kind === k ? "rgba(224,204,177,.35)" : "#fff",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
+        {kind === "adult" && (
+          <>
+            <div className="field">
+              <label>Can add a partner from their RSVP</label>
+              <select
+                value={canAddPartner}
+                onChange={(e) =>
+                  setCanAddPartner(e.target.value as "inherit" | "yes" | "no")
+                }
+              >
+                <option value="inherit">Inherit wedding default</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>Can add children from their RSVP</label>
+              <select
+                value={canAddKids}
+                onChange={(e) =>
+                  setCanAddKids(e.target.value as "inherit" | "yes" | "no")
+                }
+              >
+                <option value="inherit">Inherit wedding default</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+          </>
+        )}
         <div className="field">
           <label>Groups</label>
           <GroupPicker

@@ -41,10 +41,7 @@ export default function Dashboard() {
   const pending = guests.filter(
     (g) => !g.rsvps || g.rsvps.status === "pending",
   );
-  const headcount = attending.reduce(
-    (sum, g) => sum + (g.rsvps?.num_attending ?? g.party_size),
-    0,
-  );
+  const headcount = attending.length;
 
   const countdown = daysUntil(wedding?.event_date ?? null);
 

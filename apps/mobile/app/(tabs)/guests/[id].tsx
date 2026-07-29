@@ -32,7 +32,7 @@ export default function GuestDetail() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [partySize, setPartySize] = useState("1");
+  const [isChild, setIsChild] = useState(false);
   const [group, setGroup] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -46,7 +46,7 @@ export default function GuestDetail() {
         setFirstName(g.first_name);
         setLastName(g.last_name ?? "");
         setEmail(g.email ?? "");
-        setPartySize(String(g.party_size));
+        setIsChild(g.kind === "child");
         setGroup(g.guest_group ?? "");
       }
     } finally {
@@ -71,8 +71,8 @@ export default function GuestDetail() {
       await updateGuest(guest.id, {
         first_name: firstName.trim(),
         last_name: lastName.trim() || null,
-        email: email.trim() || null,
-        party_size: Math.max(1, parseInt(partySize, 10) || 1),
+        email: isChild ? null : email.trim() || null,
+        kind: isChild ? "child" : "adult",
         guest_group: group.trim() || null,
       });
       Alert.alert("Saved");
@@ -149,9 +149,7 @@ export default function GuestDetail() {
         {rsvp && rsvp.status !== "pending" ? (
           <View style={styles.rsvpDetails}>
             {rsvp.status === "attending" ? (
-              <Text style={styles.rsvpLine}>
-                {rsvp.num_attending ?? guest.party_size} attending
-              </Text>
+              <Text style={styles.rsvpLine}>Attending</Text>
             ) : null}
             {rsvp.dietary_notes ? (
               <Text style={styles.rsvpLine}>Dietary: {rsvp.dietary_notes}</Text>
@@ -185,14 +183,18 @@ export default function GuestDetail() {
         inputMode="email"
         autoCorrect={false}
       />
-      <Input
-        label="Party size"
-        value={partySize}
-        onChangeText={setPartySize}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        maxLength={2}
-      />
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <Button
+          label={isChild ? "Adult" : "Adult ✓"}
+          variant={isChild ? "ghost" : "primary"}
+          onPress={() => setIsChild(false)}
+        />
+        <Button
+          label={isChild ? "Child ✓" : "Child"}
+          variant={isChild ? "primary" : "ghost"}
+          onPress={() => setIsChild(true)}
+        />
+      </View>
       <Input label="Group" value={group} onChangeText={setGroup} autoCapitalize="words" />
 
       <View style={styles.actions}>

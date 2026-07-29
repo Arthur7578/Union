@@ -523,7 +523,7 @@ export default function StaysPage() {
                       <div
                         style={{ fontSize: 12, color: T.faint, marginTop: 1 }}
                       >
-                        Party of {s.party_size ?? 1}
+                        {s.kind === "child" ? "Child" : "Adult"}
                       </div>
                     </div>
                     <select

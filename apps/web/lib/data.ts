@@ -4,6 +4,9 @@ import { getBrowserSupabase } from "./supabaseClient";
 import type {
   Guest,
   GuestGroup,
+  GuestKind,
+  GuestRelationship,
+  GuestRelationshipKind,
   RoomBlock,
   Rsvp,
   RsvpQuestion,
@@ -47,10 +50,16 @@ export async function createWedding(
     | "rsvp_form_questions"
     | "ceremony_rows"
     | "ceremony_reserved_rows"
+    | "allow_guests_add_partner"
+    | "allow_guests_add_kids"
+    | "max_kids_per_guest"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
     ceremony_reserved_rows?: number;
+    allow_guests_add_partner?: boolean;
+    allow_guests_add_kids?: boolean;
+    max_kids_per_guest?: number | null;
   },
 ): Promise<Wedding> {
   const supabase = getBrowserSupabase();
@@ -158,7 +167,10 @@ export type NewGuest = {
   last_name?: string | null;
   email?: string | null;
   phone?: string | null;
-  party_size?: number;
+  kind?: GuestKind;
+  can_add_partner?: boolean | null;
+  can_add_kids?: boolean | null;
+  added_by_guest_id?: string | null;
   guest_group?: string | null;
   role?: string | null;
   notes?: string | null;
@@ -260,7 +272,6 @@ export async function deleteGuest(id: string): Promise<void> {
 export async function upsertRsvp(input: {
   guest_id: string;
   status: RsvpStatus;
-  num_attending?: number | null;
   dietary_notes?: string | null;
   message?: string | null;
 }): Promise<Rsvp> {
@@ -268,7 +279,6 @@ export async function upsertRsvp(input: {
   const row = {
     guest_id: input.guest_id,
     status: input.status,
-    num_attending: input.num_attending ?? null,
     dietary_notes: input.dietary_notes ?? null,
     message: input.message ?? null,
     responded_at: new Date().toISOString(),
@@ -619,6 +629,109 @@ export async function deleteSeatingTable(id: string): Promise<void> {
 }
 
 // ============================================================
+// Guest relationships (parent_of, partner_of)
+// ============================================================
+
+export type GuestLink = {
+  guest: Pick<Guest, "id" | "first_name" | "last_name" | "kind">;
+  kind: GuestRelationshipKind;
+  direction: "outgoing" | "incoming";
+};
+
+/**
+ * All relationships anchored to a single guest, in both directions.
+ * Outgoing: this guest → other. Incoming: other → this guest.
+ * The two edges of a partner_of pair are collapsed to a single
+ * "outgoing" entry so the UI shows one partner chip, not two.
+ */
+export async function fetchGuestLinks(guestId: string): Promise<GuestLink[]> {
+  const supabase = getBrowserSupabase();
+  const [outgoing, incoming] = await Promise.all([
+    supabase
+      .from("guest_relationships")
+      .select(
+        "kind, to_guest, guests!guest_relationships_to_guest_fkey(id, first_name, last_name, kind)",
+      )
+      .eq("from_guest", guestId),
+    supabase
+      .from("guest_relationships")
+      .select(
+        "kind, from_guest, guests!guest_relationships_from_guest_fkey(id, first_name, last_name, kind)",
+      )
+      .eq("to_guest", guestId),
+  ]);
+  if (outgoing.error) throw outgoing.error;
+  if (incoming.error) throw incoming.error;
+
+  const seenPartner = new Set<string>();
+  const out: GuestLink[] = [];
+  for (const r of (outgoing.data as any[]) ?? []) {
+    const g = r.guests;
+    if (!g) continue;
+    if (r.kind === "partner_of") seenPartner.add(g.id);
+    out.push({ guest: g, kind: r.kind, direction: "outgoing" });
+  }
+  for (const r of (incoming.data as any[]) ?? []) {
+    const g = r.guests;
+    if (!g) continue;
+    // Skip the mirror side of a partner_of pair we've already recorded.
+    if (r.kind === "partner_of" && seenPartner.has(g.id)) continue;
+    out.push({ guest: g, kind: r.kind, direction: "incoming" });
+  }
+  return out;
+}
+
+export async function addGuestRelationship(input: {
+  wedding_id: string;
+  from_guest: string;
+  to_guest: string;
+  kind: GuestRelationshipKind;
+}): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const rows: GuestRelationship[] =
+    input.kind === "partner_of"
+      ? [
+          { ...input, created_at: new Date().toISOString() } as GuestRelationship,
+          {
+            wedding_id: input.wedding_id,
+            from_guest: input.to_guest,
+            to_guest: input.from_guest,
+            kind: "partner_of",
+            created_at: new Date().toISOString(),
+          } as GuestRelationship,
+        ]
+      : [{ ...input, created_at: new Date().toISOString() } as GuestRelationship];
+  const { error } = await supabase
+    .from("guest_relationships")
+    .upsert(rows, { onConflict: "from_guest,to_guest,kind" });
+  if (error) throw error;
+}
+
+export async function removeGuestRelationship(input: {
+  from_guest: string;
+  to_guest: string;
+  kind: GuestRelationshipKind;
+}): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const pairs: Array<{ from: string; to: string }> =
+    input.kind === "partner_of"
+      ? [
+          { from: input.from_guest, to: input.to_guest },
+          { from: input.to_guest, to: input.from_guest },
+        ]
+      : [{ from: input.from_guest, to: input.to_guest }];
+  for (const p of pairs) {
+    const { error } = await supabase
+      .from("guest_relationships")
+      .delete()
+      .eq("from_guest", p.from)
+      .eq("to_guest", p.to)
+      .eq("kind", input.kind);
+    if (error) throw error;
+  }
+}
+
+// ============================================================
 // RSVP form question config (jsonb on weddings)
 // ============================================================
 
@@ -646,29 +759,24 @@ export async function saveRsvpQuestions(
 
 /** Roll up a guest list into the headline counts shown on Today / Guests. */
 export function guestStats(guests: GuestWithRsvp[]) {
-  let invited = 0;
   let coming = 0;
   let declined = 0;
   let waiting = 0;
-  let headcount = 0;
+  let kids = 0;
   for (const g of guests) {
-    invited += g.party_size ?? 1;
+    if (g.kind === "child") kids += 1;
     const status = g.rsvps?.status ?? "pending";
-    if (status === "attending") {
-      coming += g.party_size ?? 1;
-      headcount += g.rsvps?.num_attending ?? g.party_size ?? 1;
-    } else if (status === "declined") {
-      declined += g.party_size ?? 1;
-    } else {
-      waiting += g.party_size ?? 1;
-    }
+    if (status === "attending") coming += 1;
+    else if (status === "declined") declined += 1;
+    else waiting += 1;
   }
   return {
-    invited,
+    invited: guests.length,
     coming,
     declined,
     waiting,
-    headcount,
+    headcount: coming,
     parties: guests.length,
+    kids,
   };
 }

@@ -14,7 +14,7 @@ export default function NewGuest() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [partySize, setPartySize] = useState("1");
+  const [isChild, setIsChild] = useState(false);
   const [group, setGroup] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +28,6 @@ export default function NewGuest() {
       setError("No wedding found.");
       return;
     }
-    const size = Math.max(1, parseInt(partySize, 10) || 1);
     setBusy(true);
     setError(null);
     try {
@@ -36,8 +35,8 @@ export default function NewGuest() {
         wedding_id: wedding.id,
         first_name: firstName.trim(),
         last_name: lastName.trim() || null,
-        email: email.trim() || null,
-        party_size: size,
+        email: isChild ? null : email.trim() || null,
+        kind: isChild ? "child" : "adult",
         guest_group: group.trim() || null,
       });
       router.back();
@@ -75,15 +74,18 @@ export default function NewGuest() {
         inputMode="email"
         autoCorrect={false}
       />
-      <Input
-        label="Party size"
-        hint="How many people this invitation covers (incl. plus-ones)."
-        value={partySize}
-        onChangeText={setPartySize}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        maxLength={2}
-      />
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <Button
+          label={isChild ? "Adult" : "Adult ✓"}
+          variant={isChild ? "ghost" : "primary"}
+          onPress={() => setIsChild(false)}
+        />
+        <Button
+          label={isChild ? "Child ✓" : "Child"}
+          variant={isChild ? "primary" : "ghost"}
+          onPress={() => setIsChild(true)}
+        />
+      </View>
       <Input
         label="Group (optional)"
         placeholder="e.g. Family, College friends"

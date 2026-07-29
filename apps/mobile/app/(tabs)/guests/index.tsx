@@ -73,9 +73,7 @@ export default function GuestList() {
                 {item.first_name} {item.last_name ?? ""}
               </Text>
               <Text style={styles.meta}>
-                {item.party_size === 1
-                  ? t.guests.partyOne
-                  : t.guests.party(item.party_size)}
+                {item.kind === "child" ? "Child" : "Adult"}
                 {item.guest_group ? ` · ${item.guest_group}` : ""}
               </Text>
               <View style={styles.chipWrap}>

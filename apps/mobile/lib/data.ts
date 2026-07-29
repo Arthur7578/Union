@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Guest, Rsvp, Wedding } from "@union/shared";
+import type { Guest, GuestKind, Rsvp, Wedding } from "@union/shared";
 
 /** A guest row joined with its (optional) rsvp. */
 export type GuestWithRsvp = Guest & { rsvps: Rsvp | null };
@@ -17,8 +17,23 @@ export async function fetchWedding(ownerId: string): Promise<Wedding | null> {
 }
 
 export async function createWedding(
-  input: Omit<Wedding, "id" | "created_at" | "rsvp_form_questions"> & {
+  input: Omit<
+    Wedding,
+    | "id"
+    | "created_at"
+    | "rsvp_form_questions"
+    | "ceremony_rows"
+    | "ceremony_reserved_rows"
+    | "allow_guests_add_partner"
+    | "allow_guests_add_kids"
+    | "max_kids_per_guest"
+  > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
+    ceremony_rows?: number;
+    ceremony_reserved_rows?: number;
+    allow_guests_add_partner?: boolean;
+    allow_guests_add_kids?: boolean;
+    max_kids_per_guest?: number | null;
   },
 ): Promise<Wedding> {
   const { data, error } = await supabase
@@ -80,7 +95,7 @@ export type NewGuest = {
   last_name?: string | null;
   email?: string | null;
   phone?: string | null;
-  party_size?: number;
+  kind?: GuestKind;
   guest_group?: string | null;
 };
 
