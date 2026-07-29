@@ -22,6 +22,7 @@ export default function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
   const codeInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -61,9 +62,10 @@ export default function SignInPage() {
     setBusy(true);
     try {
       await verifyEmailOtp(email, code);
+      setRedirecting(true);
+      router.replace("/today");
     } catch (err) {
       setError(err instanceof Error ? err.message : t.signIn.errVerify);
-    } finally {
       setBusy(false);
     }
   };
@@ -115,7 +117,7 @@ export default function SignInPage() {
     </div>
   );
 
-  if (authLoading) {
+  if (authLoading || redirecting) {
     return (
       <main className="page">
         <div className="card">
