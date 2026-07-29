@@ -1,6 +1,6 @@
 project_id = "jriyeblycrzpozjuexvr"
 
-# Send a 6-digit code instead of a magic link for passwordless email
+# Send a numeric code instead of a magic link for passwordless email
 # sign-in. Supabase picks the flow based on which template variables the
 # `magic_link` email template contains — `{{ .Token }}` alone means the
 # email carries only the code, no clickable link.

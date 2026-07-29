@@ -16,7 +16,7 @@ import { getBrowserSupabase } from "./supabaseClient";
 export const LAST_EMAIL_KEY = "union.lastEmail";
 
 /**
- * Send a 6-digit sign-in code to `email`. Standalone (not tied to React
+ * Send an 8-digit sign-in code to `email`. Standalone (not tied to React
  * context) so it can be used from any component regardless of provider
  * placement.
  */
@@ -37,7 +37,7 @@ export async function sendEmailOtp(email: string): Promise<void> {
   }
 }
 
-/** Verify the 6-digit code the user typed and hydrate the session. */
+/** Verify the 8-digit code the user typed and hydrate the session. */
 export async function verifyEmailOtp(
   email: string,
   token: string,

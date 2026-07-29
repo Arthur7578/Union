@@ -186,8 +186,8 @@ export default function SignInPage() {
         {header(
           "Union",
           step === "email"
-            ? "Sign in with your email — we'll send you a 6-digit code."
-            : `Enter the 6-digit code we sent to ${email}.`,
+            ? "Sign in with your email — we'll send you an 8-digit code."
+            : `Enter the 8-digit code we sent to ${email}.`,
         )}
 
         {step === "email" ? (
@@ -212,7 +212,7 @@ export default function SignInPage() {
         ) : (
           <form onSubmit={verifyCode}>
             <div className="field">
-              <label htmlFor="code">6-digit code</label>
+              <label htmlFor="code">8-digit code</label>
               <input
                 id="code"
                 ref={codeInputRef}
@@ -220,13 +220,13 @@ export default function SignInPage() {
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 pattern="[0-9]*"
-                maxLength={6}
+                maxLength={8}
                 required
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                placeholder="123456"
+                placeholder="12345678"
                 style={{
-                  letterSpacing: "0.4em",
+                  letterSpacing: "0.35em",
                   textAlign: "center",
                   fontVariantNumeric: "tabular-nums",
                 }}
@@ -235,7 +235,7 @@ export default function SignInPage() {
             {error && <div className="error">{error}</div>}
             <Button
               type="submit"
-              disabled={busy || code.length !== 6}
+              disabled={busy || code.length !== 8}
               style={{ width: "100%" }}
             >
               {busy ? "Verifying…" : "Sign in"}

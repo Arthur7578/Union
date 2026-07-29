@@ -22,7 +22,7 @@ export const supabase = createUnionClient(supabaseUrl, supabaseAnonKey, {
     storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
-    // We authenticate with a 6-digit email code (verifyOtp), so no URL
+    // We authenticate with an 8-digit email code (verifyOtp), so no URL
     // fragment ever carries a session — leave URL detection off.
     detectSessionInUrl: false,
   },

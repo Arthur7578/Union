@@ -43,8 +43,8 @@ export default function SignIn() {
   };
 
   const verifyCode = async () => {
-    if (code.length !== 6) {
-      setError("Enter the 6-digit code from your email.");
+    if (code.length !== 8) {
+      setError("Enter the 8-digit code from your email.");
       return;
     }
     setBusy(true);
@@ -112,21 +112,21 @@ export default function SignIn() {
         ) : (
           <View>
             <Text style={styles.helper}>
-              We sent a 6-digit code to {email}. Enter it below to finish
+              We sent an 8-digit code to {email}. Enter it below to finish
               signing in.
             </Text>
             <Input
               ref={codeInputRef}
-              label="6-digit code"
-              placeholder="123456"
+              label="8-digit code"
+              placeholder="12345678"
               value={code}
-              onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
+              onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 8))}
               keyboardType="number-pad"
               inputMode="numeric"
               autoComplete="one-time-code"
               textContentType="oneTimeCode"
               autoCorrect={false}
-              maxLength={6}
+              maxLength={8}
               returnKeyType="go"
               onSubmitEditing={verifyCode}
               style={styles.codeInput}
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   codeInput: {
-    letterSpacing: 6,
+    letterSpacing: 4,
     textAlign: "center",
     fontSize: fontSize.xl,
     fontVariant: ["tabular-nums"],
