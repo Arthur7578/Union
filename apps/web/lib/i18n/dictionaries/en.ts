@@ -211,7 +211,7 @@ export const en = {
       email: "Email (for their invite)",
       phone: "Phone",
       partySize: "Party size",
-      group: "Group (optional)",
+      group: "Groups (optional)",
       role: "Role in the wedding (optional)",
       notes: "Notes (private to you)",
     },
