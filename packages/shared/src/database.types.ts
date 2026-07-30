@@ -453,7 +453,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _merge_guests: {
+        Args: { p_source_id: string; p_target_id: string }
+        Returns: string
+      }
       get_invitation: { Args: { p_token: string }; Returns: Json }
+      owner_merge_guests: {
+        Args: { p_source_guest_id: string; p_target_guest_id: string }
+        Returns: Json
+      }
       rsvp_merge_into: {
         Args: { p_target_guest_id: string; p_token: string }
         Returns: Json

@@ -707,6 +707,67 @@ export async function addGuestRelationship(input: {
   if (error) throw error;
 }
 
+/**
+ * Owner-side merge: fold `sourceId` into `targetId`. Auth-gated inside
+ * the RPC by the wedding's owner_id — safe to call from the duplicates
+ * review screen. Returns the surviving target guest id.
+ */
+export async function ownerMergeGuests(
+  sourceId: string,
+  targetId: string,
+): Promise<string> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase.rpc("owner_merge_guests", {
+    p_source_guest_id: sourceId,
+    p_target_guest_id: targetId,
+  });
+  if (error) throw error;
+  const payload = (data ?? {}) as { status?: string; guest_id?: string };
+  if (payload.status !== "merged" || !payload.guest_id) {
+    throw new Error("Merge failed");
+  }
+  return payload.guest_id;
+}
+
+/**
+ * Group guests that look like duplicates of each other. Same kind, same
+ * lowercase first name, and same lowercase last name (with null treated
+ * as a wildcard match on either side). Returns only groups of >=2.
+ */
+export function findDuplicateGroups(guests: GuestWithRsvp[]): GuestWithRsvp[][] {
+  const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
+  // Bucket by (kind, first_name) then merge buckets whose last-names match
+  // (or where one side is empty).
+  const buckets = new Map<string, GuestWithRsvp[]>();
+  for (const g of guests) {
+    const key = `${g.kind}::${norm(g.first_name)}`;
+    if (!key.endsWith("::")) {
+      const bucket = buckets.get(key) ?? [];
+      bucket.push(g);
+      buckets.set(key, bucket);
+    }
+  }
+  const groups: GuestWithRsvp[][] = [];
+  for (const bucket of buckets.values()) {
+    if (bucket.length < 2) continue;
+    // Within a first-name bucket, cluster by last name (null wildcards).
+    const clusters: GuestWithRsvp[][] = [];
+    for (const g of bucket) {
+      const ln = norm(g.last_name);
+      const target = clusters.find((c) =>
+        c.every((x) => {
+          const xln = norm(x.last_name);
+          return !ln || !xln || ln === xln;
+        }),
+      );
+      if (target) target.push(g);
+      else clusters.push([g]);
+    }
+    for (const c of clusters) if (c.length >= 2) groups.push(c);
+  }
+  return groups;
+}
+
 export async function removeGuestRelationship(input: {
   from_guest: string;
   to_guest: string;

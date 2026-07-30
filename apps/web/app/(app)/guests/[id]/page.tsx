@@ -720,6 +720,28 @@ export default function GuestDetailPage() {
               </button>
             ))}
           </div>
+          {guest.kind === "child" && kind === "child" && (
+            <button
+              type="button"
+              onClick={() => setKind("adult")}
+              style={{
+                marginTop: 8,
+                background: "transparent",
+                border: "1px dashed rgba(67,53,58,.25)",
+                borderRadius: 10,
+                padding: "8px 12px",
+                fontSize: 12.5,
+                color: T.ink2,
+                cursor: "pointer",
+                width: "100%",
+                textAlign: "left",
+              }}
+            >
+              <b>Give them their own invite.</b> Promotes this child to adult so
+              you can add an email and send them a personal RSVP link — parent
+              links stay intact.
+            </button>
+          )}
         </div>
         {kind === "adult" && (
           <>

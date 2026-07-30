@@ -87,8 +87,6 @@ export const en = {
     emptyTitle: "No guests yet",
     emptyBody: "Add your first guest to start tracking RSVPs.",
     addGuest: "Add guest",
-    partyOne: "1 guest",
-    party: (n: number) => `${n} guests`,
     status: {
       attending: "Attending",
       declined: "Declined",

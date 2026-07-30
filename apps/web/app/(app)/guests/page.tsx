@@ -54,6 +54,11 @@ export default function GuestsPage() {
       label: t.guests.tools.formLabel,
       sub: t.guests.tools.formSub,
     },
+    {
+      href: "/guests/duplicates",
+      label: "Duplicates",
+      sub: "Merge co-parents' kids",
+    },
   ];
   const { wedding } = useWedding();
   const router = useRouter();
