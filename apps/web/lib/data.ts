@@ -4,7 +4,6 @@ import { getBrowserSupabase } from "./supabaseClient";
 import type {
   Guest,
   GuestGroup,
-  GuestKind,
   GuestRelationship,
   GuestRelationshipKind,
   RoomBlock,
@@ -51,15 +50,15 @@ export async function createWedding(
     | "ceremony_rows"
     | "ceremony_reserved_rows"
     | "allow_guests_add_partner"
-    | "allow_guests_add_kids"
-    | "max_kids_per_guest"
+    | "allow_guests_add_children"
+    | "max_children_per_guest"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
     ceremony_reserved_rows?: number;
     allow_guests_add_partner?: boolean;
-    allow_guests_add_kids?: boolean;
-    max_kids_per_guest?: number | null;
+    allow_guests_add_children?: boolean;
+    max_children_per_guest?: number | null;
   },
 ): Promise<Wedding> {
   const supabase = getBrowserSupabase();
@@ -167,7 +166,7 @@ export type NewGuest = {
   last_name?: string | null;
   email?: string | null;
   phone?: string | null;
-  kind?: GuestKind;
+  age_years?: number | null;
   can_add_partner?: boolean | null;
   can_add_kids?: boolean | null;
   added_by_guest_id?: string | null;
@@ -633,7 +632,7 @@ export async function deleteSeatingTable(id: string): Promise<void> {
 // ============================================================
 
 export type GuestLink = {
-  guest: Pick<Guest, "id" | "first_name" | "last_name" | "kind">;
+  guest: Pick<Guest, "id" | "first_name" | "last_name" | "age_years">;
   kind: GuestRelationshipKind;
   direction: "outgoing" | "incoming";
 };
@@ -734,7 +733,7 @@ export type DuplicateCandidate = {
   id: string;
   first_name: string;
   last_name: string | null;
-  kind: "adult" | "child";
+  age_years: number | null;
   email: string | null;
   phone: string | null;
   guest_group: string | null;
@@ -814,9 +813,7 @@ export function guestStats(guests: GuestWithRsvp[]) {
   let coming = 0;
   let declined = 0;
   let waiting = 0;
-  let kids = 0;
   for (const g of guests) {
-    if (g.kind === "child") kids += 1;
     const status = g.rsvps?.status ?? "pending";
     if (status === "attending") coming += 1;
     else if (status === "declined") declined += 1;
@@ -829,6 +826,5 @@ export function guestStats(guests: GuestWithRsvp[]) {
     waiting,
     headcount: coming,
     parties: guests.length,
-    kids,
   };
 }

@@ -8,6 +8,10 @@ import {
   ownerMergeGuests,
   type DuplicateCandidate,
 } from "@/lib/data";
+
+function ageOrEmpty(a: number | null): string {
+  return a != null ? `${a}y` : "";
+}
 import { BackHeader } from "@/components/BackHeader";
 import { Card, Button, Loading } from "@/components/ui";
 
@@ -84,7 +88,7 @@ export default function DuplicatesPage() {
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
               {group[0].first_name} {group[0].last_name ?? ""}{" "}
               <span style={{ fontWeight: 400, color: T.muted, fontSize: 12 }}>
-                · {group[0].kind === "child" ? "child" : "adult"} · {group.length} matches
+                · {group.length} matches
               </span>
             </div>
             <div style={{ fontSize: 12.5, color: T.muted, marginBottom: 12 }}>
@@ -158,6 +162,7 @@ function GroupRows({
             <div style={{ flex: 1, fontSize: 13 }}>
               <div style={{ color: T.ink }}>
                 {g.first_name} {g.last_name ?? ""}
+                {g.age_years != null ? ` · ${ageOrEmpty(g.age_years)}` : ""}
               </div>
               <div style={{ fontSize: 11.5, color: T.faint }}>
                 {g.email || g.phone || "no contact info"}

@@ -523,7 +523,7 @@ export default function StaysPage() {
                       <div
                         style={{ fontSize: 12, color: T.faint, marginTop: 1 }}
                       >
-                        {s.kind === "child" ? "Child" : "Adult"}
+                        {s.age_years != null ? `${s.age_years}y` : ""}
                       </div>
                     </div>
                     <select

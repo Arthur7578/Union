@@ -457,8 +457,8 @@ function WeddingInviteToggles() {
 
   const patch = async (p: Partial<{
     allow_guests_add_partner: boolean;
-    allow_guests_add_kids: boolean;
-    max_kids_per_guest: number | null;
+    allow_guests_add_children: boolean;
+    max_children_per_guest: number | null;
   }>) => {
     setSaving(true);
     setErr(null);
@@ -506,24 +506,24 @@ function WeddingInviteToggles() {
       >
         <input
           type="checkbox"
-          checked={wedding.allow_guests_add_kids}
-          onChange={(e) => patch({ allow_guests_add_kids: e.target.checked })}
+          checked={wedding.allow_guests_add_children}
+          onChange={(e) => patch({ allow_guests_add_children: e.target.checked })}
           disabled={saving}
         />
         <span style={{ fontSize: 13.5 }}>Guests may add children from their RSVP</span>
       </label>
 
-      {wedding.allow_guests_add_kids && (
+      {wedding.allow_guests_add_children && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
           <label style={{ fontSize: 13, color: T.muted2 }}>Max children per guest</label>
           <input
             type="number"
             min={0}
-            value={wedding.max_kids_per_guest ?? ""}
+            value={wedding.max_children_per_guest ?? ""}
             placeholder="No cap"
             onChange={(e) => {
               const v = e.target.value.trim();
-              patch({ max_kids_per_guest: v === "" ? null : Math.max(0, parseInt(v, 10) || 0) });
+              patch({ max_children_per_guest: v === "" ? null : Math.max(0, parseInt(v, 10) || 0) });
             }}
             disabled={saving}
             style={{ width: 90 }}

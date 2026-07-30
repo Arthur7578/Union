@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { GuestGroup, GuestKind } from "@union/shared";
+import type { GuestGroup } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
   addGuest,
@@ -26,7 +26,7 @@ export default function NewGuestPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [kind, setKind] = useState<GuestKind>("adult");
+  const [age, setAge] = useState<string>("");
   const [role, setRole] = useState("");
   const [notes, setNotes] = useState("");
   const [linkPartnerId, setLinkPartnerId] = useState<string>("");
@@ -52,8 +52,6 @@ export default function NewGuestPage() {
     };
   }, [wedding]);
 
-  const adultGuests = existingGuests.filter((g) => g.kind === "adult");
-
   if (!wedding) return null;
 
   const submit = async (e: React.FormEvent) => {
@@ -62,13 +60,14 @@ export default function NewGuestPage() {
     setBusy(true);
     try {
       const primary = selectedGroups[0] ?? null;
+      const parsedAge = age.trim() === "" ? null : Math.max(0, Math.min(130, parseInt(age, 10)));
       const guest = await addGuest({
         wedding_id: wedding.id,
         first_name: firstNameV.trim(),
         last_name: lastName.trim() || null,
-        email: kind === "adult" ? email.trim() || null : null,
-        phone: kind === "adult" ? phone.trim() || null : null,
-        kind,
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+        age_years: Number.isFinite(parsedAge as number) ? parsedAge : null,
         guest_group: primary?.name ?? null,
         role: role.trim() || null,
         notes: notes.trim() || null,
@@ -76,7 +75,7 @@ export default function NewGuestPage() {
       for (const g of selectedGroups.slice(1)) {
         await addGuestToGroup(guest.id, { id: g.id, name: g.name });
       }
-      if (kind === "adult" && linkPartnerId) {
+      if (linkPartnerId) {
         await addGuestRelationship({
           wedding_id: wedding.id,
           from_guest: guest.id,
@@ -84,7 +83,7 @@ export default function NewGuestPage() {
           kind: "partner_of",
         });
       }
-      if (kind === "child" && linkParentId) {
+      if (linkParentId) {
         await addGuestRelationship({
           wedding_id: wedding.id,
           from_guest: linkParentId,
@@ -138,99 +137,79 @@ export default function NewGuestPage() {
           />
         </div>
         <div className="field">
-          <label>Guest kind</label>
-          <div style={{ display: "flex", gap: 8 }}>
-            {(
-              [
-                ["adult", "Adult"],
-                ["child", "Child"],
-              ] as const
-            ).map(([k, label]) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setKind(k)}
-                style={{
-                  flex: 1,
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border:
-                    kind === k
-                      ? "1px solid rgba(67,53,58,.35)"
-                      : "1px solid rgba(67,53,58,.12)",
-                  background: kind === k ? "rgba(224,204,177,.35)" : "#fff",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                {label}
-              </button>
-            ))}
+          <label htmlFor="em">{t.guests.fields.email}</label>
+          <input
+            id="em"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t.guests.placeholders.email}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="ph">{t.guests.fields.phone}</label>
+          <input
+            id="ph"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder={t.guests.placeholders.phone}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="ag">Age (optional)</label>
+          <input
+            id="ag"
+            type="number"
+            min={0}
+            max={130}
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            placeholder="e.g. 6 for a kids' meal"
+          />
+          <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
+            Used to suggest meal / bed choices. Leave blank if unknown.
           </div>
         </div>
-        {kind === "adult" && (
+        {existingGuests.length > 0 && (
           <>
             <div className="field">
-              <label htmlFor="em">{t.guests.fields.email}</label>
-              <input
-                id="em"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t.guests.placeholders.email}
-              />
+              <label htmlFor="lp">Link as partner of (optional)</label>
+              <select
+                id="lp"
+                value={linkPartnerId}
+                onChange={(e) => setLinkPartnerId(e.target.value)}
+              >
+                <option value="">— None —</option>
+                {existingGuests.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.first_name} {g.last_name ?? ""}
+                  </option>
+                ))}
+              </select>
+              <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
+                Linked partners can register / edit each other from their invite.
+              </div>
             </div>
             <div className="field">
-              <label htmlFor="ph">{t.guests.fields.phone}</label>
-              <input
-                id="ph"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder={t.guests.placeholders.phone}
-              />
-            </div>
-            {adultGuests.length > 0 && (
-              <div className="field">
-                <label htmlFor="lp">Link as partner of (optional)</label>
-                <select
-                  id="lp"
-                  value={linkPartnerId}
-                  onChange={(e) => setLinkPartnerId(e.target.value)}
-                >
-                  <option value="">— None —</option>
-                  {adultGuests.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.first_name} {g.last_name ?? ""}
-                    </option>
-                  ))}
-                </select>
-                <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
-                  Linked partners can register / edit each other from their invite.
-                </div>
+              <label htmlFor="lpar">Parent (optional)</label>
+              <select
+                id="lpar"
+                value={linkParentId}
+                onChange={(e) => setLinkParentId(e.target.value)}
+              >
+                <option value="">— None —</option>
+                {existingGuests.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.first_name} {g.last_name ?? ""}
+                  </option>
+                ))}
+              </select>
+              <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
+                The parent can manage this person from their own invite.
               </div>
-            )}
-          </>
-        )}
-        {kind === "child" && adultGuests.length > 0 && (
-          <div className="field">
-            <label htmlFor="lpar">Parent (optional)</label>
-            <select
-              id="lpar"
-              value={linkParentId}
-              onChange={(e) => setLinkParentId(e.target.value)}
-            >
-              <option value="">— None —</option>
-              {adultGuests.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.first_name} {g.last_name ?? ""}
-                </option>
-              ))}
-            </select>
-            <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
-              The parent can manage this child from their own invite.
             </div>
-          </div>
+          </>
         )}
         <div className="field">
           <label>{t.guests.fields.group}</label>

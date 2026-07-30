@@ -25,7 +25,7 @@ type CompanionState = {
   id: string;
   first_name: string;
   last_name: string | null;
-  kind: "adult" | "child";
+  age_years: number | null;
   relationship: "partner_of" | "parent_of";
   choice: Choice;
   dietary: string;
@@ -53,7 +53,7 @@ export function RsvpForm({
       id: c.id,
       first_name: c.first_name,
       last_name: c.last_name,
-      kind: c.kind,
+      age_years: c.age_years,
       relationship: c.relationship,
       choice:
         c.rsvp_status === "pending"
@@ -158,7 +158,7 @@ export function RsvpForm({
             id: payload.guest_id!,
             first_name: addFirst.trim(),
             last_name: addLast.trim() || null,
-            kind: addKind === "child" ? "child" : "adult",
+            age_years: null,
             relationship: addKind === "child" ? "parent_of" : "partner_of",
             choice: "attending",
             dietary: "",
@@ -353,7 +353,8 @@ export function RsvpForm({
                 <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
                   {c.first_name} {c.last_name ?? ""}{" "}
                   <span style={{ fontWeight: 400, color: "#8a7f80", fontSize: 12 }}>
-                    · {c.relationship === "partner_of" ? "partner" : c.kind === "child" ? "child" : "guest"}
+                    · {c.relationship === "partner_of" ? "partner" : "child"}
+                    {c.age_years != null ? ` · ${c.age_years}y` : ""}
                   </span>
                 </div>
                 <div className="choice-row">

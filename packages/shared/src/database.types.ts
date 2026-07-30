@@ -131,6 +131,7 @@ export type Database = {
       guests: {
         Row: {
           added_by_guest_id: string | null
+          age_years: number | null
           can_add_kids: boolean | null
           can_add_partner: boolean | null
           ceremony_row: number | null
@@ -141,7 +142,6 @@ export type Database = {
           guest_group: string | null
           id: string
           invite_token: string
-          kind: Database["public"]["Enums"]["guest_kind"]
           last_name: string | null
           notes: string | null
           phone: string | null
@@ -154,6 +154,7 @@ export type Database = {
         }
         Insert: {
           added_by_guest_id?: string | null
+          age_years?: number | null
           can_add_kids?: boolean | null
           can_add_partner?: boolean | null
           ceremony_row?: number | null
@@ -164,7 +165,6 @@ export type Database = {
           guest_group?: string | null
           id?: string
           invite_token?: string
-          kind?: Database["public"]["Enums"]["guest_kind"]
           last_name?: string | null
           notes?: string | null
           phone?: string | null
@@ -177,6 +177,7 @@ export type Database = {
         }
         Update: {
           added_by_guest_id?: string | null
+          age_years?: number | null
           can_add_kids?: boolean | null
           can_add_partner?: boolean | null
           ceremony_row?: number | null
@@ -187,7 +188,6 @@ export type Database = {
           guest_group?: string | null
           id?: string
           invite_token?: string
-          kind?: Database["public"]["Enums"]["guest_kind"]
           last_name?: string | null
           notes?: string | null
           phone?: string | null
@@ -391,14 +391,14 @@ export type Database = {
       }
       weddings: {
         Row: {
-          allow_guests_add_kids: boolean
+          allow_guests_add_children: boolean
           allow_guests_add_partner: boolean
           ceremony_reserved_rows: number
           ceremony_rows: number
           created_at: string
           event_date: string | null
           id: string
-          max_kids_per_guest: number | null
+          max_children_per_guest: number | null
           owner_id: string
           partner_one: string | null
           partner_two: string | null
@@ -407,14 +407,14 @@ export type Database = {
           venue_name: string | null
         }
         Insert: {
-          allow_guests_add_kids?: boolean
+          allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
           ceremony_reserved_rows?: number
           ceremony_rows?: number
           created_at?: string
           event_date?: string | null
           id?: string
-          max_kids_per_guest?: number | null
+          max_children_per_guest?: number | null
           owner_id: string
           partner_one?: string | null
           partner_two?: string | null
@@ -423,14 +423,14 @@ export type Database = {
           venue_name?: string | null
         }
         Update: {
-          allow_guests_add_kids?: boolean
+          allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
           ceremony_reserved_rows?: number
           ceremony_rows?: number
           created_at?: string
           event_date?: string | null
           id?: string
-          max_kids_per_guest?: number | null
+          max_children_per_guest?: number | null
           owner_id?: string
           partner_one?: string | null
           partner_two?: string | null
@@ -453,10 +453,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      _guest_name_matches: {
+      _guest_matches: {
         Args: {
+          a_age: number
           a_first: string
           a_last: string
+          b_age: number
           b_first: string
           b_last: string
         }
@@ -506,7 +508,6 @@ export type Database = {
       }
     }
     Enums: {
-      guest_kind: "adult" | "child"
       guest_relationship_kind: "parent_of" | "partner_of"
       rsvp_status: "pending" | "attending" | "declined"
     }
@@ -636,7 +637,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      guest_kind: ["adult", "child"],
       guest_relationship_kind: ["parent_of", "partner_of"],
       rsvp_status: ["pending", "attending", "declined"],
     },

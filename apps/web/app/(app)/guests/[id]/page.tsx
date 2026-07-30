@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
-import type { GuestGroup, GuestKind, RoomBlock, RsvpStatus, SeatingTable } from "@union/shared";
+import type { GuestGroup, RoomBlock, RsvpStatus, SeatingTable } from "@union/shared";
 import {
   addGuestGroup,
   addGuestRelationship,
@@ -59,7 +59,7 @@ export default function GuestDetailPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [kind, setKind] = useState<GuestKind>("adult");
+  const [age, setAge] = useState<string>("");
   const [canAddPartner, setCanAddPartner] = useState<"inherit" | "yes" | "no">("inherit");
   const [canAddKids, setCanAddKids] = useState<"inherit" | "yes" | "no">("inherit");
   const [role, setRole] = useState("");
@@ -97,7 +97,7 @@ export default function GuestDetailPage() {
           setLastName(g.last_name ?? "");
           setEmail(g.email ?? "");
           setPhone(g.phone ?? "");
-          setKind(g.kind);
+          setAge(g.age_years != null ? String(g.age_years) : "");
           setCanAddPartner(g.can_add_partner == null ? "inherit" : g.can_add_partner ? "yes" : "no");
           setCanAddKids(g.can_add_kids == null ? "inherit" : g.can_add_kids ? "yes" : "no");
           setRole(g.role ?? "");
@@ -167,12 +167,13 @@ export default function GuestDetailPage() {
       // Groups are managed live via toggleGroup below; save() covers the
       // rest of the guest record. guest_group (the primary text label) is
       // maintained automatically by the group helpers.
+      const parsedAge = age.trim() === "" ? null : Math.max(0, Math.min(130, parseInt(age, 10)));
       const updated = await updateGuest(guest.id, {
         first_name: firstNameV.trim(),
         last_name: lastName.trim() || null,
-        email: kind === "adult" ? email.trim() || null : null,
-        phone: kind === "adult" ? phone.trim() || null : null,
-        kind,
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+        age_years: Number.isFinite(parsedAge as number) ? parsedAge : null,
         can_add_partner:
           canAddPartner === "inherit" ? null : canAddPartner === "yes",
         can_add_kids:
@@ -343,7 +344,7 @@ export default function GuestDetailPage() {
     <main className="u-main">
       <BackHeader
         title={`${guest.first_name} ${guest.last_name ?? ""}`.trim()}
-        subtitle={guest.kind === "child" ? "Child" : "Adult"}
+        subtitle={guest.age_years != null ? `${guest.age_years} years old` : ""}
         fallback="/guests"
         right={<StatusPill tone={sl.tone}>{sl.text}</StatusPill>}
       />
@@ -556,66 +557,61 @@ export default function GuestDetailPage() {
             })}
           </div>
         )}
-        {kind === "adult" ? (
-          <div style={{ display: "grid", gap: 8 }}>
-            <label style={{ fontSize: 13, color: T.muted }}>
-              Link as partner
-              <select
-                onChange={(e) => {
-                  if (e.target.value) {
-                    void addPartnerLink(e.target.value);
-                    e.currentTarget.value = "";
-                  }
-                }}
-                disabled={linksBusy}
-                defaultValue=""
-                style={{ marginTop: 4 }}
-              >
-                <option value="">— Choose a guest —</option>
-                {otherGuests
-                  .filter((g) => g.kind === "adult")
-                  .filter((g) => !links.some((l) => l.kind === "partner_of" && l.guest.id === g.id))
-                  .map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.first_name} {g.last_name ?? ""}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label style={{ fontSize: 13, color: T.muted }}>
-              Add as parent of
-              <select
-                onChange={(e) => {
-                  if (e.target.value) {
-                    void addKidLink(e.target.value);
-                    e.currentTarget.value = "";
-                  }
-                }}
-                disabled={linksBusy}
-                defaultValue=""
-                style={{ marginTop: 4 }}
-              >
-                <option value="">— Choose a child —</option>
-                {otherGuests
-                  .filter((g) => g.kind === "child")
-                  .filter(
-                    (g) =>
-                      !links.some(
-                        (l) =>
-                          l.kind === "parent_of" &&
-                          l.direction === "outgoing" &&
-                          l.guest.id === g.id,
-                      ),
-                  )
-                  .map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.first_name} {g.last_name ?? ""}
-                    </option>
-                  ))}
-              </select>
-            </label>
-          </div>
-        ) : (
+        <div style={{ display: "grid", gap: 8 }}>
+          <label style={{ fontSize: 13, color: T.muted }}>
+            Link as partner
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  void addPartnerLink(e.target.value);
+                  e.currentTarget.value = "";
+                }
+              }}
+              disabled={linksBusy}
+              defaultValue=""
+              style={{ marginTop: 4 }}
+            >
+              <option value="">— Choose a guest —</option>
+              {otherGuests
+                .filter((g) => !links.some((l) => l.kind === "partner_of" && l.guest.id === g.id))
+                .map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.first_name} {g.last_name ?? ""}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label style={{ fontSize: 13, color: T.muted }}>
+            Add as parent of
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  void addKidLink(e.target.value);
+                  e.currentTarget.value = "";
+                }
+              }}
+              disabled={linksBusy}
+              defaultValue=""
+              style={{ marginTop: 4 }}
+            >
+              <option value="">— Choose a guest —</option>
+              {otherGuests
+                .filter(
+                  (g) =>
+                    !links.some(
+                      (l) =>
+                        l.kind === "parent_of" &&
+                        l.direction === "outgoing" &&
+                        l.guest.id === g.id,
+                    ),
+                )
+                .map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.first_name} {g.last_name ?? ""}
+                  </option>
+                ))}
+            </select>
+          </label>
           <label style={{ fontSize: 13, color: T.muted }}>
             Link a parent
             <select
@@ -629,9 +625,8 @@ export default function GuestDetailPage() {
               defaultValue=""
               style={{ marginTop: 4 }}
             >
-              <option value="">— Choose a parent —</option>
+              <option value="">— Choose a guest —</option>
               {otherGuests
-                .filter((g) => g.kind === "adult")
                 .filter(
                   (g) =>
                     !links.some(
@@ -648,7 +643,7 @@ export default function GuestDetailPage() {
                 ))}
             </select>
           </label>
-        )}
+        </div>
       </Card>
 
       <SectionLabel>Details</SectionLabel>
@@ -691,88 +686,46 @@ export default function GuestDetailPage() {
           />
         </div>
         <div className="field">
-          <label>Kind</label>
-          <div style={{ display: "flex", gap: 8 }}>
-            {(
-              [
-                ["adult", "Adult"],
-                ["child", "Child"],
-              ] as const
-            ).map(([k, label]) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setKind(k)}
-                style={{
-                  flex: 1,
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border:
-                    kind === k
-                      ? "1px solid rgba(67,53,58,.35)"
-                      : "1px solid rgba(67,53,58,.12)",
-                  background: kind === k ? "rgba(224,204,177,.35)" : "#fff",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                {label}
-              </button>
-            ))}
+          <label htmlFor="ag">Age (optional)</label>
+          <input
+            id="ag"
+            type="number"
+            min={0}
+            max={130}
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            placeholder="e.g. 6 for a kids' meal"
+          />
+          <div style={{ fontSize: 12, color: T.faint, marginTop: 4 }}>
+            Used to suggest meal / bed choices. Leave blank if unknown.
           </div>
-          {guest.kind === "child" && kind === "child" && (
-            <button
-              type="button"
-              onClick={() => setKind("adult")}
-              style={{
-                marginTop: 8,
-                background: "transparent",
-                border: "1px dashed rgba(67,53,58,.25)",
-                borderRadius: 10,
-                padding: "8px 12px",
-                fontSize: 12.5,
-                color: T.ink2,
-                cursor: "pointer",
-                width: "100%",
-                textAlign: "left",
-              }}
-            >
-              <b>Give them their own invite.</b> Promotes this child to adult so
-              you can add an email and send them a personal RSVP link — parent
-              links stay intact.
-            </button>
-          )}
         </div>
-        {kind === "adult" && (
-          <>
-            <div className="field">
-              <label>Can add a partner from their RSVP</label>
-              <select
-                value={canAddPartner}
-                onChange={(e) =>
-                  setCanAddPartner(e.target.value as "inherit" | "yes" | "no")
-                }
-              >
-                <option value="inherit">Inherit wedding default</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-            </div>
-            <div className="field">
-              <label>Can add children from their RSVP</label>
-              <select
-                value={canAddKids}
-                onChange={(e) =>
-                  setCanAddKids(e.target.value as "inherit" | "yes" | "no")
-                }
-              >
-                <option value="inherit">Inherit wedding default</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-            </div>
-          </>
-        )}
+        <div className="field">
+          <label>Can add a partner from their RSVP</label>
+          <select
+            value={canAddPartner}
+            onChange={(e) =>
+              setCanAddPartner(e.target.value as "inherit" | "yes" | "no")
+            }
+          >
+            <option value="inherit">Inherit wedding default</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div className="field">
+          <label>Can add children from their RSVP</label>
+          <select
+            value={canAddKids}
+            onChange={(e) =>
+              setCanAddKids(e.target.value as "inherit" | "yes" | "no")
+            }
+          >
+            <option value="inherit">Inherit wedding default</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
         <div className="field">
           <label>Groups</label>
           <GroupPicker

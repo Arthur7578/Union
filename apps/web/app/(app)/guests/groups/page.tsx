@@ -940,7 +940,7 @@ export default function GroupsPage() {
                       {m.first_name} {m.last_name ?? ""}
                     </div>
                     <div style={{ fontSize: 11.5, color: T.faint }}>
-                      {m.kind === "child" ? "Child" : "Adult"}
+                      {m.age_years != null ? `${m.age_years}y` : ""}
                     </div>
                   </Link>
                   {(groups ?? []).length > 0 ? (
@@ -1543,7 +1543,7 @@ function MemberRow({
               flexWrap: "wrap",
             }}
           >
-            <span>{m.kind === "child" ? "Child" : "Adult"}</span>
+            <span>{m.age_years != null ? `${m.age_years}y` : ""}</span>
             {m.role ? <span>· {m.role}</span> : null}
             {otherGroups.length > 0 && (
               <span style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>

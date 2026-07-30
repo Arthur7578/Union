@@ -22,7 +22,6 @@ export type GuestGroup = Tables<"guest_groups">;
 export type RoomBlock = Tables<"room_blocks">;
 export type SeatingTable = Tables<"seating_tables">;
 export type GuestRelationship = Tables<"guest_relationships">;
-export type GuestKind = Enums<"guest_kind">;
 export type GuestRelationshipKind = Enums<"guest_relationship_kind">;
 
 /** One entry in the couple's custom RSVP-form config (stored on weddings.rsvp_form_questions). */
@@ -47,7 +46,7 @@ export type Invitation = {
     id: string;
     first_name: string;
     last_name: string | null;
-    kind: GuestKind;
+    age_years: number | null;
     rsvp_status: RsvpStatus;
     dietary_notes: string | null;
     message: string | null;
@@ -56,7 +55,7 @@ export type Invitation = {
     id: string;
     first_name: string;
     last_name: string | null;
-    kind: GuestKind;
+    age_years: number | null;
     relationship: GuestRelationshipKind;
     rsvp_status: RsvpStatus;
     dietary_notes: string | null;
@@ -64,14 +63,14 @@ export type Invitation = {
   permissions: {
     can_add_partner: boolean;
     can_add_kids: boolean;
-    /** null means no cap; 0 means adding kids is disabled. */
+    /** null means no cap; 0 means adding children is disabled. */
     kids_remaining: number | null;
   };
   self_merge_candidates: Array<{
     id: string;
     first_name: string;
     last_name: string | null;
-    kind: GuestKind;
+    age_years: number | null;
     added_by_first_name: string | null;
   }>;
 };
