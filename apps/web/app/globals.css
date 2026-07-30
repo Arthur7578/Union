@@ -135,6 +135,22 @@ button {
   max-width: 720px;
 }
 
+/* Push the UserJot feedback widget above the fixed mobile tab bar so its
+   launcher doesn't overlap `.u-tabbar`. The SDK renders the launcher as a
+   fixed-positioned host element; we target the common host selectors it may
+   use and override `bottom` on mobile only. Desktop sidebar leaves the
+   default bottom-right position untouched. */
+@media (max-width: 959px) {
+  userjot-widget,
+  uj-widget,
+  [id^="userjot"],
+  [id^="uj-"],
+  [class^="userjot"],
+  [class*=" userjot"] {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
 @media (min-width: 960px) {
   .u-tabbar {
     display: none;
