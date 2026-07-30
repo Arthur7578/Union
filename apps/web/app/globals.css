@@ -135,15 +135,6 @@ button {
   max-width: 720px;
 }
 
-/* Shim class the UserJot script tags onto the widget host so we can lift it
-   above the fixed mobile tab bar. See components/UserJot.tsx for the JS that
-   finds the widget's fixed-positioned host and applies this class. */
-@media (max-width: 959px) {
-  .uj-lift-above-tabbar {
-    bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-}
-
 @media (min-width: 960px) {
   .u-tabbar {
     display: none;
