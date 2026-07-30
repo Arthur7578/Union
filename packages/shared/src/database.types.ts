@@ -453,10 +453,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _guest_name_matches: {
+        Args: {
+          a_first: string
+          a_last: string
+          b_first: string
+          b_last: string
+        }
+        Returns: boolean
+      }
       _merge_guests: {
         Args: { p_source_id: string; p_target_id: string }
         Returns: string
       }
+      find_duplicate_groups: { Args: { p_wedding_id: string }; Returns: Json }
       get_invitation: { Args: { p_token: string }; Returns: Json }
       owner_merge_guests: {
         Args: { p_source_guest_id: string; p_target_guest_id: string }

@@ -4,40 +4,40 @@ import React, { useEffect, useMemo, useState } from "react";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import {
-  fetchGuests,
-  findDuplicateGroups,
+  fetchDuplicateGroups,
   ownerMergeGuests,
-  type GuestWithRsvp,
+  type DuplicateCandidate,
 } from "@/lib/data";
 import { BackHeader } from "@/components/BackHeader";
 import { Card, Button, Loading } from "@/components/ui";
 
 export default function DuplicatesPage() {
   const { wedding } = useWedding();
-  const [guests, setGuests] = useState<GuestWithRsvp[] | null>(null);
+  const [groupsData, setGroupsData] = useState<DuplicateCandidate[][] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const reload = async () => {
     if (!wedding) return;
-    const g = await fetchGuests(wedding.id);
-    setGuests(g);
+    const g = await fetchDuplicateGroups(wedding.id);
+    setGroupsData(g);
   };
 
   useEffect(() => {
     if (!wedding) return;
-    fetchGuests(wedding.id)
-      .then(setGuests)
-      .catch(() => setGuests([]));
+    fetchDuplicateGroups(wedding.id)
+      .then(setGroupsData)
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : "Couldn't load.");
+        setGroupsData([]);
+      });
   }, [wedding]);
 
-  const groups = useMemo(() => {
-    if (!guests) return [];
-    return findDuplicateGroups(guests).filter(
-      (g) => !dismissed.has(groupKey(g)),
-    );
-  }, [guests, dismissed]);
+  const visible = useMemo(() => {
+    if (!groupsData) return [];
+    return groupsData.filter((g) => !dismissed.has(groupKey(g)));
+  }, [groupsData, dismissed]);
 
   const merge = async (sourceId: string, targetId: string) => {
     setBusy(sourceId);
@@ -60,9 +60,9 @@ export default function DuplicatesPage() {
         fallback="/guests"
       />
 
-      {guests === null && <Loading />}
+      {groupsData === null && <Loading />}
 
-      {guests !== null && groups.length === 0 && (
+      {groupsData !== null && visible.length === 0 && (
         <Card style={{ textAlign: "center", padding: 24 }}>
           <div style={{ fontSize: 15, color: T.ink }}>Nothing to review.</div>
           <div style={{ fontSize: 13, color: T.muted, marginTop: 6 }}>
@@ -77,7 +77,7 @@ export default function DuplicatesPage() {
         </div>
       )}
 
-      {groups.map((group) => {
+      {visible.map((group) => {
         const key = groupKey(group);
         return (
           <Card key={key} style={{ marginBottom: 14 }}>
@@ -125,7 +125,7 @@ function GroupRows({
   busyId,
   onMerge,
 }: {
-  group: GuestWithRsvp[];
+  group: DuplicateCandidate[];
   busyId: string | null;
   onMerge: (sourceId: string, targetId: string) => void;
 }) {
@@ -162,7 +162,10 @@ function GroupRows({
               <div style={{ fontSize: 11.5, color: T.faint }}>
                 {g.email || g.phone || "no contact info"}
                 {g.guest_group ? ` · ${g.guest_group}` : ""}
-                {g.rsvps?.status ? ` · RSVP: ${g.rsvps.status}` : ""}
+                {g.rsvp_status && g.rsvp_status !== "pending"
+                  ? ` · RSVP: ${g.rsvp_status}`
+                  : ""}
+                {g.added_by_first_name ? ` · added by ${g.added_by_first_name}` : ""}
               </div>
             </div>
             {!isTarget && (
@@ -182,7 +185,7 @@ function GroupRows({
   );
 }
 
-function groupKey(group: GuestWithRsvp[]): string {
+function groupKey(group: DuplicateCandidate[]): string {
   return group
     .map((g) => g.id)
     .sort()

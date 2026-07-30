@@ -729,43 +729,34 @@ export async function ownerMergeGuests(
   return payload.guest_id;
 }
 
+/** One guest row inside a duplicate cluster returned by find_duplicate_groups. */
+export type DuplicateCandidate = {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+  kind: "adult" | "child";
+  email: string | null;
+  phone: string | null;
+  guest_group: string | null;
+  rsvp_status: RsvpStatus;
+  added_by_first_name: string | null;
+};
+
 /**
- * Group guests that look like duplicates of each other. Same kind, same
- * lowercase first name, and same lowercase last name (with null treated
- * as a wildcard match on either side). Returns only groups of >=2.
+ * Load pre-clustered duplicate groups for the wedding. The predicate and
+ * clustering both live server-side (find_duplicate_groups) so this stays
+ * in sync with the RSVP self-merge candidates.
  */
-export function findDuplicateGroups(guests: GuestWithRsvp[]): GuestWithRsvp[][] {
-  const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
-  // Bucket by (kind, first_name) then merge buckets whose last-names match
-  // (or where one side is empty).
-  const buckets = new Map<string, GuestWithRsvp[]>();
-  for (const g of guests) {
-    const key = `${g.kind}::${norm(g.first_name)}`;
-    if (!key.endsWith("::")) {
-      const bucket = buckets.get(key) ?? [];
-      bucket.push(g);
-      buckets.set(key, bucket);
-    }
-  }
-  const groups: GuestWithRsvp[][] = [];
-  for (const bucket of buckets.values()) {
-    if (bucket.length < 2) continue;
-    // Within a first-name bucket, cluster by last name (null wildcards).
-    const clusters: GuestWithRsvp[][] = [];
-    for (const g of bucket) {
-      const ln = norm(g.last_name);
-      const target = clusters.find((c) =>
-        c.every((x) => {
-          const xln = norm(x.last_name);
-          return !ln || !xln || ln === xln;
-        }),
-      );
-      if (target) target.push(g);
-      else clusters.push([g]);
-    }
-    for (const c of clusters) if (c.length >= 2) groups.push(c);
-  }
-  return groups;
+export async function fetchDuplicateGroups(
+  weddingId: string,
+): Promise<DuplicateCandidate[][]> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase.rpc("find_duplicate_groups", {
+    p_wedding_id: weddingId,
+  });
+  if (error) throw error;
+  if (!Array.isArray(data)) return [];
+  return data as DuplicateCandidate[][];
 }
 
 export async function removeGuestRelationship(input: {
