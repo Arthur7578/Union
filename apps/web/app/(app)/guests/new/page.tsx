@@ -30,7 +30,7 @@ export default function NewGuestPage() {
   const [role, setRole] = useState("");
   const [notes, setNotes] = useState("");
   const [linkPartnerId, setLinkPartnerId] = useState<string>("");
-  const [linkParentId, setLinkParentId] = useState<string>("");
+  const [linkParentIds, setLinkParentIds] = useState<string[]>([]);
   const [allGroups, setAllGroups] = useState<GuestGroup[]>([]);
   const [selectedGroups, setSelectedGroups] = useState<GroupChip[]>([]);
   const [existingGuests, setExistingGuests] = useState<GuestWithRsvp[]>([]);
@@ -83,10 +83,10 @@ export default function NewGuestPage() {
           kind: "partner_of",
         });
       }
-      if (linkParentId) {
+      for (const parentId of linkParentIds) {
         await addGuestRelationship({
           wedding_id: wedding.id,
-          from_guest: linkParentId,
+          from_guest: parentId,
           to_guest: guest.id,
           kind: "parent_of",
         });
@@ -177,24 +177,84 @@ export default function NewGuestPage() {
               </div>
             </div>
             <div className="field">
-              <label htmlFor="lpar">Parent (optional)</label>
+              <label htmlFor="lpar">Parents (optional)</label>
+              {linkParentIds.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 6,
+                    marginBottom: 8,
+                  }}
+                >
+                  {linkParentIds.map((pid) => {
+                    const p = existingGuests.find((g) => g.id === pid);
+                    if (!p) return null;
+                    return (
+                      <span
+                        key={pid}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          background: "rgba(224,204,177,.35)",
+                          border: "1px solid rgba(67,53,58,.12)",
+                          borderRadius: 20,
+                          padding: "4px 10px",
+                          fontSize: 13,
+                        }}
+                      >
+                        {p.first_name} {p.last_name ?? ""}
+                        <button
+                          type="button"
+                          aria-label="Remove parent"
+                          onClick={() =>
+                            setLinkParentIds((prev) =>
+                              prev.filter((x) => x !== pid),
+                            )
+                          }
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#8a7f80",
+                            cursor: "pointer",
+                            fontSize: 14,
+                            lineHeight: 1,
+                          }}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
               <select
                 id="lpar"
-                value={linkParentId}
-                onChange={(e) => setLinkParentId(e.target.value)}
+                value=""
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (!v) return;
+                  setLinkParentIds((prev) =>
+                    prev.includes(v) ? prev : [...prev, v],
+                  );
+                }}
               >
-                <option value="">— None —</option>
-                {existingGuests.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.first_name} {g.last_name ?? ""}
-                  </option>
-                ))}
+                <option value="">— Add a parent —</option>
+                {existingGuests
+                  .filter((g) => !linkParentIds.includes(g.id))
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.first_name} {g.last_name ?? ""}
+                    </option>
+                  ))}
               </select>
               <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
-                The parent can manage this person from their own invite.
+                Pick each parent — e.g. mother, step-father. They can each
+                manage this person from their own invite.
               </div>
             </div>
-            {linkParentId && (
+            {linkParentIds.length > 0 && (
               <div className="field">
                 <label htmlFor="ag">Age (optional)</label>
                 <input

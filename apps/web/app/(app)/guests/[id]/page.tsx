@@ -72,6 +72,7 @@ export default function GuestDetailPage() {
   const [links, setLinks] = useState<GuestLink[]>([]);
   const [otherGuests, setOtherGuests] = useState<GuestWithRsvp[]>([]);
   const [linksBusy, setLinksBusy] = useState(false);
+  const [linksError, setLinksError] = useState<string | null>(null);
 
   // Inline age edit (chip near header).
   const [editingAge, setEditingAge] = useState(false);
@@ -126,7 +127,14 @@ export default function GuestDetailPage() {
         }
       })
       .catch(() => setGuest(null));
-    fetchGuestLinks(id).then(setLinks).catch(() => {});
+    fetchGuestLinks(id)
+      .then((l) => {
+        setLinks(l);
+        setLinksError(null);
+      })
+      .catch((e) => {
+        setLinksError(e instanceof Error ? e.message : "Couldn't load links.");
+      });
   }, [id]);
 
   useEffect(() => {
@@ -288,11 +296,13 @@ export default function GuestDetailPage() {
   const refreshLinks = async () => {
     const l = await fetchGuestLinks(guest.id);
     setLinks(l);
+    setLinksError(null);
   };
 
   const addPartnerLink = async (otherId: string) => {
     if (!wedding) return;
     setLinksBusy(true);
+    setLinksError(null);
     try {
       await addGuestRelationship({
         wedding_id: wedding.id,
@@ -301,6 +311,8 @@ export default function GuestDetailPage() {
         kind: "partner_of",
       });
       await refreshLinks();
+    } catch (e) {
+      setLinksError(e instanceof Error ? e.message : "Couldn't link partner.");
     } finally {
       setLinksBusy(false);
     }
@@ -309,6 +321,7 @@ export default function GuestDetailPage() {
   const addKidLink = async (otherId: string) => {
     if (!wedding) return;
     setLinksBusy(true);
+    setLinksError(null);
     try {
       await addGuestRelationship({
         wedding_id: wedding.id,
@@ -317,6 +330,8 @@ export default function GuestDetailPage() {
         kind: "parent_of",
       });
       await refreshLinks();
+    } catch (e) {
+      setLinksError(e instanceof Error ? e.message : "Couldn't link child.");
     } finally {
       setLinksBusy(false);
     }
@@ -325,6 +340,7 @@ export default function GuestDetailPage() {
   const addParentLink = async (otherId: string) => {
     if (!wedding) return;
     setLinksBusy(true);
+    setLinksError(null);
     try {
       await addGuestRelationship({
         wedding_id: wedding.id,
@@ -333,6 +349,8 @@ export default function GuestDetailPage() {
         kind: "parent_of",
       });
       await refreshLinks();
+    } catch (e) {
+      setLinksError(e instanceof Error ? e.message : "Couldn't link parent.");
     } finally {
       setLinksBusy(false);
     }
@@ -393,6 +411,7 @@ export default function GuestDetailPage() {
 
   const removeLink = async (link: GuestLink) => {
     setLinksBusy(true);
+    setLinksError(null);
     try {
       const from = link.direction === "outgoing" ? guest.id : link.guest.id;
       const to = link.direction === "outgoing" ? link.guest.id : guest.id;
@@ -402,6 +421,8 @@ export default function GuestDetailPage() {
         kind: link.kind,
       });
       await refreshLinks();
+    } catch (e) {
+      setLinksError(e instanceof Error ? e.message : "Couldn't remove link.");
     } finally {
       setLinksBusy(false);
     }
@@ -632,7 +653,15 @@ export default function GuestDetailPage() {
 
       <SectionLabel>Relationships</SectionLabel>
       <Card>
-        {links.length === 0 && (
+        {linksError && (
+          <div
+            className="error"
+            style={{ fontSize: 12.5, marginBottom: 10 }}
+          >
+            {linksError}
+          </div>
+        )}
+        {links.length === 0 && !linksError && (
           <div style={{ fontSize: 13, color: T.muted, marginBottom: 8 }}>
             No linked guests yet.
           </div>

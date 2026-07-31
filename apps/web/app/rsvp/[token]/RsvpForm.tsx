@@ -139,7 +139,7 @@ export function RsvpForm({
       const payload = (data ?? {}) as {
         status?: string;
         guest_id?: string;
-        candidates?: Array<{ id: string; first_name: string; last_name: string | null; kind: string; added_by_first_name: string | null }>;
+        candidates?: Array<{ id: string; first_name: string; last_name: string | null; age_years: number | null; added_by_first_name: string | null }>;
       };
       if (payload.status === "candidates" && payload.candidates?.length) {
         setAddError(

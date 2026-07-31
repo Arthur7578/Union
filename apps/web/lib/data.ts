@@ -649,13 +649,13 @@ export async function fetchGuestLinks(guestId: string): Promise<GuestLink[]> {
     supabase
       .from("guest_relationships")
       .select(
-        "kind, to_guest, guests!guest_relationships_to_guest_fkey(id, first_name, last_name, kind)",
+        "kind, to_guest, guests!guest_relationships_to_guest_fkey(id, first_name, last_name, age_years)",
       )
       .eq("from_guest", guestId),
     supabase
       .from("guest_relationships")
       .select(
-        "kind, from_guest, guests!guest_relationships_from_guest_fkey(id, first_name, last_name, kind)",
+        "kind, from_guest, guests!guest_relationships_from_guest_fkey(id, first_name, last_name, age_years)",
       )
       .eq("to_guest", guestId),
   ]);
