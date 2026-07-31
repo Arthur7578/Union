@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
 import type { GuestGroup, RoomBlock, RsvpStatus, SeatingTable } from "@union/shared";
 import {
+  addGuest,
   addGuestGroup,
   addGuestRelationship,
   addGuestToGroup,
@@ -71,6 +72,19 @@ export default function GuestDetailPage() {
   const [links, setLinks] = useState<GuestLink[]>([]);
   const [otherGuests, setOtherGuests] = useState<GuestWithRsvp[]>([]);
   const [linksBusy, setLinksBusy] = useState(false);
+
+  // Inline age edit (chip near header).
+  const [editingAge, setEditingAge] = useState(false);
+  const [ageDraft, setAgeDraft] = useState<string>("");
+  const [ageBusy, setAgeBusy] = useState(false);
+
+  // "Add a child" mini form (creates new guest + parent_of edge).
+  const [addChildOpen, setAddChildOpen] = useState(false);
+  const [addChildFirst, setAddChildFirst] = useState("");
+  const [addChildLast, setAddChildLast] = useState("");
+  const [addChildAge, setAddChildAge] = useState("");
+  const [addChildBusy, setAddChildBusy] = useState(false);
+  const [addChildError, setAddChildError] = useState<string | null>(null);
 
   // RSVP recording form (owner side).
   const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus | "">("");
@@ -324,6 +338,59 @@ export default function GuestDetailPage() {
     }
   };
 
+  const saveAge = async () => {
+    setAgeBusy(true);
+    try {
+      const parsed =
+        ageDraft.trim() === ""
+          ? null
+          : Math.max(0, Math.min(130, parseInt(ageDraft, 10)));
+      const finalAge = Number.isFinite(parsed as number) ? parsed : null;
+      const updated = await updateGuest(guest.id, { age_years: finalAge });
+      setGuest((prev) => (prev ? { ...prev, ...updated } : prev));
+      setAge(finalAge != null ? String(finalAge) : "");
+      setEditingAge(false);
+    } finally {
+      setAgeBusy(false);
+    }
+  };
+
+  const addChildGuest = async () => {
+    if (!wedding || !addChildFirst.trim()) return;
+    setAddChildBusy(true);
+    setAddChildError(null);
+    try {
+      const parsed =
+        addChildAge.trim() === ""
+          ? null
+          : Math.max(0, Math.min(130, parseInt(addChildAge, 10)));
+      const child = await addGuest({
+        wedding_id: wedding.id,
+        first_name: addChildFirst.trim(),
+        last_name: addChildLast.trim() || null,
+        age_years: Number.isFinite(parsed as number) ? parsed : null,
+        added_by_guest_id: guest.id,
+      });
+      await addGuestRelationship({
+        wedding_id: wedding.id,
+        from_guest: guest.id,
+        to_guest: child.id,
+        kind: "parent_of",
+      });
+      await refreshLinks();
+      const refreshedOthers = await fetchGuests(wedding.id);
+      setOtherGuests(refreshedOthers.filter((x) => x.id !== guest.id));
+      setAddChildOpen(false);
+      setAddChildFirst("");
+      setAddChildLast("");
+      setAddChildAge("");
+    } catch (e) {
+      setAddChildError(e instanceof Error ? e.message : "Couldn't add child.");
+    } finally {
+      setAddChildBusy(false);
+    }
+  };
+
   const removeLink = async (link: GuestLink) => {
     setLinksBusy(true);
     try {
@@ -344,10 +411,74 @@ export default function GuestDetailPage() {
     <main className="u-main">
       <BackHeader
         title={`${guest.first_name} ${guest.last_name ?? ""}`.trim()}
-        subtitle={guest.age_years != null ? `${guest.age_years} years old` : ""}
+        subtitle=""
         fallback="/guests"
         right={<StatusPill tone={sl.tone}>{sl.text}</StatusPill>}
       />
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 12,
+          fontSize: 12.5,
+          color: T.faint,
+        }}
+      >
+        {editingAge ? (
+          <>
+            <label htmlFor="age-inline" style={{ margin: 0 }}>Age</label>
+            <input
+              id="age-inline"
+              type="number"
+              min={0}
+              max={130}
+              value={ageDraft}
+              onChange={(e) => setAgeDraft(e.target.value)}
+              onBlur={() => void saveAge()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void saveAge();
+                } else if (e.key === "Escape") {
+                  setEditingAge(false);
+                }
+              }}
+              disabled={ageBusy}
+              autoFocus
+              style={{ width: 72 }}
+            />
+          </>
+        ) : guest.age_years != null ? (
+          <>
+            <span>{guest.age_years} years old</span>
+            <button
+              type="button"
+              onClick={() => {
+                setAgeDraft(String(guest.age_years ?? ""));
+                setEditingAge(true);
+              }}
+              className="u-link"
+              style={{ fontSize: 12, color: T.muted2 }}
+            >
+              edit
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setAgeDraft("");
+              setEditingAge(true);
+            }}
+            className="u-link"
+            style={{ fontSize: 12, color: T.muted2 }}
+          >
+            + Add age (only if it affects meal or bed)
+          </button>
+        )}
+      </div>
 
       {guest.rsvps && (guest.rsvps.dietary_notes || guest.rsvps.message) && (
         <Card style={{ marginBottom: 16 }}>
@@ -644,6 +775,78 @@ export default function GuestDetailPage() {
             </select>
           </label>
         </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            paddingTop: 12,
+            borderTop: `1px solid ${T.line}`,
+          }}
+        >
+          {addChildOpen ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>
+                Add a child (new guest, linked to this parent)
+              </div>
+              <input
+                type="text"
+                placeholder="First name"
+                value={addChildFirst}
+                onChange={(e) => setAddChildFirst(e.target.value)}
+                autoFocus
+              />
+              <input
+                type="text"
+                placeholder="Last name (optional)"
+                value={addChildLast}
+                onChange={(e) => setAddChildLast(e.target.value)}
+              />
+              <input
+                type="number"
+                min={0}
+                max={130}
+                placeholder="Age (optional — helps with meal / bed)"
+                value={addChildAge}
+                onChange={(e) => setAddChildAge(e.target.value)}
+              />
+              {addChildError && (
+                <div className="error" style={{ fontSize: 12 }}>
+                  {addChildError}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button
+                  onClick={() => void addChildGuest()}
+                  disabled={addChildBusy || !addChildFirst.trim()}
+                  style={{ flex: 1 }}
+                >
+                  {addChildBusy ? "Adding…" : "Add child"}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setAddChildOpen(false);
+                    setAddChildFirst("");
+                    setAddChildLast("");
+                    setAddChildAge("");
+                    setAddChildError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAddChildOpen(true)}
+              className="u-link"
+              style={{ fontSize: 13, color: T.ink2 }}
+            >
+              + Add a child
+            </button>
+          )}
+        </div>
       </Card>
 
       <SectionLabel>Details</SectionLabel>
@@ -684,21 +887,6 @@ export default function GuestDetailPage() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
-        </div>
-        <div className="field">
-          <label htmlFor="ag">Age (optional)</label>
-          <input
-            id="ag"
-            type="number"
-            min={0}
-            max={130}
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder="e.g. 6 for a kids' meal"
-          />
-          <div style={{ fontSize: 12, color: T.faint, marginTop: 4 }}>
-            Used to suggest meal / bed choices. Leave blank if unknown.
-          </div>
         </div>
         <div className="field">
           <label>Can add a partner from their RSVP</label>

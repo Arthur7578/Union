@@ -156,21 +156,6 @@ export default function NewGuestPage() {
             placeholder={t.guests.placeholders.phone}
           />
         </div>
-        <div className="field">
-          <label htmlFor="ag">Age (optional)</label>
-          <input
-            id="ag"
-            type="number"
-            min={0}
-            max={130}
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder="e.g. 6 for a kids' meal"
-          />
-          <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
-            Used to suggest meal / bed choices. Leave blank if unknown.
-          </div>
-        </div>
         {existingGuests.length > 0 && (
           <>
             <div className="field">
@@ -209,6 +194,23 @@ export default function NewGuestPage() {
                 The parent can manage this person from their own invite.
               </div>
             </div>
+            {linkParentId && (
+              <div className="field">
+                <label htmlFor="ag">Age (optional)</label>
+                <input
+                  id="ag"
+                  type="number"
+                  min={0}
+                  max={130}
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  placeholder="e.g. 6"
+                />
+                <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
+                  Helps with meal / bed choices. Leave blank if unknown.
+                </div>
+              </div>
+            )}
           </>
         )}
         <div className="field">

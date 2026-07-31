@@ -14,7 +14,6 @@ export default function NewGuest() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [age, setAge] = useState<string>("");
   const [group, setGroup] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,14 +30,11 @@ export default function NewGuest() {
     setBusy(true);
     setError(null);
     try {
-      const parsedAge =
-        age.trim() === "" ? null : Math.max(0, Math.min(130, parseInt(age, 10)));
       await addGuest({
         wedding_id: wedding.id,
         first_name: firstName.trim(),
         last_name: lastName.trim() || null,
         email: email.trim() || null,
-        age_years: Number.isFinite(parsedAge as number) ? parsedAge : null,
         guest_group: group.trim() || null,
       });
       router.back();
@@ -75,15 +71,6 @@ export default function NewGuest() {
         keyboardType="email-address"
         inputMode="email"
         autoCorrect={false}
-      />
-      <Input
-        label="Age (optional)"
-        hint="Used to suggest meal / bed choices."
-        value={age}
-        onChangeText={setAge}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        maxLength={3}
       />
       <Input
         label="Group (optional)"

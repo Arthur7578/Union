@@ -73,8 +73,7 @@ export default function GuestList() {
                 {item.first_name} {item.last_name ?? ""}
               </Text>
               <Text style={styles.meta}>
-                {item.age_years != null ? `${item.age_years}y` : ""}
-                {item.guest_group ? ` · ${item.guest_group}` : ""}
+                {item.guest_group ?? ""}
               </Text>
               <View style={styles.chipWrap}>
                 <StatusChip status={item.rsvps?.status ?? "pending"} />

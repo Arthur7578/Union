@@ -520,11 +520,6 @@ export default function StaysPage() {
                       >
                         {s.first_name} {s.last_name ?? ""}
                       </div>
-                      <div
-                        style={{ fontSize: 12, color: T.faint, marginTop: 1 }}
-                      >
-                        {s.age_years != null ? `${s.age_years}y` : ""}
-                      </div>
                     </div>
                     <select
                       value=""

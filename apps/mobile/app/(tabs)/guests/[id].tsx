@@ -32,7 +32,6 @@ export default function GuestDetail() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [age, setAge] = useState<string>("");
   const [group, setGroup] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -46,7 +45,6 @@ export default function GuestDetail() {
         setFirstName(g.first_name);
         setLastName(g.last_name ?? "");
         setEmail(g.email ?? "");
-        setAge(g.age_years != null ? String(g.age_years) : "");
         setGroup(g.guest_group ?? "");
       }
     } finally {
@@ -68,12 +66,10 @@ export default function GuestDetail() {
     }
     setBusy(true);
     try {
-      const parsedAge = age.trim() === "" ? null : Math.max(0, Math.min(130, parseInt(age, 10)));
       await updateGuest(guest.id, {
         first_name: firstName.trim(),
         last_name: lastName.trim() || null,
         email: email.trim() || null,
-        age_years: Number.isFinite(parsedAge as number) ? parsedAge : null,
         guest_group: group.trim() || null,
       });
       Alert.alert("Saved");
@@ -183,14 +179,6 @@ export default function GuestDetail() {
         keyboardType="email-address"
         inputMode="email"
         autoCorrect={false}
-      />
-      <Input
-        label="Age (optional)"
-        value={age}
-        onChangeText={setAge}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        maxLength={3}
       />
       <Input label="Group" value={group} onChangeText={setGroup} autoCapitalize="words" />
 

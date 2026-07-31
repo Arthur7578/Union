@@ -349,7 +349,6 @@ export default function GuestsPage() {
                     {g.first_name} {g.last_name ?? ""}
                   </div>
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
-                    {g.age_years != null ? `${g.age_years}y` : ""}
                     {group}
                     {role}
                   </div>
