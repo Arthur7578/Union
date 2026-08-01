@@ -274,6 +274,9 @@ input[type="email"],
 input[type="number"],
 input[type="tel"],
 input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
 textarea,
 select {
   width: 100%;
@@ -285,6 +288,16 @@ select {
   font-family: inherit;
   color: var(--text);
   background: var(--surface);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Restore the native calendar-picker indicator that appearance:none hides. */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+  cursor: pointer;
 }
 
 textarea {

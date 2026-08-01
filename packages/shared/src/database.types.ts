@@ -269,16 +269,19 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          phone: string | null
         }
         Insert: {
           created_at?: string
           full_name?: string | null
           id: string
+          phone?: string | null
         }
         Update: {
           created_at?: string
           full_name?: string | null
           id?: string
+          phone?: string | null
         }
         Relationships: []
       }
@@ -326,11 +329,13 @@ export type Database = {
           ceremony_rows: number
           created_at: string
           event_date: string | null
+          guest_count_target: number | null
           id: string
           owner_id: string
           partner_one: string | null
           partner_two: string | null
           rsvp_form_questions: Json | null
+          style_vibe: string | null
           venue_address: string | null
           venue_name: string | null
         }
@@ -339,11 +344,13 @@ export type Database = {
           ceremony_rows?: number
           created_at?: string
           event_date?: string | null
+          guest_count_target?: number | null
           id?: string
           owner_id: string
           partner_one?: string | null
           partner_two?: string | null
           rsvp_form_questions?: Json | null
+          style_vibe?: string | null
           venue_address?: string | null
           venue_name?: string | null
         }
@@ -352,11 +359,13 @@ export type Database = {
           ceremony_rows?: number
           created_at?: string
           event_date?: string | null
+          guest_count_target?: number | null
           id?: string
           owner_id?: string
           partner_one?: string | null
           partner_two?: string | null
           rsvp_form_questions?: Json | null
+          style_vibe?: string | null
           venue_address?: string | null
           venue_name?: string | null
         }

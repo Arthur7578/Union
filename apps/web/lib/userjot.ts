@@ -51,3 +51,9 @@ export function ujIdentify(user: UserJotUser): void {
   );
   ujCall("identify", payload);
 }
+
+/** Opens the floating feedback/support widget — used by the "Help & support"
+ *  row on the account hub instead of a dead link. */
+export function ujOpenWidget(): void {
+  ujCall("open");
+}
