@@ -59,6 +59,11 @@ export default function GuestsPage() {
       label: "Duplicates",
       sub: "Merge co-parents' kids",
     },
+    {
+      href: "/guests/permissions",
+      label: "Permissions",
+      sub: "Plus-ones and kids defaults",
+    },
   ];
   const { wedding } = useWedding();
   const router = useRouter();
