@@ -5,8 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
+import { useProfile } from "@/lib/profile";
+import { useWedding } from "@/lib/wedding";
 import { useT } from "@/lib/i18n/client";
+import { initial } from "@/lib/format";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { Avatar } from "./ui";
 import {
   TodayIcon,
   VendorsIcon,
@@ -47,7 +51,10 @@ function useActive(): NavKey {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const active = useActive();
+  const path = usePathname() ?? "";
   const { signOut } = useAuth();
+  const { profile } = useProfile();
+  const { wedding } = useWedding();
   const router = useRouter();
   const dict = useT();
 
@@ -55,6 +62,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     await signOut();
     router.replace("/sign-in");
   };
+
+  const displayName = profile?.full_name || wedding?.partner_one || dict.account.title;
+  const accountActive = path.startsWith("/account");
 
   return (
     <div className="u-app">
@@ -118,6 +128,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
+          <Link
+            href="/account"
+            title={dict.account.title}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "8px",
+              borderRadius: 13,
+              background: accountActive ? T.accentSoft : "transparent",
+              textDecoration: "none",
+            }}
+          >
+            <Avatar letter={initial(displayName)} size={30} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontWeight: 600,
+                  fontSize: 13,
+                  color: T.ink,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {displayName}
+              </div>
+              <div style={{ fontSize: 11, color: T.faint }}>{dict.account.title}</div>
+            </div>
+          </Link>
           <div style={{ padding: "0 6px" }}>
             <div
               style={{

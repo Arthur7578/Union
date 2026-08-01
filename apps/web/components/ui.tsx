@@ -319,6 +319,58 @@ export function Button({
   );
 }
 
+/** iOS-style toggle switch. */
+export function Switch({
+  on,
+  onChange,
+  label,
+}: {
+  on: boolean;
+  onChange: () => void;
+  label?: string;
+}) {
+  return (
+    <div
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      tabIndex={0}
+      onClick={onChange}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onChange();
+        }
+      }}
+      style={{
+        width: 46,
+        height: 27,
+        borderRadius: 999,
+        flexShrink: 0,
+        cursor: "pointer",
+        padding: 2,
+        boxSizing: "border-box",
+        display: "flex",
+        alignItems: "center",
+        background: on ? T.accent : "rgba(67,53,58,.16)",
+        transition: "background .15s ease",
+      }}
+    >
+      <div
+        style={{
+          width: 23,
+          height: 23,
+          borderRadius: "50%",
+          background: "#fff",
+          boxShadow: "0 1px 3px rgba(0,0,0,.25)",
+          transform: on ? "translateX(19px)" : "translateX(0)",
+          transition: "transform .15s ease",
+        }}
+      />
+    </div>
+  );
+}
+
 /** Centered spinner-ish loading state. */
 export function Loading({ label = "Loading…" }: { label?: string }) {
   return (

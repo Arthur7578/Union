@@ -17,8 +17,21 @@ export async function fetchWedding(ownerId: string): Promise<Wedding | null> {
 }
 
 export async function createWedding(
-  input: Omit<Wedding, "id" | "created_at" | "rsvp_form_questions"> & {
+  input: Omit<
+    Wedding,
+    | "id"
+    | "created_at"
+    | "rsvp_form_questions"
+    | "ceremony_rows"
+    | "ceremony_reserved_rows"
+    | "guest_count_target"
+    | "style_vibe"
+  > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
+    ceremony_rows?: number;
+    ceremony_reserved_rows?: number;
+    guest_count_target?: number | null;
+    style_vibe?: string | null;
   },
 ): Promise<Wedding> {
   const { data, error } = await supabase

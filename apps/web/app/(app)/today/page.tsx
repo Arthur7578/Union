@@ -4,11 +4,13 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
+import { useProfile } from "@/lib/profile";
 import { fetchGuests, guestStats, type GuestWithRsvp } from "@/lib/data";
 import {
   daysUntil,
   firstName,
   formatLongDate,
+  initial,
   todayKicker,
 } from "@/lib/format";
 import { Card, SectionLabel, Button } from "@/components/ui";
@@ -19,6 +21,7 @@ import { useLocale } from "@/lib/i18n/client";
 
 export default function TodayPage() {
   const { wedding } = useWedding();
+  const { profile } = useProfile();
   const [guests, setGuests] = useState<GuestWithRsvp[] | null>(null);
   const { locale, t } = useLocale();
 
@@ -45,20 +48,47 @@ export default function TodayPage() {
   return (
     <main className="u-main">
       {/* Greeting */}
-      <div style={{ padding: "0 2px" }}>
-        <div className="u-kicker">{todayKicker(locale)}</div>
-        <h1
-          className="u-serif"
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, padding: "0 2px" }}>
+        <div>
+          <div className="u-kicker">{todayKicker(locale)}</div>
+          <h1
+            className="u-serif"
+            style={{
+              fontWeight: 600,
+              fontSize: 40,
+              lineHeight: 1.02,
+              color: T.ink,
+              margin: "9px 0 0",
+            }}
+          >
+            {t.today.goodMorning(name)}
+          </h1>
+        </div>
+        <Link
+          href="/account"
+          title={t.account.title}
           style={{
-            fontWeight: 600,
-            fontSize: 40,
-            lineHeight: 1.02,
-            color: T.ink,
-            margin: "9px 0 0",
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: T.accentPink,
+            border: "1.5px solid rgba(255,255,255,.9)",
+            boxShadow: "0 3px 10px rgba(67,53,58,.12)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            textDecoration: "none",
+            marginTop: 2,
           }}
         >
-          {t.today.goodMorning(name)}
-        </h1>
+          <span
+            className="u-serif"
+            style={{ fontWeight: 600, fontSize: 19, color: T.accentInk }}
+          >
+            {initial(profile?.full_name || wedding.partner_one)}
+          </span>
+        </Link>
       </div>
 
       {/* Countdown */}

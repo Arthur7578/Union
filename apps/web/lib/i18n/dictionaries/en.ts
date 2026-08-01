@@ -430,6 +430,124 @@ export const en = {
     signOut: "Sign out",
   },
 
+  // Account hub — "You", "Your wedding", app settings, notifications, privacy
+  account: {
+    kicker: "Account",
+    title: "You",
+    version: "Union for web · v1.0",
+
+    weddingSection: "Your wedding",
+    weddingRowFallback: "Add your date & venue",
+    teamRowTitle: "Who's planning",
+    teamRowSub: (n: number) => `${n} planning together`,
+
+    plusKicker: "Union Plus",
+    plusTitle: "Your planner, fully unlocked",
+    plusBody:
+      "Unlimited negotiations, all vendor searches, and priority when Union reaches out on your behalf.",
+    plusRenews: "Renews Sept 1 · $18/mo",
+    managePlan: "Manage plan",
+
+    accountSection: "Account",
+    billing: "Payment & billing",
+    settingsRow: "Settings",
+    notificationsRow: "Notifications",
+    notificationsSub: "What Union tells you about, and when",
+    privacyRow: "Privacy & your data",
+    helpRow: "Help & support",
+
+    // Edit profile
+    profileTitle: "Your profile",
+    profileSubtitle: "The details that are only about you.",
+    detailsSection: "Your details",
+    fullName: "Full name",
+    email: "Email",
+    emailNote:
+      "You sign in with an emailed code, so there's no password here — contact support if this needs to change.",
+    phone: "Phone",
+    saved: "Saved.",
+
+    // Your wedding
+    weddingTitle: "Your wedding",
+    weddingKicker: "Wedding settings",
+    partnerNotSet: "…",
+    emptyPrompt:
+      "Fill in your date and venue and Union starts building the plan around them.",
+    detailsHeading: "The details",
+    dateLabel: "Wedding date",
+    venueLabel: "Venue",
+    venueAddressLabel: "Address",
+    venueAddressPlaceholder: "123 Orchard Rd, Hood River, OR",
+    guestTargetLabel: "Guest count · target",
+    styleLabel: "Style & vibe",
+    stylePlaceholder: "Garden · warm neutrals · relaxed",
+    manageSection: "Manage",
+    deleteWedding: "Delete wedding & data",
+    deleting: "Deleting…",
+    deleteConfirm: (couple: string) =>
+      `This permanently deletes ${couple}'s wedding — guests, RSVPs, seating, everything. This can't be undone. Continue?`,
+
+    // App settings
+    settingsTitle: "Settings",
+    settingsKicker: "App settings",
+    autonomyLabel: "How much Union does on its own",
+    autonomyAsk: "Ask first",
+    autonomySuggest: "Suggest",
+    autonomyAuto: "Auto",
+    autonomyDescAsk:
+      "Union brings you every option and waits for your yes before it books, pays, or replies on your behalf.",
+    autonomyDescSuggest:
+      "Union recommends the next step and gets your go-ahead before anything happens.",
+    autonomyDescAuto:
+      "Union handles the routine calls itself, and only interrupts you for the decisions that matter.",
+    connectedSection: "Connected",
+    connectedCalendar: "Calendar",
+    connectedCalendarStatus: "Apple · on",
+    connectedEmail: "Email for vendors",
+    connectedOn: "Connected",
+    connectedContacts: "Contacts",
+    connectedOff: "Not connected",
+
+    // Notifications
+    notifTitle: "Notifications",
+    notifyWhen: "Notify me when",
+    notifVendorReplies: "A vendor replies",
+    notifVendorRepliesSub: "Quotes, questions, confirmations",
+    notifGuestRsvps: "A guest RSVPs",
+    notifGuestRsvpsSub: "Yes, no, and dietary notes",
+    notifUnionActions: "Union takes an action",
+    notifUnionActionsSub: "When it books or negotiates for you",
+    notifCoOrganiser: "A co-organiser does something",
+    notifCoOrganiserSub: "Anyone you've invited to help plan",
+    rhythm: "Rhythm",
+    notifWeeklyDigest: "Weekly digest",
+    notifWeeklyDigestSub: "One calm summary, Sunday evening",
+    notifQuietHours: "Quiet hours",
+    notifQuietHoursSub: "Nothing between 9pm and 8am",
+    channels: "Channels",
+    channelPush: "Push",
+    channelOn: "On",
+    channelEmail: "Email",
+    channelDigestOnly: "Digest only",
+
+    // Privacy
+    privacyTitle: "Privacy & your data",
+    privacyIntro:
+      "Union keeps only what it needs to plan your wedding with you — no ad tracking, nothing sold. Here's what's stored, and where.",
+    privacyWhatWeKeep: "What we keep",
+    privacyAccountTitle: "Your account",
+    privacyAccountBody: "Name, email, and phone — used to sign you in and reach you.",
+    privacyWeddingTitle: "Your wedding",
+    privacyWeddingBody:
+      "Date, venue, guest target, and style — the facts Union plans around.",
+    privacyGuestsTitle: "Your guest list",
+    privacyGuestsBody:
+      "Names, contact info, RSVPs, and dietary notes — visible only to you and anyone you invite to help.",
+    privacyDeleteTitle: "Delete everything",
+    privacyDeleteBody:
+      "Deleting your wedding permanently removes it and everything under it — guests, RSVPs, seating, all of it.",
+  },
+
   // Public RSVP flow
   rsvp: {
     invalidTitle: "Invitation not found",
