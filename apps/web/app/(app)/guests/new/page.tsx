@@ -85,8 +85,6 @@ export default function NewGuestPage() {
 
   if (!wedding) return null;
 
-  const showAgeField = parents.length > 0;
-
   const excludedFor = (self: LinkedEntry[]): string[] => {
     const ids = new Set<string>();
     if (partner?.kind === "link") ids.add(partner.guest.id);
@@ -238,116 +236,21 @@ export default function NewGuestPage() {
           />
         </div>
 
-        <RelationshipSection
-          label="Partner (optional)"
-          hint="Linked partners can register / edit each other from their invite."
-          entries={partner ? [partner] : []}
-          onRemove={() => setPartner(null)}
-          onUpdate={(idx, patch) =>
-            setPartner((prev) =>
-              prev && prev.kind === "new"
-                ? { ...prev, data: { ...prev.data, ...patch } }
-                : prev,
-            )
-          }
-        >
-          {!partner && (
-            <RelationshipCombobox
-              label=""
-              placeholder="Type a name to search or add a partner…"
-              guests={existingGuests}
-              excludeIds={excludedFor([])}
-              createLabel="Add"
-              onPickExisting={(g) => setPartner({ kind: "link", guest: g })}
-              onStartCreate={(name) =>
-                setPartner({ kind: "new", data: emptyRelative(name) })
-              }
-            />
-          )}
-        </RelationshipSection>
-
-        <RelationshipSection
-          label="Parents (optional)"
-          hint="Pick or type each parent — e.g. mother, step-father. They can each manage this person from their own invite."
-          entries={parents}
-          onRemove={(idx) =>
-            setParents((prev) => prev.filter((_, i) => i !== idx))
-          }
-          onUpdate={(idx, patch) =>
-            setParents((prev) =>
-              prev.map((e, i) =>
-                i === idx && e.kind === "new"
-                  ? { ...e, data: { ...e.data, ...patch } }
-                  : e,
-              ),
-            )
-          }
-        >
-          <RelationshipCombobox
-            label=""
-            placeholder="Type a name to search or add a parent…"
-            guests={existingGuests}
-            excludeIds={excludedFor(parents)}
-            createLabel="Add"
-            onPickExisting={(g) =>
-              setParents((prev) => [...prev, { kind: "link", guest: g }])
-            }
-            onStartCreate={(name) =>
-              setParents((prev) => [...prev, { kind: "new", data: emptyRelative(name) }])
-            }
+        <div className="field">
+          <label htmlFor="ag">Age (optional)</label>
+          <input
+            id="ag"
+            type="number"
+            min={0}
+            max={130}
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            placeholder="e.g. 6"
           />
-        </RelationshipSection>
-
-        {showAgeField && (
-          <div className="field">
-            <label htmlFor="ag">Age (optional)</label>
-            <input
-              id="ag"
-              type="number"
-              min={0}
-              max={130}
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              placeholder="e.g. 6"
-            />
-            <div style={{ fontSize: 12, color: T.faint, marginTop: 4 }}>
-              Helps with meal / bed choices. Leave blank if unknown.
-            </div>
+          <div style={{ fontSize: 12, color: T.faint, marginTop: 4 }}>
+            Helps with meal / bed choices. Leave blank if unknown.
           </div>
-        )}
-
-        <RelationshipSection
-          label="Children (optional)"
-          hint="Pick or type each child. This guest becomes their parent."
-          entries={children}
-          onRemove={(idx) =>
-            setChildren((prev) => prev.filter((_, i) => i !== idx))
-          }
-          onUpdate={(idx, patch) =>
-            setChildren((prev) =>
-              prev.map((e, i) =>
-                i === idx && e.kind === "new"
-                  ? { ...e, data: { ...e.data, ...patch } }
-                  : e,
-              ),
-            )
-          }
-          childAgeLabel="Age (optional — helps with meal / bed)"
-        >
-          <RelationshipCombobox
-            label=""
-            placeholder="Type a name to search or add a child…"
-            guests={existingGuests}
-            excludeIds={excludedFor(children)}
-            createLabel="Add"
-            onPickExisting={(g) =>
-              setChildren((prev) => [...prev, { kind: "link", guest: g }])
-            }
-            onStartCreate={(name) =>
-              setChildren((prev) => [...prev, { kind: "new", data: emptyRelative(name) }])
-            }
-          />
-        </RelationshipSection>
+        </div>
 
         <div className="field">
           <label>{t.guests.fields.group}</label>
@@ -391,6 +294,106 @@ export default function NewGuestPage() {
             rows={3}
           />
         </div>
+
+        <RelationshipSection
+          label="Partner (optional)"
+          hint="Linked partners can register / edit each other from their invite."
+          entries={partner ? [partner] : []}
+          onRemove={() => setPartner(null)}
+          onUpdate={(idx, patch) =>
+            setPartner((prev) =>
+              prev && prev.kind === "new"
+                ? { ...prev, data: { ...prev.data, ...patch } }
+                : prev,
+            )
+          }
+          existingGroups={allGroups.map((g) => g.name)}
+          suggestedRoles={t.guests.suggestedRoles as unknown as string[]}
+        >
+          {!partner && (
+            <RelationshipCombobox
+              label=""
+              placeholder="Type a name to search or add a partner…"
+              guests={existingGuests}
+              excludeIds={excludedFor([])}
+              createLabel="Add"
+              onPickExisting={(g) => setPartner({ kind: "link", guest: g })}
+              onStartCreate={(name) =>
+                setPartner({ kind: "new", data: emptyRelative(name) })
+              }
+            />
+          )}
+        </RelationshipSection>
+
+        <RelationshipSection
+          label="Parents (optional)"
+          hint="Pick or type each parent — e.g. mother, step-father. They can each manage this person from their own invite."
+          entries={parents}
+          onRemove={(idx) =>
+            setParents((prev) => prev.filter((_, i) => i !== idx))
+          }
+          onUpdate={(idx, patch) =>
+            setParents((prev) =>
+              prev.map((e, i) =>
+                i === idx && e.kind === "new"
+                  ? { ...e, data: { ...e.data, ...patch } }
+                  : e,
+              ),
+            )
+          }
+          existingGroups={allGroups.map((g) => g.name)}
+          suggestedRoles={t.guests.suggestedRoles as unknown as string[]}
+        >
+          <RelationshipCombobox
+            label=""
+            placeholder="Type a name to search or add a parent…"
+            guests={existingGuests}
+            excludeIds={excludedFor(parents)}
+            createLabel="Add"
+            onPickExisting={(g) =>
+              setParents((prev) => [...prev, { kind: "link", guest: g }])
+            }
+            onStartCreate={(name) =>
+              setParents((prev) => [...prev, { kind: "new", data: emptyRelative(name) }])
+            }
+          />
+        </RelationshipSection>
+
+        <RelationshipSection
+          label="Children (optional)"
+          hint="Pick or type each child. This guest becomes their parent."
+          entries={children}
+          onRemove={(idx) =>
+            setChildren((prev) => prev.filter((_, i) => i !== idx))
+          }
+          onUpdate={(idx, patch) =>
+            setChildren((prev) =>
+              prev.map((e, i) =>
+                i === idx && e.kind === "new"
+                  ? { ...e, data: { ...e.data, ...patch } }
+                  : e,
+              ),
+            )
+          }
+          childAgeLabel="Age (optional — helps with meal / bed)"
+          existingGroups={allGroups.map((g) => g.name)}
+          suggestedRoles={t.guests.suggestedRoles as unknown as string[]}
+        >
+          <RelationshipCombobox
+            label=""
+            placeholder="Type a name to search or add a child…"
+            guests={existingGuests}
+            excludeIds={excludedFor(children)}
+            createLabel="Add"
+            onPickExisting={(g) =>
+              setChildren((prev) => [...prev, { kind: "link", guest: g }])
+            }
+            onStartCreate={(name) =>
+              setChildren((prev) => [...prev, { kind: "new", data: emptyRelative(name) }])
+            }
+          />
+        </RelationshipSection>
+
         {error && <div className="error">{error}</div>}
         <Button
           type="submit"
@@ -416,6 +419,8 @@ function RelationshipSection({
   onRemove,
   onUpdate,
   childAgeLabel,
+  existingGroups,
+  suggestedRoles,
   children,
 }: {
   label: string;
@@ -424,6 +429,8 @@ function RelationshipSection({
   onRemove: (idx: number) => void;
   onUpdate: (idx: number, patch: Partial<NewRelatedGuest>) => void;
   childAgeLabel?: string;
+  existingGroups?: string[];
+  suggestedRoles?: string[];
   children: React.ReactNode;
 }) {
   return (
@@ -476,6 +483,8 @@ function RelationshipSection({
                   onRemove={() => onRemove(idx)}
                   removeLabel="Remove"
                   ageLabel={childAgeLabel ?? "Age (optional)"}
+                  existingGroups={existingGroups}
+                  suggestedRoles={suggestedRoles}
                   autoFocus
                 />
               </div>

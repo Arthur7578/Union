@@ -1,16 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useId } from "react";
 import type { NewRelatedGuest } from "@/lib/data";
 
 /**
- * Editable card for a not-yet-persisted related guest (child or
- * partner) that the parent form is holding in state. Used both by
- * the add-guest page and by the guest detail page.
+ * Editable card for a not-yet-persisted related guest (child, partner
+ * or parent) that the enclosing form is holding in state. Used both
+ * by the add-guest page and by the guest detail page.
  *
  * Renders the same field set as a full guest edit — first, last,
- * email, phone, age, notes — so nothing ever silently degrades to
- * "name only" like the previous "+ Add a child" mini-form did.
+ * email, phone, age, group, role, notes — so nothing silently
+ * degrades to a name-only mini-form.
+ *
+ * `existingGroups` and `suggestedRoles` power the autocomplete on
+ * the group and role inputs so the user can pick from what already
+ * exists on the wedding without having to remember the exact name.
+ * Typing a new name is still allowed (create-on-save inside the RPC).
  */
 export function NewRelativeForm({
   value,
@@ -19,6 +24,8 @@ export function NewRelativeForm({
   removeLabel = "Remove",
   autoFocus = false,
   ageLabel = "Age (optional)",
+  existingGroups = [],
+  suggestedRoles = [],
 }: {
   value: NewRelatedGuest;
   onChange: (patch: Partial<NewRelatedGuest>) => void;
@@ -26,7 +33,15 @@ export function NewRelativeForm({
   removeLabel?: string;
   autoFocus?: boolean;
   ageLabel?: string;
+  existingGroups?: string[];
+  suggestedRoles?: string[];
 }) {
+  // useId keeps the datalists distinct when several NewRelativeForm
+  // instances are on the same page (e.g. multiple new children).
+  const uid = useId();
+  const groupsListId = `nrf-groups-${uid}`;
+  const rolesListId = `nrf-roles-${uid}`;
+
   const setAge = (raw: string) => {
     if (raw.trim() === "") {
       onChange({ age_years: null });
@@ -87,16 +102,32 @@ export function NewRelativeForm({
       />
       <input
         type="text"
-        placeholder="Group (optional — e.g. Bride's family)"
+        list={existingGroups.length > 0 ? groupsListId : undefined}
+        placeholder="Group (pick or type a new one — e.g. Bride's family)"
         value={value.guest_group ?? ""}
         onChange={(e) => onChange({ guest_group: e.target.value })}
       />
+      {existingGroups.length > 0 && (
+        <datalist id={groupsListId}>
+          {existingGroups.map((g) => (
+            <option key={g} value={g} />
+          ))}
+        </datalist>
+      )}
       <input
         type="text"
+        list={suggestedRoles.length > 0 ? rolesListId : undefined}
         placeholder="Role (optional — bridesmaid, ring bearer…)"
         value={value.role ?? ""}
         onChange={(e) => onChange({ role: e.target.value })}
       />
+      {suggestedRoles.length > 0 && (
+        <datalist id={rolesListId}>
+          {suggestedRoles.map((r) => (
+            <option key={r} value={r} />
+          ))}
+        </datalist>
+      )}
       <textarea
         placeholder="Notes (optional)"
         value={value.notes ?? ""}

@@ -15,6 +15,7 @@ import {
 import { BackHeader } from "@/components/BackHeader";
 import { Card, Button, Loading, SectionLabel } from "@/components/ui";
 import { MergeReviewPanel } from "@/components/MergeReviewPanel";
+import { RelationshipCombobox } from "@/components/RelationshipCombobox";
 
 function ageOrEmpty(a: number | null): string {
   return a != null ? `${a}y` : "";
@@ -186,20 +187,22 @@ export default function DuplicatesPage() {
               auto-detector missed — different spellings, nicknames, etc. The
               review step shows every field so you can verify before merging.
             </div>
-            <div style={{ display: "grid", gap: 8 }}>
-              <GuestPicker
+            <div style={{ display: "grid", gap: 10 }}>
+              <ManualMergeSlot
                 label="First guest"
                 guests={allGuests}
-                excludeId={manualBId}
-                value={manualAId}
-                onChange={setManualAId}
+                selectedId={manualAId}
+                excludeIds={[manualBId].filter(Boolean)}
+                onPick={setManualAId}
+                onClear={() => setManualAId("")}
               />
-              <GuestPicker
+              <ManualMergeSlot
                 label="Second guest"
                 guests={allGuests}
-                excludeId={manualAId}
-                value={manualBId}
-                onChange={setManualBId}
+                selectedId={manualBId}
+                excludeIds={[manualAId].filter(Boolean)}
+                onPick={setManualBId}
+                onClear={() => setManualBId("")}
               />
             </div>
             <Button
@@ -259,35 +262,72 @@ export default function DuplicatesPage() {
   );
 }
 
-function GuestPicker({
+function ManualMergeSlot({
   label,
   guests,
-  excludeId,
-  value,
-  onChange,
+  selectedId,
+  excludeIds,
+  onPick,
+  onClear,
 }: {
   label: string;
   guests: GuestWithRsvp[];
-  excludeId: string;
-  value: string;
-  onChange: (id: string) => void;
+  selectedId: string;
+  excludeIds: string[];
+  onPick: (id: string) => void;
+  onClear: () => void;
 }) {
+  const chosen = selectedId ? guests.find((g) => g.id === selectedId) : null;
+  if (chosen) {
+    return (
+      <div style={{ display: "grid", gap: 4 }}>
+        <div style={{ fontSize: 13, color: T.muted }}>{label}</div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "6px 12px",
+            background: "rgba(224,204,177,.35)",
+            border: "1px solid rgba(67,53,58,.12)",
+            borderRadius: 20,
+            fontSize: 13,
+          }}
+        >
+          <span style={{ flex: 1 }}>
+            {chosen.first_name} {chosen.last_name ?? ""}
+            {chosen.email ? ` · ${chosen.email}` : ""}
+            {chosen.guest_group ? ` · ${chosen.guest_group}` : ""}
+          </span>
+          <button
+            type="button"
+            aria-label="Change"
+            onClick={onClear}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: T.muted,
+              cursor: "pointer",
+              fontSize: 14,
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
-    <label style={{ fontSize: 13, color: T.muted, display: "grid", gap: 4 }}>
-      {label}
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">— Pick a guest —</option>
-        {guests
-          .filter((g) => g.id !== excludeId)
-          .map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.first_name} {g.last_name ?? ""}
-              {g.email ? ` · ${g.email}` : ""}
-              {g.guest_group ? ` · ${g.guest_group}` : ""}
-            </option>
-          ))}
-      </select>
-    </label>
+    <RelationshipCombobox
+      label={label}
+      placeholder="Type a name…"
+      guests={guests}
+      excludeIds={excludeIds}
+      canCreate={false}
+      onPickExisting={(g) => onPick(g.id)}
+      onStartCreate={() => undefined}
+    />
   );
 }
 

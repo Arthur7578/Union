@@ -92,8 +92,7 @@ export function MergeReviewPanel({
   onDone: (survivingId: string) => void;
   onCancel: () => void;
 }) {
-  const defaultTargetId = useMemo(() => pickDefaultTargetId(guests), [guests]);
-  const [targetId, setTargetId] = useState<string>(defaultTargetId);
+  const targetId = useMemo(() => pickDefaultTargetId(guests), [guests]);
   const target = guests.find((g) => g.id === targetId) ?? guests[0];
   const others = guests.filter((g) => g.id !== target.id);
 
@@ -381,32 +380,6 @@ export function MergeReviewPanel({
           );
         })}
       </div>
-
-      {guests.length === 2 && (
-        <details style={{ fontSize: 12.5, color: T.muted }}>
-          <summary style={{ cursor: "pointer" }}>Advanced: swap target</summary>
-          <div style={{ marginTop: 6, display: "grid", gap: 4 }}>
-            {guests.map((g) => (
-              <label
-                key={g.id}
-                style={{ display: "flex", alignItems: "center", gap: 6 }}
-              >
-                <input
-                  type="radio"
-                  name="merge-target"
-                  checked={targetId === g.id}
-                  onChange={() => setTargetId(g.id)}
-                />
-                Keep {g.first_name} {g.last_name ?? ""}'s row id
-              </label>
-            ))}
-            <span style={{ color: T.faint }}>
-              Usually irrelevant — the surviving row's field values come from
-              your picks above.
-            </span>
-          </div>
-        </details>
-      )}
 
       {error && (
         <div className="error" style={{ fontSize: 12 }}>

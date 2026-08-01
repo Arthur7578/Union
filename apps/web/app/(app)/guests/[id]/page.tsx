@@ -827,6 +827,8 @@ export default function GuestDetailPage() {
               setAddPartnerError(null);
             }}
             saveLabel="Add partner"
+            existingGroups={allGroups.map((g) => g.name)}
+            suggestedRoles={SUGGESTED_ROLES}
           />
           <RelationshipRow
             title="Add a child"
@@ -857,6 +859,8 @@ export default function GuestDetailPage() {
             }}
             saveLabel="Add child"
             ageLabel="Age (optional — helps with meal / bed)"
+            existingGroups={allGroups.map((g) => g.name)}
+            suggestedRoles={SUGGESTED_ROLES}
           />
           <RelationshipRow
             title="Add a parent"
@@ -886,6 +890,8 @@ export default function GuestDetailPage() {
               setAddParentError(null);
             }}
             saveLabel="Add parent"
+            existingGroups={allGroups.map((g) => g.name)}
+            suggestedRoles={SUGGESTED_ROLES}
           />
         </div>
       </Card>
@@ -1085,6 +1091,8 @@ function RelationshipRow({
   onCancel,
   saveLabel,
   ageLabel = "Age (optional)",
+  existingGroups = [],
+  suggestedRoles = [],
 }: {
   title: string;
   combo: React.ReactNode;
@@ -1096,6 +1104,8 @@ function RelationshipRow({
   onCancel: () => void;
   saveLabel: string;
   ageLabel?: string;
+  existingGroups?: string[];
+  suggestedRoles?: string[];
 }) {
   return (
     <div style={{ display: "grid", gap: 6 }}>
@@ -1107,6 +1117,8 @@ function RelationshipRow({
             onChange={onChange}
             autoFocus
             ageLabel={ageLabel}
+            existingGroups={existingGroups}
+            suggestedRoles={suggestedRoles}
           />
           {error && (
             <div className="error" style={{ fontSize: 12 }}>
