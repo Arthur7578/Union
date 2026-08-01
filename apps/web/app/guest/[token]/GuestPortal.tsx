@@ -957,7 +957,11 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                       {match.requested ? (locale === "fr" ? "✓ Demande envoyée" : "✓ Contact Requested") : (locale === "fr" ? "Demander le contact" : "Request Contact Details")}
                     </button>
                   </div>
-                ))}
+                )) : (
+                  <p style={{ color: "var(--muted)", fontSize: "14px", textAlign: "center", padding: "40px 20px" }}>
+                    {locale === "fr" ? "Aucun trajet partagé n'est disponible pour le moment." : "No shared travel options available yet."}
+                  </p>
+                )}
               </div>
 
               {/* Right Column: Share Your Travel */}
