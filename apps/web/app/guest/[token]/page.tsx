@@ -6,6 +6,46 @@ import { GuestPortal } from "./GuestPortal";
 // Always fetch fresh invitation data (no static caching of personal links).
 export const dynamic = "force-dynamic";
 
+export interface DBInvitation {
+  wedding: {
+    partner_one: string | null;
+    partner_two: string | null;
+    event_date: string | null;
+    venue_name: string | null;
+    venue_address: string | null;
+  };
+  guest: {
+    id: string;
+    first_name: string;
+    last_name: string | null;
+    age_years: number | null;
+    rsvp_status: "pending" | "attending" | "declined";
+    dietary_notes: string | null;
+    message: string | null;
+  };
+  companions: Array<{
+    id: string;
+    first_name: string;
+    last_name: string | null;
+    age_years: number | null;
+    relationship: "parent_of" | "partner_of" | null;
+    rsvp_status: "pending" | "attending" | "declined";
+    dietary_notes: string | null;
+  }>;
+  permissions: {
+    can_add_partner: boolean;
+    can_add_kids: boolean;
+    kids_remaining: number | null;
+  };
+  self_merge_candidates: Array<{
+    id: string;
+    first_name: string;
+    last_name: string | null;
+    age_years: number | null;
+    added_by_first_name?: string | null;
+  }>;
+}
+
 export default async function GuestExperiencePage({
   params,
 }: {
@@ -15,25 +55,45 @@ export default async function GuestExperiencePage({
   const locale = await resolveLocale();
   const t = getDictionary(locale);
 
-  let invitation = null;
+  let invitation: DBInvitation | null = null;
   let isDemo = false;
 
   if (token === "demo") {
     isDemo = true;
     invitation = {
-      guest_id: "demo-guest-id",
-      guest_first_name: "Arthur",
-      guest_last_name: "Pendragon",
-      party_size: 2,
-      partner_one: "Maya",
-      partner_two: "Daniel",
-      event_date: "2026-09-20",
-      venue_name: "Wildflower Barn",
-      venue_address: "123 Orchard Rd, Hood River, OR",
-      rsvp_status: "pending" as const,
-      num_attending: 0,
-      dietary_notes: "",
-      message: "",
+      wedding: {
+        partner_one: "Maya",
+        partner_two: "Daniel",
+        event_date: "2026-09-20",
+        venue_name: "Wildflower Barn",
+        venue_address: "123 Orchard Rd, Hood River, OR",
+      },
+      guest: {
+        id: "demo-guest-id",
+        first_name: "Arthur",
+        last_name: "Pendragon",
+        age_years: 30,
+        rsvp_status: "pending",
+        dietary_notes: "",
+        message: "",
+      },
+      companions: [
+        {
+          id: "demo-companion-1",
+          first_name: "Guinevere",
+          last_name: "Pendragon",
+          age_years: 28,
+          relationship: "partner_of",
+          rsvp_status: "pending",
+          dietary_notes: "",
+        }
+      ],
+      permissions: {
+        can_add_partner: false,
+        can_add_kids: false,
+        kids_remaining: 0,
+      },
+      self_merge_candidates: [],
     };
   } else {
     // Attempt to load from Supabase for all other tokens
@@ -43,8 +103,9 @@ export default async function GuestExperiencePage({
         p_token: token,
       });
 
-      if (!error && data && data.length > 0) {
-        invitation = data[0];
+      if (!error && data) {
+        // Since get_invitation returns a JSONB object, cast it directly to DBInvitation
+        invitation = data as unknown as DBInvitation;
       }
     } catch (e) {
       console.error("Failed to load invitation from Supabase:", e);

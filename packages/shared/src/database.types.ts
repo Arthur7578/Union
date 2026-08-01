@@ -386,21 +386,16 @@ export type Database = {
     Functions: {
       get_invitation: {
         Args: { p_token: string }
-        Returns: {
-          dietary_notes: string
-          event_date: string
-          guest_first_name: string
-          guest_id: string
-          guest_last_name: string
-          message: string
-          num_attending: number
-          partner_one: string
-          partner_two: string
-          party_size: number
-          rsvp_status: Database["public"]["Enums"]["rsvp_status"]
-          venue_address: string
-          venue_name: string
-        }[]
+        Returns: Json
+      }
+      submit_companion_rsvp: {
+        Args: {
+          p_companion_guest_id: string
+          p_dietary_notes?: string
+          p_status: string
+          p_token: string
+        }
+        Returns: Json
       }
       submit_rsvp: {
         Args: {
