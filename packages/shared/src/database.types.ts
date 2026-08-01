@@ -484,6 +484,8 @@ export type Database = {
           p_first_name: string
           p_group_ids?: string[]
           p_last_name?: string
+          p_new_children?: Json[]
+          p_new_partner?: Json
           p_notes?: string
           p_parent_ids?: string[]
           p_partner_id?: string

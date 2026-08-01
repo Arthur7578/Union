@@ -5,11 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
 import type { GuestGroup, RoomBlock, RsvpStatus, SeatingTable } from "@union/shared";
 import {
-  addGuest,
   addGuestGroup,
   addGuestRelationship,
   addGuestToGroup,
   clearRsvp,
+  createGuestWithLinks,
   deleteGuest,
   fetchGuest,
   fetchGuestGroups,
@@ -23,11 +23,13 @@ import {
   upsertRsvp,
   type GuestLink,
   type GuestWithRsvp,
+  type NewRelatedGuest,
 } from "@/lib/data";
 import { useWedding } from "@/lib/wedding";
 import { Button, Card, SectionLabel, Loading, StatusPill } from "@/components/ui";
 import { BackHeader } from "@/components/BackHeader";
 import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
+import { NewRelativeForm } from "@/components/NewRelativeForm";
 
 const STATUS_LABEL: Record<
   string,
@@ -79,13 +81,23 @@ export default function GuestDetailPage() {
   const [ageDraft, setAgeDraft] = useState<string>("");
   const [ageBusy, setAgeBusy] = useState(false);
 
-  // "Add a child" mini form (creates new guest + parent_of edge).
-  const [addChildOpen, setAddChildOpen] = useState(false);
-  const [addChildFirst, setAddChildFirst] = useState("");
-  const [addChildLast, setAddChildLast] = useState("");
-  const [addChildAge, setAddChildAge] = useState("");
+  // Inline "add a child" / "add a partner" mini-forms — each creates
+  // a new guest row with full details and wires the relationship in
+  // a single RPC call.
+  const emptyRelative = (): NewRelatedGuest => ({
+    first_name: "",
+    last_name: null,
+    email: null,
+    phone: null,
+    age_years: null,
+    notes: null,
+  });
+  const [addChildDraft, setAddChildDraft] = useState<NewRelatedGuest | null>(null);
   const [addChildBusy, setAddChildBusy] = useState(false);
   const [addChildError, setAddChildError] = useState<string | null>(null);
+  const [addPartnerDraft, setAddPartnerDraft] = useState<NewRelatedGuest | null>(null);
+  const [addPartnerBusy, setAddPartnerBusy] = useState(false);
+  const [addPartnerError, setAddPartnerError] = useState<string | null>(null);
 
   // RSVP recording form (owner side).
   const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus | "">("");
@@ -374,38 +386,56 @@ export default function GuestDetailPage() {
   };
 
   const addChildGuest = async () => {
-    if (!wedding || !addChildFirst.trim()) return;
+    if (!wedding || !addChildDraft || !addChildDraft.first_name.trim()) return;
     setAddChildBusy(true);
     setAddChildError(null);
     try {
-      const parsed =
-        addChildAge.trim() === ""
-          ? null
-          : Math.max(0, Math.min(130, parseInt(addChildAge, 10)));
-      const child = await addGuest({
+      // Same atomic path as the add-guest form: create the child +
+      // parent_of edge in one server transaction.
+      await createGuestWithLinks({
         wedding_id: wedding.id,
-        first_name: addChildFirst.trim(),
-        last_name: addChildLast.trim() || null,
-        age_years: Number.isFinite(parsed as number) ? parsed : null,
-        added_by_guest_id: guest.id,
-      });
-      await addGuestRelationship({
-        wedding_id: wedding.id,
-        from_guest: guest.id,
-        to_guest: child.id,
-        kind: "parent_of",
+        first_name: addChildDraft.first_name.trim(),
+        last_name: addChildDraft.last_name ?? null,
+        email: addChildDraft.email ?? null,
+        phone: addChildDraft.phone ?? null,
+        age_years: addChildDraft.age_years ?? null,
+        notes: addChildDraft.notes ?? null,
+        parent_ids: [guest.id],
       });
       await refreshLinks();
       const refreshedOthers = await fetchGuests(wedding.id);
       setOtherGuests(refreshedOthers.filter((x) => x.id !== guest.id));
-      setAddChildOpen(false);
-      setAddChildFirst("");
-      setAddChildLast("");
-      setAddChildAge("");
+      setAddChildDraft(null);
     } catch (e) {
       setAddChildError(e instanceof Error ? e.message : "Couldn't add child.");
     } finally {
       setAddChildBusy(false);
+    }
+  };
+
+  const addPartnerGuest = async () => {
+    if (!wedding || !addPartnerDraft || !addPartnerDraft.first_name.trim()) return;
+    setAddPartnerBusy(true);
+    setAddPartnerError(null);
+    try {
+      await createGuestWithLinks({
+        wedding_id: wedding.id,
+        first_name: addPartnerDraft.first_name.trim(),
+        last_name: addPartnerDraft.last_name ?? null,
+        email: addPartnerDraft.email ?? null,
+        phone: addPartnerDraft.phone ?? null,
+        age_years: addPartnerDraft.age_years ?? null,
+        notes: addPartnerDraft.notes ?? null,
+        partner_id: guest.id,
+      });
+      await refreshLinks();
+      const refreshedOthers = await fetchGuests(wedding.id);
+      setOtherGuests(refreshedOthers.filter((x) => x.id !== guest.id));
+      setAddPartnerDraft(null);
+    } catch (e) {
+      setAddPartnerError(e instanceof Error ? e.message : "Couldn't add partner.");
+    } finally {
+      setAddPartnerBusy(false);
     }
   };
 
@@ -810,33 +840,69 @@ export default function GuestDetailPage() {
             marginTop: 14,
             paddingTop: 12,
             borderTop: `1px solid ${T.line}`,
+            display: "grid",
+            gap: 12,
           }}
         >
-          {addChildOpen ? (
+          {addPartnerDraft ? (
             <div style={{ display: "grid", gap: 8 }}>
               <div style={{ fontSize: 13, fontWeight: 600 }}>
-                Add a child (new guest, linked to this parent)
+                Add a partner (new guest, linked to {guest.first_name})
               </div>
-              <input
-                type="text"
-                placeholder="First name"
-                value={addChildFirst}
-                onChange={(e) => setAddChildFirst(e.target.value)}
+              <NewRelativeForm
+                value={addPartnerDraft}
+                onChange={(patch) =>
+                  setAddPartnerDraft((prev) => (prev ? { ...prev, ...patch } : prev))
+                }
                 autoFocus
               />
-              <input
-                type="text"
-                placeholder="Last name (optional)"
-                value={addChildLast}
-                onChange={(e) => setAddChildLast(e.target.value)}
-              />
-              <input
-                type="number"
-                min={0}
-                max={130}
-                placeholder="Age (optional — helps with meal / bed)"
-                value={addChildAge}
-                onChange={(e) => setAddChildAge(e.target.value)}
+              {addPartnerError && (
+                <div className="error" style={{ fontSize: 12 }}>
+                  {addPartnerError}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button
+                  onClick={() => void addPartnerGuest()}
+                  disabled={addPartnerBusy || !addPartnerDraft.first_name.trim()}
+                  style={{ flex: 1 }}
+                >
+                  {addPartnerBusy ? "Adding…" : "Add partner"}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setAddPartnerDraft(null);
+                    setAddPartnerError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAddPartnerDraft(emptyRelative())}
+              className="u-link"
+              style={{ fontSize: 13, color: T.ink2, textAlign: "left" }}
+            >
+              + Add a new partner (with full details)
+            </button>
+          )}
+
+          {addChildDraft ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>
+                Add a child (new guest, linked to {guest.first_name})
+              </div>
+              <NewRelativeForm
+                value={addChildDraft}
+                onChange={(patch) =>
+                  setAddChildDraft((prev) => (prev ? { ...prev, ...patch } : prev))
+                }
+                autoFocus
+                ageLabel="Age (optional — helps with meal / bed)"
               />
               {addChildError && (
                 <div className="error" style={{ fontSize: 12 }}>
@@ -846,7 +912,7 @@ export default function GuestDetailPage() {
               <div style={{ display: "flex", gap: 8 }}>
                 <Button
                   onClick={() => void addChildGuest()}
-                  disabled={addChildBusy || !addChildFirst.trim()}
+                  disabled={addChildBusy || !addChildDraft.first_name.trim()}
                   style={{ flex: 1 }}
                 >
                   {addChildBusy ? "Adding…" : "Add child"}
@@ -854,10 +920,7 @@ export default function GuestDetailPage() {
                 <Button
                   variant="secondary"
                   onClick={() => {
-                    setAddChildOpen(false);
-                    setAddChildFirst("");
-                    setAddChildLast("");
-                    setAddChildAge("");
+                    setAddChildDraft(null);
                     setAddChildError(null);
                   }}
                 >
@@ -868,11 +931,11 @@ export default function GuestDetailPage() {
           ) : (
             <button
               type="button"
-              onClick={() => setAddChildOpen(true)}
+              onClick={() => setAddChildDraft(emptyRelative())}
               className="u-link"
-              style={{ fontSize: 13, color: T.ink2 }}
+              style={{ fontSize: 13, color: T.ink2, textAlign: "left" }}
             >
-              + Add a child
+              + Add a new child (with full details)
             </button>
           )}
         </div>

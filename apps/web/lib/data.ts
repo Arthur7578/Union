@@ -692,6 +692,21 @@ export async function fetchGuestLinks(guestId: string): Promise<GuestLink[]> {
  * A failure anywhere leaves the database exactly as it was, so the caller
  * doesn't need to reason about half-created guests.
  */
+/**
+ * Shape of a not-yet-persisted related guest that the add-guest form
+ * carries in state (the partner or a child typed inline). The RPC will
+ * turn each of these into its own guest row plus the appropriate
+ * relationship edge, atomically with the primary guest.
+ */
+export type NewRelatedGuest = {
+  first_name: string;
+  last_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  age_years?: number | null;
+  notes?: string | null;
+};
+
 export async function createGuestWithLinks(input: {
   wedding_id: string;
   first_name: string;
@@ -705,6 +720,8 @@ export async function createGuestWithLinks(input: {
   group_ids?: string[];
   parent_ids?: string[];
   partner_id?: string | null;
+  new_partner?: NewRelatedGuest | null;
+  new_children?: NewRelatedGuest[];
 }): Promise<Guest> {
   const supabase = getBrowserSupabase();
   const { data, error } = await supabase.rpc("create_guest_with_links", {
@@ -720,6 +737,13 @@ export async function createGuestWithLinks(input: {
     p_group_ids: input.group_ids ?? [],
     p_parent_ids: input.parent_ids ?? [],
     p_partner_id: input.partner_id ?? undefined,
+    p_new_partner: input.new_partner
+      ? (input.new_partner as unknown as import("@union/shared").Json)
+      : undefined,
+    p_new_children:
+      input.new_children && input.new_children.length > 0
+        ? (input.new_children as unknown as import("@union/shared").Json[])
+        : undefined,
   });
   if (error) throw error;
   return data as unknown as Guest;
