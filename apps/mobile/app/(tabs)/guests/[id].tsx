@@ -32,7 +32,6 @@ export default function GuestDetail() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [partySize, setPartySize] = useState("1");
   const [group, setGroup] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -46,7 +45,6 @@ export default function GuestDetail() {
         setFirstName(g.first_name);
         setLastName(g.last_name ?? "");
         setEmail(g.email ?? "");
-        setPartySize(String(g.party_size));
         setGroup(g.guest_group ?? "");
       }
     } finally {
@@ -72,7 +70,6 @@ export default function GuestDetail() {
         first_name: firstName.trim(),
         last_name: lastName.trim() || null,
         email: email.trim() || null,
-        party_size: Math.max(1, parseInt(partySize, 10) || 1),
         guest_group: group.trim() || null,
       });
       Alert.alert("Saved");
@@ -149,9 +146,7 @@ export default function GuestDetail() {
         {rsvp && rsvp.status !== "pending" ? (
           <View style={styles.rsvpDetails}>
             {rsvp.status === "attending" ? (
-              <Text style={styles.rsvpLine}>
-                {rsvp.num_attending ?? guest.party_size} attending
-              </Text>
+              <Text style={styles.rsvpLine}>Attending</Text>
             ) : null}
             {rsvp.dietary_notes ? (
               <Text style={styles.rsvpLine}>Dietary: {rsvp.dietary_notes}</Text>
@@ -184,14 +179,6 @@ export default function GuestDetail() {
         keyboardType="email-address"
         inputMode="email"
         autoCorrect={false}
-      />
-      <Input
-        label="Party size"
-        value={partySize}
-        onChangeText={setPartySize}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        maxLength={2}
       />
       <Input label="Group" value={group} onChangeText={setGroup} autoCapitalize="words" />
 

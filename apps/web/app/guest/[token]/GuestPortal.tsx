@@ -961,7 +961,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                   <p style={{ color: "var(--muted)", fontSize: "14px", textAlign: "center", padding: "40px 20px" }}>
                     {locale === "fr" ? "Aucun trajet partagé n'est disponible pour le moment." : "No shared travel options available yet."}
                   </p>
-                )}
+                )
               </div>
 
               {/* Right Column: Share Your Travel */}

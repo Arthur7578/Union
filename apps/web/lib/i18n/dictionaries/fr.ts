@@ -157,7 +157,6 @@ export const fr: Dictionary = {
     filterComing: "Viennent",
     filterWaiting: "En attente",
     filterCant: "Absents",
-    partyOf: (n: number) => (n === 1 ? "Foyer d'1 personne" : `Foyer de ${n} personnes`),
     loadingList: "Chargement de vos invités…",
     planningTools: "Outils de planification",
     tools: {
@@ -207,7 +206,6 @@ export const fr: Dictionary = {
       lastName: "Nom",
       email: "E-mail (pour son invitation)",
       phone: "Téléphone",
-      partySize: "Nombre de personnes",
       group: "Groupes (facultatif)",
       role: "Rôle dans le mariage (facultatif)",
       notes: "Notes (privées)",
@@ -551,7 +549,6 @@ export const fr: Dictionary = {
     dateAt: (date: string, venue: string) => `${date} · ${venue}`,
     accept: "Oui, je serai là",
     decline: "Hélas, je ne pourrai pas venir",
-    numAttendingLabel: "Combien serez-vous ?",
     dietaryLabel: "Un régime alimentaire particulier ?",
     dietaryPlaceholder: "Végétarien, sans gluten, allergies…",
     messageLabel: "Un mot pour le couple (facultatif)",

@@ -520,11 +520,6 @@ export default function StaysPage() {
                       >
                         {s.first_name} {s.last_name ?? ""}
                       </div>
-                      <div
-                        style={{ fontSize: 12, color: T.faint, marginTop: 1 }}
-                      >
-                        Party of {s.party_size ?? 1}
-                      </div>
                     </div>
                     <select
                       value=""

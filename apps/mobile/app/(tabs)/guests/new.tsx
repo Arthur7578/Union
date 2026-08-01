@@ -14,7 +14,6 @@ export default function NewGuest() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [partySize, setPartySize] = useState("1");
   const [group, setGroup] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +27,6 @@ export default function NewGuest() {
       setError("No wedding found.");
       return;
     }
-    const size = Math.max(1, parseInt(partySize, 10) || 1);
     setBusy(true);
     setError(null);
     try {
@@ -37,7 +35,6 @@ export default function NewGuest() {
         first_name: firstName.trim(),
         last_name: lastName.trim() || null,
         email: email.trim() || null,
-        party_size: size,
         guest_group: group.trim() || null,
       });
       router.back();
@@ -74,15 +71,6 @@ export default function NewGuest() {
         keyboardType="email-address"
         inputMode="email"
         autoCorrect={false}
-      />
-      <Input
-        label="Party size"
-        hint="How many people this invitation covers (incl. plus-ones)."
-        value={partySize}
-        onChangeText={setPartySize}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        maxLength={2}
       />
       <Input
         label="Group (optional)"

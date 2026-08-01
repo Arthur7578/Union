@@ -56,7 +56,7 @@ function toneKey(v: string | null | undefined): ToneKey {
 /** Sum of party sizes for a list of guests — the true "seats used" number. */
 function seatsUsed(gs: GuestWithRsvp[]): number {
   let n = 0;
-  for (const g of gs) n += g.party_size ?? 1;
+  for (const g of gs) n += 1;
   return n;
 }
 
@@ -231,7 +231,7 @@ export default function SeatingPage() {
   const ceremonyAssignedCount = useMemo(
     () =>
       (guests ?? []).reduce(
-        (s, g) => s + (g.ceremony_row != null ? g.party_size ?? 1 : 0),
+        (s, g) => s + (g.ceremony_row != null ? 1 : 0),
         0,
       ),
     [guests],
@@ -1017,7 +1017,7 @@ export default function SeatingPage() {
                         }}
                       >
                         {selectedMembers.map((m) => {
-                          const party = m.party_size ?? 1;
+                          const party = 1;
                           return (
                             <div
                               key={m.id}
@@ -1145,7 +1145,7 @@ export default function SeatingPage() {
                         >
                           <option value="">Choose a guest…</option>
                           {unassigned.map((g) => {
-                            const party = g.party_size ?? 1;
+                            const party = 1;
                             return (
                               <option key={g.id} value={g.id}>
                                 {g.first_name} {g.last_name ?? ""}
@@ -1324,7 +1324,7 @@ export default function SeatingPage() {
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {filteredUnassigned.map((g) => {
-                      const party = g.party_size ?? 1;
+                      const party = 1;
                       return (
                         <div
                           key={g.id}
@@ -1669,7 +1669,7 @@ export default function SeatingPage() {
                     }}
                   >
                     {selectedPewMembers.map((m) => {
-                      const party = m.party_size ?? 1;
+                      const party = 1;
                       return (
                         <div
                           key={m.id}
@@ -1746,7 +1746,7 @@ export default function SeatingPage() {
                             ),
                         )
                         .map((g) => {
-                          const party = g.party_size ?? 1;
+                          const party = 1;
                           const currentlyIn =
                             g.ceremony_row != null && g.ceremony_side != null;
                           return (
@@ -1838,7 +1838,7 @@ export default function SeatingPage() {
 
           <div style={{ display: "flex", gap: 9, marginTop: 13 }}>
             <StatTile
-              value={(guests ?? []).reduce((s, g) => s + (g.party_size ?? 1), 0)}
+              value={(guests ?? []).reduce((s, g) => s + (1), 0)}
               label="seats needed"
             />
             <StatTile
