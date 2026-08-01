@@ -94,8 +94,8 @@ export default function GuestDetailPage() {
       phone: null,
       age_years: null,
       role: null,
-      guest_group: null,
       notes: null,
+      group_chips: [],
     };
   };
   const [addChildDraft, setAddChildDraft] = useState<NewRelatedGuest | null>(null);
@@ -185,6 +185,13 @@ export default function GuestDetailPage() {
     name: g.name,
     color: g.color,
   }));
+
+  const createGroupHere = async (name: string): Promise<GroupChip> => {
+    if (!wedding) throw new Error("No wedding loaded");
+    const created = await addGuestGroup({ wedding_id: wedding.id, name });
+    setAllGroups((prev) => [...prev, created]);
+    return { id: created.id, name: created.name, color: created.color };
+  };
 
   if (guest === undefined)
     return (
@@ -401,6 +408,7 @@ export default function GuestDetailPage() {
     try {
       // Same atomic path as the add-guest form: create the child +
       // parent_of edge in one server transaction.
+      const chips = addChildDraft.group_chips ?? [];
       await createGuestWithLinks({
         wedding_id: wedding.id,
         first_name: addChildDraft.first_name.trim(),
@@ -408,7 +416,10 @@ export default function GuestDetailPage() {
         email: addChildDraft.email ?? null,
         phone: addChildDraft.phone ?? null,
         age_years: addChildDraft.age_years ?? null,
+        role: addChildDraft.role ?? null,
         notes: addChildDraft.notes ?? null,
+        primary_group: chips[0]?.name ?? null,
+        group_ids: chips.map((c) => c.id),
         parent_ids: [guest.id],
       });
       await refreshLinks();
@@ -432,6 +443,7 @@ export default function GuestDetailPage() {
       // first is atomic, the second is a single insert), because
       // create_guest_with_links doesn't have a "make this guest a
       // parent of an existing one" slot.
+      const chips = addParentDraft.group_chips ?? [];
       const parent = await createGuestWithLinks({
         wedding_id: wedding.id,
         first_name: addParentDraft.first_name.trim(),
@@ -441,7 +453,8 @@ export default function GuestDetailPage() {
         age_years: addParentDraft.age_years ?? null,
         role: addParentDraft.role ?? null,
         notes: addParentDraft.notes ?? null,
-        primary_group: addParentDraft.guest_group ?? null,
+        primary_group: chips[0]?.name ?? null,
+        group_ids: chips.map((c) => c.id),
       });
       await addGuestRelationship({
         wedding_id: wedding.id,
@@ -465,6 +478,7 @@ export default function GuestDetailPage() {
     setAddPartnerBusy(true);
     setAddPartnerError(null);
     try {
+      const chips = addPartnerDraft.group_chips ?? [];
       await createGuestWithLinks({
         wedding_id: wedding.id,
         first_name: addPartnerDraft.first_name.trim(),
@@ -472,7 +486,10 @@ export default function GuestDetailPage() {
         email: addPartnerDraft.email ?? null,
         phone: addPartnerDraft.phone ?? null,
         age_years: addPartnerDraft.age_years ?? null,
+        role: addPartnerDraft.role ?? null,
         notes: addPartnerDraft.notes ?? null,
+        primary_group: chips[0]?.name ?? null,
+        group_ids: chips.map((c) => c.id),
         partner_id: guest.id,
       });
       await refreshLinks();
@@ -827,7 +844,8 @@ export default function GuestDetailPage() {
               setAddPartnerError(null);
             }}
             saveLabel="Add partner"
-            existingGroups={allGroups.map((g) => g.name)}
+            allGroups={allGroups}
+            onCreateGroup={createGroupHere}
             suggestedRoles={SUGGESTED_ROLES}
           />
           <RelationshipRow
@@ -859,7 +877,8 @@ export default function GuestDetailPage() {
             }}
             saveLabel="Add child"
             ageLabel="Age (optional — helps with meal / bed)"
-            existingGroups={allGroups.map((g) => g.name)}
+            allGroups={allGroups}
+            onCreateGroup={createGroupHere}
             suggestedRoles={SUGGESTED_ROLES}
           />
           <RelationshipRow
@@ -890,7 +909,8 @@ export default function GuestDetailPage() {
               setAddParentError(null);
             }}
             saveLabel="Add parent"
-            existingGroups={allGroups.map((g) => g.name)}
+            allGroups={allGroups}
+            onCreateGroup={createGroupHere}
             suggestedRoles={SUGGESTED_ROLES}
           />
         </div>
@@ -976,19 +996,7 @@ export default function GuestDetailPage() {
               const refreshed = await fetchGuest(guest.id);
               if (refreshed) setGuest(refreshed);
             }}
-            onCreate={async (name) => {
-              if (!wedding) throw new Error("No wedding loaded");
-              const created = await addGuestGroup({
-                wedding_id: wedding.id,
-                name,
-              });
-              setAllGroups((prev) => [...prev, created]);
-              return {
-                id: created.id,
-                name: created.name,
-                color: created.color,
-              };
-            }}
+            onCreate={createGroupHere}
           />
         </div>
         <div className="field">
@@ -1091,7 +1099,8 @@ function RelationshipRow({
   onCancel,
   saveLabel,
   ageLabel = "Age (optional)",
-  existingGroups = [],
+  allGroups = [],
+  onCreateGroup,
   suggestedRoles = [],
 }: {
   title: string;
@@ -1104,7 +1113,8 @@ function RelationshipRow({
   onCancel: () => void;
   saveLabel: string;
   ageLabel?: string;
-  existingGroups?: string[];
+  allGroups?: GuestGroup[];
+  onCreateGroup?: (name: string) => Promise<GroupChip>;
   suggestedRoles?: string[];
 }) {
   return (
@@ -1117,7 +1127,8 @@ function RelationshipRow({
             onChange={onChange}
             autoFocus
             ageLabel={ageLabel}
-            existingGroups={existingGroups}
+            allGroups={allGroups}
+            onCreateGroup={onCreateGroup}
             suggestedRoles={suggestedRoles}
           />
           {error && (

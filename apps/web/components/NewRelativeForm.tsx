@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useId } from "react";
+import type { GuestGroup } from "@union/shared";
 import type { NewRelatedGuest } from "@/lib/data";
+import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
+import { T } from "@/lib/theme";
 
 /**
  * Editable card for a not-yet-persisted related guest (child, partner
@@ -9,13 +12,13 @@ import type { NewRelatedGuest } from "@/lib/data";
  * by the add-guest page and by the guest detail page.
  *
  * Renders the same field set as a full guest edit — first, last,
- * email, phone, age, group, role, notes — so nothing silently
- * degrades to a name-only mini-form.
+ * email, phone, age, groups (multi-select chip picker), role,
+ * notes — so nothing silently degrades to a name-only mini-form.
  *
- * `existingGroups` and `suggestedRoles` power the autocomplete on
- * the group and role inputs so the user can pick from what already
- * exists on the wedding without having to remember the exact name.
- * Typing a new name is still allowed (create-on-save inside the RPC).
+ * `allGroups` powers the group chip picker; `onCreateGroup` is called
+ * when the user types a group that doesn't exist yet, so the group
+ * row lands in the DB with a real id + colour before it's attached
+ * to this draft.
  */
 export function NewRelativeForm({
   value,
@@ -24,7 +27,8 @@ export function NewRelativeForm({
   removeLabel = "Remove",
   autoFocus = false,
   ageLabel = "Age (optional)",
-  existingGroups = [],
+  allGroups = [],
+  onCreateGroup,
   suggestedRoles = [],
 }: {
   value: NewRelatedGuest;
@@ -33,14 +37,13 @@ export function NewRelativeForm({
   removeLabel?: string;
   autoFocus?: boolean;
   ageLabel?: string;
-  existingGroups?: string[];
+  allGroups?: GuestGroup[];
+  onCreateGroup?: (name: string) => Promise<GroupChip>;
   suggestedRoles?: string[];
 }) {
-  // useId keeps the datalists distinct when several NewRelativeForm
-  // instances are on the same page (e.g. multiple new children).
   const uid = useId();
-  const groupsListId = `nrf-groups-${uid}`;
   const rolesListId = `nrf-roles-${uid}`;
+  const chips: GroupChip[] = value.group_chips ?? [];
 
   const setAge = (raw: string) => {
     if (raw.trim() === "") {
@@ -100,19 +103,24 @@ export function NewRelativeForm({
         value={value.age_years == null ? "" : String(value.age_years)}
         onChange={(e) => setAge(e.target.value)}
       />
-      <input
-        type="text"
-        list={existingGroups.length > 0 ? groupsListId : undefined}
-        placeholder="Group (pick or type a new one — e.g. Bride's family)"
-        value={value.guest_group ?? ""}
-        onChange={(e) => onChange({ guest_group: e.target.value })}
-      />
-      {existingGroups.length > 0 && (
-        <datalist id={groupsListId}>
-          {existingGroups.map((g) => (
-            <option key={g} value={g} />
-          ))}
-        </datalist>
+      {onCreateGroup && (
+        <div>
+          <div style={{ fontSize: 12, color: T.faint, marginBottom: 4 }}>
+            Groups
+          </div>
+          <GroupPicker
+            allGroups={allGroups}
+            selected={chips}
+            onSelect={(g) => {
+              if (chips.some((c) => c.id === g.id)) return;
+              onChange({ group_chips: [...chips, g] });
+            }}
+            onDeselect={(g) => {
+              onChange({ group_chips: chips.filter((c) => c.id !== g.id) });
+            }}
+            onCreate={onCreateGroup}
+          />
+        </div>
       )}
       <input
         type="text"

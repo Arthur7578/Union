@@ -41,8 +41,8 @@ const emptyRelative = (name = ""): NewRelatedGuest => {
     phone: null,
     age_years: null,
     role: null,
-    guest_group: null,
     notes: null,
+    group_chips: [],
   };
 };
 
@@ -123,6 +123,7 @@ export default function NewGuestPage() {
         (p): p is Extract<LinkedEntry, { kind: "new" }> => p.kind === "new",
       );
       for (const np of newParents) {
+        const chips = np.data.group_chips ?? [];
         const created = await createGuestWithLinks({
           wedding_id: wedding.id,
           first_name: np.data.first_name.trim(),
@@ -132,7 +133,8 @@ export default function NewGuestPage() {
           age_years: np.data.age_years ?? null,
           role: np.data.role ?? null,
           notes: np.data.notes ?? null,
-          primary_group: np.data.guest_group ?? null,
+          primary_group: chips[0]?.name ?? null,
+          group_ids: chips.map((c) => c.id),
         });
         newParentIds.push(created.id);
       }
@@ -307,7 +309,8 @@ export default function NewGuestPage() {
                 : prev,
             )
           }
-          existingGroups={allGroups.map((g) => g.name)}
+          allGroups={allGroups}
+          onCreateGroup={createGroup}
           suggestedRoles={t.guests.suggestedRoles as unknown as string[]}
         >
           {!partner && (
@@ -341,7 +344,8 @@ export default function NewGuestPage() {
               ),
             )
           }
-          existingGroups={allGroups.map((g) => g.name)}
+          allGroups={allGroups}
+          onCreateGroup={createGroup}
           suggestedRoles={t.guests.suggestedRoles as unknown as string[]}
         >
           <RelationshipCombobox
@@ -376,7 +380,8 @@ export default function NewGuestPage() {
             )
           }
           childAgeLabel="Age (optional — helps with meal / bed)"
-          existingGroups={allGroups.map((g) => g.name)}
+          allGroups={allGroups}
+          onCreateGroup={createGroup}
           suggestedRoles={t.guests.suggestedRoles as unknown as string[]}
         >
           <RelationshipCombobox
@@ -419,7 +424,8 @@ function RelationshipSection({
   onRemove,
   onUpdate,
   childAgeLabel,
-  existingGroups,
+  allGroups,
+  onCreateGroup,
   suggestedRoles,
   children,
 }: {
@@ -429,7 +435,8 @@ function RelationshipSection({
   onRemove: (idx: number) => void;
   onUpdate: (idx: number, patch: Partial<NewRelatedGuest>) => void;
   childAgeLabel?: string;
-  existingGroups?: string[];
+  allGroups?: GuestGroup[];
+  onCreateGroup?: (name: string) => Promise<GroupChip>;
   suggestedRoles?: string[];
   children: React.ReactNode;
 }) {
@@ -483,7 +490,8 @@ function RelationshipSection({
                   onRemove={() => onRemove(idx)}
                   removeLabel="Remove"
                   ageLabel={childAgeLabel ?? "Age (optional)"}
-                  existingGroups={existingGroups}
+                  allGroups={allGroups}
+                  onCreateGroup={onCreateGroup}
                   suggestedRoles={suggestedRoles}
                   autoFocus
                 />

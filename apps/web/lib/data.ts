@@ -705,9 +705,31 @@ export type NewRelatedGuest = {
   phone?: string | null;
   age_years?: number | null;
   role?: string | null;
-  guest_group?: string | null;
   notes?: string | null;
+  /**
+   * Frontend-only: the chip picker keeps the full group objects so
+   * the UI can show colours and remove-buttons. At submit time
+   * createGuestWithLinks derives guest_group (primary text label)
+   * from chips[0] and passes every id in guest_group_ids to the RPC.
+   */
+  group_chips?: Array<{ id: string; name: string; color?: string | null }>;
 };
+
+/** Turn a UI-side NewRelatedGuest into the jsonb shape the RPC reads. */
+function marshalRelative(r: NewRelatedGuest): Record<string, unknown> {
+  const chips = r.group_chips ?? [];
+  return {
+    first_name: r.first_name,
+    last_name: r.last_name ?? null,
+    email: r.email ?? null,
+    phone: r.phone ?? null,
+    age_years: r.age_years ?? null,
+    role: r.role ?? null,
+    notes: r.notes ?? null,
+    guest_group: chips[0]?.name ?? null,
+    guest_group_ids: chips.map((c) => c.id),
+  };
+}
 
 export async function createGuestWithLinks(input: {
   wedding_id: string;
@@ -740,11 +762,11 @@ export async function createGuestWithLinks(input: {
     p_parent_ids: input.parent_ids ?? [],
     p_partner_id: input.partner_id ?? undefined,
     p_new_partner: input.new_partner
-      ? (input.new_partner as unknown as import("@union/shared").Json)
+      ? (marshalRelative(input.new_partner) as unknown as import("@union/shared").Json)
       : undefined,
     p_new_children:
       input.new_children && input.new_children.length > 0
-        ? (input.new_children as unknown as import("@union/shared").Json[])
+        ? (input.new_children.map(marshalRelative) as unknown as import("@union/shared").Json[])
         : undefined,
   });
   if (error) throw error;
