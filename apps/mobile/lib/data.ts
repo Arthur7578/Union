@@ -27,6 +27,8 @@ export async function createWedding(
     | "allow_guests_add_partner"
     | "allow_guests_add_children"
     | "max_children_per_guest"
+    | "guest_count_target"
+    | "style_vibe"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
@@ -34,6 +36,8 @@ export async function createWedding(
     allow_guests_add_partner?: boolean;
     allow_guests_add_children?: boolean;
     max_children_per_guest?: number | null;
+    guest_count_target?: number | null;
+    style_vibe?: string | null;
   },
 ): Promise<Wedding> {
   const { data, error } = await supabase

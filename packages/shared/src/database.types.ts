@@ -241,16 +241,19 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          phone: string | null
         }
         Insert: {
           created_at?: string
           full_name?: string | null
           id: string
+          phone?: string | null
         }
         Update: {
           created_at?: string
           full_name?: string | null
           id?: string
+          phone?: string | null
         }
         Relationships: []
       }
@@ -397,12 +400,14 @@ export type Database = {
           ceremony_rows: number
           created_at: string
           event_date: string | null
+          guest_count_target: number | null
           id: string
           max_children_per_guest: number | null
           owner_id: string
           partner_one: string | null
           partner_two: string | null
           rsvp_form_questions: Json | null
+          style_vibe: string | null
           venue_address: string | null
           venue_name: string | null
         }
@@ -413,12 +418,14 @@ export type Database = {
           ceremony_rows?: number
           created_at?: string
           event_date?: string | null
+          guest_count_target?: number | null
           id?: string
           max_children_per_guest?: number | null
           owner_id: string
           partner_one?: string | null
           partner_two?: string | null
           rsvp_form_questions?: Json | null
+          style_vibe?: string | null
           venue_address?: string | null
           venue_name?: string | null
         }
@@ -429,12 +436,14 @@ export type Database = {
           ceremony_rows?: number
           created_at?: string
           event_date?: string | null
+          guest_count_target?: number | null
           id?: string
           max_children_per_guest?: number | null
           owner_id?: string
           partner_one?: string | null
           partner_two?: string | null
           rsvp_form_questions?: Json | null
+          style_vibe?: string | null
           venue_address?: string | null
           venue_name?: string | null
         }
@@ -467,6 +476,51 @@ export type Database = {
       _merge_guests: {
         Args: { p_source_id: string; p_target_id: string }
         Returns: string
+      }
+      create_guest_with_links: {
+        Args: {
+          p_age_years?: number
+          p_email?: string
+          p_first_name: string
+          p_group_ids?: string[]
+          p_last_name?: string
+          p_notes?: string
+          p_parent_ids?: string[]
+          p_partner_id?: string
+          p_phone?: string
+          p_primary_group?: string
+          p_role?: string
+          p_wedding_id: string
+        }
+        Returns: {
+          added_by_guest_id: string | null
+          age_years: number | null
+          can_add_kids: boolean | null
+          can_add_partner: boolean | null
+          ceremony_row: number | null
+          ceremony_side: string | null
+          created_at: string
+          email: string | null
+          first_name: string
+          guest_group: string | null
+          id: string
+          invite_token: string
+          last_name: string | null
+          notes: string | null
+          phone: string | null
+          profile_id: string | null
+          role: string | null
+          room_block_id: string | null
+          rsvp_reminder_sent_at: string | null
+          seating_table_id: string | null
+          wedding_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "guests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       find_duplicate_groups: { Args: { p_wedding_id: string }; Returns: Json }
       get_invitation: { Args: { p_token: string }; Returns: Json }

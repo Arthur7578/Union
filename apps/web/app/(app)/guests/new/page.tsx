@@ -5,10 +5,8 @@ import { useRouter } from "next/navigation";
 import type { GuestGroup } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
-  addGuest,
   addGuestGroup,
-  addGuestRelationship,
-  addGuestToGroup,
+  createGuestWithLinks,
   fetchGuestGroups,
   fetchGuests,
   type GuestWithRsvp,
@@ -61,36 +59,20 @@ export default function NewGuestPage() {
     try {
       const primary = selectedGroups[0] ?? null;
       const parsedAge = age.trim() === "" ? null : Math.max(0, Math.min(130, parseInt(age, 10)));
-      const guest = await addGuest({
+      await createGuestWithLinks({
         wedding_id: wedding.id,
         first_name: firstNameV.trim(),
         last_name: lastName.trim() || null,
         email: email.trim() || null,
         phone: phone.trim() || null,
         age_years: Number.isFinite(parsedAge as number) ? parsedAge : null,
-        guest_group: primary?.name ?? null,
         role: role.trim() || null,
         notes: notes.trim() || null,
+        primary_group: primary?.name ?? null,
+        group_ids: selectedGroups.slice(1).map((g) => g.id),
+        parent_ids: linkParentIds,
+        partner_id: linkPartnerId || null,
       });
-      for (const g of selectedGroups.slice(1)) {
-        await addGuestToGroup(guest.id, { id: g.id, name: g.name });
-      }
-      if (linkPartnerId) {
-        await addGuestRelationship({
-          wedding_id: wedding.id,
-          from_guest: guest.id,
-          to_guest: linkPartnerId,
-          kind: "partner_of",
-        });
-      }
-      for (const parentId of linkParentIds) {
-        await addGuestRelationship({
-          wedding_id: wedding.id,
-          from_guest: parentId,
-          to_guest: guest.id,
-          kind: "parent_of",
-        });
-      }
       router.replace("/guests");
     } catch (err) {
       setError(err instanceof Error ? err.message : t.guests.errAdd);

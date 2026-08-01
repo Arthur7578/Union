@@ -52,6 +52,8 @@ export async function createWedding(
     | "allow_guests_add_partner"
     | "allow_guests_add_children"
     | "max_children_per_guest"
+    | "guest_count_target"
+    | "style_vibe"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
@@ -59,6 +61,8 @@ export async function createWedding(
     allow_guests_add_partner?: boolean;
     allow_guests_add_children?: boolean;
     max_children_per_guest?: number | null;
+    guest_count_target?: number | null;
+    style_vibe?: string | null;
   },
 ): Promise<Wedding> {
   const supabase = getBrowserSupabase();
@@ -678,6 +682,47 @@ export async function fetchGuestLinks(guestId: string): Promise<GuestLink[]> {
     out.push({ guest: g, kind: r.kind, direction: "incoming" });
   }
   return out;
+}
+
+/**
+ * Atomic guest creation: inserts the guest row, the parent_of edges for
+ * each supplied parent, the (mirrored) partner_of edges for the partner,
+ * the primary text group (creating the guest_groups row if needed) and
+ * any extra group memberships — all inside one server-side transaction.
+ * A failure anywhere leaves the database exactly as it was, so the caller
+ * doesn't need to reason about half-created guests.
+ */
+export async function createGuestWithLinks(input: {
+  wedding_id: string;
+  first_name: string;
+  last_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  age_years?: number | null;
+  role?: string | null;
+  notes?: string | null;
+  primary_group?: string | null;
+  group_ids?: string[];
+  parent_ids?: string[];
+  partner_id?: string | null;
+}): Promise<Guest> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase.rpc("create_guest_with_links", {
+    p_wedding_id: input.wedding_id,
+    p_first_name: input.first_name,
+    p_last_name: input.last_name ?? undefined,
+    p_email: input.email ?? undefined,
+    p_phone: input.phone ?? undefined,
+    p_age_years: input.age_years ?? undefined,
+    p_role: input.role ?? undefined,
+    p_notes: input.notes ?? undefined,
+    p_primary_group: input.primary_group ?? undefined,
+    p_group_ids: input.group_ids ?? [],
+    p_parent_ids: input.parent_ids ?? [],
+    p_partner_id: input.partner_id ?? undefined,
+  });
+  if (error) throw error;
+  return data as unknown as Guest;
 }
 
 export async function addGuestRelationship(input: {
