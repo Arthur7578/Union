@@ -64,6 +64,11 @@ export default function GuestsPage() {
       label: "Permissions",
       sub: "Plus-ones and kids defaults",
     },
+    {
+      href: "/guests/sms-template",
+      label: t.guests.tools.smsTemplateLabel,
+      sub: t.guests.tools.smsTemplateSub,
+    },
   ];
   const { wedding } = useWedding();
   const router = useRouter();

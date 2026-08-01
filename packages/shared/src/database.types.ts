@@ -433,6 +433,8 @@ export type Database = {
           partner_one: string | null
           partner_two: string | null
           rsvp_form_questions: Json | null
+          sms_sender: string | null
+          sms_template: string | null
           style_vibe: string | null
           venue_address: string | null
           venue_name: string | null
@@ -451,6 +453,8 @@ export type Database = {
           partner_one?: string | null
           partner_two?: string | null
           rsvp_form_questions?: Json | null
+          sms_sender?: string | null
+          sms_template?: string | null
           style_vibe?: string | null
           venue_address?: string | null
           venue_name?: string | null
@@ -469,6 +473,8 @@ export type Database = {
           partner_one?: string | null
           partner_two?: string | null
           rsvp_form_questions?: Json | null
+          sms_sender?: string | null
+          sms_template?: string | null
           style_vibe?: string | null
           venue_address?: string | null
           venue_name?: string | null

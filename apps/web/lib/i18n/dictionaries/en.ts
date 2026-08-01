@@ -172,6 +172,8 @@ export const en = {
       staysSub: "Room blocks",
       formLabel: "RSVP form",
       formSub: "Design what you ask",
+      smsTemplateLabel: "SMS template",
+      smsTemplateSub: "Sender + invite copy",
     },
     guestList: "Guest list",
     reminderPromptStrong: (n: number) => `${n} still deciding`,
@@ -819,6 +821,31 @@ export const en = {
         },
       ] as { text: string; sub: string; done: boolean }[],
     },
+  },
+
+  // SMS invitation template (settings page)
+  smsTemplate: {
+    title: "SMS template",
+    subtitle:
+      "Draft the invitation SMS once — Union will personalise every send with the guest's first name and their access link.",
+    senderLabel: "Sender",
+    senderField: "SMS sender name or phone",
+    senderPlaceholder: "e.g. Maya, or +33612345678",
+    senderHint:
+      "Up to 11 letters/digits for a name, or a phone number in international format. Guests see this as the sender of your SMS.",
+    templateLabel: "Message",
+    templateHint:
+      "Use the tokens below to insert dynamic fields. Everything else is written as-is.",
+    placeholderTitle: (key: string) => `Insert ${key}`,
+    previewLabel: "Live preview",
+    previewHint:
+      "How the message renders for a sample guest — updates as you type.",
+    previewEmpty: "Type a message above to see the preview.",
+    charCount: (n: number) => `${n} character${n === 1 ? "" : "s"}`,
+    segmentCount: (n: number, enc: string) =>
+      `${n} SMS · ${enc}`,
+    save: "Save template",
+    saved: "Saved",
   },
 };
 
