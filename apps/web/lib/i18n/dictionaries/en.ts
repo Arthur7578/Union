@@ -161,7 +161,6 @@ export const en = {
     filterComing: "Coming",
     filterWaiting: "Waiting",
     filterCant: "Can't",
-    partyOf: (n: number) => `Party of ${n}`,
     loadingList: "Loading your guests…",
     planningTools: "Planning tools",
     tools: {
@@ -210,7 +209,6 @@ export const en = {
       lastName: "Last name",
       email: "Email (for their invite)",
       phone: "Phone",
-      partySize: "Party size",
       group: "Groups (optional)",
       role: "Role in the wedding (optional)",
       notes: "Notes (private to you)",
@@ -571,7 +569,6 @@ export const en = {
     dateAt: (date: string, venue: string) => `${date} · ${venue}`,
     accept: "Yes, I'll be there",
     decline: "Sadly, I can't make it",
-    numAttendingLabel: "How many in your party?",
     dietaryLabel: "Any dietary notes?",
     dietaryPlaceholder: "Vegetarian, gluten-free, allergies…",
     messageLabel: "A note for the couple (optional)",

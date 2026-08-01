@@ -89,8 +89,6 @@ export const fr: Dictionary = {
     emptyTitle: "Aucun invité pour l'instant",
     emptyBody: "Ajoutez votre premier invité pour commencer à suivre les RSVP.",
     addGuest: "Ajouter un invité",
-    partyOne: "1 invité",
-    party: (n: number) => `${n} invités`,
     status: {
       attending: "Vient",
       declined: "Ne vient pas",

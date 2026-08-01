@@ -4,6 +4,8 @@ import { getBrowserSupabase } from "./supabaseClient";
 import type {
   Guest,
   GuestGroup,
+  GuestRelationship,
+  GuestRelationshipKind,
   Profile,
   RoomBlock,
   Rsvp,
@@ -48,12 +50,18 @@ export async function createWedding(
     | "rsvp_form_questions"
     | "ceremony_rows"
     | "ceremony_reserved_rows"
+    | "allow_guests_add_partner"
+    | "allow_guests_add_children"
+    | "max_children_per_guest"
     | "guest_count_target"
     | "style_vibe"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
     ceremony_reserved_rows?: number;
+    allow_guests_add_partner?: boolean;
+    allow_guests_add_children?: boolean;
+    max_children_per_guest?: number | null;
     guest_count_target?: number | null;
     style_vibe?: string | null;
   },
@@ -202,7 +210,10 @@ export type NewGuest = {
   last_name?: string | null;
   email?: string | null;
   phone?: string | null;
-  party_size?: number;
+  age_years?: number | null;
+  can_add_partner?: boolean | null;
+  can_add_kids?: boolean | null;
+  added_by_guest_id?: string | null;
   guest_group?: string | null;
   role?: string | null;
   notes?: string | null;
@@ -304,7 +315,6 @@ export async function deleteGuest(id: string): Promise<void> {
 export async function upsertRsvp(input: {
   guest_id: string;
   status: RsvpStatus;
-  num_attending?: number | null;
   dietary_notes?: string | null;
   message?: string | null;
 }): Promise<Rsvp> {
@@ -312,7 +322,6 @@ export async function upsertRsvp(input: {
   const row = {
     guest_id: input.guest_id,
     status: input.status,
-    num_attending: input.num_attending ?? null,
     dietary_notes: input.dietary_notes ?? null,
     message: input.message ?? null,
     responded_at: new Date().toISOString(),
@@ -663,6 +672,317 @@ export async function deleteSeatingTable(id: string): Promise<void> {
 }
 
 // ============================================================
+// Guest relationships (parent_of, partner_of)
+// ============================================================
+
+export type GuestLink = {
+  guest: Pick<Guest, "id" | "first_name" | "last_name" | "age_years">;
+  kind: GuestRelationshipKind;
+  direction: "outgoing" | "incoming";
+};
+
+/**
+ * All relationships anchored to a single guest, in both directions.
+ * Outgoing: this guest → other. Incoming: other → this guest.
+ * The two edges of a partner_of pair are collapsed to a single
+ * "outgoing" entry so the UI shows one partner chip, not two.
+ */
+export async function fetchGuestLinks(guestId: string): Promise<GuestLink[]> {
+  const supabase = getBrowserSupabase();
+  const [outgoing, incoming] = await Promise.all([
+    supabase
+      .from("guest_relationships")
+      .select(
+        "kind, to_guest, guests!guest_relationships_to_guest_fkey(id, first_name, last_name, age_years)",
+      )
+      .eq("from_guest", guestId),
+    supabase
+      .from("guest_relationships")
+      .select(
+        "kind, from_guest, guests!guest_relationships_from_guest_fkey(id, first_name, last_name, age_years)",
+      )
+      .eq("to_guest", guestId),
+  ]);
+  if (outgoing.error) throw outgoing.error;
+  if (incoming.error) throw incoming.error;
+
+  const seenPartner = new Set<string>();
+  const out: GuestLink[] = [];
+  for (const r of (outgoing.data as any[]) ?? []) {
+    const g = r.guests;
+    if (!g) continue;
+    if (r.kind === "partner_of") seenPartner.add(g.id);
+    out.push({ guest: g, kind: r.kind, direction: "outgoing" });
+  }
+  for (const r of (incoming.data as any[]) ?? []) {
+    const g = r.guests;
+    if (!g) continue;
+    // Skip the mirror side of a partner_of pair we've already recorded.
+    if (r.kind === "partner_of" && seenPartner.has(g.id)) continue;
+    out.push({ guest: g, kind: r.kind, direction: "incoming" });
+  }
+  return out;
+}
+
+/**
+ * Atomic guest creation: inserts the guest row, the parent_of edges for
+ * each supplied parent, the (mirrored) partner_of edges for the partner,
+ * the primary text group (creating the guest_groups row if needed) and
+ * any extra group memberships — all inside one server-side transaction.
+ * A failure anywhere leaves the database exactly as it was, so the caller
+ * doesn't need to reason about half-created guests.
+ */
+/**
+ * Shape of a not-yet-persisted related guest that the add-guest form
+ * carries in state (the partner or a child typed inline). The RPC will
+ * turn each of these into its own guest row plus the appropriate
+ * relationship edge, atomically with the primary guest.
+ */
+export type NewRelatedGuest = {
+  first_name: string;
+  last_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  age_years?: number | null;
+  role?: string | null;
+  notes?: string | null;
+  /**
+   * Frontend-only: the chip picker keeps the full group objects so
+   * the UI can show colours and remove-buttons. At submit time
+   * createGuestWithLinks derives guest_group (primary text label)
+   * from chips[0] and passes every id in guest_group_ids to the RPC.
+   */
+  group_chips?: Array<{ id: string; name: string; color?: string | null }>;
+};
+
+/** Turn a UI-side NewRelatedGuest into the jsonb shape the RPC reads. */
+function marshalRelative(r: NewRelatedGuest): Record<string, unknown> {
+  const chips = r.group_chips ?? [];
+  return {
+    first_name: r.first_name,
+    last_name: r.last_name ?? null,
+    email: r.email ?? null,
+    phone: r.phone ?? null,
+    age_years: r.age_years ?? null,
+    role: r.role ?? null,
+    notes: r.notes ?? null,
+    guest_group: chips[0]?.name ?? null,
+    guest_group_ids: chips.map((c) => c.id),
+  };
+}
+
+export async function createGuestWithLinks(input: {
+  wedding_id: string;
+  first_name: string;
+  last_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  age_years?: number | null;
+  role?: string | null;
+  notes?: string | null;
+  primary_group?: string | null;
+  group_ids?: string[];
+  parent_ids?: string[];
+  partner_id?: string | null;
+  new_partner?: NewRelatedGuest | null;
+  new_children?: NewRelatedGuest[];
+}): Promise<Guest> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase.rpc("create_guest_with_links", {
+    p_wedding_id: input.wedding_id,
+    p_first_name: input.first_name,
+    p_last_name: input.last_name ?? undefined,
+    p_email: input.email ?? undefined,
+    p_phone: input.phone ?? undefined,
+    p_age_years: input.age_years ?? undefined,
+    p_role: input.role ?? undefined,
+    p_notes: input.notes ?? undefined,
+    p_primary_group: input.primary_group ?? undefined,
+    p_group_ids: input.group_ids ?? [],
+    p_parent_ids: input.parent_ids ?? [],
+    p_partner_id: input.partner_id ?? undefined,
+    p_new_partner: input.new_partner
+      ? (marshalRelative(input.new_partner) as unknown as import("@union/shared").Json)
+      : undefined,
+    p_new_children:
+      input.new_children && input.new_children.length > 0
+        ? (input.new_children.map(marshalRelative) as unknown as import("@union/shared").Json[])
+        : undefined,
+  });
+  if (error) throw error;
+  return data as unknown as Guest;
+}
+
+export async function addGuestRelationship(input: {
+  wedding_id: string;
+  from_guest: string;
+  to_guest: string;
+  kind: GuestRelationshipKind;
+}): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const rows: GuestRelationship[] =
+    input.kind === "partner_of"
+      ? [
+          { ...input, created_at: new Date().toISOString() } as GuestRelationship,
+          {
+            wedding_id: input.wedding_id,
+            from_guest: input.to_guest,
+            to_guest: input.from_guest,
+            kind: "partner_of",
+            created_at: new Date().toISOString(),
+          } as GuestRelationship,
+        ]
+      : [{ ...input, created_at: new Date().toISOString() } as GuestRelationship];
+  const { error } = await supabase
+    .from("guest_relationships")
+    .upsert(rows, { onConflict: "from_guest,to_guest,kind" });
+  if (error) throw error;
+}
+
+/**
+ * Owner-side merge: fold `sourceId` into `targetId`. Auth-gated inside
+ * the RPC by the wedding's owner_id — safe to call from the duplicates
+ * review screen. Returns the surviving target guest id.
+ *
+ * `overrides` is an object of resolved field values to write to the
+ * target BEFORE the fold, inside the same transaction. Use it when
+ * the two rows have conflicting values on a field and the user has
+ * picked one (or typed a new one). Only whitelisted keys are honoured
+ * server-side: first_name, last_name, email, phone, age_years, role,
+ * notes, guest_group.
+ */
+export type MergeOverrides = Partial<{
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  age_years: number | null;
+  role: string | null;
+  notes: string | null;
+  guest_group: string | null;
+}>;
+
+export async function ownerMergeGuests(
+  sourceId: string,
+  targetId: string,
+  overrides?: MergeOverrides,
+): Promise<string> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase.rpc("owner_merge_guests", {
+    p_source_guest_id: sourceId,
+    p_target_guest_id: targetId,
+    p_target_overrides:
+      overrides && Object.keys(overrides).length > 0
+        ? (overrides as unknown as import("@union/shared").Json)
+        : undefined,
+  });
+  if (error) throw error;
+  const payload = (data ?? {}) as { status?: string; guest_id?: string };
+  if (payload.status !== "merged" || !payload.guest_id) {
+    throw new Error("Merge failed");
+  }
+  return payload.guest_id;
+}
+
+/** Hide (dismiss) a duplicate cluster suggestion. Persists per wedding. */
+export async function hideDuplicateCluster(
+  weddingId: string,
+  guestIds: string[],
+): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const { error } = await supabase.rpc("hide_duplicate_cluster", {
+    p_wedding_id: weddingId,
+    p_guest_ids: guestIds,
+  });
+  if (error) throw error;
+}
+
+/** Restore a previously hidden cluster suggestion. */
+export async function unhideDuplicateCluster(
+  weddingId: string,
+  guestIds: string[],
+): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const { error } = await supabase.rpc("unhide_duplicate_cluster", {
+    p_wedding_id: weddingId,
+    p_guest_ids: guestIds,
+  });
+  if (error) throw error;
+}
+
+/**
+ * Clusters the user has previously dismissed. Same shape as
+ * fetchDuplicateGroups so the UI can reuse the same renderer.
+ */
+export async function fetchHiddenDuplicateClusters(
+  weddingId: string,
+): Promise<DuplicateCandidate[][]> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase.rpc("list_hidden_merge_clusters", {
+    p_wedding_id: weddingId,
+  });
+  if (error) throw error;
+  if (!Array.isArray(data)) return [];
+  return data as DuplicateCandidate[][];
+}
+
+/** One guest row inside a duplicate cluster returned by find_duplicate_groups. */
+export type DuplicateCandidate = {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+  age_years: number | null;
+  email: string | null;
+  phone: string | null;
+  guest_group: string | null;
+  role: string | null;
+  notes: string | null;
+  rsvp_status: RsvpStatus;
+  added_by_first_name: string | null;
+};
+
+/**
+ * Load pre-clustered duplicate groups for the wedding. The predicate and
+ * clustering both live server-side (find_duplicate_groups) so this stays
+ * in sync with the RSVP self-merge candidates.
+ */
+export async function fetchDuplicateGroups(
+  weddingId: string,
+): Promise<DuplicateCandidate[][]> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase.rpc("find_duplicate_groups", {
+    p_wedding_id: weddingId,
+  });
+  if (error) throw error;
+  if (!Array.isArray(data)) return [];
+  return data as DuplicateCandidate[][];
+}
+
+export async function removeGuestRelationship(input: {
+  from_guest: string;
+  to_guest: string;
+  kind: GuestRelationshipKind;
+}): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const pairs: Array<{ from: string; to: string }> =
+    input.kind === "partner_of"
+      ? [
+          { from: input.from_guest, to: input.to_guest },
+          { from: input.to_guest, to: input.from_guest },
+        ]
+      : [{ from: input.from_guest, to: input.to_guest }];
+  for (const p of pairs) {
+    const { error } = await supabase
+      .from("guest_relationships")
+      .delete()
+      .eq("from_guest", p.from)
+      .eq("to_guest", p.to)
+      .eq("kind", input.kind);
+    if (error) throw error;
+  }
+}
+
+// ============================================================
 // RSVP form question config (jsonb on weddings)
 // ============================================================
 
@@ -690,29 +1010,21 @@ export async function saveRsvpQuestions(
 
 /** Roll up a guest list into the headline counts shown on Today / Guests. */
 export function guestStats(guests: GuestWithRsvp[]) {
-  let invited = 0;
   let coming = 0;
   let declined = 0;
   let waiting = 0;
-  let headcount = 0;
   for (const g of guests) {
-    invited += g.party_size ?? 1;
     const status = g.rsvps?.status ?? "pending";
-    if (status === "attending") {
-      coming += g.party_size ?? 1;
-      headcount += g.rsvps?.num_attending ?? g.party_size ?? 1;
-    } else if (status === "declined") {
-      declined += g.party_size ?? 1;
-    } else {
-      waiting += g.party_size ?? 1;
-    }
+    if (status === "attending") coming += 1;
+    else if (status === "declined") declined += 1;
+    else waiting += 1;
   }
   return {
-    invited,
+    invited: guests.length,
     coming,
     declined,
     waiting,
-    headcount,
+    headcount: coming,
     parties: guests.length,
   };
 }

@@ -957,7 +957,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                       {match.requested ? (locale === "fr" ? "✓ Demande envoyée" : "✓ Contact Requested") : (locale === "fr" ? "Demander le contact" : "Request Contact Details")}
                     </button>
                   </div>
-                ))}
+                ))
+                ) : null}
               </div>
 
               {/* Right Column: Share Your Travel */}

@@ -54,6 +54,16 @@ export default function GuestsPage() {
       label: t.guests.tools.formLabel,
       sub: t.guests.tools.formSub,
     },
+    {
+      href: "/guests/duplicates",
+      label: "Duplicates",
+      sub: "Merge co-parents' kids",
+    },
+    {
+      href: "/guests/permissions",
+      label: "Permissions",
+      sub: "Plus-ones and kids defaults",
+    },
   ];
   const { wedding } = useWedding();
   const router = useRouter();
@@ -344,7 +354,6 @@ export default function GuestsPage() {
                     {g.first_name} {g.last_name ?? ""}
                   </div>
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
-                    {t.guests.partyOf(g.party_size ?? 1)}
                     {group}
                     {role}
                   </div>

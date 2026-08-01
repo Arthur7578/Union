@@ -939,9 +939,6 @@ export default function GroupsPage() {
                     >
                       {m.first_name} {m.last_name ?? ""}
                     </div>
-                    <div style={{ fontSize: 11.5, color: T.faint }}>
-                      Party of {m.party_size ?? 1}
-                    </div>
                   </Link>
                   {(groups ?? []).length > 0 ? (
                     <select
@@ -1543,8 +1540,7 @@ function MemberRow({
               flexWrap: "wrap",
             }}
           >
-            <span>Party of {m.party_size ?? 1}</span>
-            {m.role ? <span>· {m.role}</span> : null}
+            {m.role ? <span>{m.role}</span> : null}
             {otherGroups.length > 0 && (
               <span style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
                 <span style={{ color: T.faint }}>·</span>
