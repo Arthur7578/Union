@@ -1,37 +1,15 @@
-import { getSupabase } from "@/lib/supabase";
-import { RsvpForm } from "./RsvpForm";
-import { resolveLocale } from "@/lib/i18n/server";
-import { getDictionary } from "@/lib/i18n";
+import { redirect } from "next/navigation";
 
-// Always fetch fresh invitation data (no static caching of personal links).
+// Always redirect dynamically to the brand-new guest experience page
 export const dynamic = "force-dynamic";
 
-export default async function RsvpPage({
+export default async function RsvpRedirectPage({
   params,
 }: {
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const supabase = getSupabase();
-  const { data, error } = await supabase.rpc("get_invitation", {
-    p_token: token,
-  });
 
-  const invitation = !error && data && data.length > 0 ? data[0] : null;
-
-  if (!invitation) {
-    const locale = await resolveLocale();
-    const t = getDictionary(locale);
-    return (
-      <main className="page">
-        <div className="card" style={{ textAlign: "center" }}>
-          <div className="brand">Union</div>
-          <h1 className="couple">{t.rsvp.invalidTitle}</h1>
-          <p className="muted">{t.rsvp.invalidBody}</p>
-        </div>
-      </main>
-    );
-  }
-
-  return <RsvpForm token={token} invitation={invitation} />;
+  // Cleanly redirect the guest to the premium, immersive Guest Experience
+  redirect(`/guest/${token}`);
 }
