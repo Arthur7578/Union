@@ -6,6 +6,7 @@ import type {
   GuestGroup,
   GuestRelationship,
   GuestRelationshipKind,
+  Profile,
   RoomBlock,
   Rsvp,
   RsvpQuestion,
@@ -82,6 +83,45 @@ export async function updateWedding(
   const supabase = getBrowserSupabase();
   const { data, error } = await supabase
     .from("weddings")
+    .update(patch)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/** Permanently deletes the wedding and everything under it (guests, RSVPs,
+ *  seating, room blocks — all cascade via FK). Used by the "Delete wedding &
+ *  data" account action; irreversible. */
+export async function deleteWedding(id: string): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const { error } = await supabase.from("weddings").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ============================================================
+// Profile (the signed-in person, not the wedding)
+// ============================================================
+
+export async function fetchProfile(userId: string): Promise<Profile | null> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateProfile(
+  id: string,
+  patch: Partial<Omit<Profile, "id" | "created_at">>,
+): Promise<Profile> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase
+    .from("profiles")
     .update(patch)
     .eq("id", id)
     .select("*")

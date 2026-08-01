@@ -410,6 +410,137 @@ export const fr: Dictionary = {
     signOut: "Se déconnecter",
   },
 
+  account: {
+    kicker: "Compte",
+    title: "Vous",
+    version: "Union pour le web · v1.0",
+
+    weddingSection: "Votre mariage",
+    weddingRowFallback: "Ajoutez votre date et votre lieu",
+    teamRowTitle: "Qui organise",
+    teamRowSub: (n: number) => `${n} personnes organisent ensemble`,
+
+    plusKicker: "Union Plus",
+    plusTitle: "Votre planificateur, sans limites",
+    plusBody:
+      "Négociations illimitées, toutes les recherches de prestataires, et priorité quand Union les contacte en votre nom.",
+    plusRenews: "Renouvellement le 1er sept. · 18 $/mois",
+    managePlan: "Gérer l'abonnement",
+
+    accountSection: "Compte",
+    billing: "Paiement et facturation",
+    settingsRow: "Réglages",
+    notificationsRow: "Notifications",
+    notificationsSub: "Ce dont Union vous parle, et quand",
+    privacyRow: "Confidentialité et vos données",
+    helpRow: "Aide et support",
+
+    // Edit profile
+    profileTitle: "Votre profil",
+    profileSubtitle: "Les informations qui ne concernent que vous.",
+    detailsSection: "Vos informations",
+    nameLabel: "Votre prénom",
+    editOnWedding: "Modifier",
+    nameEditsOnWedding:
+      "Votre prénom se modifie depuis Votre mariage — c'est celui qu'Union utilise partout où elle vous présente.",
+    email: "E-mail",
+    emailNote:
+      "Vous vous connectez avec un code envoyé par e-mail, il n'y a donc pas de mot de passe ici — contactez le support si cette adresse doit changer.",
+    phone: "Téléphone",
+    phoneCountry: "Pays",
+    phoneLocalPlaceholder: "6 12 34 56 78",
+    phoneHint:
+      "Utilisé pour les rappels, et pour qu'un prestataire puisse vous joindre rapidement si besoin.",
+    saved: "Enregistré.",
+
+    // Your wedding
+    weddingTitle: "Votre mariage",
+    weddingKicker: "Réglages du mariage",
+    partnerNotSet: "…",
+    emptyPrompt:
+      "Renseignez votre date et votre lieu, et Union commence à bâtir le plan autour d'eux.",
+    detailsHeading: "Les informations",
+    dateLabel: "Date du mariage",
+    venueLabel: "Lieu",
+    venueAddressLabel: "Adresse",
+    venueAddressPlaceholder: "123 Orchard Rd, Hood River, OR",
+    guestTargetLabel: "Nombre d'invités · objectif",
+    styleLabel: "Style et ambiance",
+    stylePlaceholder: "Jardin · tons neutres chauds · décontracté",
+    manageSection: "Gérer",
+    deleteWedding: "Supprimer le mariage et les données",
+    deleting: "Suppression…",
+    deleteConfirmTitle: "Supprimer ce mariage ?",
+    deleteConfirmBody: (couple: string) =>
+      `Cela supprime définitivement le mariage de ${couple} — invités, RSVP, plan de table, tout. Cette action est irréversible.`,
+    deleteConfirmPrompt: "Tapez la phrase ci-dessous pour confirmer.",
+    deletePhrase: (name: string) => `supprimer le mariage de ${name}`,
+    deleteConfirmAction: "Supprimer définitivement",
+    deleteConfirmMismatch: "La phrase ne correspond pas encore.",
+
+    // App settings
+    settingsTitle: "Réglages",
+    settingsKicker: "Réglages de l'application",
+    autonomyLabel: "Ce qu'Union fait seule",
+    autonomyAsk: "Demander d'abord",
+    autonomySuggest: "Suggérer",
+    autonomyAuto: "Automatique",
+    autonomyDescAsk:
+      "Union vous présente chaque option et attend votre accord avant de réserver, payer ou répondre en votre nom.",
+    autonomyDescSuggest:
+      "Union recommande la prochaine étape et attend votre feu vert avant d'agir.",
+    autonomyDescAuto:
+      "Union gère elle-même les démarches courantes, et ne vous sollicite que pour les décisions qui comptent.",
+    connectedSection: "Connecté",
+    connectedCalendar: "Calendrier",
+    connectedCalendarStatus: "Apple · activé",
+    connectedEmail: "E-mail pour les prestataires",
+    connectedOn: "Connecté",
+    connectedContacts: "Contacts",
+    connectedOff: "Non connecté",
+
+    // Notifications
+    notifTitle: "Notifications",
+    notifPreviewNotice:
+      "Aperçu — aucun moteur de notifications n'est branché pour l'instant, donc ces réglages n'envoient rien. Les canaux ci-dessous sont là à titre indicatif.",
+    notifyWhen: "Me prévenir quand",
+    notifVendorReplies: "Un prestataire répond",
+    notifVendorRepliesSub: "Devis, questions, confirmations",
+    notifGuestRsvps: "Un invité répond au RSVP",
+    notifGuestRsvpsSub: "Oui, non, et notes alimentaires",
+    notifUnionActions: "Union agit",
+    notifUnionActionsSub: "Quand elle réserve ou négocie pour vous",
+    notifCoOrganiser: "Un co-organisateur fait quelque chose",
+    notifCoOrganiserSub: "Toute personne que vous avez invitée à aider",
+    rhythm: "Rythme",
+    notifWeeklyDigest: "Résumé hebdomadaire",
+    notifWeeklyDigestSub: "Un résumé calme, le dimanche soir",
+    notifQuietHours: "Heures calmes",
+    notifQuietHoursSub: "Rien entre 21h et 8h",
+    channels: "Canaux",
+    channelPush: "Notifications push",
+    channelOn: "Activé",
+    channelEmail: "E-mail",
+    channelDigestOnly: "Résumé seulement",
+
+    // Privacy
+    privacyTitle: "Confidentialité et vos données",
+    privacyIntro:
+      "Union ne conserve que ce dont elle a besoin pour planifier votre mariage avec vous — aucun suivi publicitaire, rien n'est vendu. Voici ce qui est conservé, et où.",
+    privacyWhatWeKeep: "Ce que nous conservons",
+    privacyAccountTitle: "Votre compte",
+    privacyAccountBody: "Nom, e-mail et téléphone — utilisés pour vous connecter et vous contacter.",
+    privacyWeddingTitle: "Votre mariage",
+    privacyWeddingBody:
+      "Date, lieu, nombre d'invités visé et style — les informations autour desquelles Union planifie.",
+    privacyGuestsTitle: "Votre liste d'invités",
+    privacyGuestsBody:
+      "Noms, coordonnées, RSVP et notes alimentaires — visibles uniquement par vous et les personnes que vous invitez à aider.",
+    privacyDeleteTitle: "Tout supprimer",
+    privacyDeleteBody:
+      "Supprimer votre mariage le retire définitivement, ainsi que tout ce qu'il contient — invités, RSVP, plan de table, absolument tout.",
+  },
+
   rsvp: {
     invalidTitle: "Invitation introuvable",
     invalidBody:
