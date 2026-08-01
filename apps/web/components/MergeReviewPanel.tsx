@@ -6,7 +6,6 @@ import { Button } from "@/components/ui";
 import {
   ownerMergeGuests,
   type MergeOverrides,
-  type DuplicateCandidate,
 } from "@/lib/data";
 
 /**
@@ -30,7 +29,8 @@ export type MergeableGuest = {
 };
 
 // Fields the merge RPC understands as overrides. Displayed in this
-// order in the review panel — most identifying first.
+// order — the panel walks the list and renders a row per field so
+// the user sees the full identity of the merged result up front.
 const FIELDS: Array<{
   key: keyof MergeOverrides;
   label: string;
@@ -97,40 +97,48 @@ export function MergeReviewPanel({
   const target = guests.find((g) => g.id === targetId) ?? guests[0];
   const others = guests.filter((g) => g.id !== target.id);
 
-  // Per-field resolution: undefined = leave alone (fall back to
-  // COALESCE(target, source) inside the RPC), otherwise the value
-  // the user picked or typed. `null` means "leave blank".
+  // Per-field resolution. undefined = "leave alone" (server's
+  // COALESCE(target, source) applies); a string = pick / typed value;
+  // null = user explicitly picked "leave blank".
   const [picks, setPicks] = useState<Record<string, string | null | undefined>>({});
-  const [customFocus, setCustomFocus] = useState<string | null>(null);
+  const [customFocus, setCustomFocus] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const conflicts = useMemo(() => {
+  // For each field, collect the distinct non-null values across the
+  // cluster (with who they came from), plus the count of guests
+  // that have nothing set. `conflicts.length > 1` = user must pick.
+  const rows = useMemo(() => {
     return FIELDS.map((f) => {
-      const values = guests
-        .map((g) => (g as unknown as Record<string, unknown>)[f.key])
-        .map((v) => (v == null || v === "" ? null : v));
-      const distinct: Array<{ v: unknown; owners: MergeableGuest[] }> = [];
-      values.forEach((v, i) => {
-        const key = v == null ? "__null__" : String(v);
-        const existing = distinct.find(
-          (d) => (d.v == null ? "__null__" : String(d.v)) === key,
-        );
-        if (existing) existing.owners.push(guests[i]);
-        else distinct.push({ v, owners: [guests[i]] });
-      });
-      const nonNull = distinct.filter((d) => d.v != null);
-      return { field: f, distinct, nonNull };
+      const collected: Array<{ v: string; owners: MergeableGuest[] }> = [];
+      let missing = 0;
+      for (const g of guests) {
+        const raw = (g as unknown as Record<string, unknown>)[f.key];
+        const norm =
+          raw == null || raw === "" ? null : String(raw);
+        if (norm == null) {
+          missing += 1;
+          continue;
+        }
+        const existing = collected.find((c) => c.v === norm);
+        if (existing) existing.owners.push(g);
+        else collected.push({ v: norm, owners: [g] });
+      }
+      return { field: f, values: collected, missing };
     });
   }, [guests]);
+
+  const conflictCount = rows.filter((r) => r.values.length > 1).length;
+  const matchCount = rows.filter(
+    (r) =>
+      r.values.length === 1 &&
+      r.values[0].owners.length === guests.length,
+  ).length;
 
   const confirm = async () => {
     setBusy(true);
     setError(null);
     try {
-      // Build overrides: everything the user actively picked. For
-      // fields with only one candidate value across the cluster the
-      // RPC's COALESCE will pull it in without an explicit override.
       const overrides: MergeOverrides = {};
       for (const f of FIELDS) {
         const pick = picks[f.key];
@@ -149,9 +157,10 @@ export function MergeReviewPanel({
             pick == null || pick.trim() === "" ? null : pick.trim();
         }
       }
-      // Fold every non-target guest into target, in order. Each fold
-      // is one RPC call and one transaction; the first fold applies
-      // any overrides, the rest just merge remaining relationships.
+      // Fold every non-target guest into target, in order. Each
+      // fold is one RPC call inside its own transaction. Overrides
+      // apply on the first fold; subsequent folds just carry
+      // relationships / RSVP / groups over.
       let survivingId = target.id;
       for (let i = 0; i < others.length; i += 1) {
         const src = others[i];
@@ -171,143 +180,206 @@ export function MergeReviewPanel({
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      {guests.length > 2 && (
-        <div style={{ fontSize: 12.5, color: T.muted }}>
-          Merging {guests.length} guests. Any picks you make apply to the
-          result; unresolved fields keep the first non-empty value.
-        </div>
-      )}
-      <div style={{ display: "grid", gap: 10 }}>
-        {conflicts.map(({ field, distinct, nonNull }) => {
-          // Skip fields where every guest has the same value (or all
-          // null) — nothing to resolve, nothing to show.
-          if (distinct.length <= 1) return null;
-          if (nonNull.length === 0) return null;
+      <div style={{ fontSize: 12.5, color: T.muted }}>
+        {conflictCount === 0 ? (
+          <>
+            Every field matches across {guests.length} guests. The merge is
+            safe.
+          </>
+        ) : (
+          <>
+            {matchCount} matching field{matchCount === 1 ? "" : "s"},{" "}
+            <b>{conflictCount}</b> to resolve. Every field is shown below so
+            you can double-check before confirming.
+          </>
+        )}
+      </div>
+
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map(({ field, values, missing }) => {
+          const isConflict = values.length > 1;
+          const isAgreed =
+            values.length === 1 && values[0].owners.length === guests.length;
+          const isPartial =
+            values.length === 1 && values[0].owners.length < guests.length;
+          const isAllBlank = values.length === 0;
           const pick = picks[field.key];
-          const isPicked = (v: unknown) =>
-            pick !== undefined &&
-            (v == null ? pick == null : pick === String(v));
+          const focused = !!customFocus[field.key];
+          const isPicked = (v: string | null) =>
+            pick !== undefined && (v == null ? pick == null : pick === v);
           return (
             <div
               key={field.key}
               style={{
                 padding: 10,
                 borderRadius: 10,
-                border: "1px solid rgba(67,53,58,.12)",
-                background: "#fff",
+                border: `1px solid ${
+                  isConflict ? "rgba(192,85,59,.35)" : "rgba(67,53,58,.10)"
+                }`,
+                background: isConflict ? "rgba(255,248,244,.6)" : "#fff",
               }}
             >
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-                {field.label}{" "}
-                <span style={{ fontWeight: 400, color: T.muted, fontSize: 12 }}>
-                  · {nonNull.length > 1 ? "conflict" : "only one value"}
-                </span>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  marginBottom: 6,
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 600 }}>
+                  {field.label}
+                </div>
+                <div style={{ fontSize: 11.5, color: T.faint }}>
+                  {isConflict
+                    ? `${values.length} different values`
+                    : isAgreed
+                      ? "all match"
+                      : isPartial
+                        ? `${values[0].owners.length}/${guests.length} set`
+                        : "all blank"}
+                </div>
               </div>
-              <div style={{ display: "grid", gap: 6 }}>
-                {distinct.map((d, i) => (
-                  <label
-                    key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      fontSize: 13,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name={`merge-${field.key}`}
-                      checked={isPicked(d.v)}
-                      onChange={() =>
-                        setPicks((p) => ({
-                          ...p,
-                          [field.key]: d.v == null ? null : String(d.v),
-                        }))
-                      }
-                    />
-                    <span style={{ flex: 1 }}>
-                      {d.v == null ? (
-                        <em style={{ color: T.faint }}>Leave blank</em>
-                      ) : (
-                        displayValue(d.v)
-                      )}
+
+              {isAllBlank ? (
+                <div style={{ fontSize: 13, color: T.faint }}>
+                  <em>Blank on every guest.</em>
+                </div>
+              ) : isAgreed || (isPartial && !isConflict) ? (
+                // Non-conflicting: show the single value read-only.
+                // Partial (one guest has it, another doesn't) is
+                // safe too — the merge always keeps the non-null.
+                <div style={{ fontSize: 13, color: T.ink }}>
+                  {displayValue(values[0].v)}
+                  {isPartial && (
+                    <span
+                      style={{ fontSize: 12, color: T.faint, marginLeft: 8 }}
+                    >
+                      (blank on {guests.length - values[0].owners.length}{" "}
+                      other)
                     </span>
-                    <span style={{ fontSize: 11, color: T.faint }}>
-                      from {d.owners.map((o) => o.first_name).join(", ")}
-                    </span>
-                  </label>
-                ))}
-                {customFocus === field.key ? (
-                  <label
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      fontSize: 13,
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name={`merge-${field.key}`}
-                      checked={
-                        pick !== undefined &&
-                        !distinct.some((d) => isPicked(d.v))
+                  )}
+                </div>
+              ) : (
+                // Conflict: radio-select over each value + optional
+                // blank + optional custom.
+                <div style={{ display: "grid", gap: 6 }}>
+                  {values.map((d, i) => (
+                    <label
+                      key={i}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        fontSize: 13,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name={`merge-${field.key}`}
+                        checked={isPicked(d.v)}
+                        onChange={() =>
+                          setPicks((p) => ({ ...p, [field.key]: d.v }))
+                        }
+                      />
+                      <span style={{ flex: 1 }}>{displayValue(d.v)}</span>
+                      <span style={{ fontSize: 11, color: T.faint }}>
+                        from {d.owners.map((o) => o.first_name).join(", ")}
+                      </span>
+                    </label>
+                  ))}
+                  {missing > 0 && (
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        fontSize: 13,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name={`merge-${field.key}`}
+                        checked={isPicked(null)}
+                        onChange={() =>
+                          setPicks((p) => ({ ...p, [field.key]: null }))
+                        }
+                      />
+                      <span style={{ flex: 1, color: T.faint }}>
+                        <em>Leave blank</em>
+                      </span>
+                      <span style={{ fontSize: 11, color: T.faint }}>
+                        (blank on {missing})
+                      </span>
+                    </label>
+                  )}
+                  {focused ? (
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        fontSize: 13,
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name={`merge-${field.key}`}
+                        checked={
+                          pick !== undefined &&
+                          pick !== null &&
+                          !values.some((d) => d.v === pick)
+                        }
+                        onChange={() =>
+                          setPicks((p) => ({ ...p, [field.key]: pick ?? "" }))
+                        }
+                      />
+                      <input
+                        type={
+                          field.kind === "int"
+                            ? "number"
+                            : field.kind === "email"
+                              ? "email"
+                              : field.kind === "tel"
+                                ? "tel"
+                                : "text"
+                        }
+                        autoFocus
+                        value={pick == null ? "" : String(pick)}
+                        onChange={(e) =>
+                          setPicks((p) => ({
+                            ...p,
+                            [field.key]: e.target.value,
+                          }))
+                        }
+                        placeholder="Custom value"
+                        style={{ flex: 1 }}
+                      />
+                    </label>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCustomFocus((f) => ({ ...f, [field.key]: true }))
                       }
-                      onChange={() =>
-                        setPicks((p) => ({ ...p, [field.key]: pick ?? "" }))
-                      }
-                    />
-                    <input
-                      type={
-                        field.kind === "int"
-                          ? "number"
-                          : field.kind === "email"
-                            ? "email"
-                            : field.kind === "tel"
-                              ? "tel"
-                              : "text"
-                      }
-                      autoFocus
-                      value={pick == null ? "" : String(pick)}
-                      onChange={(e) =>
-                        setPicks((p) => ({ ...p, [field.key]: e.target.value }))
-                      }
-                      placeholder="Custom value"
-                      style={{ flex: 1 }}
-                    />
-                  </label>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setCustomFocus(field.key)}
-                    className="u-link"
-                    style={{
-                      fontSize: 12.5,
-                      textAlign: "left",
-                      color: T.muted2,
-                    }}
-                  >
-                    + Enter a different value
-                  </button>
-                )}
-              </div>
+                      className="u-link"
+                      style={{
+                        fontSize: 12.5,
+                        textAlign: "left",
+                        color: T.muted2,
+                      }}
+                    >
+                      + Enter a different value
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
-        {conflicts.every(({ distinct, nonNull }) => distinct.length <= 1 || nonNull.length === 0) && (
-          <div
-            style={{
-              fontSize: 13,
-              color: T.muted,
-              padding: 10,
-              borderRadius: 10,
-              background: "rgba(67,53,58,.04)",
-            }}
-          >
-            No conflicting fields — the merge will combine them cleanly.
-          </div>
-        )}
       </div>
 
       {guests.length === 2 && (

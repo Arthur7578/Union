@@ -85,6 +85,18 @@ export function NewRelativeForm({
         value={value.age_years == null ? "" : String(value.age_years)}
         onChange={(e) => setAge(e.target.value)}
       />
+      <input
+        type="text"
+        placeholder="Group (optional — e.g. Bride's family)"
+        value={value.guest_group ?? ""}
+        onChange={(e) => onChange({ guest_group: e.target.value })}
+      />
+      <input
+        type="text"
+        placeholder="Role (optional — bridesmaid, ring bearer…)"
+        value={value.role ?? ""}
+        onChange={(e) => onChange({ role: e.target.value })}
+      />
       <textarea
         placeholder="Notes (optional)"
         value={value.notes ?? ""}

@@ -1,17 +1,19 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import {
   fetchDuplicateGroups,
+  fetchGuests,
   fetchHiddenDuplicateClusters,
   hideDuplicateCluster,
   unhideDuplicateCluster,
   type DuplicateCandidate,
+  type GuestWithRsvp,
 } from "@/lib/data";
 import { BackHeader } from "@/components/BackHeader";
-import { Card, Button, Loading } from "@/components/ui";
+import { Card, Button, Loading, SectionLabel } from "@/components/ui";
 import { MergeReviewPanel } from "@/components/MergeReviewPanel";
 
 function ageOrEmpty(a: number | null): string {
@@ -26,19 +28,28 @@ export default function DuplicatesPage() {
   const { wedding } = useWedding();
   const [groupsData, setGroupsData] = useState<DuplicateCandidate[][] | null>(null);
   const [hidden, setHidden] = useState<DuplicateCandidate[][]>([]);
+  const [allGuests, setAllGuests] = useState<GuestWithRsvp[]>([]);
   const [showHidden, setShowHidden] = useState(false);
   const [reviewingKey, setReviewingKey] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Manual merge — user picks two guests the auto-detector didn't
+  // flag, then steps into the same review panel used for suggestions.
+  const [manualAId, setManualAId] = useState<string>("");
+  const [manualBId, setManualBId] = useState<string>("");
+  const [manualReviewing, setManualReviewing] = useState(false);
+
   const reload = async () => {
     if (!wedding) return;
-    const [live, hid] = await Promise.all([
+    const [live, hid, guests] = await Promise.all([
       fetchDuplicateGroups(wedding.id),
       fetchHiddenDuplicateClusters(wedding.id),
+      fetchGuests(wedding.id),
     ]);
     setGroupsData(live);
     setHidden(hid);
+    setAllGuests(guests);
   };
 
   useEffect(() => {
@@ -46,10 +57,12 @@ export default function DuplicatesPage() {
     Promise.all([
       fetchDuplicateGroups(wedding.id),
       fetchHiddenDuplicateClusters(wedding.id),
+      fetchGuests(wedding.id),
     ])
-      .then(([live, hid]) => {
+      .then(([live, hid, guests]) => {
         setGroupsData(live);
         setHidden(hid);
+        setAllGuests(guests);
       })
       .catch((e) => {
         setError(e instanceof Error ? e.message : "Couldn't load.");
@@ -140,6 +153,66 @@ export default function DuplicatesPage() {
         );
       })}
 
+      <SectionLabel>Merge two guests manually</SectionLabel>
+      <Card>
+        {manualReviewing && manualAId && manualBId ? (
+          (() => {
+            const a = allGuests.find((g) => g.id === manualAId);
+            const b = allGuests.find((g) => g.id === manualBId);
+            if (!a || !b) {
+              return (
+                <div style={{ fontSize: 13, color: T.muted }}>
+                  Couldn't find those guests anymore. Reload the page.
+                </div>
+              );
+            }
+            return (
+              <MergeReviewPanel
+                guests={[a, b]}
+                onDone={() => {
+                  setManualReviewing(false);
+                  setManualAId("");
+                  setManualBId("");
+                  void reload();
+                }}
+                onCancel={() => setManualReviewing(false)}
+              />
+            );
+          })()
+        ) : (
+          <>
+            <div style={{ fontSize: 13, color: T.muted, marginBottom: 10 }}>
+              Pick two guests to compare side by side. Use this for cases the
+              auto-detector missed — different spellings, nicknames, etc. The
+              review step shows every field so you can verify before merging.
+            </div>
+            <div style={{ display: "grid", gap: 8 }}>
+              <GuestPicker
+                label="First guest"
+                guests={allGuests}
+                excludeId={manualBId}
+                value={manualAId}
+                onChange={setManualAId}
+              />
+              <GuestPicker
+                label="Second guest"
+                guests={allGuests}
+                excludeId={manualAId}
+                value={manualBId}
+                onChange={setManualBId}
+              />
+            </div>
+            <Button
+              onClick={() => setManualReviewing(true)}
+              disabled={!manualAId || !manualBId || manualAId === manualBId}
+              style={{ marginTop: 10, minHeight: 38, fontSize: 13 }}
+            >
+              Compare
+            </Button>
+          </>
+        )}
+      </Card>
+
       {totalHidden > 0 && (
         <div style={{ marginTop: 16 }}>
           <button
@@ -183,6 +256,38 @@ export default function DuplicatesPage() {
         </div>
       )}
     </main>
+  );
+}
+
+function GuestPicker({
+  label,
+  guests,
+  excludeId,
+  value,
+  onChange,
+}: {
+  label: string;
+  guests: GuestWithRsvp[];
+  excludeId: string;
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <label style={{ fontSize: 13, color: T.muted, display: "grid", gap: 4 }}>
+      {label}
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">— Pick a guest —</option>
+        {guests
+          .filter((g) => g.id !== excludeId)
+          .map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.first_name} {g.last_name ?? ""}
+              {g.email ? ` · ${g.email}` : ""}
+              {g.guest_group ? ` · ${g.guest_group}` : ""}
+            </option>
+          ))}
+      </select>
+    </label>
   );
 }
 

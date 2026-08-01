@@ -704,6 +704,8 @@ export type NewRelatedGuest = {
   email?: string | null;
   phone?: string | null;
   age_years?: number | null;
+  role?: string | null;
+  guest_group?: string | null;
   notes?: string | null;
 };
 
@@ -871,6 +873,8 @@ export type DuplicateCandidate = {
   email: string | null;
   phone: string | null;
   guest_group: string | null;
+  role: string | null;
+  notes: string | null;
   rsvp_status: RsvpStatus;
   added_by_first_name: string | null;
 };

@@ -29,7 +29,6 @@ import { useWedding } from "@/lib/wedding";
 import { Button, Card, SectionLabel, Loading, StatusPill } from "@/components/ui";
 import { BackHeader } from "@/components/BackHeader";
 import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
-import { MergeReviewPanel } from "@/components/MergeReviewPanel";
 import { NewRelativeForm } from "@/components/NewRelativeForm";
 
 const STATUS_LABEL: Record<
@@ -99,11 +98,6 @@ export default function GuestDetailPage() {
   const [addPartnerDraft, setAddPartnerDraft] = useState<NewRelatedGuest | null>(null);
   const [addPartnerBusy, setAddPartnerBusy] = useState(false);
   const [addPartnerError, setAddPartnerError] = useState<string | null>(null);
-
-  // Voluntary merge: pick another guest to fold into this one, then
-  // resolve any field conflicts via the shared review panel.
-  const [mergePickId, setMergePickId] = useState<string>("");
-  const [mergeReviewing, setMergeReviewing] = useState(false);
 
   // RSVP recording form (owner side).
   const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus | "">("");
@@ -945,69 +939,6 @@ export default function GuestDetailPage() {
             </button>
           )}
         </div>
-      </Card>
-
-      <SectionLabel>Merge with another guest</SectionLabel>
-      <Card>
-        {mergeReviewing && mergePickId ? (
-          (() => {
-            const other = otherGuests.find((g) => g.id === mergePickId);
-            if (!other) {
-              return (
-                <div style={{ fontSize: 13, color: T.muted }}>
-                  Couldn't find that guest anymore. Try again.
-                </div>
-              );
-            }
-            return (
-              <MergeReviewPanel
-                guests={[guest, other]}
-                onDone={(survivingId) => {
-                  setMergeReviewing(false);
-                  setMergePickId("");
-                  // The surviving id might be the other guest —
-                  // navigate there so we don't render a stale, now-
-                  // deleted, current guest.
-                  router.replace(`/guests/${survivingId}`);
-                }}
-                onCancel={() => {
-                  setMergeReviewing(false);
-                }}
-              />
-            );
-          })()
-        ) : (
-          <>
-            <div style={{ fontSize: 13, color: T.muted, marginBottom: 8 }}>
-              Fold this guest together with another one — useful when the
-              auto-detector didn't catch a duplicate (different spelling,
-              nickname, etc.). You'll get to resolve any conflicting field
-              before it goes through.
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <select
-                value={mergePickId}
-                onChange={(e) => setMergePickId(e.target.value)}
-                style={{ flex: 1, minWidth: 180 }}
-              >
-                <option value="">— Pick another guest —</option>
-                {otherGuests.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.first_name} {g.last_name ?? ""}
-                    {g.email ? ` · ${g.email}` : ""}
-                  </option>
-                ))}
-              </select>
-              <Button
-                onClick={() => setMergeReviewing(true)}
-                disabled={!mergePickId}
-                style={{ minHeight: 38, fontSize: 13 }}
-              >
-                Review merge
-              </Button>
-            </div>
-          </>
-        )}
       </Card>
 
       <SectionLabel>Details</SectionLabel>
