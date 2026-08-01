@@ -563,6 +563,101 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           gap: 32px;
         }
 
+        /* Travel page specific grid for connections */
+        .travel-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 24px;
+        }
+
+        /* Logistics page specific grid */
+        .logistics-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+        }
+
+        /* FAQ grid for desktop */
+        .faq-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 20px;
+        }
+
+        /* Connection card styling */
+        .connection-card {
+          border: 1px solid #e1dec3;
+          padding: 16px;
+          border-radius: 16px;
+          margin-bottom: 16px;
+          background: white;
+          transition: all 0.2s ease;
+        }
+
+        .connection-card:hover {
+          box-shadow: 0 4px 12px rgba(43, 39, 36, 0.08);
+          transform: translateY(-2px);
+        }
+
+        /* Hotel card styling */
+        .hotel-card {
+          border: 1px solid #e1dec3;
+          padding: 20px;
+          border-radius: 16px;
+          margin-bottom: 16px;
+          background: white;
+          transition: all 0.2s ease;
+        }
+
+        .hotel-card:hover {
+          box-shadow: 0 4px 12px rgba(43, 39, 36, 0.08);
+          transform: translateY(-2px);
+        }
+
+        /* FAQ item styling */
+        .faq-item {
+          background: #fcfbfa;
+          padding: 20px;
+          border-radius: 16px;
+          border: 1px solid #e1dec3;
+          transition: all 0.2s ease;
+        }
+
+        .faq-item:hover {
+          background: #f8f5f2;
+          border-color: var(--accent);
+        }
+
+        /* Timeline styling */
+        .timeline {
+          border-left: 2px solid var(--accent);
+          padding-left: 20px;
+          margin-left: 10px;
+        }
+
+        .timeline-item {
+          margin-bottom: 20px;
+          position: relative;
+        }
+
+        .timeline-dot {
+          position: absolute;
+          left: -22px;
+          top: 3px;
+          width: 12px;
+          height: 12px;
+          background: var(--accent);
+          border-radius: 50%;
+        }
+
+        @media (max-width: 1024px) {
+          .travel-grid,
+          .logistics-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
+          }
+        }
+
         @media (max-width: 768px) {
           .responsive-grid {
             grid-template-columns: 1fr;
@@ -590,6 +685,51 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           .card {
             padding: 20px;
             border-radius: 16px;
+          }
+          .timeline {
+            padding-left: 16px;
+            margin-left: 0;
+          }
+          .timeline-dot {
+            left: -18px;
+          }
+        }
+
+        /* PWA compatibility - ensure proper touch targets */
+        @media (hover: hover) {
+          .connection-card,
+          .hotel-card,
+          .faq-item {
+            cursor: pointer;
+          }
+        }
+
+        /* Desktop-specific enhancements */
+        @media (min-width: 1025px) {
+          .card {
+            padding: 40px;
+            border-radius: 28px;
+          }
+          .hero-banner {
+            padding: 80px 24px 60px;
+          }
+          .hero-banner h1 {
+            font-size: 64px;
+          }
+          .countdown-pill {
+            font-size: 14px;
+            padding: 10px 32px;
+          }
+          .nav-tabs {
+            max-width: 800px;
+            gap: 12px;
+          }
+          .tab-btn {
+            padding: 14px 20px;
+            font-size: 15px;
+          }
+          .form-grid {
+            gap: 28px;
           }
         }
       ` }} />
@@ -777,12 +917,13 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 : "Meet other guests flying into PDX or driving from NYC. Save transport fees and share a premium ride together."}
             </p>
 
-            <div className="responsive-grid" style={{ gap: "24px" }}>
+            <div className="travel-grid">
               {/* Left Column: Shared Travel entries */}
               <div>
                 <h4 style={{ fontWeight: "600", fontSize: "16px", marginBottom: "16px" }}>🚗 {locale === "fr" ? "Covoits Disponibles" : "Active Travels"}</h4>
-                {connections.map((match) => (
-                  <div key={match.id} style={{ border: "1px solid #e1dec3", padding: "16px", borderRadius: "16px", marginBottom: "16px", position: "relative" }}>
+                {connections.length > 0 ? (
+                  connections.map((match) => (
+                    <div key={match.id} className="connection-card">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontWeight: "600", fontSize: "15px" }}>{match.name}</span>
                       <span style={{ fontSize: "12px", background: "rgba(110, 138, 114, 0.1)", color: "var(--success)", padding: "3px 8px", borderRadius: "100px", fontWeight: "600" }}>{match.date}</span>
@@ -865,17 +1006,21 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
                 <button
                   onClick={handleAddMyTravel}
+                  disabled={!guestFrom.trim()}
                   style={{
-                    background: "var(--accent)",
+                    background: guestFrom.trim() ? "var(--accent)" : "rgba(176, 124, 130, 0.3)",
                     color: "white",
                     border: "none",
-                    padding: "12px",
-                    borderRadius: "10px",
+                    padding: "14px 24px",
+                    borderRadius: "12px",
                     width: "100%",
                     fontWeight: "600",
-                    cursor: "pointer"
+                    fontSize: "15px",
+                    cursor: guestFrom.trim() ? "pointer" : "not-allowed",
+                    transition: "all 0.2s ease",
+                    marginTop: "8px"
                   }}
-                >
+                  aria-label={locale === "fr" ? "Publier mon trajet" : "Post travel option"}>
                   {locale === "fr" ? "Publier mon trajet" : "Post Travel Option"}
                 </button>
               </div>
@@ -893,12 +1038,12 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               {locale === "fr" ? "Toutes les adresses recommandées et le planning officiel du mariage." : "A curated list of luxury gorge hotels and the official wedding schedule."}
             </p>
 
-            <div className="responsive-grid">
+            <div className="logistics-grid">
               {/* Hotel recommendations */}
               <div>
                 <h4 style={{ fontWeight: "600", fontSize: "16px", marginBottom: "16px" }}>🏨 {locale === "fr" ? "Hébergements Conseillés" : "Recommended Places to Stay"}</h4>
                 {STAYS.map((stay) => (
-                  <div key={stay.name} style={{ border: "1px solid #e1dec3", padding: "20px", borderRadius: "16px", marginBottom: "16px", background: "white" }}>
+                  <div key={stay.name} className="hotel-card">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
                       <div>
                         <span style={{ fontSize: "11px", fontWeight: "bold", background: "#fdf2f4", color: "var(--accent)", padding: "3px 8px", borderRadius: "100px" }}>{stay.badge}</span>
@@ -977,8 +1122,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               {locale === "fr" ? "Toutes les réponses pour faciliter votre organisation." : "Quick answers to help plan your trip and details about the day."}
             </p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ background: "#fcfbfa", padding: "20px", borderRadius: "16px", border: "1px solid #e1dec3" }}>
+            <div className="faq-grid">
+              <div className="faq-item">
                 <h4 style={{ fontWeight: "600", fontSize: "15px", margin: "0 0 6px" }}>👗 {locale === "fr" ? "Quel est le dress code ?" : "What is the dress code?"}</h4>
                 <p style={{ color: "var(--muted)", fontSize: "14px", margin: 0, lineHeight: "1.5" }}>
                   {locale === "fr"
@@ -987,7 +1132,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 </p>
               </div>
 
-              <div style={{ background: "#fcfbfa", padding: "20px", borderRadius: "16px", border: "1px solid #e1dec3" }}>
+              <div className="faq-item">
                 <h4 style={{ fontWeight: "600", fontSize: "15px", margin: "0 0 6px" }}>👶 {locale === "fr" ? "Les enfants sont-ils invités ?" : "Are children welcome?"}</h4>
                 <p style={{ color: "var(--muted)", fontSize: "14px", margin: 0, lineHeight: "1.5" }}>
                   {locale === "fr"
@@ -996,7 +1141,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 </p>
               </div>
 
-              <div style={{ background: "#fcfbfa", padding: "20px", borderRadius: "16px", border: "1px solid #e1dec3" }}>
+              <div className="faq-item">
                 <h4 style={{ fontWeight: "600", fontSize: "15px", margin: "0 0 6px" }}>🚗 {locale === "fr" ? "Où se garer à la grange ?" : "Is parking available at the venue?"}</h4>
                 <p style={{ color: "var(--muted)", fontSize: "14px", margin: 0, lineHeight: "1.5" }}>
                   {locale === "fr"
