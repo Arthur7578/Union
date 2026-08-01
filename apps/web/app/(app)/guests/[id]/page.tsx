@@ -30,6 +30,7 @@ import { Button, Card, SectionLabel, Loading, StatusPill } from "@/components/ui
 import { BackHeader } from "@/components/BackHeader";
 import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
 import { NewRelativeForm } from "@/components/NewRelativeForm";
+import { RelationshipCombobox } from "@/components/RelationshipCombobox";
 
 const STATUS_LABEL: Record<
   string,
@@ -81,23 +82,31 @@ export default function GuestDetailPage() {
   const [ageDraft, setAgeDraft] = useState<string>("");
   const [ageBusy, setAgeBusy] = useState(false);
 
-  // Inline "add a child" / "add a partner" mini-forms — each creates
-  // a new guest row with full details and wires the relationship in
-  // a single RPC call.
-  const emptyRelative = (): NewRelatedGuest => ({
-    first_name: "",
-    last_name: null,
-    email: null,
-    phone: null,
-    age_years: null,
-    notes: null,
-  });
+  // Inline drafts for creating a new partner / child / parent via
+  // the combobox's "+ Add" option. Each draft is created + linked
+  // in a single createGuestWithLinks call on save.
+  const emptyRelative = (name = ""): NewRelatedGuest => {
+    const parts = name.trim().split(/\s+/);
+    return {
+      first_name: parts[0] ?? "",
+      last_name: parts.length > 1 ? parts.slice(1).join(" ") : null,
+      email: null,
+      phone: null,
+      age_years: null,
+      role: null,
+      guest_group: null,
+      notes: null,
+    };
+  };
   const [addChildDraft, setAddChildDraft] = useState<NewRelatedGuest | null>(null);
   const [addChildBusy, setAddChildBusy] = useState(false);
   const [addChildError, setAddChildError] = useState<string | null>(null);
   const [addPartnerDraft, setAddPartnerDraft] = useState<NewRelatedGuest | null>(null);
   const [addPartnerBusy, setAddPartnerBusy] = useState(false);
   const [addPartnerError, setAddPartnerError] = useState<string | null>(null);
+  const [addParentDraft, setAddParentDraft] = useState<NewRelatedGuest | null>(null);
+  const [addParentBusy, setAddParentBusy] = useState(false);
+  const [addParentError, setAddParentError] = useState<string | null>(null);
 
   // RSVP recording form (owner side).
   const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus | "">("");
@@ -410,6 +419,44 @@ export default function GuestDetailPage() {
       setAddChildError(e instanceof Error ? e.message : "Couldn't add child.");
     } finally {
       setAddChildBusy(false);
+    }
+  };
+
+  const addParentGuest = async () => {
+    if (!wedding || !addParentDraft || !addParentDraft.first_name.trim()) return;
+    setAddParentBusy(true);
+    setAddParentError(null);
+    try {
+      // Create the parent as a fresh guest, then wire the parent_of
+      // edge from the new parent to this child. Two RPC calls (the
+      // first is atomic, the second is a single insert), because
+      // create_guest_with_links doesn't have a "make this guest a
+      // parent of an existing one" slot.
+      const parent = await createGuestWithLinks({
+        wedding_id: wedding.id,
+        first_name: addParentDraft.first_name.trim(),
+        last_name: addParentDraft.last_name ?? null,
+        email: addParentDraft.email ?? null,
+        phone: addParentDraft.phone ?? null,
+        age_years: addParentDraft.age_years ?? null,
+        role: addParentDraft.role ?? null,
+        notes: addParentDraft.notes ?? null,
+        primary_group: addParentDraft.guest_group ?? null,
+      });
+      await addGuestRelationship({
+        wedding_id: wedding.id,
+        from_guest: parent.id,
+        to_guest: guest.id,
+        kind: "parent_of",
+      });
+      await refreshLinks();
+      const refreshedOthers = await fetchGuests(wedding.id);
+      setOtherGuests(refreshedOthers.filter((x) => x.id !== guest.id));
+      setAddParentDraft(null);
+    } catch (e) {
+      setAddParentError(e instanceof Error ? e.message : "Couldn't add parent.");
+    } finally {
+      setAddParentBusy(false);
     }
   };
 
@@ -747,197 +794,99 @@ export default function GuestDetailPage() {
             })}
           </div>
         )}
-        <div style={{ display: "grid", gap: 8 }}>
-          <label style={{ fontSize: 13, color: T.muted }}>
-            Link as partner
-            <select
-              onChange={(e) => {
-                if (e.target.value) {
-                  void addPartnerLink(e.target.value);
-                  e.currentTarget.value = "";
-                }
-              }}
-              disabled={linksBusy}
-              defaultValue=""
-              style={{ marginTop: 4 }}
-            >
-              <option value="">— Choose a guest —</option>
-              {otherGuests
-                .filter((g) => !links.some((l) => l.kind === "partner_of" && l.guest.id === g.id))
-                .map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.first_name} {g.last_name ?? ""}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label style={{ fontSize: 13, color: T.muted }}>
-            Add as parent of
-            <select
-              onChange={(e) => {
-                if (e.target.value) {
-                  void addKidLink(e.target.value);
-                  e.currentTarget.value = "";
-                }
-              }}
-              disabled={linksBusy}
-              defaultValue=""
-              style={{ marginTop: 4 }}
-            >
-              <option value="">— Choose a guest —</option>
-              {otherGuests
-                .filter(
-                  (g) =>
-                    !links.some(
-                      (l) =>
-                        l.kind === "parent_of" &&
-                        l.direction === "outgoing" &&
-                        l.guest.id === g.id,
-                    ),
-                )
-                .map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.first_name} {g.last_name ?? ""}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label style={{ fontSize: 13, color: T.muted }}>
-            Link a parent
-            <select
-              onChange={(e) => {
-                if (e.target.value) {
-                  void addParentLink(e.target.value);
-                  e.currentTarget.value = "";
-                }
-              }}
-              disabled={linksBusy}
-              defaultValue=""
-              style={{ marginTop: 4 }}
-            >
-              <option value="">— Choose a guest —</option>
-              {otherGuests
-                .filter(
-                  (g) =>
-                    !links.some(
-                      (l) =>
-                        l.kind === "parent_of" &&
-                        l.direction === "incoming" &&
-                        l.guest.id === g.id,
-                    ),
-                )
-                .map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.first_name} {g.last_name ?? ""}
-                  </option>
-                ))}
-            </select>
-          </label>
-        </div>
-
-        <div
-          style={{
-            marginTop: 14,
-            paddingTop: 12,
-            borderTop: `1px solid ${T.line}`,
-            display: "grid",
-            gap: 12,
-          }}
-        >
-          {addPartnerDraft ? (
-            <div style={{ display: "grid", gap: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>
-                Add a partner (new guest, linked to {guest.first_name})
-              </div>
-              <NewRelativeForm
-                value={addPartnerDraft}
-                onChange={(patch) =>
-                  setAddPartnerDraft((prev) => (prev ? { ...prev, ...patch } : prev))
-                }
-                autoFocus
-              />
-              {addPartnerError && (
-                <div className="error" style={{ fontSize: 12 }}>
-                  {addPartnerError}
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 8 }}>
-                <Button
-                  onClick={() => void addPartnerGuest()}
-                  disabled={addPartnerBusy || !addPartnerDraft.first_name.trim()}
-                  style={{ flex: 1 }}
-                >
-                  {addPartnerBusy ? "Adding…" : "Add partner"}
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setAddPartnerDraft(null);
-                    setAddPartnerError(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setAddPartnerDraft(emptyRelative())}
-              className="u-link"
-              style={{ fontSize: 13, color: T.ink2, textAlign: "left" }}
-            >
-              + Add a new partner (with full details)
-            </button>
-          )}
-
-          {addChildDraft ? (
-            <div style={{ display: "grid", gap: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>
-                Add a child (new guest, linked to {guest.first_name})
-              </div>
-              <NewRelativeForm
-                value={addChildDraft}
-                onChange={(patch) =>
-                  setAddChildDraft((prev) => (prev ? { ...prev, ...patch } : prev))
-                }
-                autoFocus
-                ageLabel="Age (optional — helps with meal / bed)"
-              />
-              {addChildError && (
-                <div className="error" style={{ fontSize: 12 }}>
-                  {addChildError}
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 8 }}>
-                <Button
-                  onClick={() => void addChildGuest()}
-                  disabled={addChildBusy || !addChildDraft.first_name.trim()}
-                  style={{ flex: 1 }}
-                >
-                  {addChildBusy ? "Adding…" : "Add child"}
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setAddChildDraft(null);
-                    setAddChildError(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setAddChildDraft(emptyRelative())}
-              className="u-link"
-              style={{ fontSize: 13, color: T.ink2, textAlign: "left" }}
-            >
-              + Add a new child (with full details)
-            </button>
-          )}
+        {/* One combobox per relationship. Type a name → dropdown
+            filters existing guests → pick or "+ Add as new". Picks
+            fire the appropriate link RPC right away; new opens an
+            inline full-detail form. */}
+        <div style={{ display: "grid", gap: 12 }}>
+          <RelationshipRow
+            title="Add a partner"
+            combo={
+              addPartnerDraft ? null : (
+                <RelationshipCombobox
+                  label=""
+                  placeholder="Type a name to search or add a partner…"
+                  guests={otherGuests}
+                  excludeIds={links
+                    .filter((l) => l.kind === "partner_of")
+                    .map((l) => l.guest.id)}
+                  onPickExisting={(g) => void addPartnerLink(g.id)}
+                  onStartCreate={(name) => setAddPartnerDraft(emptyRelative(name))}
+                />
+              )
+            }
+            draft={addPartnerDraft}
+            error={addPartnerError}
+            busy={addPartnerBusy}
+            onChange={(patch) =>
+              setAddPartnerDraft((prev) => (prev ? { ...prev, ...patch } : prev))
+            }
+            onSave={() => void addPartnerGuest()}
+            onCancel={() => {
+              setAddPartnerDraft(null);
+              setAddPartnerError(null);
+            }}
+            saveLabel="Add partner"
+          />
+          <RelationshipRow
+            title="Add a child"
+            combo={
+              addChildDraft ? null : (
+                <RelationshipCombobox
+                  label=""
+                  placeholder="Type a name to search or add a child…"
+                  guests={otherGuests}
+                  excludeIds={links
+                    .filter((l) => l.kind === "parent_of" && l.direction === "outgoing")
+                    .map((l) => l.guest.id)}
+                  onPickExisting={(g) => void addKidLink(g.id)}
+                  onStartCreate={(name) => setAddChildDraft(emptyRelative(name))}
+                />
+              )
+            }
+            draft={addChildDraft}
+            error={addChildError}
+            busy={addChildBusy}
+            onChange={(patch) =>
+              setAddChildDraft((prev) => (prev ? { ...prev, ...patch } : prev))
+            }
+            onSave={() => void addChildGuest()}
+            onCancel={() => {
+              setAddChildDraft(null);
+              setAddChildError(null);
+            }}
+            saveLabel="Add child"
+            ageLabel="Age (optional — helps with meal / bed)"
+          />
+          <RelationshipRow
+            title="Add a parent"
+            combo={
+              addParentDraft ? null : (
+                <RelationshipCombobox
+                  label=""
+                  placeholder="Type a name to search or add a parent…"
+                  guests={otherGuests}
+                  excludeIds={links
+                    .filter((l) => l.kind === "parent_of" && l.direction === "incoming")
+                    .map((l) => l.guest.id)}
+                  onPickExisting={(g) => void addParentLink(g.id)}
+                  onStartCreate={(name) => setAddParentDraft(emptyRelative(name))}
+                />
+              )
+            }
+            draft={addParentDraft}
+            error={addParentError}
+            busy={addParentBusy}
+            onChange={(patch) =>
+              setAddParentDraft((prev) => (prev ? { ...prev, ...patch } : prev))
+            }
+            onSave={() => void addParentGuest()}
+            onCancel={() => {
+              setAddParentDraft(null);
+              setAddParentError(null);
+            }}
+            saveLabel="Add parent"
+          />
         </div>
       </Card>
 
@@ -1116,5 +1065,70 @@ export default function GuestDetailPage() {
         </div>
       </form>
     </main>
+  );
+}
+
+/**
+ * A single relationship row on the guest edit page. Either the
+ * combobox is visible (idle state) OR the inline draft form is
+ * expanded (creating a new related guest). Compact wrapper so the
+ * three relationships stay symmetrical.
+ */
+function RelationshipRow({
+  title,
+  combo,
+  draft,
+  error,
+  busy,
+  onChange,
+  onSave,
+  onCancel,
+  saveLabel,
+  ageLabel = "Age (optional)",
+}: {
+  title: string;
+  combo: React.ReactNode;
+  draft: NewRelatedGuest | null;
+  error: string | null;
+  busy: boolean;
+  onChange: (patch: Partial<NewRelatedGuest>) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  saveLabel: string;
+  ageLabel?: string;
+}) {
+  return (
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={{ fontSize: 13, color: T.muted, fontWeight: 500 }}>{title}</div>
+      {draft ? (
+        <div style={{ display: "grid", gap: 8 }}>
+          <NewRelativeForm
+            value={draft}
+            onChange={onChange}
+            autoFocus
+            ageLabel={ageLabel}
+          />
+          {error && (
+            <div className="error" style={{ fontSize: 12 }}>
+              {error}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8 }}>
+            <Button
+              onClick={onSave}
+              disabled={busy || !draft.first_name.trim()}
+              style={{ flex: 1 }}
+            >
+              {busy ? "Adding…" : saveLabel}
+            </Button>
+            <Button variant="secondary" onClick={onCancel} disabled={busy}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        combo
+      )}
+    </div>
   );
 }

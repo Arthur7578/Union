@@ -6,31 +6,45 @@ import type { GuestGroup } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
   addGuestGroup,
+  addGuestRelationship,
   createGuestWithLinks,
   fetchGuestGroups,
   fetchGuests,
   type GuestWithRsvp,
   type NewRelatedGuest,
 } from "@/lib/data";
+import { T } from "@/lib/theme";
 import { Button } from "@/components/ui";
 import { BackHeader } from "@/components/BackHeader";
 import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
 import { NewRelativeForm } from "@/components/NewRelativeForm";
+import { RelationshipCombobox } from "@/components/RelationshipCombobox";
 import { useT } from "@/lib/i18n/client";
 
-const emptyRelative = (): NewRelatedGuest => ({
-  first_name: "",
-  last_name: null,
-  email: null,
-  phone: null,
-  age_years: null,
-  notes: null,
-});
+/**
+ * Per-relationship state on the add-guest form: each entry is either
+ * an existing-guest link (`link`) or an inline-created draft (`new`).
+ * All entries are submitted together — the RPC creates the primary
+ * guest, wires links to existing guests, and materialises drafts
+ * into new guest rows + relationship edges, atomically.
+ */
+type LinkedEntry =
+  | { kind: "link"; guest: GuestWithRsvp }
+  | { kind: "new"; data: NewRelatedGuest };
 
-type PartnerChoice =
-  | { mode: "none" }
-  | { mode: "link"; id: string }
-  | { mode: "create"; data: NewRelatedGuest };
+const emptyRelative = (name = ""): NewRelatedGuest => {
+  const parts = name.trim().split(/\s+/);
+  return {
+    first_name: parts[0] ?? "",
+    last_name: parts.length > 1 ? parts.slice(1).join(" ") : null,
+    email: null,
+    phone: null,
+    age_years: null,
+    role: null,
+    guest_group: null,
+    notes: null,
+  };
+};
 
 export default function NewGuestPage() {
   const t = useT();
@@ -43,10 +57,11 @@ export default function NewGuestPage() {
   const [age, setAge] = useState<string>("");
   const [role, setRole] = useState("");
   const [notes, setNotes] = useState("");
-  const [partner, setPartner] = useState<PartnerChoice>({ mode: "none" });
-  const [linkParentIds, setLinkParentIds] = useState<string[]>([]);
-  const [linkChildIds, setLinkChildIds] = useState<string[]>([]);
-  const [newChildren, setNewChildren] = useState<NewRelatedGuest[]>([]);
+
+  const [partner, setPartner] = useState<LinkedEntry | null>(null);
+  const [parents, setParents] = useState<LinkedEntry[]>([]);
+  const [children, setChildren] = useState<LinkedEntry[]>([]);
+
   const [allGroups, setAllGroups] = useState<GuestGroup[]>([]);
   const [selectedGroups, setSelectedGroups] = useState<GroupChip[]>([]);
   const [existingGuests, setExistingGuests] = useState<GuestWithRsvp[]>([]);
@@ -70,8 +85,18 @@ export default function NewGuestPage() {
 
   if (!wedding) return null;
 
-  const hasAnyChild = linkChildIds.length > 0 || newChildren.length > 0;
-  const showAgeField = linkParentIds.length > 0;
+  const showAgeField = parents.length > 0;
+
+  const excludedFor = (self: LinkedEntry[]): string[] => {
+    const ids = new Set<string>();
+    if (partner?.kind === "link") ids.add(partner.guest.id);
+    for (const p of parents) if (p.kind === "link") ids.add(p.guest.id);
+    for (const c of children) if (c.kind === "link") ids.add(c.guest.id);
+    // Also exclude any guest that's already in another slot — we
+    // don't want the same person as both parent and child.
+    for (const e of self) if (e.kind === "link") ids.add(e.guest.id);
+    return Array.from(ids);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,11 +105,40 @@ export default function NewGuestPage() {
     try {
       const primary = selectedGroups[0] ?? null;
       const parsedAge = age.trim() === "" ? null : Math.max(0, Math.min(130, parseInt(age, 10)));
-      // Create the primary guest atomically with any inline new
-      // partner/children. Existing-guest links (parents, an existing
-      // partner) also ride inside the same RPC. Linking pre-existing
-      // children happens in a follow-up call because the primary's id
-      // is only known after the RPC returns.
+      const parentLinkIds = parents
+        .filter((p): p is Extract<LinkedEntry, { kind: "link" }> => p.kind === "link")
+        .map((p) => p.guest.id);
+      const newChildren = children
+        .filter((c): c is Extract<LinkedEntry, { kind: "new" }> => c.kind === "new")
+        .map((c) => c.data);
+      const childLinkIds = children
+        .filter((c): c is Extract<LinkedEntry, { kind: "link" }> => c.kind === "link")
+        .map((c) => c.guest.id);
+      const partnerLinkId = partner?.kind === "link" ? partner.guest.id : null;
+      const newPartner = partner?.kind === "new" ? partner.data : null;
+      // If the user typed a new parent, the RPC doesn't handle it
+      // directly (the primary is the child, not the parent). We
+      // create each new parent up-front via a separate RPC call, then
+      // fold its id into parent_ids.
+      const newParentIds: string[] = [];
+      const newParents = parents.filter(
+        (p): p is Extract<LinkedEntry, { kind: "new" }> => p.kind === "new",
+      );
+      for (const np of newParents) {
+        const created = await createGuestWithLinks({
+          wedding_id: wedding.id,
+          first_name: np.data.first_name.trim(),
+          last_name: np.data.last_name ?? null,
+          email: np.data.email ?? null,
+          phone: np.data.phone ?? null,
+          age_years: np.data.age_years ?? null,
+          role: np.data.role ?? null,
+          notes: np.data.notes ?? null,
+          primary_group: np.data.guest_group ?? null,
+        });
+        newParentIds.push(created.id);
+      }
+
       const created = await createGuestWithLinks({
         wedding_id: wedding.id,
         first_name: firstNameV.trim(),
@@ -96,21 +150,20 @@ export default function NewGuestPage() {
         notes: notes.trim() || null,
         primary_group: primary?.name ?? null,
         group_ids: selectedGroups.slice(1).map((g) => g.id),
-        parent_ids: linkParentIds,
-        partner_id: partner.mode === "link" ? partner.id : null,
-        new_partner: partner.mode === "create" ? partner.data : null,
+        parent_ids: [...parentLinkIds, ...newParentIds],
+        partner_id: partnerLinkId,
+        new_partner: newPartner,
         new_children: newChildren,
       });
-      if (linkChildIds.length > 0) {
-        const { addGuestRelationship } = await import("@/lib/data");
-        for (const cid of linkChildIds) {
-          await addGuestRelationship({
-            wedding_id: wedding.id,
-            from_guest: created.id,
-            to_guest: cid,
-            kind: "parent_of",
-          });
-        }
+      // Extra children that were picked from the existing list get
+      // wired after the primary exists.
+      for (const cid of childLinkIds) {
+        await addGuestRelationship({
+          wedding_id: wedding.id,
+          from_guest: created.id,
+          to_guest: cid,
+          kind: "parent_of",
+        });
       }
       router.replace("/guests");
     } catch (err) {
@@ -128,30 +181,12 @@ export default function NewGuestPage() {
     return { id: created.id, name: created.name, color: created.color };
   };
 
-  const chipStyle: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    background: "rgba(224,204,177,.35)",
-    border: "1px solid rgba(67,53,58,.12)",
-    borderRadius: 20,
-    padding: "4px 10px",
-    fontSize: 13,
-  };
-  const xBtnStyle: React.CSSProperties = {
-    background: "transparent",
-    border: "none",
-    color: "#8a7f80",
-    cursor: "pointer",
-    fontSize: 14,
-    lineHeight: 1,
-  };
-
   const disableSubmit =
     busy ||
     !firstNameV.trim() ||
-    (partner.mode === "create" && !partner.data.first_name.trim()) ||
-    newChildren.some((c) => !c.first_name.trim());
+    (partner?.kind === "new" && !partner.data.first_name.trim()) ||
+    parents.some((p) => p.kind === "new" && !p.data.first_name.trim()) ||
+    children.some((c) => c.kind === "new" && !c.data.first_name.trim());
 
   return (
     <main className="u-main">
@@ -203,135 +238,65 @@ export default function NewGuestPage() {
           />
         </div>
 
-        {/* Partner: link an existing guest OR create a new one inline. */}
-        <div className="field">
-          <label>Partner (optional)</label>
-          {partner.mode === "create" ? (
-            <div style={{ display: "grid", gap: 8 }}>
-              <NewRelativeForm
-                value={partner.data}
-                onChange={(patch) =>
-                  setPartner({ mode: "create", data: { ...partner.data, ...patch } })
-                }
-                autoFocus
-                onRemove={() => setPartner({ mode: "none" })}
-                removeLabel="Cancel new partner"
-              />
-            </div>
-          ) : partner.mode === "link" ? (
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              {(() => {
-                const p = existingGuests.find((g) => g.id === partner.id);
-                return (
-                  <span style={chipStyle}>
-                    {p ? `${p.first_name} ${p.last_name ?? ""}` : "(unknown)"}
-                    <button
-                      type="button"
-                      aria-label="Unlink partner"
-                      onClick={() => setPartner({ mode: "none" })}
-                      style={xBtnStyle}
-                    >
-                      ×
-                    </button>
-                  </span>
-                );
-              })()}
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: 8 }}>
-              {existingGuests.length > 0 && (
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (v) setPartner({ mode: "link", id: v });
-                  }}
-                >
-                  <option value="">— Link an existing guest —</option>
-                  {existingGuests.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.first_name} {g.last_name ?? ""}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <button
-                type="button"
-                onClick={() =>
-                  setPartner({ mode: "create", data: emptyRelative() })
-                }
-                className="u-link"
-                style={{ fontSize: 13, textAlign: "left" }}
-              >
-                + Add a new partner (with full details)
-              </button>
-            </div>
+        <RelationshipSection
+          label="Partner (optional)"
+          hint="Linked partners can register / edit each other from their invite."
+          entries={partner ? [partner] : []}
+          onRemove={() => setPartner(null)}
+          onUpdate={(idx, patch) =>
+            setPartner((prev) =>
+              prev && prev.kind === "new"
+                ? { ...prev, data: { ...prev.data, ...patch } }
+                : prev,
+            )
+          }
+        >
+          {!partner && (
+            <RelationshipCombobox
+              label=""
+              placeholder="Type a name to search or add a partner…"
+              guests={existingGuests}
+              excludeIds={excludedFor([])}
+              createLabel="Add"
+              onPickExisting={(g) => setPartner({ kind: "link", guest: g })}
+              onStartCreate={(name) =>
+                setPartner({ kind: "new", data: emptyRelative(name) })
+              }
+            />
           )}
-          <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
-            Linked partners can register / edit each other from their invite.
-          </div>
-        </div>
+        </RelationshipSection>
 
-        {/* Parents: chip picker linking existing guests only. */}
-        {existingGuests.length > 0 && (
-          <div className="field">
-            <label htmlFor="lpar">Parents (optional)</label>
-            {linkParentIds.length > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 6,
-                  marginBottom: 8,
-                }}
-              >
-                {linkParentIds.map((pid) => {
-                  const p = existingGuests.find((g) => g.id === pid);
-                  if (!p) return null;
-                  return (
-                    <span key={pid} style={chipStyle}>
-                      {p.first_name} {p.last_name ?? ""}
-                      <button
-                        type="button"
-                        aria-label="Remove parent"
-                        onClick={() =>
-                          setLinkParentIds((prev) => prev.filter((x) => x !== pid))
-                        }
-                        style={xBtnStyle}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-            <select
-              id="lpar"
-              value=""
-              onChange={(e) => {
-                const v = e.target.value;
-                if (!v) return;
-                setLinkParentIds((prev) =>
-                  prev.includes(v) ? prev : [...prev, v],
-                );
-              }}
-            >
-              <option value="">— Add a parent —</option>
-              {existingGuests
-                .filter((g) => !linkParentIds.includes(g.id))
-                .map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.first_name} {g.last_name ?? ""}
-                  </option>
-                ))}
-            </select>
-            <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
-              Pick each parent — e.g. mother, step-father. They can each
-              manage this person from their own invite.
-            </div>
-          </div>
-        )}
+        <RelationshipSection
+          label="Parents (optional)"
+          hint="Pick or type each parent — e.g. mother, step-father. They can each manage this person from their own invite."
+          entries={parents}
+          onRemove={(idx) =>
+            setParents((prev) => prev.filter((_, i) => i !== idx))
+          }
+          onUpdate={(idx, patch) =>
+            setParents((prev) =>
+              prev.map((e, i) =>
+                i === idx && e.kind === "new"
+                  ? { ...e, data: { ...e.data, ...patch } }
+                  : e,
+              ),
+            )
+          }
+        >
+          <RelationshipCombobox
+            label=""
+            placeholder="Type a name to search or add a parent…"
+            guests={existingGuests}
+            excludeIds={excludedFor(parents)}
+            createLabel="Add"
+            onPickExisting={(g) =>
+              setParents((prev) => [...prev, { kind: "link", guest: g }])
+            }
+            onStartCreate={(name) =>
+              setParents((prev) => [...prev, { kind: "new", data: emptyRelative(name) }])
+            }
+          />
+        </RelationshipSection>
 
         {showAgeField && (
           <div className="field">
@@ -345,108 +310,44 @@ export default function NewGuestPage() {
               onChange={(e) => setAge(e.target.value)}
               placeholder="e.g. 6"
             />
-            <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: T.faint, marginTop: 4 }}>
               Helps with meal / bed choices. Leave blank if unknown.
             </div>
           </div>
         )}
 
-        {/* Children: link existing + create new inline. */}
-        <div className="field">
-          <label>Children (optional)</label>
-          {(linkChildIds.length > 0 || newChildren.length > 0) && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 6,
-                marginBottom: 8,
-              }}
-            >
-              {linkChildIds.map((cid) => {
-                const c = existingGuests.find((g) => g.id === cid);
-                if (!c) return null;
-                return (
-                  <span key={cid} style={chipStyle}>
-                    {c.first_name} {c.last_name ?? ""}
-                    <button
-                      type="button"
-                      aria-label="Unlink child"
-                      onClick={() =>
-                        setLinkChildIds((prev) => prev.filter((x) => x !== cid))
-                      }
-                      style={xBtnStyle}
-                    >
-                      ×
-                    </button>
-                  </span>
-                );
-              })}
-            </div>
-          )}
-          {newChildren.length > 0 && (
-            <div style={{ display: "grid", gap: 8, marginBottom: 8 }}>
-              {newChildren.map((child, idx) => (
-                <div key={idx}>
-                  <div style={{ fontSize: 12, color: "#8a7f80", marginBottom: 4 }}>
-                    New child #{idx + 1}
-                  </div>
-                  <NewRelativeForm
-                    value={child}
-                    onChange={(patch) =>
-                      setNewChildren((prev) =>
-                        prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)),
-                      )
-                    }
-                    onRemove={() =>
-                      setNewChildren((prev) => prev.filter((_, i) => i !== idx))
-                    }
-                    removeLabel="Remove"
-                    ageLabel="Age (optional — helps with meal / bed)"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-          <div style={{ display: "grid", gap: 8 }}>
-            {existingGuests.length > 0 && (
-              <select
-                value=""
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (!v) return;
-                  setLinkChildIds((prev) =>
-                    prev.includes(v) ? prev : [...prev, v],
-                  );
-                }}
-              >
-                <option value="">— Link an existing guest as a child —</option>
-                {existingGuests
-                  .filter((g) => !linkChildIds.includes(g.id))
-                  .map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.first_name} {g.last_name ?? ""}
-                    </option>
-                  ))}
-              </select>
-            )}
-            <button
-              type="button"
-              onClick={() =>
-                setNewChildren((prev) => [...prev, emptyRelative()])
-              }
-              className="u-link"
-              style={{ fontSize: 13, textAlign: "left" }}
-            >
-              + Add a new child (with full details)
-            </button>
-          </div>
-          {hasAnyChild && (
-            <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
-              This guest becomes each linked child's parent.
-            </div>
-          )}
-        </div>
+        <RelationshipSection
+          label="Children (optional)"
+          hint="Pick or type each child. This guest becomes their parent."
+          entries={children}
+          onRemove={(idx) =>
+            setChildren((prev) => prev.filter((_, i) => i !== idx))
+          }
+          onUpdate={(idx, patch) =>
+            setChildren((prev) =>
+              prev.map((e, i) =>
+                i === idx && e.kind === "new"
+                  ? { ...e, data: { ...e.data, ...patch } }
+                  : e,
+              ),
+            )
+          }
+          childAgeLabel="Age (optional — helps with meal / bed)"
+        >
+          <RelationshipCombobox
+            label=""
+            placeholder="Type a name to search or add a child…"
+            guests={existingGuests}
+            excludeIds={excludedFor(children)}
+            createLabel="Add"
+            onPickExisting={(g) =>
+              setChildren((prev) => [...prev, { kind: "link", guest: g }])
+            }
+            onStartCreate={(name) =>
+              setChildren((prev) => [...prev, { kind: "new", data: emptyRelative(name) }])
+            }
+          />
+        </RelationshipSection>
 
         <div className="field">
           <label>{t.guests.fields.group}</label>
@@ -500,5 +401,94 @@ export default function NewGuestPage() {
         </Button>
       </form>
     </main>
+  );
+}
+
+/**
+ * Renders the chips for a relationship's chosen entries (existing
+ * links + new drafts), then whatever the caller passes as children
+ * for the "add another" affordance (the combobox, usually).
+ */
+function RelationshipSection({
+  label,
+  hint,
+  entries,
+  onRemove,
+  onUpdate,
+  childAgeLabel,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  entries: LinkedEntry[];
+  onRemove: (idx: number) => void;
+  onUpdate: (idx: number, patch: Partial<NewRelatedGuest>) => void;
+  childAgeLabel?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="field">
+      <label>{label}</label>
+      {entries.length > 0 && (
+        <div style={{ display: "grid", gap: 8, marginBottom: 8 }}>
+          {entries.map((e, idx) =>
+            e.kind === "link" ? (
+              <div
+                key={`link-${e.guest.id}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "6px 12px",
+                  background: "rgba(224,204,177,.35)",
+                  border: "1px solid rgba(67,53,58,.12)",
+                  borderRadius: 20,
+                  fontSize: 13,
+                }}
+              >
+                <span style={{ flex: 1 }}>
+                  {e.guest.first_name} {e.guest.last_name ?? ""}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Remove"
+                  onClick={() => onRemove(idx)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#8a7f80",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    lineHeight: 1,
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div key={`new-${idx}`}>
+                <div style={{ fontSize: 12, color: T.faint, marginBottom: 4 }}>
+                  New — fill in what you know
+                </div>
+                <NewRelativeForm
+                  value={e.data}
+                  onChange={(patch) => onUpdate(idx, patch)}
+                  onRemove={() => onRemove(idx)}
+                  removeLabel="Remove"
+                  ageLabel={childAgeLabel ?? "Age (optional)"}
+                  autoFocus
+                />
+              </div>
+            ),
+          )}
+        </div>
+      )}
+      {children}
+      {hint && (
+        <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
+          {hint}
+        </div>
+      )}
+    </div>
   );
 }
