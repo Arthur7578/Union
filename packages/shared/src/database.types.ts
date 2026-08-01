@@ -236,6 +236,32 @@ export type Database = {
           },
         ]
       }
+      hidden_merge_clusters: {
+        Row: {
+          cluster_key: string
+          hidden_at: string
+          wedding_id: string
+        }
+        Insert: {
+          cluster_key: string
+          hidden_at?: string
+          wedding_id: string
+        }
+        Update: {
+          cluster_key?: string
+          hidden_at?: string
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hidden_merge_clusters_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -462,6 +488,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _cluster_key: { Args: { p_ids: string[] }; Returns: string }
       _guest_matches: {
         Args: {
           a_age: number
@@ -526,8 +553,20 @@ export type Database = {
       }
       find_duplicate_groups: { Args: { p_wedding_id: string }; Returns: Json }
       get_invitation: { Args: { p_token: string }; Returns: Json }
+      hide_duplicate_cluster: {
+        Args: { p_guest_ids: string[]; p_wedding_id: string }
+        Returns: undefined
+      }
+      list_hidden_merge_clusters: {
+        Args: { p_wedding_id: string }
+        Returns: Json
+      }
       owner_merge_guests: {
-        Args: { p_source_guest_id: string; p_target_guest_id: string }
+        Args: {
+          p_source_guest_id: string
+          p_target_guest_id: string
+          p_target_overrides?: Json
+        }
         Returns: Json
       }
       rsvp_merge_into: {
@@ -560,6 +599,10 @@ export type Database = {
           p_status: string
           p_token: string
         }
+        Returns: undefined
+      }
+      unhide_duplicate_cluster: {
+        Args: { p_guest_ids: string[]; p_wedding_id: string }
         Returns: undefined
       }
     }

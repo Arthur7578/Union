@@ -779,15 +779,38 @@ export async function addGuestRelationship(input: {
  * Owner-side merge: fold `sourceId` into `targetId`. Auth-gated inside
  * the RPC by the wedding's owner_id — safe to call from the duplicates
  * review screen. Returns the surviving target guest id.
+ *
+ * `overrides` is an object of resolved field values to write to the
+ * target BEFORE the fold, inside the same transaction. Use it when
+ * the two rows have conflicting values on a field and the user has
+ * picked one (or typed a new one). Only whitelisted keys are honoured
+ * server-side: first_name, last_name, email, phone, age_years, role,
+ * notes, guest_group.
  */
+export type MergeOverrides = Partial<{
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  age_years: number | null;
+  role: string | null;
+  notes: string | null;
+  guest_group: string | null;
+}>;
+
 export async function ownerMergeGuests(
   sourceId: string,
   targetId: string,
+  overrides?: MergeOverrides,
 ): Promise<string> {
   const supabase = getBrowserSupabase();
   const { data, error } = await supabase.rpc("owner_merge_guests", {
     p_source_guest_id: sourceId,
     p_target_guest_id: targetId,
+    p_target_overrides:
+      overrides && Object.keys(overrides).length > 0
+        ? (overrides as unknown as import("@union/shared").Json)
+        : undefined,
   });
   if (error) throw error;
   const payload = (data ?? {}) as { status?: string; guest_id?: string };
@@ -795,6 +818,48 @@ export async function ownerMergeGuests(
     throw new Error("Merge failed");
   }
   return payload.guest_id;
+}
+
+/** Hide (dismiss) a duplicate cluster suggestion. Persists per wedding. */
+export async function hideDuplicateCluster(
+  weddingId: string,
+  guestIds: string[],
+): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const { error } = await supabase.rpc("hide_duplicate_cluster", {
+    p_wedding_id: weddingId,
+    p_guest_ids: guestIds,
+  });
+  if (error) throw error;
+}
+
+/** Restore a previously hidden cluster suggestion. */
+export async function unhideDuplicateCluster(
+  weddingId: string,
+  guestIds: string[],
+): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const { error } = await supabase.rpc("unhide_duplicate_cluster", {
+    p_wedding_id: weddingId,
+    p_guest_ids: guestIds,
+  });
+  if (error) throw error;
+}
+
+/**
+ * Clusters the user has previously dismissed. Same shape as
+ * fetchDuplicateGroups so the UI can reuse the same renderer.
+ */
+export async function fetchHiddenDuplicateClusters(
+  weddingId: string,
+): Promise<DuplicateCandidate[][]> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase.rpc("list_hidden_merge_clusters", {
+    p_wedding_id: weddingId,
+  });
+  if (error) throw error;
+  if (!Array.isArray(data)) return [];
+  return data as DuplicateCandidate[][];
 }
 
 /** One guest row inside a duplicate cluster returned by find_duplicate_groups. */
