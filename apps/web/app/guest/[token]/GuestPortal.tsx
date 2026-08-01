@@ -178,10 +178,10 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         });
         if (primaryError) throw primaryError;
 
-        // 2. Submit RSVPs for all companions
+        // 2. Submit RSVPs for all companions (only if they made a choice!)
         for (const companion of invitation.companions) {
           const companionState = companionsRsvp[companion.id];
-          if (companionState) {
+          if (companionState && companionState.rsvp_status !== "pending") {
             const { error: companionError } = await supabase.rpc("submit_companion_rsvp", {
               p_token: token,
               p_companion_guest_id: companion.id,
@@ -556,6 +556,42 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           padding: 16px;
           margin-bottom: 16px;
         }
+
+        .responsive-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 32px;
+        }
+
+        @media (max-width: 768px) {
+          .responsive-grid {
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+          .hero-banner {
+            padding: 40px 16px 24px;
+          }
+          .hero-banner h1 {
+            font-size: 38px;
+          }
+          .nav-tabs {
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 20px auto 28px;
+          }
+          .tab-btn {
+            padding: 10px 12px;
+            font-size: 13px;
+          }
+          .drawer-container {
+            max-width: 100%;
+            padding: 24px 16px;
+          }
+          .card {
+            padding: 20px;
+            border-radius: 16px;
+          }
+        }
       ` }} />
 
       {/* Floating Demo Notice */}
@@ -741,7 +777,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 : "Meet other guests flying into PDX or driving from NYC. Save transport fees and share a premium ride together."}
             </p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+            <div className="responsive-grid" style={{ gap: "24px" }}>
               {/* Left Column: Shared Travel entries */}
               <div>
                 <h4 style={{ fontWeight: "600", fontSize: "16px", marginBottom: "16px" }}>🚗 {locale === "fr" ? "Covoits Disponibles" : "Active Travels"}</h4>
@@ -857,7 +893,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               {locale === "fr" ? "Toutes les adresses recommandées et le planning officiel du mariage." : "A curated list of luxury gorge hotels and the official wedding schedule."}
             </p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
+            <div className="responsive-grid">
               {/* Hotel recommendations */}
               <div>
                 <h4 style={{ fontWeight: "600", fontSize: "16px", marginBottom: "16px" }}>🏨 {locale === "fr" ? "Hébergements Conseillés" : "Recommended Places to Stay"}</h4>
@@ -1035,7 +1071,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                   return (
                     <div key={companion.id} className="companion-box">
                       <p style={{ fontWeight: "bold", fontSize: "14px", margin: "0 0 8px" }}>
-                        {companion.first_name} {companion.last_name || ""}
+                        {companion.first_name} {companion.last_name || ""} <span style={{ fontWeight: "normal", fontSize: "12px", color: "var(--muted)", fontStyle: "italic" }}>({locale === "fr" ? "optionnel" : "optional"})</span>
                       </p>
                       <div className="choice-row" style={{ marginBottom: "10px" }}>
                         <button
