@@ -460,11 +460,18 @@ export const en = {
     profileTitle: "Your profile",
     profileSubtitle: "The details that are only about you.",
     detailsSection: "Your details",
-    fullName: "Full name",
+    nameLabel: "Your name",
+    editOnWedding: "Edit",
+    nameEditsOnWedding:
+      "Your name is edited from Your wedding — that's what Union uses everywhere it introduces you.",
     email: "Email",
     emailNote:
       "You sign in with an emailed code, so there's no password here — contact support if this needs to change.",
     phone: "Phone",
+    phoneCountry: "Country",
+    phoneLocalPlaceholder: "6 12 34 56 78",
+    phoneHint:
+      "Used for reminders and so a vendor can reach you fast if something needs a real answer.",
     saved: "Saved.",
 
     // Your wedding
@@ -484,8 +491,13 @@ export const en = {
     manageSection: "Manage",
     deleteWedding: "Delete wedding & data",
     deleting: "Deleting…",
-    deleteConfirm: (couple: string) =>
-      `This permanently deletes ${couple}'s wedding — guests, RSVPs, seating, everything. This can't be undone. Continue?`,
+    deleteConfirmTitle: "Delete this wedding?",
+    deleteConfirmBody: (couple: string) =>
+      `This permanently deletes ${couple}'s wedding — guests, RSVPs, seating, everything. This can't be undone.`,
+    deleteConfirmPrompt: "Type the phrase below to confirm.",
+    deletePhrase: (name: string) => `delete ${name}'s wedding`,
+    deleteConfirmAction: "Delete permanently",
+    deleteConfirmMismatch: "That phrase doesn't match yet.",
 
     // App settings
     settingsTitle: "Settings",
@@ -510,6 +522,8 @@ export const en = {
 
     // Notifications
     notifTitle: "Notifications",
+    notifPreviewNotice:
+      "Preview — there's no notification engine wired up yet, so toggling these doesn't send anything. The channels below are illustrative.",
     notifyWhen: "Notify me when",
     notifVendorReplies: "A vendor replies",
     notifVendorRepliesSub: "Quotes, questions, confirmations",

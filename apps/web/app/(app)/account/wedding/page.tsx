@@ -26,6 +26,9 @@ export default function WeddingSettingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmInput, setConfirmInput] = useState("");
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!wedding) return;
@@ -43,6 +46,11 @@ export default function WeddingSettingsPage() {
   if (!wedding) return null;
 
   const complete = Boolean(wedding.partner_two && wedding.event_date && wedding.venue_name);
+  const coupleLine =
+    [wedding.partner_one, wedding.partner_two].filter(Boolean).join(" & ") ||
+    wedding.partner_one ||
+    t.account.weddingTitle;
+  const confirmPhrase = t.account.deletePhrase(wedding.partner_one || t.account.partnerNotSet);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,22 +76,33 @@ export default function WeddingSettingsPage() {
     }
   };
 
+  const openConfirm = () => {
+    setConfirmInput("");
+    setConfirmError(null);
+    setConfirmOpen(true);
+  };
+
+  const closeConfirm = () => {
+    if (deleting) return;
+    setConfirmOpen(false);
+  };
+
+  const canConfirm =
+    confirmInput.trim().toLowerCase() === confirmPhrase.trim().toLowerCase();
+
   const remove = async () => {
-    const coupleLine =
-      [wedding.partner_one, wedding.partner_two].filter(Boolean).join(" & ") ||
-      wedding.partner_one ||
-      t.account.weddingTitle;
-    if (typeof window !== "undefined" && !window.confirm(t.account.deleteConfirm(coupleLine))) {
+    if (!canConfirm) {
+      setConfirmError(t.account.deleteConfirmMismatch);
       return;
     }
     setDeleting(true);
-    setError(null);
+    setConfirmError(null);
     try {
       await deleteWedding(wedding.id);
       setWedding(null);
       router.replace("/onboarding");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.common.error);
+      setConfirmError(err instanceof Error ? err.message : t.common.error);
       setDeleting(false);
     }
   };
@@ -211,8 +230,7 @@ export default function WeddingSettingsPage() {
       <SectionLabel>{t.account.manageSection}</SectionLabel>
       <button
         type="button"
-        onClick={remove}
-        disabled={deleting}
+        onClick={openConfirm}
         style={{
           width: "100%",
           textAlign: "left",
@@ -226,8 +244,169 @@ export default function WeddingSettingsPage() {
           cursor: "pointer",
         }}
       >
-        {deleting ? t.account.deleting : t.account.deleteWedding}
+        {t.account.deleteWedding}
       </button>
+
+      {confirmOpen && (
+        <DeleteConfirmModal
+          coupleLine={coupleLine}
+          phrase={confirmPhrase}
+          value={confirmInput}
+          onChange={(v) => {
+            setConfirmInput(v);
+            if (confirmError) setConfirmError(null);
+          }}
+          canConfirm={canConfirm}
+          deleting={deleting}
+          error={confirmError}
+          onCancel={closeConfirm}
+          onConfirm={remove}
+          t={t}
+        />
+      )}
     </main>
+  );
+}
+
+function DeleteConfirmModal({
+  coupleLine,
+  phrase,
+  value,
+  onChange,
+  canConfirm,
+  deleting,
+  error,
+  onCancel,
+  onConfirm,
+  t,
+}: {
+  coupleLine: string;
+  phrase: string;
+  value: string;
+  onChange: (v: string) => void;
+  canConfirm: boolean;
+  deleting: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+  t: ReturnType<typeof useLocale>["t"];
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onCancel]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="del-title"
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(30,22,25,.42)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+        zIndex: 60,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: T.surface,
+          borderRadius: 22,
+          border: `1px solid ${T.line}`,
+          padding: 22,
+          width: "100%",
+          maxWidth: 440,
+          boxShadow: "0 30px 60px rgba(30,22,25,.28)",
+        }}
+      >
+        <div
+          id="del-title"
+          className="u-serif"
+          style={{ fontWeight: 700, fontSize: 24, color: T.ink, lineHeight: 1.15 }}
+        >
+          {t.account.deleteConfirmTitle}
+        </div>
+        <div style={{ fontSize: 14, color: T.muted, marginTop: 8, lineHeight: 1.5 }}>
+          {t.account.deleteConfirmBody(coupleLine)}
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <label htmlFor="del-phrase" style={{ display: "block", fontSize: 13, color: T.muted, marginBottom: 6 }}>
+            {t.account.deleteConfirmPrompt}
+          </label>
+          <div
+            style={{
+              fontFamily: T.serif,
+              fontWeight: 600,
+              fontSize: 15,
+              color: T.accentInk,
+              background: T.accentSoft,
+              border: `1px solid ${T.accentBorder}`,
+              borderRadius: 12,
+              padding: "10px 12px",
+              marginBottom: 10,
+              userSelect: "none",
+            }}
+          >
+            {phrase}
+          </div>
+          <input
+            id="del-phrase"
+            type="text"
+            autoFocus
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={phrase}
+          />
+        </div>
+        {error && <div className="error" style={{ marginTop: 8 }}>{error}</div>}
+        <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+          <Button
+            variant="secondary"
+            onClick={onCancel}
+            disabled={deleting}
+            style={{ flex: 1 }}
+          >
+            {t.common.cancel}
+          </Button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={!canConfirm || deleting}
+            style={{
+              flex: 1,
+              minHeight: 46,
+              borderRadius: 14,
+              border: "none",
+              background: canConfirm ? "#B0664E" : "rgba(176,102,78,.35)",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 15,
+              cursor: canConfirm && !deleting ? "pointer" : "default",
+              boxShadow: canConfirm ? "0 6px 16px rgba(176,102,78,.24)" : "none",
+              opacity: deleting ? 0.6 : 1,
+            }}
+          >
+            {deleting ? t.account.deleting : t.account.deleteConfirmAction}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

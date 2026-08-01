@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { T } from "@/lib/theme";
 import { useT } from "@/lib/i18n/client";
 import { BackHeader } from "@/components/BackHeader";
-import { DemoBanner } from "@/components/SampleBadge";
-import { SectionLabel } from "@/components/ui";
+import { DemoBanner, SampleBadge } from "@/components/SampleBadge";
 import { ChevronRight } from "@/components/icons";
 
 type Autonomy = "ask" | "suggest" | "auto";
@@ -81,28 +79,19 @@ export default function SettingsPage() {
         <div style={{ fontSize: 13, color: T.muted, marginTop: 12, lineHeight: 1.5 }}>{current.desc}</div>
       </div>
 
-      <Link
-        href="/account/settings/notifications"
+      <div
         style={{
-          textDecoration: "none",
-          marginTop: 14,
-          borderRadius: 18,
-          background: T.surface,
-          border: `1px solid ${T.line}`,
-          padding: 15,
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          justifyContent: "space-between",
+          gap: 8,
+          padding: "0 4px 11px",
+          marginTop: 24,
         }}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>{t.account.notificationsRow}</div>
-          <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>{t.account.notificationsSub}</div>
-        </div>
-        <ChevronRight size={16} stroke="#CBBCB6" />
-      </Link>
-
-      <SectionLabel>{t.account.connectedSection}</SectionLabel>
+        <div className="u-section-label">{t.account.connectedSection}</div>
+        <SampleBadge />
+      </div>
       <div style={{ borderRadius: 18, background: T.surface, border: `1px solid ${T.line}`, overflow: "hidden" }}>
         {CONNECTED.map((c, i) => (
           <div

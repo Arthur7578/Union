@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { T } from "@/lib/theme";
 import { useT } from "@/lib/i18n/client";
 import { BackHeader } from "@/components/BackHeader";
-import { DemoBanner } from "@/components/SampleBadge";
+import { DemoBanner, SampleBadge } from "@/components/SampleBadge";
 import { SectionLabel, Switch } from "@/components/ui";
 import { ChevronRight } from "@/components/icons";
 
@@ -65,7 +65,7 @@ export default function NotificationsPage() {
 
   return (
     <main className="u-main">
-      <DemoBanner />
+      <DemoBanner>{t.account.notifPreviewNotice}</DemoBanner>
       <BackHeader title={t.account.notifTitle} subtitle={t.account.settingsRow} fallback="/account/settings" />
 
       <SectionLabel style={{ marginTop: 0 }}>{t.account.notifyWhen}</SectionLabel>
@@ -78,7 +78,19 @@ export default function NotificationsPage() {
         {RHYTHM.map((n, i) => row(n.key, n.title, n.sub, i === RHYTHM.length - 1))}
       </div>
 
-      <SectionLabel>{t.account.channels}</SectionLabel>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          padding: "0 4px 11px",
+          marginTop: 24,
+        }}
+      >
+        <div className="u-section-label">{t.account.channels}</div>
+        <SampleBadge />
+      </div>
       <div style={{ borderRadius: 18, background: T.surface, border: `1px solid ${T.line}`, overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 15px", borderBottom: `1px solid ${T.line}` }}>
           <span style={{ fontWeight: 600, fontSize: 14.5, color: T.ink, flex: 1 }}>{t.account.channelPush}</span>

@@ -441,11 +441,18 @@ export const fr: Dictionary = {
     profileTitle: "Votre profil",
     profileSubtitle: "Les informations qui ne concernent que vous.",
     detailsSection: "Vos informations",
-    fullName: "Nom complet",
+    nameLabel: "Votre prénom",
+    editOnWedding: "Modifier",
+    nameEditsOnWedding:
+      "Votre prénom se modifie depuis Votre mariage — c'est celui qu'Union utilise partout où elle vous présente.",
     email: "E-mail",
     emailNote:
       "Vous vous connectez avec un code envoyé par e-mail, il n'y a donc pas de mot de passe ici — contactez le support si cette adresse doit changer.",
     phone: "Téléphone",
+    phoneCountry: "Pays",
+    phoneLocalPlaceholder: "6 12 34 56 78",
+    phoneHint:
+      "Utilisé pour les rappels, et pour qu'un prestataire puisse vous joindre rapidement si besoin.",
     saved: "Enregistré.",
 
     // Your wedding
@@ -465,8 +472,13 @@ export const fr: Dictionary = {
     manageSection: "Gérer",
     deleteWedding: "Supprimer le mariage et les données",
     deleting: "Suppression…",
-    deleteConfirm: (couple: string) =>
-      `Cela supprime définitivement le mariage de ${couple} — invités, RSVP, plan de table, tout. Cette action est irréversible. Continuer ?`,
+    deleteConfirmTitle: "Supprimer ce mariage ?",
+    deleteConfirmBody: (couple: string) =>
+      `Cela supprime définitivement le mariage de ${couple} — invités, RSVP, plan de table, tout. Cette action est irréversible.`,
+    deleteConfirmPrompt: "Tapez la phrase ci-dessous pour confirmer.",
+    deletePhrase: (name: string) => `supprimer le mariage de ${name}`,
+    deleteConfirmAction: "Supprimer définitivement",
+    deleteConfirmMismatch: "La phrase ne correspond pas encore.",
 
     // App settings
     settingsTitle: "Réglages",
@@ -491,6 +503,8 @@ export const fr: Dictionary = {
 
     // Notifications
     notifTitle: "Notifications",
+    notifPreviewNotice:
+      "Aperçu — aucun moteur de notifications n'est branché pour l'instant, donc ces réglages n'envoient rien. Les canaux ci-dessous sont là à titre indicatif.",
     notifyWhen: "Me prévenir quand",
     notifVendorReplies: "Un prestataire répond",
     notifVendorRepliesSub: "Devis, questions, confirmations",
