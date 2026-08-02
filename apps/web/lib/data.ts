@@ -11,6 +11,7 @@ import type {
   Profile,
   RoomBlock,
   Rsvp,
+  RsvpBlockCopy,
   RsvpQuestion,
   RsvpStatus,
   SeatingTable,
@@ -1021,6 +1022,23 @@ export function formStatus(form: Form, now: Date = new Date()): FormStatus {
   return "live";
 }
 
+/** Pull the RSVP block's wording back out of a form row's jsonb column.
+ *  Blank/missing keys are the caller's cue to fall back to the system
+ *  default copy — never guess a default here, this is just extraction. */
+export function rsvpCopy(form: Form): RsvpBlockCopy {
+  const raw = form.rsvp_copy;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const c = raw as Record<string, unknown>;
+  const pick = (key: string): string | undefined =>
+    typeof c[key] === "string" && c[key].trim() ? (c[key] as string) : undefined;
+  return {
+    title: pick("title"),
+    subtitle: pick("subtitle"),
+    label_attending: pick("label_attending"),
+    label_declined: pick("label_declined"),
+  };
+}
+
 export async function fetchForms(weddingId: string): Promise<Form[]> {
   const supabase = getBrowserSupabase();
   const { data, error } = await supabase
@@ -1074,7 +1092,7 @@ export async function updateForm(
   patch: Partial<
     Pick<
       Form,
-      "title" | "published" | "opens_at" | "closes_at" | "questions" | "sort_order"
+      "title" | "published" | "opens_at" | "closes_at" | "questions" | "sort_order" | "rsvp_copy"
     >
   >,
 ): Promise<Form> {
@@ -1089,9 +1107,33 @@ export async function updateForm(
   return data;
 }
 
-/** The RSVP-kind form can't be deleted — it's the one wired to the real guest flow. */
+/** Add the optional "still coming?" reconfirmation touchpoint — the same RSVP
+ *  block as the primary form, just its own schedule and framing copy, for a
+ *  late nudge close to the wedding. Only one may exist per wedding (enforced
+ *  in the DB); callers should only offer this once a primary RSVP form exists
+ *  and no reconfirmation form has been created yet. */
+export async function addReconfirmationForm(weddingId: string): Promise<Form> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase
+    .from("forms")
+    .insert({
+      wedding_id: weddingId,
+      kind: "rsvp",
+      purpose: "reconfirmation",
+      title: "RSVP reconfirmation",
+      published: false,
+      questions: [],
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/** The primary RSVP form can't be deleted — it's the one wired to the real guest
+ *  flow. A reconfirmation form is optional and may be removed at any time. */
 export async function deleteForm(form: Form): Promise<void> {
-  if (form.kind === "rsvp") {
+  if (form.kind === "rsvp" && form.purpose === "primary") {
     throw new Error("The RSVP form can't be deleted.");
   }
   const supabase = getBrowserSupabase();

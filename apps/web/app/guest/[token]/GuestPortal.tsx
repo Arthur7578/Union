@@ -93,6 +93,9 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
   // Multi-Form Expose and Modal states
   const [activeFormModal, setActiveFormModal] = useState<"rsvp" | "preferences" | "recheck" | null>(null);
+  // Which wording the RSVP modal shows — the primary ask, or the later
+  // reconfirmation nudge. Same state, same submit, only the framing differs.
+  const [rsvpModalContext, setRsvpModalContext] = useState<"primary" | "reconfirmation">("primary");
 
   // Separate forms submission & state storage
   // Form 1: RSVP state
@@ -273,6 +276,35 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   // Form Locking Logic helper
   const isDeclined = primaryRsvp === "declined";
   const isPending = primaryRsvp === "pending";
+
+  // RSVP block wording — an organiser override if they've set one, else the
+  // system default copy. This is the *only* thing an override can change:
+  // which rsvp_status a button submits is fixed in code, never in wording.
+  const rsvpTitle = invitation.rsvp_form?.title
+    || (locale === "fr" ? "RSVP de Présence" : "Attendance RSVP");
+  const rsvpSubtitle = invitation.rsvp_form?.subtitle
+    || (locale === "fr" ? "Confirmez votre venue et celle de vos proches." : "Let us know if you and your companions will join us.");
+  const labelAttending = invitation.rsvp_form?.label_attending
+    || (locale === "fr" ? "Présent" : "Attending");
+  const labelDeclined = invitation.rsvp_form?.label_declined
+    || (locale === "fr" ? "Absent" : "Declined");
+
+  // The optional late "still coming?" touchpoint — same RSVP block, shown
+  // only when the organiser has published it and it's within its window.
+  const reconfirmation = invitation.rsvp_reconfirmation ?? null;
+  const now = new Date();
+  const reconfirmationLive = !!reconfirmation?.published
+    && (!reconfirmation.opens_at || new Date(reconfirmation.opens_at) <= now)
+    && (!reconfirmation.closes_at || new Date(reconfirmation.closes_at) >= now);
+  const reconfirmTitle = reconfirmation?.title
+    || (locale === "fr" ? "Tu viens toujours ?" : "Still coming?");
+  const reconfirmSubtitle = reconfirmation?.subtitle
+    || (locale === "fr" ? "Un point rapide avant le grand jour — confirme ou ajuste ta réponse." : "A quick check-in before the big day — confirm or update your RSVP.");
+
+  const openRsvpModal = (context: "primary" | "reconfirmation") => {
+    setRsvpModalContext(context);
+    setActiveFormModal("rsvp");
+  };
 
   return (
     <div className="premium-portal-theme">
@@ -809,19 +841,19 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
                     <span className={`badge-status ${primaryRsvp}`}>
-                      {primaryRsvp === "pending" ? (locale === "fr" ? "À Remplir" : "Pending") : (primaryRsvp === "attending" ? (locale === "fr" ? "Présent" : "Attending") : (locale === "fr" ? "Absent" : "Declined"))}
+                      {primaryRsvp === "pending" ? (locale === "fr" ? "À Remplir" : "Pending") : (primaryRsvp === "attending" ? labelAttending : labelDeclined)}
                     </span>
                     <span style={{ fontSize: "12px", color: "var(--muted)", fontWeight: "600" }}>Phase 1</span>
                   </div>
                   <h3 className="u-serif" style={{ fontSize: "20px", fontWeight: "600", margin: "0 0 6px" }}>
-                    {locale === "fr" ? "1. RSVP de Présence" : "1. Attendance RSVP"}
+                    {rsvpTitle}
                   </h3>
                   <p style={{ color: "var(--muted)", fontSize: "13px", margin: 0, maxWidth: "400px" }}>
-                    {locale === "fr" ? "Confirmez votre venue et celle de vos proches." : "Let us know if you and your companions will join us."}
+                    {rsvpSubtitle}
                   </p>
                 </div>
                 <button
-                  onClick={() => setActiveFormModal("rsvp")}
+                  onClick={() => openRsvpModal("primary")}
                   style={{
                     background: primaryRsvp === "pending" ? "var(--primary)" : "rgba(67, 53, 58, 0.05)",
                     color: primaryRsvp === "pending" ? "white" : "var(--primary)",
@@ -835,6 +867,42 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                   {primaryRsvp === "pending" ? (locale === "fr" ? "Répondre" : "Start") : (locale === "fr" ? "Modifier" : "Update")}
                 </button>
               </div>
+
+              {/* Form 1b: RSVP reconfirmation — same block, later nudge, only when open */}
+              {reconfirmationLive && (
+                <div className="form-card">
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                      <span className={`badge-status ${primaryRsvp}`}>
+                        {primaryRsvp === "pending" ? (locale === "fr" ? "À Remplir" : "Pending") : (primaryRsvp === "attending" ? labelAttending : labelDeclined)}
+                      </span>
+                      <span style={{ fontSize: "12px", color: "var(--muted)", fontWeight: "600" }}>
+                        {locale === "fr" ? "Dernier point" : "Final check-in"}
+                      </span>
+                    </div>
+                    <h3 className="u-serif" style={{ fontSize: "20px", fontWeight: "600", margin: "0 0 6px" }}>
+                      {reconfirmTitle}
+                    </h3>
+                    <p style={{ color: "var(--muted)", fontSize: "13px", margin: 0, maxWidth: "400px" }}>
+                      {reconfirmSubtitle}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => openRsvpModal("reconfirmation")}
+                    style={{
+                      background: "var(--primary)",
+                      color: "white",
+                      border: "none",
+                      padding: "10px 20px",
+                      borderRadius: "10px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {locale === "fr" ? "Confirmer" : "Confirm"}
+                  </button>
+                </div>
+              )}
 
               {/* Form 2: Preferences Form */}
               <div className="form-card" style={{ opacity: isPending ? 0.6 : 1 }}>
@@ -1165,9 +1233,9 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       {activeFormModal === "rsvp" && (
         <div className="drawer-overlay" onClick={() => setActiveFormModal(null)}>
           <div className="drawer-container" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
               <h2 className="u-serif" style={{ fontSize: "28px", fontWeight: "600", margin: 0 }}>
-                {locale === "fr" ? "RSVP de Présence" : "Attendance RSVP"}
+                {rsvpModalContext === "reconfirmation" ? reconfirmTitle : rsvpTitle}
               </h2>
               <button
                 onClick={() => setActiveFormModal(null)}
@@ -1176,6 +1244,9 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 ✕
               </button>
             </div>
+            <p style={{ color: "var(--muted)", fontSize: "13px", margin: "0 0 24px" }}>
+              {rsvpModalContext === "reconfirmation" ? reconfirmSubtitle : rsvpSubtitle}
+            </p>
 
             {/* Primary Guest RSVP */}
             <div style={{ marginBottom: "24px" }}>
@@ -1187,13 +1258,13 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                   onClick={() => setPrimaryRsvp("attending")}
                   className={`choice-btn ${primaryRsvp === "attending" ? "selected-yes" : ""}`}
                 >
-                  ✓ {locale === "fr" ? "Présent" : "Attending"}
+                  ✓ {labelAttending}
                 </button>
                 <button
                   onClick={() => setPrimaryRsvp("declined")}
                   className={`choice-btn ${primaryRsvp === "declined" ? "selected-no" : ""}`}
                 >
-                  ✗ {locale === "fr" ? "Absent" : "Declined"}
+                  ✗ {labelDeclined}
                 </button>
               </div>
 
@@ -1231,7 +1302,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                           })}
                           className={`choice-btn ${state.rsvp_status === "attending" ? "selected-yes" : ""}`}
                         >
-                          {locale === "fr" ? "Présent" : "Attending"}
+                          {labelAttending}
                         </button>
                         <button
                           onClick={() => setCompanionsRsvp({
@@ -1240,7 +1311,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                           })}
                           className={`choice-btn ${state.rsvp_status === "declined" ? "selected-no" : ""}`}
                         >
-                          {locale === "fr" ? "Absent" : "Declined"}
+                          {labelDeclined}
                         </button>
                       </div>
 

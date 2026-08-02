@@ -44,6 +44,23 @@ export interface DBInvitation {
     age_years: number | null;
     added_by_first_name?: string | null;
   }>;
+  /** Guest-facing wording overrides for the primary RSVP block — null keys
+   *  mean "use the system default", never a blank/empty label. */
+  rsvp_form?: {
+    title: string | null;
+    subtitle: string | null;
+    label_attending: string | null;
+    label_declined: string | null;
+  } | null;
+  /** The optional late "still coming?" touchpoint. Only shown when
+   *  published and within its opens_at/closes_at window. */
+  rsvp_reconfirmation?: {
+    title: string | null;
+    subtitle: string | null;
+    published: boolean;
+    opens_at: string | null;
+    closes_at: string | null;
+  } | null;
 }
 
 export default async function GuestExperiencePage({

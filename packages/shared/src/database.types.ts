@@ -22,7 +22,9 @@ export type Database = {
           kind: string
           opens_at: string | null
           published: boolean
+          purpose: string
           questions: Json
+          rsvp_copy: Json
           sort_order: number
           title: string
           wedding_id: string
@@ -34,7 +36,9 @@ export type Database = {
           kind?: string
           opens_at?: string | null
           published?: boolean
+          purpose?: string
           questions?: Json
+          rsvp_copy?: Json
           sort_order?: number
           title: string
           wedding_id: string
@@ -46,7 +50,9 @@ export type Database = {
           kind?: string
           opens_at?: string | null
           published?: boolean
+          purpose?: string
           questions?: Json
+          rsvp_copy?: Json
           sort_order?: number
           title?: string
           wedding_id?: string
