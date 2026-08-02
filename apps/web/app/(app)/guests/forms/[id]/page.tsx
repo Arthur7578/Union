@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import type { Form, RsvpBlockCopy, RsvpQuestion } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
@@ -288,6 +288,7 @@ export default function FormBuilderPage() {
             Form name
           </div>
           <input
+            type="text"
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
@@ -300,8 +301,11 @@ export default function FormBuilderPage() {
               fontWeight: 600,
               fontSize: 18,
               color: T.ink,
-              padding: "6px 4px",
-              minHeight: 36,
+              padding: "8px 10px",
+              minHeight: 40,
+              border: `1px solid ${T.line3}`,
+              borderRadius: 10,
+              background: "#F7F1EC",
             }}
           />
         </Card>
@@ -312,7 +316,7 @@ export default function FormBuilderPage() {
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, color: T.muted2 }}>Opens</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: T.faint }}>Opens</label>
               <input
                 type="date"
                 value={opensAt}
@@ -320,11 +324,20 @@ export default function FormBuilderPage() {
                   setOpensAt(e.target.value);
                   markDirty();
                 }}
-                style={{ marginTop: 4 }}
+                style={{
+                  marginTop: 4,
+                  minHeight: 38,
+                  padding: "8px 10px",
+                  fontSize: 14,
+                  border: `1px solid ${T.line}`,
+                  borderRadius: 10,
+                  background: T.surface,
+                  color: T.ink,
+                }}
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, color: T.muted2 }}>Closes</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: T.faint }}>Closes</label>
               <input
                 type="date"
                 value={closesAt}
@@ -332,7 +345,16 @@ export default function FormBuilderPage() {
                   setClosesAt(e.target.value);
                   markDirty();
                 }}
-                style={{ marginTop: 4 }}
+                style={{
+                  marginTop: 4,
+                  minHeight: 38,
+                  padding: "8px 10px",
+                  fontSize: 14,
+                  border: `1px solid ${T.line}`,
+                  borderRadius: 10,
+                  background: T.surface,
+                  color: T.ink,
+                }}
               />
             </div>
           </div>
@@ -406,19 +428,50 @@ export default function FormBuilderPage() {
                   >
                     ↓
                   </button>
-                  <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: q.required ? T.accentInk : T.label, margin: 0 }}>
-                    <input
-                      type="checkbox"
-                      checked={q.required}
-                      onChange={(e) => patchQuestion(q.id, { required: e.target.checked })}
-                      style={{ width: "auto", minHeight: 0, margin: 0 }}
-                    />
-                    Required
-                  </label>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={q.required}
+                    onClick={() => patchQuestion(q.id, { required: !q.required })}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      border: "none",
+                      background: "transparent",
+                      padding: 0,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 16,
+                        height: 16,
+                        flexShrink: 0,
+                        borderRadius: 5,
+                        border: `1.5px solid ${q.required ? T.accentInk : "rgba(67,53,58,.28)"}`,
+                        background: q.required ? T.accentInk : "transparent",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        lineHeight: 1,
+                        transition: "background .12s ease, border-color .12s ease",
+                      }}
+                    >
+                      {q.required ? "✓" : ""}
+                    </span>
+                    <span style={{ fontSize: 11.5, fontWeight: 600, color: q.required ? T.accentInk : T.faint }}>
+                      Required
+                    </span>
+                  </button>
                 </div>
               </div>
 
               <input
+                type="text"
                 value={q.title}
                 onChange={(e) => patchQuestion(q.id, { title: e.target.value })}
                 placeholder="Question title"
@@ -431,7 +484,9 @@ export default function FormBuilderPage() {
                   padding: "8px 10px",
                   marginTop: 11,
                   minHeight: 40,
+                  border: `1px solid ${T.line3}`,
                   borderRadius: 10,
+                  background: "#F7F1EC",
                 }}
               />
 
@@ -440,13 +495,23 @@ export default function FormBuilderPage() {
                   {(q.options ?? []).map((opt, i) => (
                     <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       <input
+                        type="text"
                         value={opt}
                         onChange={(e) => {
                           const next = [...(q.options ?? [])];
                           next[i] = e.target.value;
                           patchQuestion(q.id, { options: next });
                         }}
-                        style={{ flex: 1, minHeight: 36, padding: "6px 12px", fontSize: 13 }}
+                        style={{
+                          flex: 1,
+                          minHeight: 36,
+                          padding: "6px 12px",
+                          fontSize: 13,
+                          color: T.ink,
+                          border: "1px solid rgba(67,53,58,.08)",
+                          borderRadius: 10,
+                          background: "#F7F1EC",
+                        }}
                       />
                       <button
                         onClick={() => {
@@ -644,24 +709,26 @@ function ExtraGuestsRights({
         default below, and that guest&apos;s own rights not overriding it.
       </div>
 
-      <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
-        <input
-          type="checkbox"
-          checked={wedding.allow_guests_add_partner}
-          onChange={(e) => patch({ allow_guests_add_partner: e.target.checked })}
-          disabled={saving}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, opacity: saving ? 0.6 : 1 }}>
+        <Switch
+          on={wedding.allow_guests_add_partner}
+          onChange={() => !saving && patch({ allow_guests_add_partner: !wedding.allow_guests_add_partner })}
+          label="Guests may add a partner by default"
         />
-        <span style={{ fontSize: 13 }}>Guests may add a partner by default</span>
-      </label>
-      <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-        <input
-          type="checkbox"
-          checked={wedding.allow_guests_add_children}
-          onChange={(e) => patch({ allow_guests_add_children: e.target.checked })}
-          disabled={saving}
+        <span style={{ fontSize: 13, color: T.ink }}>
+          Guests may add a partner by default
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, opacity: saving ? 0.6 : 1 }}>
+        <Switch
+          on={wedding.allow_guests_add_children}
+          onChange={() => !saving && patch({ allow_guests_add_children: !wedding.allow_guests_add_children })}
+          label="Guests may add children by default"
         />
-        <span style={{ fontSize: 13 }}>Guests may add children by default</span>
-      </label>
+        <span style={{ fontSize: 13, color: T.ink }}>
+          Guests may add children by default
+        </span>
+      </div>
 
       <div style={{ marginTop: 10 }}>
         <Link href="/guests/permissions" className="u-link" style={{ fontSize: 12.5, color: T.accentInk }}>
@@ -716,10 +783,19 @@ function CopyField({
         <div style={{ fontSize: 11, fontWeight: 600, color: T.faint }}>{caption}</div>
       </div>
       <input
+        type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        style={{ minHeight: 38, padding: "8px 10px", fontSize: 14 }}
+        style={{
+          minHeight: 38,
+          padding: "8px 10px",
+          fontSize: 14,
+          color: T.ink,
+          border: `1px solid ${T.line3}`,
+          borderRadius: 10,
+          background: "#F7F1EC",
+        }}
       />
     </Card>
   );
@@ -814,6 +890,7 @@ function RsvpWordingEditor({
                   fontWeight: 600,
                   background: T.greenBg,
                   color: T.greenDeep,
+                  border: `1px solid ${alpha(T.green, 0.35)}`,
                 }}
               >
                 ✓ {attending.trim() || defaults.label_attending}
@@ -826,8 +903,9 @@ function RsvpWordingEditor({
                   padding: "8px 10px",
                   fontSize: 13,
                   fontWeight: 600,
-                  background: T.roseBg,
-                  color: T.rose,
+                  background: T.accentPink,
+                  color: T.accentInk,
+                  border: `1px solid ${T.accentBorder}`,
                 }}
               >
                 ✗ {declined.trim() || defaults.label_declined}
