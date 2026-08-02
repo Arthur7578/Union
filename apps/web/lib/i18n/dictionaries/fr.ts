@@ -170,6 +170,8 @@ export const fr: Dictionary = {
       formsSub: "RSVP, et vos formulaires ajoutés",
       smsTemplateLabel: "Modèle SMS",
       smsTemplateSub: "Expéditeur + texte d'invitation",
+      groupLinkLabel: "Lien de groupe",
+      groupLinkSub: "Un seul lien pour un groupe WhatsApp",
     },
     guestList: "Liste des invités",
     reminderPromptStrong: (n: number) =>
@@ -562,6 +564,52 @@ export const fr: Dictionary = {
     thanksDecline: (couple: string) =>
       `Votre réponse a été envoyée. ${couple} regretteront votre absence.`,
     update: "Modifier ma réponse",
+  },
+
+  // Lien d'accès générique (/join/[code]) — le point d'entrée pour un
+  // groupe WhatsApp, où l'invité s'identifie par son nom plutôt que
+  // d'ouvrir un lien personnel.
+  join: {
+    invalidTitle: "Lien introuvable",
+    invalidBody:
+      "Ce lien d'invitation est incorrect ou n'est plus valide. Demandez au couple un nouveau lien.",
+    heroKicker: "Invitation de Mariage",
+    namePromptTitle: "Quel est votre nom ?",
+    namePromptSubtitle:
+      "Entrez votre nom tel que le couple l'a renseigné, et nous retrouverons votre invitation.",
+    firstNameLabel: "Prénom",
+    lastNameLabel: "Nom",
+    continueButton: "Retrouver mon invitation",
+    searching: "Recherche…",
+    confirmTitle: "C'est bien vous ?",
+    yesButton: "Oui, c'est moi",
+    noButton: "Non, réessayer",
+    contactTitle: "Une dernière vérification",
+    contactSubtitle:
+      "Plusieurs invités partagent ce nom. Indiquez le numéro de téléphone ou l'email utilisé sur votre invitation.",
+    contactLabel: "Téléphone ou email",
+    contactPlaceholder: "ex. 06 12 34 56 78 ou vous@email.com",
+    contactSubmit: "Confirmer",
+    notFoundTitle: "Nous ne vous trouvons pas",
+    notFoundBody: (couple: string) =>
+      `Nous n'avons pas pu faire correspondre ce nom à une invitation. Contactez ${couple} directement, ils vous aideront.`,
+    tryAgainButton: "Réessayer",
+    redirecting: "Direction votre invitation…",
+    errorGeneric: "Une erreur est survenue. Merci de réessayer.",
+  },
+
+  // Outil organisateur "Lien de groupe" — la page /guests/group-link.
+  groupLink: {
+    title: "Lien de groupe",
+    subtitle: "Partagez un seul lien avec tout un groupe",
+    copyButton: "Copier le lien",
+    copied: "Copié !",
+    whatsappButton: "Partager sur WhatsApp",
+    whatsappMessage: (couple: string, link: string) =>
+      `Bonjour à tous ! 👋\n\n${couple} seraient ravis que vous confirmiez votre présence :\n${link}`,
+    howItWorksTitle: "Comment ça marche",
+    howItWorksBody:
+      "Partagez ce lien partout où vous joindriez tout le groupe d'un coup — une conversation WhatsApp, un email groupé, un chat familial. Chaque invité indique son nom et Union le fait correspondre à sa propre invitation : pas de liste à parcourir, pas de lien personnel à retrouver.",
   },
 
   offline: {

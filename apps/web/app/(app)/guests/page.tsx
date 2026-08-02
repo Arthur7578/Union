@@ -69,6 +69,11 @@ export default function GuestsPage() {
       label: t.guests.tools.smsTemplateLabel,
       sub: t.guests.tools.smsTemplateSub,
     },
+    {
+      href: "/guests/group-link",
+      label: t.guests.tools.groupLinkLabel,
+      sub: t.guests.tools.groupLinkSub,
+    },
   ];
   const { wedding } = useWedding();
   const router = useRouter();

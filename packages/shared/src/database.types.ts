@@ -520,6 +520,7 @@ export type Database = {
           event_date: string | null
           guest_count_target: number | null
           id: string
+          join_code: string
           max_children_per_guest: number | null
           owner_id: string
           partner_one: string | null
@@ -541,6 +542,7 @@ export type Database = {
           event_date?: string | null
           guest_count_target?: number | null
           id?: string
+          join_code?: string
           max_children_per_guest?: number | null
           owner_id: string
           partner_one?: string | null
@@ -562,6 +564,7 @@ export type Database = {
           event_date?: string | null
           guest_count_target?: number | null
           id?: string
+          join_code?: string
           max_children_per_guest?: number | null
           owner_id?: string
           partner_one?: string | null
@@ -653,7 +656,17 @@ export type Database = {
         }
       }
       find_duplicate_groups: { Args: { p_wedding_id: string }; Returns: Json }
+      find_guest_by_name: {
+        Args: {
+          p_contact?: string
+          p_first_name: string
+          p_join_code: string
+          p_last_name?: string
+        }
+        Returns: Json
+      }
       get_invitation: { Args: { p_token: string }; Returns: Json }
+      get_wedding_by_join_code: { Args: { p_join_code: string }; Returns: Json }
       hide_duplicate_cluster: {
         Args: { p_guest_ids: string[]; p_wedding_id: string }
         Returns: undefined

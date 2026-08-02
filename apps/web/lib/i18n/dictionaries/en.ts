@@ -174,6 +174,8 @@ export const en = {
       formsSub: "RSVP, and any forms you add",
       smsTemplateLabel: "SMS template",
       smsTemplateSub: "Sender + invite copy",
+      groupLinkLabel: "Group link",
+      groupLinkSub: "One link for a WhatsApp group",
     },
     guestList: "Guest list",
     reminderPromptStrong: (n: number) => `${n} still deciding`,
@@ -582,6 +584,52 @@ export const en = {
     thanksDecline: (couple: string) =>
       `Your reply has been sent. ${couple} will miss you.`,
     update: "Update my reply",
+  },
+
+  // Generic guest join link (/join/[code]) — the WhatsApp-group entry
+  // point, where a guest identifies themselves by name instead of
+  // opening a personal link.
+  join: {
+    invalidTitle: "Link not found",
+    invalidBody:
+      "This invitation link is missing or no longer valid. Check with the couple for a fresh one.",
+    heroKicker: "Wedding Invitation",
+    namePromptTitle: "What's your name?",
+    namePromptSubtitle:
+      "Enter your name as the couple would have it, and we'll find your invitation.",
+    firstNameLabel: "First name",
+    lastNameLabel: "Last name",
+    continueButton: "Find my invitation",
+    searching: "Searching…",
+    confirmTitle: "Is this you?",
+    yesButton: "Yes, that's me",
+    noButton: "No, try again",
+    contactTitle: "Just to confirm",
+    contactSubtitle:
+      "A few guests share that name. Enter the phone number or email used on your invitation.",
+    contactLabel: "Phone number or email",
+    contactPlaceholder: "e.g. 555-123-4567 or you@email.com",
+    contactSubmit: "Confirm",
+    notFoundTitle: "We couldn't find you",
+    notFoundBody: (couple: string) =>
+      `We couldn't match that to an invitation. Please reach out to ${couple} directly and they'll sort you out.`,
+    tryAgainButton: "Try again",
+    redirecting: "Taking you to your invitation…",
+    errorGeneric: "Something went wrong. Please try again.",
+  },
+
+  // Organiser-facing "Group link" tool — the /guests/group-link page.
+  groupLink: {
+    title: "Group link",
+    subtitle: "Share one link with a whole group",
+    copyButton: "Copy link",
+    copied: "Copied!",
+    whatsappButton: "Share on WhatsApp",
+    whatsappMessage: (couple: string, link: string) =>
+      `Hello everyone! 👋\n\n${couple} would love for you to confirm your attendance:\n${link}`,
+    howItWorksTitle: "How it works",
+    howItWorksBody:
+      "Share this link anywhere you'd reach the whole group at once — a WhatsApp thread, a group email, a family chat. Each guest enters their name and Union matches them to their own invitation, so there's no list to browse and no personal link to keep track of.",
   },
 
   // Errors and misc

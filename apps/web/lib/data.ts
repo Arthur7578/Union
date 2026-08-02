@@ -50,6 +50,7 @@ export async function createWedding(
     Wedding,
     | "id"
     | "created_at"
+    | "join_code"
     | "rsvp_form_questions"
     | "ceremony_rows"
     | "ceremony_reserved_rows"
