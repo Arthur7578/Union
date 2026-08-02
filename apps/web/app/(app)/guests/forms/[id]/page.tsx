@@ -312,7 +312,7 @@ export default function FormBuilderPage() {
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, color: T.muted2 }}>Opens</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: T.faint }}>Opens</label>
               <input
                 type="date"
                 value={opensAt}
@@ -320,11 +320,11 @@ export default function FormBuilderPage() {
                   setOpensAt(e.target.value);
                   markDirty();
                 }}
-                style={{ marginTop: 4 }}
+                style={{ marginTop: 4, minHeight: 38, padding: "8px 10px", fontSize: 14 }}
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, color: T.muted2 }}>Closes</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: T.faint }}>Closes</label>
               <input
                 type="date"
                 value={closesAt}
@@ -332,7 +332,7 @@ export default function FormBuilderPage() {
                   setClosesAt(e.target.value);
                   markDirty();
                 }}
-                style={{ marginTop: 4 }}
+                style={{ marginTop: 4, minHeight: 38, padding: "8px 10px", fontSize: 14 }}
               />
             </div>
           </div>
@@ -406,15 +406,22 @@ export default function FormBuilderPage() {
                   >
                     ↓
                   </button>
-                  <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: q.required ? T.accentInk : T.label, margin: 0 }}>
-                    <input
-                      type="checkbox"
-                      checked={q.required}
-                      onChange={(e) => patchQuestion(q.id, { required: e.target.checked })}
-                      style={{ width: "auto", minHeight: 0, margin: 0 }}
-                    />
-                    Required
-                  </label>
+                  <button
+                    type="button"
+                    onClick={() => patchQuestion(q.id, { required: !q.required })}
+                    style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer" }}
+                  >
+                    <Chip
+                      tone={
+                        q.required
+                          ? { bg: T.accentSoft, fg: T.accentInk, border: T.accentBorder }
+                          : { bg: "transparent", fg: T.faint, border: "rgba(67,53,58,.14)" }
+                      }
+                      style={{ fontSize: 11, padding: "5px 10px" }}
+                    >
+                      {q.required ? "Required" : "Optional"}
+                    </Chip>
+                  </button>
                 </div>
               </div>
 
@@ -644,24 +651,26 @@ function ExtraGuestsRights({
         default below, and that guest&apos;s own rights not overriding it.
       </div>
 
-      <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
-        <input
-          type="checkbox"
-          checked={wedding.allow_guests_add_partner}
-          onChange={(e) => patch({ allow_guests_add_partner: e.target.checked })}
-          disabled={saving}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, opacity: saving ? 0.6 : 1 }}>
+        <Switch
+          on={wedding.allow_guests_add_partner}
+          onChange={() => !saving && patch({ allow_guests_add_partner: !wedding.allow_guests_add_partner })}
+          label="Guests may add a partner by default"
         />
-        <span style={{ fontSize: 13 }}>Guests may add a partner by default</span>
-      </label>
-      <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-        <input
-          type="checkbox"
-          checked={wedding.allow_guests_add_children}
-          onChange={(e) => patch({ allow_guests_add_children: e.target.checked })}
-          disabled={saving}
+        <span style={{ fontSize: 13, color: T.ink }}>
+          Guests may add a partner by default
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, opacity: saving ? 0.6 : 1 }}>
+        <Switch
+          on={wedding.allow_guests_add_children}
+          onChange={() => !saving && patch({ allow_guests_add_children: !wedding.allow_guests_add_children })}
+          label="Guests may add children by default"
         />
-        <span style={{ fontSize: 13 }}>Guests may add children by default</span>
-      </label>
+        <span style={{ fontSize: 13, color: T.ink }}>
+          Guests may add children by default
+        </span>
+      </div>
 
       <div style={{ marginTop: 10 }}>
         <Link href="/guests/permissions" className="u-link" style={{ fontSize: 12.5, color: T.accentInk }}>
