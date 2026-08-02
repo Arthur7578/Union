@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@contentsquare/tag-sdk": "^1.1.0",
     "@supabase/supabase-js": "^2.45.0",
     "@union/shared": "*",
     "@vercel/analytics": "^2.0.1",
@@ -24,6 +25,6 @@
     "typescript": "^5.7.0"
   },
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   }
 }
