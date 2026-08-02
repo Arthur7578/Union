@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import type { Form, RsvpBlockCopy, RsvpQuestion } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
@@ -295,13 +295,17 @@ export default function FormBuilderPage() {
               markDirty();
             }}
             placeholder="e.g. Guest details"
-            className="u-serif u-plain-input"
+            className="u-serif"
             style={{
               fontFamily: T.serif,
               fontWeight: 600,
               fontSize: 18,
               color: T.ink,
-              minHeight: 36,
+              padding: "8px 10px",
+              minHeight: 40,
+              border: `1px solid ${T.line3}`,
+              borderRadius: 10,
+              background: "#F7F1EC",
             }}
           />
         </Card>
@@ -471,14 +475,18 @@ export default function FormBuilderPage() {
                 value={q.title}
                 onChange={(e) => patchQuestion(q.id, { title: e.target.value })}
                 placeholder="Question title"
-                className="u-serif u-plain-input"
+                className="u-serif"
                 style={{
                   fontFamily: T.serif,
                   fontWeight: 600,
                   fontSize: 18,
                   color: T.ink,
+                  padding: "8px 10px",
                   marginTop: 11,
                   minHeight: 40,
+                  border: `1px solid ${T.line3}`,
+                  borderRadius: 10,
+                  background: "#F7F1EC",
                 }}
               />
 
@@ -779,8 +787,15 @@ function CopyField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="u-plain-input"
-        style={{ minHeight: 38, fontSize: 14, color: T.ink }}
+        style={{
+          minHeight: 38,
+          padding: "8px 10px",
+          fontSize: 14,
+          color: T.ink,
+          border: `1px solid ${T.line3}`,
+          borderRadius: 10,
+          background: "#F7F1EC",
+        }}
       />
     </Card>
   );
@@ -875,6 +890,7 @@ function RsvpWordingEditor({
                   fontWeight: 600,
                   background: T.greenBg,
                   color: T.greenDeep,
+                  border: `1px solid ${alpha(T.green, 0.35)}`,
                 }}
               >
                 ✓ {attending.trim() || defaults.label_attending}
@@ -887,8 +903,9 @@ function RsvpWordingEditor({
                   padding: "8px 10px",
                   fontSize: 13,
                   fontWeight: 600,
-                  background: T.roseBg,
-                  color: T.rose,
+                  background: T.accentPink,
+                  color: T.accentInk,
+                  border: `1px solid ${T.accentBorder}`,
                 }}
               >
                 ✗ {declined.trim() || defaults.label_declined}
