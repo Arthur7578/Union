@@ -4,13 +4,14 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { T } from "@/lib/theme";
-import type { Form, RsvpQuestion } from "@union/shared";
+import type { Form, RsvpBlockCopy, RsvpQuestion } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
   deleteForm,
   fetchForm,
   formQuestions,
   formStatus,
+  rsvpCopy,
   updateForm,
   updateWedding,
 } from "@/lib/data";
@@ -22,6 +23,24 @@ const KIND_LABEL: Record<RsvpQuestion["kind"], { label: string; bg: string; fg: 
   multi: { label: "Multiple choice", bg: "#E7EFE6", fg: "#5E7A63" },
   short: { label: "Short text", bg: "#FBEEE2", fg: "#B07C48" },
   comment: { label: "Open comment", bg: "#FBEEE2", fg: "#B07C48" },
+};
+
+/** System defaults for the RSVP block's guest-facing copy — what guests see
+ *  when the couple hasn't overridden a slot. Kept here (not in GuestPortal)
+ *  so the admin preview and the real guest render can never drift apart. */
+const RSVP_COPY_DEFAULTS: Record<"primary" | "reconfirmation", Required<Omit<RsvpBlockCopy, "label_attending" | "label_declined">> & Pick<RsvpBlockCopy, "label_attending" | "label_declined">> = {
+  primary: {
+    title: "Attendance RSVP",
+    subtitle: "Let us know if you and your companions will join us.",
+    label_attending: "Attending",
+    label_declined: "Declined",
+  },
+  reconfirmation: {
+    title: "Still coming?",
+    subtitle: "A quick check-in before the big day — confirm or update your RSVP.",
+    label_attending: "Attending",
+    label_declined: "Declined",
+  },
 };
 
 function newId() {
@@ -94,6 +113,7 @@ export default function FormBuilderPage() {
   const [form, setForm] = useState<Form | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [questions, setQuestions] = useState<RsvpQuestion[]>([]);
+  const [rsvpCopyState, setRsvpCopyState] = useState<RsvpBlockCopy>({});
   const [title, setTitle] = useState("");
   const [published, setPublished] = useState(false);
   const [opensAt, setOpensAt] = useState("");
@@ -116,6 +136,7 @@ export default function FormBuilderPage() {
         }
         setForm(f);
         setQuestions(formQuestions(f));
+        setRsvpCopyState(rsvpCopy(f));
         setTitle(f.title);
         setPublished(f.published);
         setOpensAt(toDateInput(f.opens_at));
@@ -216,6 +237,7 @@ export default function FormBuilderPage() {
         opens_at: fromDateInput(opensAt),
         closes_at: fromDateInput(closesAt),
         questions,
+        ...(form.kind === "rsvp" ? { rsvp_copy: rsvpCopyState } : {}),
       });
       setForm(updated);
       setDirty(false);
@@ -253,8 +275,12 @@ export default function FormBuilderPage() {
 
       {/* ---------------- Organiser-only settings ---------------- */}
       <SectionBlock
-        kicker="Organiser only · not shown to guests"
-        hint="The name and schedule are for you — guests never see them."
+        kicker={form.kind === "custom" ? "Form name · guests see this as the title" : "Organiser only · not shown to guests"}
+        hint={
+          form.kind === "custom"
+            ? "Unlike the RSVP block, custom forms have no separate guest-facing headline — this name and schedule are what guests see."
+            : "The name and schedule are for you — guests never see them."
+        }
         tone={{ bg: T.sandBg, border: "rgba(169,154,144,.35)", fg: T.sand }}
       >
         <Card style={{ padding: "13px 15px" }}>
@@ -317,6 +343,20 @@ export default function FormBuilderPage() {
         </Card>
       </SectionBlock>
 
+      {/* ---------------- RSVP block wording (guarded) ---------------- */}
+      {form.kind === "rsvp" && (
+        <RsvpWordingEditor
+          purpose={form.purpose === "reconfirmation" ? "reconfirmation" : "primary"}
+          copy={rsvpCopyState}
+          onChange={(next) => {
+            setRsvpCopyState(next);
+            markDirty();
+          }}
+        />
+      )}
+
+      {!(form.kind === "rsvp" && form.purpose === "reconfirmation") && (
+        <>
       {/* ---------------- Guest-facing questions ---------------- */}
       <SectionBlock
         kicker="What guests see"
@@ -492,13 +532,14 @@ export default function FormBuilderPage() {
 
         {form.kind === "rsvp" && (
           <div style={{ fontSize: 12, color: T.muted2, lineHeight: 1.5, padding: "0 2px" }}>
-            The guest-facing RSVP flow currently still accepts the default
-            attend/decline reply plus dietary notes; questions you add here
-            render for planning and will be available on invite links in a
-            follow-up.
+            These are extra planning notes for you — the attend/decline reply,
+            dietary notes and its wording are handled by the RSVP block above,
+            wired straight to the real guest flow.
           </div>
         )}
       </SectionBlock>
+      </>
+      )}
 
       {/* ---------------- Access & rights ---------------- */}
       <SectionBlock
@@ -527,7 +568,7 @@ export default function FormBuilderPage() {
           </div>
         </Card>
 
-        {form.kind === "rsvp" && wedding && (
+        {form.kind === "rsvp" && form.purpose === "primary" && wedding && (
           <ExtraGuestsRights wedding={wedding} refresh={refresh} />
         )}
       </SectionBlock>
@@ -545,7 +586,7 @@ export default function FormBuilderPage() {
         </Button>
       </div>
 
-      {form.kind !== "rsvp" && (
+      {!(form.kind === "rsvp" && form.purpose === "primary") && (
         <div style={{ marginTop: 14, textAlign: "center" }}>
           <button
             onClick={remove}
@@ -630,5 +671,171 @@ function ExtraGuestsRights({
 
       {err && <div style={{ color: "#C0553B", fontSize: 12, marginTop: 8 }}>{err}</div>}
     </Card>
+  );
+}
+
+/** One captioned, anchored input for a single RSVP-copy slot. The caption and
+ *  the (optional) fixed color/icon dot never change with what the couple
+ *  types — that's the point: there's nothing here to reorder or swap, so a
+ *  reworded label can never end up wired to the wrong meaning. */
+function CopyField({
+  caption,
+  dot,
+  value,
+  placeholder,
+  onChange,
+}: {
+  caption: string;
+  dot?: { bg: string; fg: string; symbol: string };
+  value: string;
+  placeholder: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <Card style={{ padding: "13px 15px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+        {dot && (
+          <span
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              background: dot.bg,
+              color: dot.fg,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 11,
+              fontWeight: 700,
+              flexShrink: 0,
+            }}
+          >
+            {dot.symbol}
+          </span>
+        )}
+        <div style={{ fontSize: 11, fontWeight: 600, color: T.faint }}>{caption}</div>
+      </div>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{ minHeight: 38, padding: "8px 10px", fontSize: 14 }}
+      />
+    </Card>
+  );
+}
+
+/** The RSVP block's guest-facing wording — deliberately not a free-form list
+ *  of options. Every slot is its own captioned, color-anchored field bound to
+ *  one fixed meaning (attending / declined / framing copy), so rewording it
+ *  can change tone without ever being able to silently invert which button
+ *  means "coming" and which means "not coming". A live preview, rendered
+ *  with the exact same colors and icons guests will see, makes any confusing
+ *  wording obvious immediately rather than after it's live. */
+function RsvpWordingEditor({
+  purpose,
+  copy,
+  onChange,
+}: {
+  purpose: "primary" | "reconfirmation";
+  copy: RsvpBlockCopy;
+  onChange: (next: RsvpBlockCopy) => void;
+}) {
+  const defaults = RSVP_COPY_DEFAULTS[purpose];
+  const title = copy.title ?? "";
+  const subtitle = copy.subtitle ?? "";
+  const attending = copy.label_attending ?? "";
+  const declined = copy.label_declined ?? "";
+
+  return (
+    <SectionBlock
+      kicker={purpose === "primary" ? "RSVP block · what guests see" : "Reconfirmation block · what guests see"}
+      hint={
+        purpose === "primary"
+          ? "Reword the headline and the two reply buttons — the reply itself (and everything it triggers) stays wired to the real RSVP."
+          : "Reword the framing for this late check-in. It reuses the same Attending / Declined buttons as the main RSVP."
+      }
+      tone={{ bg: T.accentSoft, border: T.accentBorder, fg: T.accentInk }}
+    >
+      <CopyField
+        caption="Headline guests see"
+        value={title}
+        placeholder={defaults.title}
+        onChange={(v) => onChange({ ...copy, title: v })}
+      />
+      <CopyField
+        caption="Supporting line"
+        value={subtitle}
+        placeholder={defaults.subtitle}
+        onChange={(v) => onChange({ ...copy, subtitle: v })}
+      />
+
+      {purpose === "primary" && (
+        <>
+          <CopyField
+            caption="Label on the button meaning “coming” — locked to that meaning, only this text is yours"
+            dot={{ bg: T.greenBg, fg: T.greenDeep, symbol: "✓" }}
+            value={attending}
+            placeholder={defaults.label_attending ?? "Attending"}
+            onChange={(v) => onChange({ ...copy, label_attending: v })}
+          />
+          <CopyField
+            caption="Label on the button meaning “not coming” — locked to that meaning, only this text is yours"
+            dot={{ bg: T.roseBg, fg: T.rose, symbol: "✕" }}
+            value={declined}
+            placeholder={defaults.label_declined ?? "Declined"}
+            onChange={(v) => onChange({ ...copy, label_declined: v })}
+          />
+        </>
+      )}
+
+      {/* Live preview — same colors/icons as the guest portal, so a
+          confusing reword is obvious here, not after it's live. */}
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: T.faint, marginBottom: 7 }}>
+          Preview
+        </div>
+        <Card soft style={{ padding: "14px 15px" }}>
+          <div className="u-serif" style={{ fontWeight: 600, fontSize: 16, color: T.ink }}>
+            {title.trim() || defaults.title}
+          </div>
+          <div style={{ fontSize: 12.5, color: T.muted, marginTop: 3 }}>
+            {subtitle.trim() || defaults.subtitle}
+          </div>
+          {purpose === "primary" && (
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <span
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  borderRadius: 10,
+                  padding: "8px 10px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: T.greenBg,
+                  color: T.greenDeep,
+                }}
+              >
+                ✓ {attending.trim() || defaults.label_attending}
+              </span>
+              <span
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  borderRadius: 10,
+                  padding: "8px 10px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: T.roseBg,
+                  color: T.rose,
+                }}
+              >
+                ✗ {declined.trim() || defaults.label_declined}
+              </span>
+            </div>
+          )}
+        </Card>
+      </div>
+    </SectionBlock>
   );
 }

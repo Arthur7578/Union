@@ -7,6 +7,7 @@ import type { Form, FormStatus, RsvpQuestion } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
   addForm,
+  addReconfirmationForm,
   fetchForms,
   fetchGuests,
   formQuestions,
@@ -56,14 +57,6 @@ const TEMPLATES: Template[] = [
     ],
   },
   {
-    key: "headcount",
-    title: "Final headcount",
-    sub: "A late “still coming?” reconfirm, close to the day",
-    questions: [
-      { id: newId(), kind: "single", title: "Still able to join us?", required: true, options: ["Yes, still coming", "Something's changed"] },
-    ],
-  },
-  {
     key: "blank",
     title: "Blank form",
     sub: "Start from scratch",
@@ -96,6 +89,7 @@ export default function FormsHubPage() {
   const [guests, setGuests] = useState<GuestWithRsvp[] | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [addingReconfirmation, setAddingReconfirmation] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -116,6 +110,21 @@ export default function FormsHubPage() {
 
   const stats = guests ? guestStats(guests) : null;
   const liveCount = forms?.filter((f) => formStatus(f) === "live").length ?? 0;
+  const hasPrimaryRsvp = forms?.some((f) => f.kind === "rsvp" && f.purpose === "primary") ?? false;
+  const reconfirmationForm = forms?.find((f) => f.kind === "rsvp" && f.purpose === "reconfirmation") ?? null;
+
+  const startReconfirmation = async () => {
+    if (!wedding) return;
+    setAddingReconfirmation(true);
+    setError(null);
+    try {
+      const f = await addReconfirmationForm(wedding.id);
+      router.push(`/guests/forms/${f.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't create the reconfirmation form.");
+      setAddingReconfirmation(false);
+    }
+  };
 
   const startTemplate = async (tpl: Template) => {
     setCreating(true);
@@ -171,6 +180,31 @@ export default function FormsHubPage() {
         form to change its dates.
       </div>
 
+      {hasPrimaryRsvp && !reconfirmationForm && (
+        <Card
+          soft
+          style={{ padding: "13px 15px", marginTop: 12, display: "flex", alignItems: "center", gap: 12 }}
+        >
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink }}>
+              Add an RSVP reconfirmation
+            </div>
+            <div style={{ fontSize: 12, color: T.faint, marginTop: 2, lineHeight: 1.4 }}>
+              A late "still coming?" nudge, close to the day — same RSVP block,
+              its own schedule.
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={startReconfirmation}
+            disabled={addingReconfirmation}
+            style={{ minHeight: 38, fontSize: 13, whiteSpace: "nowrap" }}
+          >
+            {addingReconfirmation ? "Adding…" : "+ Add"}
+          </Button>
+        </Card>
+      )}
+
       {forms === null ? (
         <Loading label="Loading your forms…" />
       ) : forms.length === 0 ? (
@@ -196,7 +230,7 @@ export default function FormsHubPage() {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                       <span
                         className="u-serif"
                         style={{ fontWeight: 600, fontSize: 17, color: T.ink }}
@@ -206,6 +240,22 @@ export default function FormsHubPage() {
                       <StatusPill tone={STATUS_TONE[status]}>
                         {STATUS_LABEL[status]}
                       </StatusPill>
+                      {f.purpose === "reconfirmation" && (
+                        <span
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            letterSpacing: "0.04em",
+                            textTransform: "uppercase",
+                            color: T.blueInk,
+                            background: T.blueBg,
+                            borderRadius: 20,
+                            padding: "3px 9px",
+                          }}
+                        >
+                          Reconfirmation
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: 12, color: T.faint, marginTop: 3 }}>
                       {scheduleLine(f, status)}
@@ -213,11 +263,15 @@ export default function FormsHubPage() {
                   </div>
                 </div>
 
-                {f.kind === "rsvp" && stats ? (
+                {f.kind === "rsvp" && f.purpose === "primary" && stats ? (
                   <div style={{ display: "flex", gap: 8, marginTop: 13 }}>
                     <MiniStat value={stats.coming} label="Coming" bg={T.greenBg} fg={T.greenDeep} />
                     <MiniStat value={stats.declined} label="Can't" bg={T.roseBg} fg={T.rose} />
                     <MiniStat value={stats.waiting} label="Waiting" bg={T.amberBg} fg={T.amberInk} />
+                  </div>
+                ) : f.kind === "rsvp" && f.purpose === "reconfirmation" ? (
+                  <div style={{ fontSize: 12, color: T.faint, marginTop: 10 }}>
+                    Reuses the RSVP block — same replies, a later nudge.
                   </div>
                 ) : (
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 10 }}>
@@ -232,14 +286,19 @@ export default function FormsHubPage() {
 
       {showTemplates && (
         <NewFormModal
-          busy={creating}
+          busy={creating || addingReconfirmation}
           error={error}
           onCancel={() => {
-            if (creating) return;
+            if (creating || addingReconfirmation) return;
             setShowTemplates(false);
             setError(null);
           }}
           onPick={startTemplate}
+          showReconfirmation={hasPrimaryRsvp && !reconfirmationForm}
+          onPickReconfirmation={() => {
+            setShowTemplates(false);
+            startReconfirmation();
+          }}
         />
       )}
     </main>
@@ -274,11 +333,15 @@ function NewFormModal({
   error,
   onCancel,
   onPick,
+  showReconfirmation,
+  onPickReconfirmation,
 }: {
   busy: boolean;
   error: string | null;
   onCancel: () => void;
   onPick: (tpl: Template) => void;
+  showReconfirmation: boolean;
+  onPickReconfirmation: () => void;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -327,6 +390,29 @@ function NewFormModal({
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 16 }}>
+          {showReconfirmation && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onPickReconfirmation}
+              style={{
+                textAlign: "left",
+                border: `1px solid ${T.blueBg}`,
+                borderRadius: 14,
+                background: T.blueBg,
+                padding: "13px 14px",
+                cursor: busy ? "default" : "pointer",
+                opacity: busy ? 0.6 : 1,
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: 14.5, color: T.blueInk }}>
+                RSVP reconfirmation
+              </div>
+              <div style={{ fontSize: 12, color: T.blueInk, marginTop: 2, opacity: 0.8 }}>
+                A late "still coming?" nudge, close to the day — same RSVP block, its own schedule.
+              </div>
+            </button>
+          )}
           {TEMPLATES.map((tpl) => (
             <button
               key={tpl.key}

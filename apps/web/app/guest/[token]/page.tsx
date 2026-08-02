@@ -1,6 +1,7 @@
 import { getSupabase } from "@/lib/supabase";
 import { resolveLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n";
+import type { FormAnswers, RsvpQuestion } from "@union/shared";
 import { GuestPortal } from "./GuestPortal";
 
 // Always fetch fresh invitation data (no static caching of personal links).
@@ -43,6 +44,34 @@ export interface DBInvitation {
     last_name: string | null;
     age_years: number | null;
     added_by_first_name?: string | null;
+  }>;
+  /** Guest-facing wording overrides for the primary RSVP block — null keys
+   *  mean "use the system default", never a blank/empty label. */
+  rsvp_form?: {
+    title: string | null;
+    subtitle: string | null;
+    label_attending: string | null;
+    label_declined: string | null;
+  } | null;
+  /** The optional late "still coming?" touchpoint. Only shown when
+   *  published and within its opens_at/closes_at window. */
+  rsvp_reconfirmation?: {
+    title: string | null;
+    subtitle: string | null;
+    published: boolean;
+    opens_at: string | null;
+    closes_at: string | null;
+  } | null;
+  /** Published 'custom' forms for this wedding, with the guest's own answers
+   *  (if they've already submitted). Empty until the couple publishes one. */
+  custom_forms?: Array<{
+    id: string;
+    title: string;
+    questions: RsvpQuestion[];
+    published: boolean;
+    opens_at: string | null;
+    closes_at: string | null;
+    answers: FormAnswers | null;
   }>;
 }
 
