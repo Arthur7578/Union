@@ -598,6 +598,48 @@ export const fr: Dictionary = {
     errorGeneric: "Une erreur est survenue. Merci de réessayer.",
   },
 
+  // Connexion invité par code (/join/[code]) — le parcours principal et
+  // plus sûr : correspondance par nom + téléphone, puis collecte ou
+  // réutilisation d'un email, vérifié par un code.
+  joinOtp: {
+    title: "Retrouver votre invitation",
+    subtitle:
+      "Indiquez votre nom et votre numéro de téléphone tels que le couple les a renseignés.",
+    phoneLabel: "Numéro de téléphone",
+    phonePlaceholder: "ex. +33 6 12 34 56 78",
+    continueButton: "Continuer",
+    searching: "Recherche…",
+    emailCollectTitle: "Quel est votre email ?",
+    emailCollectSubtitle:
+      "Nous y enverrons un code à usage unique — et l'utiliserons pour vos prochaines connexions.",
+    emailLabel: "Email",
+    emailPlaceholder: "vous@email.com",
+    sendCodeButton: "Envoyer le code",
+    codeSentTo: (email: string) => `Nous avons envoyé un code à 6 chiffres à ${email}.`,
+    codeLabel: "Code à 6 chiffres",
+    codePlaceholder: "123456",
+    verifyButton: "Vérifier",
+    verifying: "Vérification…",
+    resendButton: "Renvoyer le code",
+    startOverButton: "Recommencer",
+    savedEmailNotice:
+      "Enregistré — vous pourrez vous connecter avec cet email seul la prochaine fois.",
+    organiserHintText:
+      "Ce contact est aussi lié à un compte organisateur sur Union.",
+    organiserHintLink: "Se connecter en tant qu'organisateur",
+    matchesTitle: "Vous êtes lié à plusieurs invitations",
+    matchLine: (couple: string, firstName: string) =>
+      `${couple} — continuer en tant que ${firstName}`,
+    invalidOrExpired: "Ce code n'a pas fonctionné, ou il a expiré.",
+    cooldown: "Merci de patienter un instant avant de redemander un code.",
+    tooManyRequests: "Trop de tentatives — réessayez un peu plus tard.",
+    genericError: "Une erreur est survenue. Merci de réessayer.",
+    useEmailInstead: "J'ai déjà un email enregistré — l'utiliser plutôt",
+    useNameFallback: "Rechercher par nom à la place",
+    backButton: "Retour",
+    continueToInvitation: "Accéder à votre invitation",
+  },
+
   // Outil organisateur "Lien de groupe" — la page /guests/group-link.
   groupLink: {
     title: "Lien de groupe",
@@ -609,7 +651,10 @@ export const fr: Dictionary = {
       `Bonjour à tous ! 👋\n\n${couple} seraient ravis que vous confirmiez votre présence :\n${link}`,
     howItWorksTitle: "Comment ça marche",
     howItWorksBody:
-      "Partagez ce lien partout où vous joindriez tout le groupe d'un coup — une conversation WhatsApp, un email groupé, un chat familial. Chaque invité indique son nom et Union le fait correspondre à sa propre invitation : pas de liste à parcourir, pas de lien personnel à retrouver.",
+      "Partagez ce lien partout où vous joindriez tout le groupe d'un coup — une conversation WhatsApp, un email groupé, un chat familial. Les invités vérifient un téléphone + email par code à usage unique : pas de liste à parcourir, pas de lien personnel à retrouver.",
+    allowNameFallbackLabel: "Autoriser aussi une recherche simple par nom",
+    allowNameFallbackHint:
+      "Saute la vérification téléphone/email — les invités peuvent se retrouver par leur seul nom. Moins sûr, mais zéro friction pour les invités qui préfèrent éviter le code.",
   },
 
   offline: {

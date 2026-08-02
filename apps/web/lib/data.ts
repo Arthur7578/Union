@@ -51,6 +51,7 @@ export async function createWedding(
     | "id"
     | "created_at"
     | "join_code"
+    | "allow_name_fallback"
     | "rsvp_form_questions"
     | "ceremony_rows"
     | "ceremony_reserved_rows"

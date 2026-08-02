@@ -3,14 +3,16 @@
 import React, { useState } from "react";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
+import { updateWedding } from "@/lib/data";
 import { BackHeader } from "@/components/BackHeader";
 import { Button, Card, SectionLabel, Loading } from "@/components/ui";
 import { useT } from "@/lib/i18n/client";
 
 export default function GroupLinkPage() {
   const t = useT();
-  const { wedding } = useWedding();
+  const { wedding, refresh } = useWedding();
   const [copied, setCopied] = useState(false);
+  const [fallbackBusy, setFallbackBusy] = useState(false);
 
   if (!wedding)
     return (
@@ -18,6 +20,16 @@ export default function GroupLinkPage() {
         <Loading />
       </main>
     );
+
+  const toggleNameFallback = async (next: boolean) => {
+    setFallbackBusy(true);
+    try {
+      await updateWedding(wedding.id, { allow_name_fallback: next });
+      await refresh();
+    } finally {
+      setFallbackBusy(false);
+    }
+  };
 
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://union.app";
@@ -82,9 +94,30 @@ export default function GroupLinkPage() {
 
       <SectionLabel>{t.groupLink.howItWorksTitle}</SectionLabel>
       <Card>
-        <div style={{ fontSize: 13.5, color: T.ink2, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13.5, color: T.ink2, lineHeight: 1.6, marginBottom: 16 }}>
           {t.groupLink.howItWorksBody}
         </div>
+        <label
+          htmlFor="allow-name-fallback"
+          style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}
+        >
+          <input
+            id="allow-name-fallback"
+            type="checkbox"
+            checked={wedding.allow_name_fallback}
+            disabled={fallbackBusy}
+            onChange={(e) => toggleNameFallback(e.target.checked)}
+            style={{ marginTop: 3 }}
+          />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, color: T.ink }}>
+              {t.groupLink.allowNameFallbackLabel}
+            </div>
+            <div style={{ fontSize: 12, color: T.faint, marginTop: 4 }}>
+              {t.groupLink.allowNameFallbackHint}
+            </div>
+          </div>
+        </label>
       </Card>
     </main>
   );

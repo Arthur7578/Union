@@ -11,6 +11,7 @@ export interface JoinWeddingPreview {
   partner_two: string | null;
   event_date: string | null;
   venue_name: string | null;
+  allow_name_fallback: boolean;
 }
 
 export default async function JoinPage({
