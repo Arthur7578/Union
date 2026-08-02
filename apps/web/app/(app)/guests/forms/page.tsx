@@ -57,14 +57,6 @@ const TEMPLATES: Template[] = [
     ],
   },
   {
-    key: "headcount",
-    title: "Final headcount",
-    sub: "A late “still coming?” reconfirm, close to the day",
-    questions: [
-      { id: newId(), kind: "single", title: "Still able to join us?", required: true, options: ["Yes, still coming", "Something's changed"] },
-    ],
-  },
-  {
     key: "blank",
     title: "Blank form",
     sub: "Start from scratch",
@@ -294,14 +286,19 @@ export default function FormsHubPage() {
 
       {showTemplates && (
         <NewFormModal
-          busy={creating}
+          busy={creating || addingReconfirmation}
           error={error}
           onCancel={() => {
-            if (creating) return;
+            if (creating || addingReconfirmation) return;
             setShowTemplates(false);
             setError(null);
           }}
           onPick={startTemplate}
+          showReconfirmation={hasPrimaryRsvp && !reconfirmationForm}
+          onPickReconfirmation={() => {
+            setShowTemplates(false);
+            startReconfirmation();
+          }}
         />
       )}
     </main>
@@ -336,11 +333,15 @@ function NewFormModal({
   error,
   onCancel,
   onPick,
+  showReconfirmation,
+  onPickReconfirmation,
 }: {
   busy: boolean;
   error: string | null;
   onCancel: () => void;
   onPick: (tpl: Template) => void;
+  showReconfirmation: boolean;
+  onPickReconfirmation: () => void;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -389,6 +390,29 @@ function NewFormModal({
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 16 }}>
+          {showReconfirmation && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onPickReconfirmation}
+              style={{
+                textAlign: "left",
+                border: `1px solid ${T.blueBg}`,
+                borderRadius: 14,
+                background: T.blueBg,
+                padding: "13px 14px",
+                cursor: busy ? "default" : "pointer",
+                opacity: busy ? 0.6 : 1,
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: 14.5, color: T.blueInk }}>
+                RSVP reconfirmation
+              </div>
+              <div style={{ fontSize: 12, color: T.blueInk, marginTop: 2, opacity: 0.8 }}>
+                A late "still coming?" nudge, close to the day — same RSVP block, its own schedule.
+              </div>
+            </button>
+          )}
           {TEMPLATES.map((tpl) => (
             <button
               key={tpl.key}

@@ -275,8 +275,12 @@ export default function FormBuilderPage() {
 
       {/* ---------------- Organiser-only settings ---------------- */}
       <SectionBlock
-        kicker="Organiser only · not shown to guests"
-        hint="The name and schedule are for you — guests never see them."
+        kicker={form.kind === "custom" ? "Form name · guests see this as the title" : "Organiser only · not shown to guests"}
+        hint={
+          form.kind === "custom"
+            ? "Unlike the RSVP block, custom forms have no separate guest-facing headline — this name and schedule are what guests see."
+            : "The name and schedule are for you — guests never see them."
+        }
         tone={{ bg: T.sandBg, border: "rgba(169,154,144,.35)", fg: T.sand }}
       >
         <Card style={{ padding: "13px 15px" }}>

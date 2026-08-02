@@ -24,7 +24,7 @@ export type SeatingTable = Tables<"seating_tables">;
 export type GuestRelationship = Tables<"guest_relationships">;
 export type GuestRelationshipKind = Enums<"guest_relationship_kind">;
 
-/** One form the couple runs — RSVP now, a details form later, a final headcount near the day. */
+/** One form the couple runs — RSVP now, a details form later, a reconfirmation near the day. */
 export type Form = Tables<"forms">;
 /** `kind` is 'rsvp' for a form wired to the real guest RSVP flow, 'custom' for anything else. */
 export type FormKind = "rsvp" | "custom";
@@ -61,6 +61,12 @@ export type RsvpBlockCopy = {
   /** Label for the button that sets rsvp status to 'declined'. Fixed slot — never reorderable. */
   label_declined?: string;
 };
+
+/** A guest's answers to a 'custom' form (stored on form_responses.answers),
+ *  keyed by RsvpQuestion.id. single/short/comment answers are a string;
+ *  multi answers are the list of chosen options. */
+export type FormAnswers = Record<string, string | string[]>;
+export type FormResponse = Tables<"form_responses">;
 
 /** Payload shape returned by the `get_invitation` RPC. */
 export type Invitation = {

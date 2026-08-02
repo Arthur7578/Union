@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      form_responses: {
+        Row: {
+          answers: Json
+          form_id: string
+          guest_id: string
+          id: string
+          submitted_at: string
+        }
+        Insert: {
+          answers?: Json
+          form_id: string
+          guest_id: string
+          id?: string
+          submitted_at?: string
+        }
+        Update: {
+          answers?: Json
+          form_id?: string
+          guest_id?: string
+          id?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_responses_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_responses_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forms: {
         Row: {
           closes_at: string | null
@@ -652,6 +691,10 @@ export type Database = {
           p_status: string
           p_token: string
         }
+        Returns: Json
+      }
+      submit_form_response: {
+        Args: { p_answers: Json; p_form_id: string; p_token: string }
         Returns: Json
       }
       submit_rsvp: {

@@ -1,6 +1,7 @@
 import { getSupabase } from "@/lib/supabase";
 import { resolveLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n";
+import type { FormAnswers, RsvpQuestion } from "@union/shared";
 import { GuestPortal } from "./GuestPortal";
 
 // Always fetch fresh invitation data (no static caching of personal links).
@@ -61,6 +62,17 @@ export interface DBInvitation {
     opens_at: string | null;
     closes_at: string | null;
   } | null;
+  /** Published 'custom' forms for this wedding, with the guest's own answers
+   *  (if they've already submitted). Empty until the couple publishes one. */
+  custom_forms?: Array<{
+    id: string;
+    title: string;
+    questions: RsvpQuestion[];
+    published: boolean;
+    opens_at: string | null;
+    closes_at: string | null;
+    answers: FormAnswers | null;
+  }>;
 }
 
 export default async function GuestExperiencePage({

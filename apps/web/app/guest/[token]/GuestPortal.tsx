@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useLocale } from "@/lib/i18n/client";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getSupabase } from "@/lib/supabase";
+import type { FormAnswers, RsvpQuestion } from "@union/shared";
 import type { DBInvitation } from "./page";
 
 interface GuestPortalProps {
@@ -103,9 +104,13 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const [primaryDietary, setPrimaryDietary] = useState<string>(invitation.guest.dietary_notes || "");
   const [primaryMessage, setPrimaryMessage] = useState<string>(invitation.guest.message || "");
 
+  // Companions — local state (not just the invitation prop) so a guest who
+  // adds a partner/child mid-RSVP sees them appear immediately.
+  const [companions, setCompanions] = useState(invitation.companions);
+
   // Companions RSVP state
   const [companionsRsvp, setCompanionsRsvp] = useState<Record<string, { rsvp_status: "pending" | "attending" | "declined"; dietary_notes: string }>>(
-    invitation.companions.reduce((acc, companion) => {
+    companions.reduce((acc, companion) => {
       acc[companion.id] = {
         rsvp_status: companion.rsvp_status,
         dietary_notes: companion.dietary_notes || "",
@@ -113,6 +118,26 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       return acc;
     }, {} as Record<string, { rsvp_status: "pending" | "attending" | "declined"; dietary_notes: string }>)
   );
+
+  // Add-a-relative flow (partner/child), backed by the existing
+  // rsvp_register_companion RPC — permissions + dedup already enforced
+  // server-side, this just wires a UI onto a contract that already exists.
+  const [addCompanionKind, setAddCompanionKind] = useState<"partner" | "child" | null>(null);
+  const [addCompanionFirst, setAddCompanionFirst] = useState("");
+  const [addCompanionLast, setAddCompanionLast] = useState("");
+  const [addCompanionBusy, setAddCompanionBusy] = useState(false);
+  const [addCompanionError, setAddCompanionError] = useState<string | null>(null);
+  const [addCompanionCandidates, setAddCompanionCandidates] = useState<DBInvitation["self_merge_candidates"] | null>(null);
+  const [kidsRemaining, setKidsRemaining] = useState<number | null>(invitation.permissions.kids_remaining);
+
+  // Custom forms (organiser-authored, free-form questions) — one guest
+  // response per form, kept local so a fresh submit updates the card
+  // immediately without a full page reload.
+  const [customForms, setCustomForms] = useState(invitation.custom_forms ?? []);
+  const [activeCustomFormId, setActiveCustomFormId] = useState<string | null>(null);
+  const [customDraft, setCustomDraft] = useState<FormAnswers>({});
+  const [customSubmitting, setCustomSubmitting] = useState(false);
+  const [customError, setCustomError] = useState<string | null>(null);
 
   // Form 2: Preferences state
   const [prefSong, setPrefSong] = useState<string>("");
@@ -182,7 +207,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         if (primaryError) throw primaryError;
 
         // 2. Submit RSVPs for all companions (only if they made a choice!)
-        for (const companion of invitation.companions) {
+        for (const companion of companions) {
           const companionState = companionsRsvp[companion.id];
           if (companionState && companionState.rsvp_status !== "pending") {
             const { error: companionError } = await supabase.rpc("submit_companion_rsvp", {
@@ -202,7 +227,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       invitation.guest.message = primaryMessage;
 
       // Update companions' statuses in invitation object
-      invitation.companions.forEach(c => {
+      companions.forEach(c => {
         if (companionsRsvp[c.id]) {
           c.rsvp_status = companionsRsvp[c.id].rsvp_status;
           c.dietary_notes = companionsRsvp[c.id].dietary_notes;
@@ -304,6 +329,118 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const openRsvpModal = (context: "primary" | "reconfirmation") => {
     setRsvpModalContext(context);
     setActiveFormModal("rsvp");
+  };
+
+  // A custom form's live/scheduled/closed state is the same published +
+  // opens_at/closes_at window logic the admin's formStatus() uses — only
+  // published forms ever reach the guest, so there's no "draft" case here.
+  const customFormState = (f: NonNullable<DBInvitation["custom_forms"]>[number]): "scheduled" | "live" | "closed" => {
+    if (f.opens_at && new Date(f.opens_at) > now) return "scheduled";
+    if (f.closes_at && new Date(f.closes_at) < now) return "closed";
+    return "live";
+  };
+
+  const activeCustomForm = customForms.find((f) => f.id === activeCustomFormId) ?? null;
+
+  const openCustomForm = (formId: string) => {
+    const f = customForms.find((cf) => cf.id === formId);
+    setCustomDraft(f?.answers ?? {});
+    setCustomError(null);
+    setActiveCustomFormId(formId);
+  };
+
+  const handleSubmitCustomForm = async () => {
+    if (!activeCustomForm) return;
+    const questions = activeCustomForm.questions;
+    const missing = questions.some((q) => {
+      if (!q.required) return false;
+      const v = customDraft[q.id];
+      return Array.isArray(v) ? v.length === 0 : !v || !v.trim();
+    });
+    if (missing) {
+      setCustomError(locale === "fr" ? "Merci de répondre aux questions obligatoires." : "Please answer the required questions.");
+      return;
+    }
+    setCustomSubmitting(true);
+    setCustomError(null);
+    try {
+      const supabase = getSupabase();
+      const { error } = await supabase.rpc("submit_form_response", {
+        p_token: token,
+        p_form_id: activeCustomForm.id,
+        p_answers: customDraft,
+      });
+      if (error) throw error;
+      setCustomForms((prev) => prev.map((f) => (f.id === activeCustomForm.id ? { ...f, answers: customDraft } : f)));
+      setActiveCustomFormId(null);
+    } catch (e) {
+      setCustomError(e instanceof Error ? e.message : (locale === "fr" ? "Erreur lors de l'enregistrement." : "Couldn't save your answers."));
+    } finally {
+      setCustomSubmitting(false);
+    }
+  };
+
+  // A guest may add at most one partner (hide the option once they have
+  // one); children have no such cap here, only the wedding's kids budget.
+  const canAddPartner = invitation.permissions.can_add_partner && !companions.some((c) => c.relationship === "partner_of");
+  const canAddKids = invitation.permissions.can_add_kids && (kidsRemaining === null || kidsRemaining > 0);
+
+  const cancelAddCompanion = () => {
+    setAddCompanionKind(null);
+    setAddCompanionFirst("");
+    setAddCompanionLast("");
+    setAddCompanionCandidates(null);
+    setAddCompanionError(null);
+  };
+
+  const submitAddCompanion = async (resolve: "auto" | "force_create" = "auto") => {
+    if (!addCompanionKind) return;
+    const first = addCompanionFirst.trim();
+    if (!first) {
+      setAddCompanionError(locale === "fr" ? "Le prénom est requis." : "First name is required.");
+      return;
+    }
+    setAddCompanionBusy(true);
+    setAddCompanionError(null);
+    try {
+      const supabase = getSupabase();
+      const { data, error } = await supabase.rpc("rsvp_register_companion", {
+        p_token: token,
+        p_kind: addCompanionKind,
+        p_first_name: first,
+        p_last_name: addCompanionLast.trim() || undefined,
+        p_resolve: resolve,
+      });
+      if (error) throw error;
+      const result = data as {
+        status: "candidates" | "created";
+        candidates?: DBInvitation["self_merge_candidates"];
+        guest_id?: string;
+      };
+      if (result.status === "candidates") {
+        setAddCompanionCandidates(result.candidates ?? []);
+        return;
+      }
+      const newCompanion = {
+        id: result.guest_id as string,
+        first_name: first,
+        last_name: addCompanionLast.trim() || null,
+        age_years: null,
+        relationship: (addCompanionKind === "partner" ? "partner_of" : "parent_of") as "partner_of" | "parent_of",
+        rsvp_status: "pending" as const,
+        dietary_notes: null,
+      };
+      setCompanions((prev) => [...prev, newCompanion]);
+      setCompanionsRsvp((prev) => ({ ...prev, [newCompanion.id]: { rsvp_status: "pending", dietary_notes: "" } }));
+      if (addCompanionKind === "child") {
+        setKidsRemaining((k) => (k !== null ? Math.max(k - 1, 0) : k));
+      }
+      cancelAddCompanion();
+    } catch (e) {
+      setAddCompanionError(e instanceof Error ? e.message : (locale === "fr" ? "Une erreur est survenue." : "Something went wrong."));
+    } finally {
+      setAddCompanionBusy(false);
+    }
   };
 
   return (
@@ -904,6 +1041,50 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 </div>
               )}
 
+              {/* Custom forms — organiser-authored, shown once published */}
+              {customForms.map((f) => {
+                const state = customFormState(f);
+                const answered = !!f.answers;
+                return (
+                  <div key={f.id} className="form-card" style={{ opacity: state === "scheduled" ? 0.6 : 1 }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                        <span className={`badge-status ${state === "scheduled" ? "locked" : answered ? "completed" : "pending"}`}>
+                          {state === "scheduled"
+                            ? (locale === "fr" ? "Bientôt" : "Coming soon")
+                            : state === "closed"
+                              ? (locale === "fr" ? "Fermé" : "Closed")
+                              : answered
+                                ? (locale === "fr" ? "Complété" : "Completed")
+                                : (locale === "fr" ? "À Remplir" : "Action Needed")}
+                        </span>
+                      </div>
+                      <h3 className="u-serif" style={{ fontSize: "20px", fontWeight: "600", margin: "0 0 6px" }}>
+                        {f.title}
+                      </h3>
+                      <p style={{ color: "var(--muted)", fontSize: "13px", margin: 0, maxWidth: "400px" }}>
+                        {f.questions.length} {locale === "fr" ? "question(s)" : `question${f.questions.length === 1 ? "" : "s"}`}
+                      </p>
+                    </div>
+                    <button
+                      disabled={state !== "live"}
+                      onClick={() => openCustomForm(f.id)}
+                      style={{
+                        background: state !== "live" ? "#f5f5f5" : (answered ? "rgba(67, 53, 58, 0.05)" : "var(--primary)"),
+                        color: state !== "live" ? "#999" : (answered ? "var(--primary)" : "white"),
+                        border: "none",
+                        padding: "10px 20px",
+                        borderRadius: "10px",
+                        fontWeight: "600",
+                        cursor: state !== "live" ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {state !== "live" ? "🔒" : (answered ? (locale === "fr" ? "Modifier" : "Update") : (locale === "fr" ? "Répondre" : "Start"))}
+                    </button>
+                  </div>
+                );
+              })}
+
               {/* Form 2: Preferences Form */}
               <div className="form-card" style={{ opacity: isPending ? 0.6 : 1 }}>
                 <div>
@@ -1282,12 +1463,12 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
             </div>
 
             {/* Companion RSVPs */}
-            {primaryRsvp === "attending" && invitation.companions.length > 0 && (
+            {primaryRsvp === "attending" && (companions.length > 0 || canAddPartner || canAddKids) && (
               <div style={{ marginBottom: "24px" }}>
                 <h4 style={{ fontWeight: "bold", fontSize: "14px", margin: "0 0 12px", borderTop: "1px solid #e1dec3", paddingTop: "16px" }}>
                   👥 {locale === "fr" ? "Proches de votre foyer :" : "Companions in your group :"}
                 </h4>
-                {invitation.companions.map((companion) => {
+                {companions.map((companion) => {
                   const state = companionsRsvp[companion.id] || { rsvp_status: "pending", dietary_notes: "" };
                   return (
                     <div key={companion.id} className="companion-box">
@@ -1332,6 +1513,105 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                     </div>
                   );
                 })}
+
+                {(canAddPartner || canAddKids) && (
+                  <div style={{ marginTop: companions.length > 0 ? 8 : 0 }}>
+                    {addCompanionCandidates ? (
+                      <div className="companion-box">
+                        <p style={{ fontWeight: "bold", fontSize: "13px", margin: "0 0 8px" }}>
+                          {locale === "fr"
+                            ? "Ce nom ressemble à quelqu'un déjà sur la liste :"
+                            : "This name looks like someone already on the list:"}
+                        </p>
+                        {addCompanionCandidates.map((c) => (
+                          <p key={c.id} style={{ fontSize: "13px", margin: "0 0 4px", color: "var(--muted)" }}>
+                            {c.first_name} {c.last_name || ""}
+                            {c.added_by_first_name ? ` (${locale === "fr" ? "ajouté par" : "added by"} ${c.added_by_first_name})` : ""}
+                          </p>
+                        ))}
+                        {addCompanionError && (
+                          <div style={{ color: "#C0553B", fontSize: 12, margin: "8px 0" }}>{addCompanionError}</div>
+                        )}
+                        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                          <button
+                            type="button"
+                            className="choice-btn"
+                            disabled={addCompanionBusy}
+                            onClick={() => submitAddCompanion("force_create")}
+                          >
+                            {locale === "fr" ? "Non, ajouter quand même" : "No, add as new"}
+                          </button>
+                          <button
+                            type="button"
+                            className="choice-btn"
+                            disabled={addCompanionBusy}
+                            onClick={cancelAddCompanion}
+                          >
+                            {locale === "fr" ? "Annuler" : "Cancel"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : addCompanionKind ? (
+                      <div className="companion-box">
+                        <p style={{ fontWeight: "bold", fontSize: "13px", margin: "0 0 8px" }}>
+                          {addCompanionKind === "partner"
+                            ? (locale === "fr" ? "Ajouter mon/ma partenaire" : "Add my partner")
+                            : (locale === "fr" ? "Ajouter un enfant" : "Add a child")}
+                        </p>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input
+                            type="text"
+                            value={addCompanionFirst}
+                            onChange={(e) => setAddCompanionFirst(e.target.value)}
+                            placeholder={locale === "fr" ? "Prénom" : "First name"}
+                            style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #e1dec3", fontSize: "13px" }}
+                          />
+                          <input
+                            type="text"
+                            value={addCompanionLast}
+                            onChange={(e) => setAddCompanionLast(e.target.value)}
+                            placeholder={locale === "fr" ? "Nom (optionnel)" : "Last name (optional)"}
+                            style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #e1dec3", fontSize: "13px" }}
+                          />
+                        </div>
+                        {addCompanionError && (
+                          <div style={{ color: "#C0553B", fontSize: 12, margin: "8px 0 0" }}>{addCompanionError}</div>
+                        )}
+                        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                          <button
+                            type="button"
+                            className="choice-btn selected-yes"
+                            disabled={addCompanionBusy}
+                            onClick={() => submitAddCompanion("auto")}
+                          >
+                            {addCompanionBusy ? t.common.saving : (locale === "fr" ? "Ajouter" : "Add")}
+                          </button>
+                          <button
+                            type="button"
+                            className="choice-btn"
+                            disabled={addCompanionBusy}
+                            onClick={cancelAddCompanion}
+                          >
+                            {locale === "fr" ? "Annuler" : "Cancel"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {canAddPartner && (
+                          <button type="button" className="choice-btn" style={{ flex: "unset" }} onClick={() => setAddCompanionKind("partner")}>
+                            + {locale === "fr" ? "Ajouter mon/ma partenaire" : "Add my partner"}
+                          </button>
+                        )}
+                        {canAddKids && (
+                          <button type="button" className="choice-btn" style={{ flex: "unset" }} onClick={() => setAddCompanionKind("child")}>
+                            + {locale === "fr" ? "Ajouter un enfant" : "Add a child"}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1352,6 +1632,89 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               onClick={handleSaveRsvp}
             >
               {submittingRsvp ? t.common.saving : (locale === "fr" ? "Soumettre le RSVP" : "Submit RSVP")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Custom form modal */}
+      {activeCustomForm && (
+        <div className="drawer-overlay" onClick={() => (customSubmitting ? null : setActiveCustomFormId(null))}>
+          <div className="drawer-container" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              <h2 className="u-serif" style={{ fontSize: "28px", fontWeight: "600", margin: 0 }}>
+                {activeCustomForm.title}
+              </h2>
+              <button
+                onClick={() => setActiveCustomFormId(null)}
+                style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "var(--muted)" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {activeCustomForm.questions.map((q: RsvpQuestion) => (
+              <div className="field" key={q.id}>
+                <label>
+                  {q.title}
+                  {q.required ? " *" : ` (${locale === "fr" ? "optionnel" : "optional"})`}
+                </label>
+
+                {(q.kind === "single" || q.kind === "multi") && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {(q.options ?? []).map((opt) => {
+                      const current = customDraft[q.id];
+                      const selected = q.kind === "single" ? current === opt : Array.isArray(current) && current.includes(opt);
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setCustomDraft((prev) => {
+                              if (q.kind === "single") return { ...prev, [q.id]: opt };
+                              const list = Array.isArray(prev[q.id]) ? (prev[q.id] as string[]) : [];
+                              const next = list.includes(opt) ? list.filter((o) => o !== opt) : [...list, opt];
+                              return { ...prev, [q.id]: next };
+                            });
+                          }}
+                          className={`choice-btn ${selected ? "selected-yes" : ""}`}
+                          style={{ justifyContent: "flex-start", textAlign: "left" }}
+                        >
+                          {selected ? "✓ " : ""}{opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {q.kind === "short" && (
+                  <input
+                    type="text"
+                    value={typeof customDraft[q.id] === "string" ? (customDraft[q.id] as string) : ""}
+                    onChange={(e) => setCustomDraft((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                  />
+                )}
+
+                {q.kind === "comment" && (
+                  <textarea
+                    value={typeof customDraft[q.id] === "string" ? (customDraft[q.id] as string) : ""}
+                    onChange={(e) => setCustomDraft((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                    rows={3}
+                  />
+                )}
+              </div>
+            ))}
+
+            {customError && (
+              <div style={{ color: "#C0553B", fontSize: 13, marginBottom: 16 }}>{customError}</div>
+            )}
+
+            <button
+              className="btn-submit"
+              disabled={customSubmitting}
+              onClick={handleSubmitCustomForm}
+            >
+              {customSubmitting ? t.common.saving : (locale === "fr" ? "Envoyer mes réponses" : "Submit answers")}
             </button>
           </div>
         </div>
