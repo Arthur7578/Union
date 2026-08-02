@@ -17,10 +17,11 @@ export function Contentsquare() {
     // 1. Environments without a configured client ID.
     // 2. Non-production node environments.
     // 3. Vercel non-production preview or development deployments.
+    // Requires NEXT_PUBLIC_VERCEL_ENV to be explicitly "production" (fails
+    // closed if it's unset, e.g. the project doesn't expose system env vars).
     const isProduction =
       process.env.NODE_ENV === "production" &&
-      (!process.env.NEXT_PUBLIC_VERCEL_ENV ||
-        process.env.NEXT_PUBLIC_VERCEL_ENV === "production");
+      process.env.NEXT_PUBLIC_VERCEL_ENV === "production";
 
     if (!clientId) {
       console.warn("Contentsquare: clientId not found. Script injection skipped.");
