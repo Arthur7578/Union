@@ -7,6 +7,7 @@ import { UserJot } from "@/components/UserJot";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { resolveLocale } from "@/lib/i18n/server";
+import { Contentsquare } from "@/components/Contentsquare";
 
 // Self-hosted fonts — no render-blocking <link>, zero layout shift.
 const serif = Cormorant_Garamond({
@@ -84,6 +85,7 @@ export default async function RootLayout({
     <html lang={locale} className={`${serif.variable} ${sans.variable}`}>
       <body>
         <LocaleProvider initialLocale={locale}>
+          <Contentsquare />
           {children}
           <UserJot />
           <ServiceWorkerRegister />
