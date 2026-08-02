@@ -288,19 +288,19 @@ export default function FormBuilderPage() {
             Form name
           </div>
           <input
+            type="text"
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
               markDirty();
             }}
             placeholder="e.g. Guest details"
-            className="u-serif"
+            className="u-serif u-plain-input"
             style={{
               fontFamily: T.serif,
               fontWeight: 600,
               fontSize: 18,
               color: T.ink,
-              padding: "6px 4px",
               minHeight: 36,
             }}
           />
@@ -320,7 +320,16 @@ export default function FormBuilderPage() {
                   setOpensAt(e.target.value);
                   markDirty();
                 }}
-                style={{ marginTop: 4, minHeight: 38, padding: "8px 10px", fontSize: 14 }}
+                style={{
+                  marginTop: 4,
+                  minHeight: 38,
+                  padding: "8px 10px",
+                  fontSize: 14,
+                  border: `1px solid ${T.line}`,
+                  borderRadius: 10,
+                  background: T.surface,
+                  color: T.ink,
+                }}
               />
             </div>
             <div style={{ flex: 1 }}>
@@ -332,7 +341,16 @@ export default function FormBuilderPage() {
                   setClosesAt(e.target.value);
                   markDirty();
                 }}
-                style={{ marginTop: 4, minHeight: 38, padding: "8px 10px", fontSize: 14 }}
+                style={{
+                  marginTop: 4,
+                  minHeight: 38,
+                  padding: "8px 10px",
+                  fontSize: 14,
+                  border: `1px solid ${T.line}`,
+                  borderRadius: 10,
+                  background: T.surface,
+                  color: T.ink,
+                }}
               />
             </div>
           </div>
@@ -408,37 +426,59 @@ export default function FormBuilderPage() {
                   </button>
                   <button
                     type="button"
+                    role="checkbox"
+                    aria-checked={q.required}
                     onClick={() => patchQuestion(q.id, { required: !q.required })}
-                    style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer" }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      border: "none",
+                      background: "transparent",
+                      padding: 0,
+                      cursor: "pointer",
+                    }}
                   >
-                    <Chip
-                      tone={
-                        q.required
-                          ? { bg: T.accentSoft, fg: T.accentInk, border: T.accentBorder }
-                          : { bg: "transparent", fg: T.faint, border: "rgba(67,53,58,.14)" }
-                      }
-                      style={{ fontSize: 11, padding: "5px 10px" }}
+                    <span
+                      style={{
+                        width: 16,
+                        height: 16,
+                        flexShrink: 0,
+                        borderRadius: 5,
+                        border: `1.5px solid ${q.required ? T.accentInk : "rgba(67,53,58,.28)"}`,
+                        background: q.required ? T.accentInk : "transparent",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        lineHeight: 1,
+                        transition: "background .12s ease, border-color .12s ease",
+                      }}
                     >
-                      {q.required ? "Required" : "Optional"}
-                    </Chip>
+                      {q.required ? "✓" : ""}
+                    </span>
+                    <span style={{ fontSize: 11.5, fontWeight: 600, color: q.required ? T.accentInk : T.faint }}>
+                      Required
+                    </span>
                   </button>
                 </div>
               </div>
 
               <input
+                type="text"
                 value={q.title}
                 onChange={(e) => patchQuestion(q.id, { title: e.target.value })}
                 placeholder="Question title"
-                className="u-serif"
+                className="u-serif u-plain-input"
                 style={{
                   fontFamily: T.serif,
                   fontWeight: 600,
                   fontSize: 18,
                   color: T.ink,
-                  padding: "8px 10px",
                   marginTop: 11,
                   minHeight: 40,
-                  borderRadius: 10,
                 }}
               />
 
@@ -447,13 +487,23 @@ export default function FormBuilderPage() {
                   {(q.options ?? []).map((opt, i) => (
                     <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       <input
+                        type="text"
                         value={opt}
                         onChange={(e) => {
                           const next = [...(q.options ?? [])];
                           next[i] = e.target.value;
                           patchQuestion(q.id, { options: next });
                         }}
-                        style={{ flex: 1, minHeight: 36, padding: "6px 12px", fontSize: 13 }}
+                        style={{
+                          flex: 1,
+                          minHeight: 36,
+                          padding: "6px 12px",
+                          fontSize: 13,
+                          color: T.ink,
+                          border: "1px solid rgba(67,53,58,.08)",
+                          borderRadius: 10,
+                          background: "#F7F1EC",
+                        }}
                       />
                       <button
                         onClick={() => {
@@ -725,10 +775,12 @@ function CopyField({
         <div style={{ fontSize: 11, fontWeight: 600, color: T.faint }}>{caption}</div>
       </div>
       <input
+        type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        style={{ minHeight: 38, padding: "8px 10px", fontSize: 14 }}
+        className="u-plain-input"
+        style={{ minHeight: 38, fontSize: 14, color: T.ink }}
       />
     </Card>
   );
