@@ -828,6 +828,15 @@ export const en = {
     title: "SMS template",
     subtitle:
       "Draft the invitation SMS once — Union will personalise every send with the guest's first name and their access link.",
+    apiKeyLabel: "Your Brevo account",
+    apiKeyField: "Brevo API key",
+    apiKeyPlaceholder: "xkeysib-…",
+    apiKeyShow: "Show",
+    apiKeyHide: "Hide",
+    apiKeyHint: "SMS sends run on your own Brevo account, not Union's — grab your transactional API key from",
+    apiKeyLinkText: "Brevo → Settings → API Keys",
+    apiKeyCreditsHint:
+      "Note: Brevo also requires you to purchase an SMS credits add-on before sending works — email credits alone aren't enough.",
     senderLabel: "Sender",
     senderField: "SMS sender name or phone",
     senderPlaceholder: "e.g. Maya, or +33612345678",

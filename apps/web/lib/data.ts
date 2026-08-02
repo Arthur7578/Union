@@ -57,6 +57,7 @@ export async function createWedding(
     | "style_vibe"
     | "sms_sender"
     | "sms_template"
+    | "sms_brevo_api_key"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
@@ -68,6 +69,7 @@ export async function createWedding(
     style_vibe?: string | null;
     sms_sender?: string | null;
     sms_template?: string | null;
+    sms_brevo_api_key?: string | null;
   },
 ): Promise<Wedding> {
   const supabase = getBrowserSupabase();

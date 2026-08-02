@@ -71,14 +71,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const apiKey = process.env.BREVO_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "SMS provider is not configured." },
-      { status: 500 },
-    );
-  }
-
   // Client bound to the caller's JWT so RLS enforces "must be the
   // wedding owner." Anon key stays public; the JWT does the work.
   const supabase = createUnionClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -93,7 +85,9 @@ export async function POST(request: Request) {
 
   const { data: wedding, error: wErr } = await supabase
     .from("weddings")
-    .select("id, owner_id, partner_one, partner_two, sms_sender, sms_template")
+    .select(
+      "id, owner_id, partner_one, partner_two, sms_sender, sms_template, sms_brevo_api_key",
+    )
     .eq("id", weddingId)
     .maybeSingle();
   if (wErr || !wedding) {
@@ -101,6 +95,17 @@ export async function POST(request: Request) {
   }
   if (wedding.owner_id !== userData.user.id) {
     return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+  }
+
+  // Each wedding brings its own Brevo account — SMS credits are a
+  // per-organiser expense, not something the platform key should
+  // cover. No platform-wide fallback on purpose.
+  const apiKey = (wedding.sms_brevo_api_key ?? "").trim();
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "Add your Brevo API key in SMS Template settings first." },
+      { status: 400 },
+    );
   }
 
   const sender = sanitizeSender(wedding.sms_sender ?? "");

@@ -803,6 +803,15 @@ export const fr: Dictionary = {
     title: "Modèle SMS",
     subtitle:
       "Rédigez votre SMS d'invitation une seule fois — Union personnalise chaque envoi avec le prénom de l'invité et son lien d'accès.",
+    apiKeyLabel: "Votre compte Brevo",
+    apiKeyField: "Clé API Brevo",
+    apiKeyPlaceholder: "xkeysib-…",
+    apiKeyShow: "Afficher",
+    apiKeyHide: "Masquer",
+    apiKeyHint: "L'envoi des SMS utilise votre propre compte Brevo, pas celui d'Union — récupérez votre clé API transactionnelle depuis",
+    apiKeyLinkText: "Brevo → Paramètres → Clés API",
+    apiKeyCreditsHint:
+      "À noter : Brevo exige aussi l'achat d'un pack de crédits SMS avant que l'envoi fonctionne — les crédits email seuls ne suffisent pas.",
     senderLabel: "Expéditeur",
     senderField: "Nom ou numéro d'expéditeur",
     senderPlaceholder: "ex. Maya, ou +33612345678",

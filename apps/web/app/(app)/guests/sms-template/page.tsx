@@ -18,6 +18,8 @@ export default function SmsTemplatePage() {
   const { wedding, refresh } = useWedding();
   const [sender, setSender] = useState("");
   const [template, setTemplate] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +28,7 @@ export default function SmsTemplatePage() {
     if (!wedding) return;
     setSender(wedding.sms_sender ?? "");
     setTemplate(wedding.sms_template ?? DEFAULT_SMS_TEMPLATE);
+    setApiKey(wedding.sms_brevo_api_key ?? "");
   }, [wedding]);
 
   const previewOrigin =
@@ -67,6 +70,7 @@ export default function SmsTemplatePage() {
       await updateWedding(wedding.id, {
         sms_sender: sender.trim() || null,
         sms_template: template,
+        sms_brevo_api_key: apiKey.trim() || null,
       });
       await refresh();
       setSaved(true);
@@ -105,7 +109,45 @@ export default function SmsTemplatePage() {
       />
 
       <form onSubmit={save}>
-        <SectionLabel style={{ marginTop: 0 }}>{t.smsTemplate.senderLabel}</SectionLabel>
+        <SectionLabel style={{ marginTop: 0 }}>{t.smsTemplate.apiKeyLabel}</SectionLabel>
+        <Card>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label htmlFor="sms-api-key">{t.smsTemplate.apiKeyField}</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                id="sms-api-key"
+                type={showApiKey ? "text" : "password"}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder={t.smsTemplate.apiKeyPlaceholder}
+                style={{ flex: 1 }}
+                autoComplete="off"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowApiKey((v) => !v)}
+                style={{ minHeight: 42, fontSize: 12.5, padding: "0 12px" }}
+              >
+                {showApiKey ? t.smsTemplate.apiKeyHide : t.smsTemplate.apiKeyShow}
+              </Button>
+            </div>
+            <div style={{ fontSize: 12, color: T.faint, marginTop: 6 }}>
+              {t.smsTemplate.apiKeyHint}{" "}
+              <a
+                href="https://app.brevo.com/settings/keys/api"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: T.ink, textDecoration: "underline" }}
+              >
+                {t.smsTemplate.apiKeyLinkText}
+              </a>
+              . {t.smsTemplate.apiKeyCreditsHint}
+            </div>
+          </div>
+        </Card>
+
+        <SectionLabel>{t.smsTemplate.senderLabel}</SectionLabel>
         <Card>
           <div className="field" style={{ marginBottom: 0 }}>
             <label htmlFor="sms-sender">{t.smsTemplate.senderField}</label>
