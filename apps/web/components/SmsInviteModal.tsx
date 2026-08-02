@@ -15,6 +15,7 @@ export function SmsInviteModal({
   recipient,
   sender,
   busy,
+  error,
   onCancel,
   onSend,
 }: {
@@ -22,6 +23,7 @@ export function SmsInviteModal({
   recipient: string;
   sender: string;
   busy: boolean;
+  error?: string | null;
   onCancel: () => void;
   onSend: (message: string) => void;
 }) {
@@ -129,6 +131,12 @@ export function SmsInviteModal({
             {segments} SMS · {gsm ? "GSM-7" : "Unicode"}
           </span>
         </div>
+
+        {error && (
+          <div className="error" style={{ marginTop: 14, marginBottom: 0 }}>
+            {error}
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
           <Button

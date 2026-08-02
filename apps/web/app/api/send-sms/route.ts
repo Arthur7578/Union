@@ -39,6 +39,79 @@ function resolveTemplate(
   );
 }
 
+/**
+ * Brevo's error payloads are a terse `{ code, message }` pair that
+ * doesn't tell a non-technical organiser what to actually do. Map the
+ * common cases (bad key, no SMS add-on, no credits, IP allow-list,
+ * rejected sender/recipient) to plain-language, actionable copy —
+ * fall back to Brevo's own message for anything we don't recognise so
+ * nothing is ever silently swallowed.
+ */
+function describeBrevoFailure(
+  status: number,
+  bodyText: string,
+): { message: string; code?: string } {
+  let code: string | undefined;
+  let brevoMessage = "";
+  try {
+    const parsed = JSON.parse(bodyText) as { code?: string; message?: string };
+    if (typeof parsed.code === "string") code = parsed.code;
+    if (typeof parsed.message === "string") brevoMessage = parsed.message;
+  } catch {
+    brevoMessage = bodyText.trim();
+  }
+  const haystack = `${code ?? ""} ${brevoMessage}`.toLowerCase();
+
+  if (haystack.includes("unrecognised ip") || haystack.includes("unrecognized ip") || haystack.includes("authorised_ips")) {
+    return {
+      code,
+      message:
+        "Brevo blocked this send because of an IP allow-list restriction on your API key. Remove the restriction (or add this app's IP) at Brevo → Security → Authorised IPs, then try again.",
+    };
+  }
+  if (haystack.includes("sms related addon") || haystack.includes("addon")) {
+    return {
+      code,
+      message:
+        "Your Brevo account doesn't have SMS enabled yet — SMS credits are a separate purchase from email. Buy the SMS add-on at Brevo → Campaigns → SMS, then try again.",
+    };
+  }
+  if (haystack.includes("credit")) {
+    return {
+      code,
+      message:
+        "You're out of Brevo SMS credits. Top up your balance at Brevo → Campaigns → SMS, then try again.",
+    };
+  }
+  if (code === "unauthorized" || status === 401) {
+    return {
+      code,
+      message:
+        "Brevo rejected your API key. Open SMS Template settings and check you pasted the correct transactional SMS key from Brevo → Settings → API Keys.",
+    };
+  }
+  if (haystack.includes("sender")) {
+    return {
+      code,
+      message:
+        "Brevo rejected your sender ID. It must be a plain name (max 11 letters/digits, no accents) or a phone number in international format — fix it in SMS Template settings.",
+    };
+  }
+  if (haystack.includes("recipient") || haystack.includes("phone") || haystack.includes("mobile number")) {
+    return {
+      code,
+      message:
+        "Brevo rejected the guest's phone number. Check it's a valid, reachable number in international format on the guest's detail page.",
+    };
+  }
+  return {
+    code,
+    message: brevoMessage
+      ? `Brevo rejected the message: ${brevoMessage}`
+      : "Brevo rejected the request for an unspecified reason.",
+  };
+}
+
 type Body = {
   weddingId?: unknown;
   guestId?: unknown;
@@ -182,9 +255,10 @@ export async function POST(request: Request) {
   });
 
   if (!brevoRes.ok) {
-    const detail = await brevoRes.text().catch(() => "");
+    const bodyText = await brevoRes.text().catch(() => "");
+    const { message, code } = describeBrevoFailure(brevoRes.status, bodyText);
     return NextResponse.json(
-      { error: "SMS provider rejected the request.", detail: detail.slice(0, 500) },
+      { error: message, code, detail: bodyText.slice(0, 500) },
       { status: 502 },
     );
   }

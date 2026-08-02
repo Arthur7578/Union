@@ -125,7 +125,10 @@ export default function GuestDetailPage() {
   // SMS invite modal — one-shot preview / edit before dispatch.
   const [smsOpen, setSmsOpen] = useState(false);
   const [smsBusy, setSmsBusy] = useState(false);
-  const [smsFlash, setSmsFlash] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+  // Shown *inside* the modal (it overlays the page, so a flash message
+  // behind it would be invisible) — cleared whenever the modal (re)opens.
+  const [smsError, setSmsError] = useState<string | null>(null);
+  const [smsFlash, setSmsFlash] = useState<{ tone: "ok"; text: string } | null>(null);
 
   const [allGroups, setAllGroups] = useState<GuestGroup[]>([]);
   const [rooms, setRooms] = useState<RoomBlock[]>([]);
@@ -292,7 +295,7 @@ export default function GuestDetailPage() {
   const sendSms = async (finalMessage: string) => {
     if (!wedding) return;
     setSmsBusy(true);
-    setSmsFlash(null);
+    setSmsError(null);
     try {
       const supabase = getBrowserSupabase();
       const { data: { session } } = await supabase.auth.getSession();
@@ -312,6 +315,8 @@ export default function GuestDetailPage() {
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
+        // Prefer the server's specific, actionable message (e.g. which
+        // Brevo prerequisite is missing) over a generic fallback.
         throw new Error(
           typeof payload.error === "string"
             ? payload.error
@@ -323,10 +328,9 @@ export default function GuestDetailPage() {
       const refreshed = await fetchGuest(guest.id);
       if (refreshed) setGuest(refreshed);
     } catch (e) {
-      setSmsFlash({
-        tone: "err",
-        text: e instanceof Error ? e.message : "Couldn't send the SMS.",
-      });
+      // Surface inside the modal — it's a full-screen overlay, so an
+      // outer flash message here would be invisible until dismissed.
+      setSmsError(e instanceof Error ? e.message : "Couldn't send the SMS.");
     } finally {
       setSmsBusy(false);
     }
@@ -715,7 +719,10 @@ export default function GuestDetailPage() {
             const smsDisabled = !hasPhone || !hasSender;
             return (
               <Button
-                onClick={() => setSmsOpen(true)}
+                onClick={() => {
+                  setSmsError(null);
+                  setSmsOpen(true);
+                }}
                 disabled={smsDisabled}
                 style={{ minHeight: 38, fontSize: 13 }}
               >
@@ -775,7 +782,7 @@ export default function GuestDetailPage() {
             style={{
               marginTop: 10,
               fontSize: 12.5,
-              color: smsFlash.tone === "ok" ? T.greenDeep : "#C0553B",
+              color: T.greenDeep,
             }}
           >
             {smsFlash.text}
@@ -788,7 +795,11 @@ export default function GuestDetailPage() {
           recipient={guest.phone ?? ""}
           sender={wedding.sms_sender ?? ""}
           busy={smsBusy}
-          onCancel={() => setSmsOpen(false)}
+          error={smsError}
+          onCancel={() => {
+            setSmsError(null);
+            setSmsOpen(false);
+          }}
           onSend={sendSms}
         />
       )}
