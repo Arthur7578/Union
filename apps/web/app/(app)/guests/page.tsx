@@ -35,6 +35,11 @@ export default function GuestsPage() {
   const t = useT();
   const TOOLS = [
     {
+      href: "/guests/forms",
+      label: t.guests.tools.formsLabel,
+      sub: t.guests.tools.formsSub,
+    },
+    {
       href: "/guests/groups",
       label: t.guests.tools.groupsLabel,
       sub: t.guests.tools.groupsSub,
@@ -48,11 +53,6 @@ export default function GuestsPage() {
       href: "/guests/stays",
       label: t.guests.tools.staysLabel,
       sub: t.guests.tools.staysSub,
-    },
-    {
-      href: "/guests/rsvp-form",
-      label: t.guests.tools.formLabel,
-      sub: t.guests.tools.formSub,
     },
     {
       href: "/guests/duplicates",
