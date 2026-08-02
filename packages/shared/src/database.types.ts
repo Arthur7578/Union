@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      forms: {
+        Row: {
+          closes_at: string | null
+          created_at: string
+          id: string
+          kind: string
+          opens_at: string | null
+          published: boolean
+          questions: Json
+          sort_order: number
+          title: string
+          wedding_id: string
+        }
+        Insert: {
+          closes_at?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          opens_at?: string | null
+          published?: boolean
+          questions?: Json
+          sort_order?: number
+          title: string
+          wedding_id: string
+        }
+        Update: {
+          closes_at?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          opens_at?: string | null
+          published?: boolean
+          questions?: Json
+          sort_order?: number
+          title?: string
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forms_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guest_group_members: {
         Row: {
           created_at: string

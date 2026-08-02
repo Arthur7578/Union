@@ -2,6 +2,8 @@
 
 import { getBrowserSupabase } from "./supabaseClient";
 import type {
+  Form,
+  FormStatus,
   Guest,
   GuestGroup,
   GuestRelationship,
@@ -79,6 +81,16 @@ export async function createWedding(
     .select("*")
     .single();
   if (error) throw error;
+  // Every wedding gets its RSVP form for free — it's the one wired to the
+  // real guest RSVP flow, published with no schedule (always open).
+  const { error: formError } = await supabase.from("forms").insert({
+    wedding_id: data.id,
+    kind: "rsvp",
+    title: "RSVP",
+    published: true,
+    questions: [],
+  });
+  if (formError) throw formError;
   return data;
 }
 
@@ -989,29 +1001,102 @@ export async function removeGuestRelationship(input: {
 }
 
 // ============================================================
-// RSVP form question config (jsonb on weddings)
+// Forms (RSVP now, and any custom forms the couple schedules later)
 // ============================================================
 
-/** Read the couple's custom RSVP-form config, or [] if never saved. */
-export function readRsvpQuestions(wedding: Wedding | null): RsvpQuestion[] {
-  const raw = wedding?.rsvp_form_questions;
+/** Pull the question list back out of a form row's jsonb column. */
+export function formQuestions(form: Form): RsvpQuestion[] {
+  const raw = form.questions;
   if (!Array.isArray(raw)) return [];
-  return raw.filter((q): q is RsvpQuestion => !!q && typeof q === "object" && "id" in q);
+  return raw.filter(
+    (q): q is RsvpQuestion => !!q && typeof q === "object" && "id" in q,
+  ) as unknown as RsvpQuestion[];
 }
 
-export async function saveRsvpQuestions(
-  weddingId: string,
-  questions: RsvpQuestion[],
-): Promise<Wedding> {
+/** Draft/scheduled/live/closed is derived from publish + schedule, never stored directly. */
+export function formStatus(form: Form, now: Date = new Date()): FormStatus {
+  if (!form.published) return "draft";
+  if (form.opens_at && now < new Date(form.opens_at)) return "scheduled";
+  if (form.closes_at && now > new Date(form.closes_at)) return "closed";
+  return "live";
+}
+
+export async function fetchForms(weddingId: string): Promise<Form[]> {
   const supabase = getBrowserSupabase();
   const { data, error } = await supabase
-    .from("weddings")
-    .update({ rsvp_form_questions: questions })
-    .eq("id", weddingId)
+    .from("forms")
+    .select("*")
+    .eq("wedding_id", weddingId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchForm(id: string): Promise<Form | null> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase
+    .from("forms")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function addForm(input: {
+  wedding_id: string;
+  title: string;
+  questions?: RsvpQuestion[];
+  opens_at?: string | null;
+  closes_at?: string | null;
+}): Promise<Form> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase
+    .from("forms")
+    .insert({
+      wedding_id: input.wedding_id,
+      kind: "custom",
+      title: input.title.trim(),
+      published: false,
+      questions: input.questions ?? [],
+      opens_at: input.opens_at ?? null,
+      closes_at: input.closes_at ?? null,
+    })
     .select("*")
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function updateForm(
+  id: string,
+  patch: Partial<
+    Pick<
+      Form,
+      "title" | "published" | "opens_at" | "closes_at" | "questions" | "sort_order"
+    >
+  >,
+): Promise<Form> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase
+    .from("forms")
+    .update(patch)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/** The RSVP-kind form can't be deleted — it's the one wired to the real guest flow. */
+export async function deleteForm(form: Form): Promise<void> {
+  if (form.kind === "rsvp") {
+    throw new Error("The RSVP form can't be deleted.");
+  }
+  const supabase = getBrowserSupabase();
+  const { error } = await supabase.from("forms").delete().eq("id", form.id);
+  if (error) throw error;
 }
 
 /** Roll up a guest list into the headline counts shown on Today / Guests. */

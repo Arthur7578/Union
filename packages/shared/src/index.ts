@@ -24,7 +24,14 @@ export type SeatingTable = Tables<"seating_tables">;
 export type GuestRelationship = Tables<"guest_relationships">;
 export type GuestRelationshipKind = Enums<"guest_relationship_kind">;
 
-/** One entry in the couple's custom RSVP-form config (stored on weddings.rsvp_form_questions). */
+/** One form the couple runs — RSVP now, a details form later, a final headcount near the day. */
+export type Form = Tables<"forms">;
+/** `kind` is 'rsvp' for the one form wired to the real guest RSVP flow, 'custom' for anything else. */
+export type FormKind = "rsvp" | "custom";
+/** Derived at read time from `published` + `opens_at`/`closes_at` vs now — not stored directly. */
+export type FormStatus = "draft" | "scheduled" | "live" | "closed";
+
+/** One question in a form's guest-facing question list (stored on forms.questions). */
 export type RsvpQuestion = {
   id: string;
   kind: "single" | "multi" | "short" | "comment";
