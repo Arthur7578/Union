@@ -168,6 +168,8 @@ export const fr: Dictionary = {
       staysSub: "Blocs de chambres",
       formLabel: "Formulaire RSVP",
       formSub: "Personnalisez vos questions",
+      smsTemplateLabel: "Modèle SMS",
+      smsTemplateSub: "Expéditeur + texte d'invitation",
     },
     guestList: "Liste des invités",
     reminderPromptStrong: (n: number) =>
@@ -795,5 +797,37 @@ export const fr: Dictionary = {
         },
       ],
     },
+  },
+
+  smsTemplate: {
+    title: "Modèle SMS",
+    subtitle:
+      "Rédigez votre SMS d'invitation une seule fois — Union personnalise chaque envoi avec le prénom de l'invité et son lien d'accès.",
+    apiKeyLabel: "Votre compte Brevo",
+    apiKeyField: "Clé API Brevo",
+    apiKeyPlaceholder: "xkeysib-…",
+    apiKeyShow: "Afficher",
+    apiKeyHide: "Masquer",
+    apiKeyHint: "L'envoi des SMS utilise votre propre compte Brevo, pas celui d'Union — récupérez votre clé API transactionnelle depuis",
+    apiKeyLinkText: "Brevo → Paramètres → Clés API",
+    apiKeyCreditsHint:
+      "À noter : Brevo exige aussi l'achat d'un pack de crédits SMS avant que l'envoi fonctionne — les crédits email seuls ne suffisent pas.",
+    senderLabel: "Expéditeur",
+    senderField: "Nom ou numéro d'expéditeur",
+    senderPlaceholder: "ex. Maya, ou +33612345678",
+    senderHint:
+      "Jusqu'à 11 lettres/chiffres pour un nom, ou un numéro au format international. Vos invités voient ce nom comme expéditeur du SMS.",
+    templateLabel: "Message",
+    templateHint:
+      "Utilisez les jetons ci-dessous pour insérer des champs dynamiques. Le reste est envoyé tel quel.",
+    placeholderTitle: (key: string) => `Insérer ${key}`,
+    previewLabel: "Aperçu en direct",
+    previewHint:
+      "Rendu du message pour un invité fictif — mis à jour en temps réel.",
+    previewEmpty: "Écrivez un message ci-dessus pour voir l'aperçu.",
+    charCount: (n: number) => `${n} caractère${n === 1 ? "" : "s"}`,
+    segmentCount: (n: number, enc: string) => `${n} SMS · ${enc}`,
+    save: "Enregistrer le modèle",
+    saved: "Enregistré",
   },
 };

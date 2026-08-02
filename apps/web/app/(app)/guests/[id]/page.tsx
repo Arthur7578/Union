@@ -31,6 +31,9 @@ import { BackHeader } from "@/components/BackHeader";
 import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
 import { NewRelativeForm } from "@/components/NewRelativeForm";
 import { RelationshipCombobox } from "@/components/RelationshipCombobox";
+import { SmsInviteModal } from "@/components/SmsInviteModal";
+import { DEFAULT_SMS_TEMPLATE, resolveSmsTemplate } from "@/lib/sms";
+import { getBrowserSupabase } from "@/lib/supabaseClient";
 
 const STATUS_LABEL: Record<
   string,
@@ -118,6 +121,14 @@ export default function GuestDetailPage() {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // SMS invite modal — one-shot preview / edit before dispatch.
+  const [smsOpen, setSmsOpen] = useState(false);
+  const [smsBusy, setSmsBusy] = useState(false);
+  // Shown *inside* the modal (it overlays the page, so a flash message
+  // behind it would be invisible) — cleared whenever the modal (re)opens.
+  const [smsError, setSmsError] = useState<string | null>(null);
+  const [smsFlash, setSmsFlash] = useState<{ tone: "ok"; text: string } | null>(null);
 
   const [allGroups, setAllGroups] = useState<GuestGroup[]>([]);
   const [rooms, setRooms] = useState<RoomBlock[]>([]);
@@ -267,6 +278,61 @@ export default function GuestDetailPage() {
       setTimeout(() => setCopied(false), 1800);
     } catch {
       /* clipboard unavailable */
+    }
+  };
+
+  const buildSmsPreview = () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const template = wedding?.sms_template || DEFAULT_SMS_TEMPLATE;
+    return resolveSmsTemplate(template, {
+      guest_first_name: guest.first_name ?? "",
+      guest_access_link: `${origin}/guest/${guest.invite_token}`,
+      partner_1_first_name: wedding?.partner_one ?? "",
+      partner_2_first_name: wedding?.partner_two ?? "",
+    });
+  };
+
+  const sendSms = async (finalMessage: string) => {
+    if (!wedding) return;
+    setSmsBusy(true);
+    setSmsError(null);
+    try {
+      const supabase = getBrowserSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("You're signed out.");
+      const res = await fetch("/api/send-sms", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          weddingId: wedding.id,
+          guestId: guest.id,
+          message: finalMessage,
+        }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // Prefer the server's specific, actionable message (e.g. which
+        // Brevo prerequisite is missing) over a generic fallback.
+        throw new Error(
+          typeof payload.error === "string"
+            ? payload.error
+            : "Couldn't send the SMS.",
+        );
+      }
+      setSmsOpen(false);
+      setSmsFlash({ tone: "ok", text: `SMS sent to ${payload.recipient}.` });
+      const refreshed = await fetchGuest(guest.id);
+      if (refreshed) setGuest(refreshed);
+    } catch (e) {
+      // Surface inside the modal — it's a full-screen overlay, so an
+      // outer flash message here would be invisible until dismissed.
+      setSmsError(e instanceof Error ? e.message : "Couldn't send the SMS.");
+    } finally {
+      setSmsBusy(false);
     }
   };
 
@@ -617,36 +683,126 @@ export default function GuestDetailPage() {
       )}
 
       <SectionLabel style={{ marginTop: 0 }}>Invitation link</SectionLabel>
-      <Card style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div
-          style={{
-            flex: 1,
-            minWidth: 140,
-            fontSize: 13,
-            color: T.muted,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          /rsvp/{guest.invite_token}
-        </div>
-        <Button
-          variant="secondary"
-          onClick={copyLink}
-          style={{ minHeight: 38, fontSize: 13 }}
-        >
-          {copied ? "Copied!" : "Copy link"}
-        </Button>
-        {guest.email && (
+      <Card>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div
+            style={{
+              flex: 1,
+              minWidth: 140,
+              fontSize: 13,
+              color: T.muted,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            /rsvp/{guest.invite_token}
+          </div>
           <Button
-            onClick={emailInvite}
+            variant="secondary"
+            onClick={copyLink}
             style={{ minHeight: 38, fontSize: 13 }}
           >
-            Email invite
+            {copied ? "Copied!" : "Copy link"}
           </Button>
+          {guest.email && (
+            <Button
+              onClick={emailInvite}
+              style={{ minHeight: 38, fontSize: 13 }}
+            >
+              Email invite
+            </Button>
+          )}
+          {(() => {
+            const hasPhone = Boolean((guest.phone ?? "").trim());
+            const hasSender = Boolean((wedding?.sms_sender ?? "").trim());
+            const smsDisabled = !hasPhone || !hasSender;
+            return (
+              <Button
+                onClick={() => {
+                  setSmsError(null);
+                  setSmsOpen(true);
+                }}
+                disabled={smsDisabled}
+                style={{ minHeight: 38, fontSize: 13 }}
+              >
+                SMS invite
+              </Button>
+            );
+          })()}
+        </div>
+        {(() => {
+          const hasPhone = Boolean((guest.phone ?? "").trim());
+          const hasSender = Boolean((wedding?.sms_sender ?? "").trim());
+          if (hasPhone && hasSender) return null;
+          const hints: string[] = [];
+          if (!hasPhone)
+            hints.push(
+              "To send an SMS invite, add a phone number for this guest in the details section below.",
+            );
+          if (!hasSender)
+            hints.push(
+              "To send an SMS invite, set up your SMS sender number in the SMS Template settings first.",
+            );
+          return (
+            <div
+              style={{
+                marginTop: 10,
+                padding: "10px 12px",
+                borderRadius: 12,
+                background: "rgba(224,204,177,.28)",
+                border: "1px solid rgba(67,53,58,.08)",
+                fontSize: 12.5,
+                color: T.muted2,
+                display: "grid",
+                gap: 6,
+              }}
+            >
+              {hints.map((h, i) => (
+                <div key={i}>
+                  {h}
+                  {i === hints.length - 1 && !hasSender && (
+                    <>
+                      {" "}
+                      <a
+                        href="/guests/sms-template"
+                        style={{ color: T.ink, textDecoration: "underline" }}
+                      >
+                        Open SMS Template settings →
+                      </a>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+        {smsFlash && (
+          <div
+            style={{
+              marginTop: 10,
+              fontSize: 12.5,
+              color: T.greenDeep,
+            }}
+          >
+            {smsFlash.text}
+          </div>
         )}
       </Card>
+      {smsOpen && wedding && (
+        <SmsInviteModal
+          initialMessage={buildSmsPreview()}
+          recipient={guest.phone ?? ""}
+          sender={wedding.sms_sender ?? ""}
+          busy={smsBusy}
+          error={smsError}
+          onCancel={() => {
+            setSmsError(null);
+            setSmsOpen(false);
+          }}
+          onSend={sendSms}
+        />
+      )}
       {guest.rsvp_reminder_sent_at && (
         <div
           style={{

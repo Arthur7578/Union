@@ -55,6 +55,9 @@ export async function createWedding(
     | "max_children_per_guest"
     | "guest_count_target"
     | "style_vibe"
+    | "sms_sender"
+    | "sms_template"
+    | "sms_brevo_api_key"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
@@ -64,6 +67,9 @@ export async function createWedding(
     max_children_per_guest?: number | null;
     guest_count_target?: number | null;
     style_vibe?: string | null;
+    sms_sender?: string | null;
+    sms_template?: string | null;
+    sms_brevo_api_key?: string | null;
   },
 ): Promise<Wedding> {
   const supabase = getBrowserSupabase();
