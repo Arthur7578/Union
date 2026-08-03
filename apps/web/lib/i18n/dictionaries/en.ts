@@ -618,25 +618,25 @@ export const en = {
     errorGeneric: "Something went wrong. Please try again.",
   },
 
-  // Guest OTP sign-in (/join/[code]) — the primary, stronger path: match
-  // by name + phone, collect-or-reuse an email, verify it with a code.
+  // Guest sign-in (/join/[code]) — Supabase Auth verifies the email,
+  // then authenticated RPCs expose only invitations tied to that account.
   joinOtp: {
     title: "Find your invitation",
     subtitle:
-      "Enter your name and phone number the way the couple has them on file.",
+      "Enter the email address the couple has on your invitation.",
     phoneLabel: "Phone number",
     phonePlaceholder: "e.g. +1 555 123 4567",
     continueButton: "Continue",
     searching: "Searching…",
-    emailCollectTitle: "What's your email?",
+    emailCollectTitle: "Check your email",
     emailCollectSubtitle:
-      "We'll send a one-time code there — and use it for your sign-ins from now on.",
+      "Enter the one-time code from Union to finish signing in.",
     emailLabel: "Email",
     emailPlaceholder: "you@email.com",
     sendCodeButton: "Send code",
-    codeSentTo: (email: string) => `We sent a 6-digit code to ${email}.`,
-    codeLabel: "6-digit code",
-    codePlaceholder: "123456",
+    codeSentTo: (email: string) => `We sent a sign-in code to ${email}.`,
+    codeLabel: "Sign-in code",
+    codePlaceholder: "12345678",
     verifyButton: "Verify",
     verifying: "Verifying…",
     resendButton: "Resend code",
@@ -646,12 +646,22 @@ export const en = {
       "This contact is also linked to an organiser account on Union.",
     organiserHintLink: "Sign in as the organiser instead",
     matchesTitle: "You're linked to a few invitations",
+    matchesSubtitle: "Choose who you're responding for.",
     matchLine: (couple: string, firstName: string) =>
       `${couple} — continue as ${firstName}`,
     invalidOrExpired: "That code didn't work, or it's expired.",
     cooldown: "Please wait a moment before requesting another code.",
     tooManyRequests: "Too many attempts — please try again in a bit.",
     genericError: "Something went wrong. Please try again.",
+    accessUnavailable:
+      "That invitation is already linked to another account or is no longer available.",
+    checkingSession: "Checking your Union account…",
+    securityNote:
+      "Union verifies this email through the same secure sign-in used by organisers.",
+    noMatchTitle: "No invitation found for this email",
+    noMatchBody: (couple: string) =>
+      `This verified email isn't on an invitation for ${couple}. Try another address or contact the couple.`,
+    useAnotherEmail: "Use another email",
     useEmailInstead: "I already have an email on file — use that instead",
     useNameFallback: "Search by name instead",
     backButton: "Back",
@@ -669,10 +679,10 @@ export const en = {
       `Hello everyone! 👋\n\n${couple} would love for you to confirm your attendance:\n${link}`,
     howItWorksTitle: "How it works",
     howItWorksBody:
-      "Share this link anywhere you'd reach the whole group at once — a WhatsApp thread, a group email, a family chat. Guests verify a phone + email with a one-time code, so there's no list to browse and no personal link to keep track of.",
+      "Share this link anywhere you'd reach the whole group at once — a WhatsApp thread, a group email, a family chat. Guests verify the email on their invitation with Union's secure sign-in code, so there's no public guest list and no personal link to keep track of.",
     allowNameFallbackLabel: "Also allow a simpler name search",
     allowNameFallbackHint:
-      "Skips the phone/email verification — guests can find themselves by name alone. Less secure, but zero fuss for guests who'd rather not deal with a code.",
+      "Skips email verification — guests can find themselves by name alone. Less secure, but zero fuss for guests who'd rather not deal with a code.",
   },
 
   // Errors and misc

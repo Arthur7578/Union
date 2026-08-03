@@ -598,26 +598,25 @@ export const fr: Dictionary = {
     errorGeneric: "Une erreur est survenue. Merci de réessayer.",
   },
 
-  // Connexion invité par code (/join/[code]) — le parcours principal et
-  // plus sûr : correspondance par nom + téléphone, puis collecte ou
-  // réutilisation d'un email, vérifié par un code.
+  // Connexion invité (/join/[code]) — Supabase Auth vérifie l'e-mail,
+  // puis les RPC authentifiés ne révèlent que les invitations associées.
   joinOtp: {
     title: "Retrouver votre invitation",
     subtitle:
-      "Indiquez votre nom et votre numéro de téléphone tels que le couple les a renseignés.",
+      "Indiquez l'adresse e-mail renseignée par le couple sur votre invitation.",
     phoneLabel: "Numéro de téléphone",
     phonePlaceholder: "ex. +33 6 12 34 56 78",
     continueButton: "Continuer",
     searching: "Recherche…",
-    emailCollectTitle: "Quel est votre email ?",
+    emailCollectTitle: "Consultez vos e-mails",
     emailCollectSubtitle:
-      "Nous y enverrons un code à usage unique — et l'utiliserons pour vos prochaines connexions.",
+      "Saisissez le code à usage unique envoyé par Union pour terminer la connexion.",
     emailLabel: "Email",
     emailPlaceholder: "vous@email.com",
     sendCodeButton: "Envoyer le code",
-    codeSentTo: (email: string) => `Nous avons envoyé un code à 6 chiffres à ${email}.`,
-    codeLabel: "Code à 6 chiffres",
-    codePlaceholder: "123456",
+    codeSentTo: (email: string) => `Nous avons envoyé un code de connexion à ${email}.`,
+    codeLabel: "Code de connexion",
+    codePlaceholder: "12345678",
     verifyButton: "Vérifier",
     verifying: "Vérification…",
     resendButton: "Renvoyer le code",
@@ -628,12 +627,22 @@ export const fr: Dictionary = {
       "Ce contact est aussi lié à un compte organisateur sur Union.",
     organiserHintLink: "Se connecter en tant qu'organisateur",
     matchesTitle: "Vous êtes lié à plusieurs invitations",
+    matchesSubtitle: "Choisissez la personne pour laquelle vous répondez.",
     matchLine: (couple: string, firstName: string) =>
       `${couple} — continuer en tant que ${firstName}`,
     invalidOrExpired: "Ce code n'a pas fonctionné, ou il a expiré.",
     cooldown: "Merci de patienter un instant avant de redemander un code.",
     tooManyRequests: "Trop de tentatives — réessayez un peu plus tard.",
     genericError: "Une erreur est survenue. Merci de réessayer.",
+    accessUnavailable:
+      "Cette invitation est déjà liée à un autre compte ou n'est plus disponible.",
+    checkingSession: "Vérification de votre compte Union…",
+    securityNote:
+      "Union vérifie cet e-mail avec la même connexion sécurisée que celle des organisateurs.",
+    noMatchTitle: "Aucune invitation pour cet e-mail",
+    noMatchBody: (couple: string) =>
+      `Cet e-mail vérifié ne figure pas sur une invitation pour ${couple}. Essayez une autre adresse ou contactez le couple.`,
+    useAnotherEmail: "Utiliser un autre e-mail",
     useEmailInstead: "J'ai déjà un email enregistré — l'utiliser plutôt",
     useNameFallback: "Rechercher par nom à la place",
     backButton: "Retour",
@@ -651,10 +660,10 @@ export const fr: Dictionary = {
       `Bonjour à tous ! 👋\n\n${couple} seraient ravis que vous confirmiez votre présence :\n${link}`,
     howItWorksTitle: "Comment ça marche",
     howItWorksBody:
-      "Partagez ce lien partout où vous joindriez tout le groupe d'un coup — une conversation WhatsApp, un email groupé, un chat familial. Les invités vérifient un téléphone + email par code à usage unique : pas de liste à parcourir, pas de lien personnel à retrouver.",
+      "Partagez ce lien partout où vous joindriez tout le groupe d'un coup — une conversation WhatsApp, un e-mail groupé, un chat familial. Les invités vérifient l'e-mail de leur invitation avec le code de connexion sécurisé d'Union : aucune liste publique et aucun lien personnel à retrouver.",
     allowNameFallbackLabel: "Autoriser aussi une recherche simple par nom",
     allowNameFallbackHint:
-      "Saute la vérification téléphone/email — les invités peuvent se retrouver par leur seul nom. Moins sûr, mais zéro friction pour les invités qui préfèrent éviter le code.",
+      "Saute la vérification de l'e-mail — les invités peuvent se retrouver par leur seul nom. Moins sûr, mais zéro friction pour les invités qui préfèrent éviter le code.",
   },
 
   offline: {

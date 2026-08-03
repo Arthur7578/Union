@@ -20,7 +20,8 @@ alter table public.weddings
   add column if not exists join_code text
     unique
     not null
-    default lower(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8));
+    default lower(substr(replace(gen_random_uuid()::text, '-', ''), 1, 24)),
+  add column if not exists allow_name_fallback boolean not null default false;
 
 -- ---------- get_wedding_by_join_code ----------
 create or replace function public.get_wedding_by_join_code(p_join_code text)
@@ -34,7 +35,8 @@ as $$
     'partner_one',   w.partner_one,
     'partner_two',   w.partner_two,
     'event_date',    w.event_date,
-    'venue_name',    w.venue_name
+    'venue_name',    w.venue_name,
+    'allow_name_fallback', w.allow_name_fallback
   )
   from public.weddings w
   where w.join_code = lower(trim(coalesce(p_join_code, '')));
@@ -74,7 +76,8 @@ begin
 
   select id into v_wedding_id
   from public.weddings
-  where join_code = lower(trim(coalesce(p_join_code, '')));
+  where join_code = lower(trim(coalesce(p_join_code, '')))
+    and allow_name_fallback = true;
 
   if v_wedding_id is null then
     return jsonb_build_object('status', 'invalid_link');

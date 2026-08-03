@@ -1,67 +1,102 @@
 "use client";
 
-import React, { useState } from "react";
-import { useLocale } from "@/lib/i18n/client";
+import React, { useCallback, useEffect, useState } from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import {
+  LAST_EMAIL_KEY,
+  sendEmailOtp,
+  verifyEmailOtp,
+} from "@/lib/auth";
+import { useLocale } from "@/lib/i18n/client";
+import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { getSupabase } from "@/lib/supabase";
 import type { JoinWeddingPreview } from "./page";
 
 type View =
-  | "phone_form"
-  | "phone_collect_email"
-  | "phone_code"
-  | "phone_not_found"
+  | "checking"
   | "email_form"
   | "email_code"
-  | "email_matches"
+  | "matches"
+  | "no_match"
   | "name_form"
   | "name_confirm"
   | "name_contact"
   | "name_not_found"
-  | "verified"
   | "redirecting";
 
-interface FindGuestByPhoneResult {
-  status: "match" | "ambiguous" | "not_found" | "invalid_link";
-  has_email?: boolean;
-}
-
-interface RequestOtpRouteResult {
-  status: "sent" | "cooldown" | "too_many_requests" | "email_required" | "not_found";
-  maskedEmail?: string;
-}
-
-interface VerifyGuestEmailOtpResult {
-  status: "verified" | "invalid_or_expired";
-  token?: string;
-  first_name?: string;
-  last_name?: string | null;
-  has_organiser_account?: boolean;
-}
-
-interface OtpMatch {
+interface GuestAccessOption {
+  guest_id: string;
+  first_name: string;
+  last_name: string | null;
   wedding_partner_one: string | null;
   wedding_partner_two: string | null;
   wedding_event_date: string | null;
-  token: string;
-  first_name: string;
-  last_name: string | null;
+  already_linked: boolean;
 }
 
-interface VerifyGuestOtpResult {
-  status: "verified" | "invalid_or_expired";
-  matches?: OtpMatch[];
-  has_organiser_account?: boolean;
+interface GuestAccessOptionsResult {
+  status: "ok" | "not_authenticated";
+  matches?: GuestAccessOption[];
 }
 
-// The existing name-only fallback (migration 0026), unchanged.
+interface ClaimGuestAccessResult {
+  status:
+    | "verified"
+    | "not_authenticated"
+    | "not_found"
+    | "already_claimed"
+    | "not_available";
+  token?: string;
+}
+
 interface FindGuestByNameResult {
   status: "match" | "ambiguous" | "not_found" | "invalid_link";
   token?: string;
   first_name?: string;
   last_name?: string | null;
 }
-type NameMatch = { token: string; first_name: string; last_name: string | null };
+
+type NameMatch = {
+  token: string;
+  first_name: string;
+  last_name: string | null;
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  minHeight: 50,
+  borderRadius: 12,
+  border: "1px solid #d8d0c8",
+  background: "#fff",
+  color: "#2b2724",
+  fontSize: 16,
+  padding: "0 14px",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const primaryButtonStyle: React.CSSProperties = {
+  width: "100%",
+  minHeight: 50,
+  border: 0,
+  borderRadius: 999,
+  background: "#2b2724",
+  color: "#fff",
+  fontSize: 15,
+  fontWeight: 600,
+  cursor: "pointer",
+  padding: "0 20px",
+};
+
+const textButtonStyle: React.CSSProperties = {
+  border: 0,
+  background: "transparent",
+  color: "#6f655f",
+  fontSize: 14,
+  textDecoration: "underline",
+  cursor: "pointer",
+  padding: 4,
+};
 
 export function JoinExperience({
   code,
@@ -71,992 +106,575 @@ export function JoinExperience({
   preview: JoinWeddingPreview;
 }) {
   const { t, locale } = useLocale();
-
-  const [view, setView] = useState<View>("phone_form");
+  const [view, setView] = useState<View>("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [matches, setMatches] = useState<GuestAccessOption[]>([]);
 
-  // Shared between the phone-bootstrap and name-fallback tiers.
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-
-  // Phone-bootstrap tier
-  const [phone, setPhone] = useState("");
-  const [collectEmailInput, setCollectEmailInput] = useState("");
-  const [bootstrapEmail, setBootstrapEmail] = useState<string | null>(null);
-  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
-  const [phoneCode, setPhoneCode] = useState("");
-
-  // Direct-email tier
-  const [directEmail, setDirectEmail] = useState("");
-  const [emailCode, setEmailCode] = useState("");
-  const [matches, setMatches] = useState<OtpMatch[]>([]);
-
-  // Name-only fallback tier (existing behaviour)
   const [nameContact, setNameContact] = useState("");
   const [nameMatch, setNameMatch] = useState<NameMatch | null>(null);
 
-  // Post-verification interstitial (only shown when there's something to
-  // say — a freshly-saved email, or a co-organiser overlap — otherwise we
-  // redirect straight through).
-  const [pendingToken, setPendingToken] = useState<string | null>(null);
-  const [pendingCoupleLabel, setPendingCoupleLabel] = useState<string | null>(null);
-  const [hasOrganiserAccount, setHasOrganiserAccount] = useState(false);
-  const [savedEmailNotice, setSavedEmailNotice] = useState(false);
-
   const partners =
     [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") ||
-    (locale === "fr" ? "les mariés" : "the couple");
+    t.guests.theCouple;
 
-  const displayDate = preview.event_date
-    ? new Date(`${preview.event_date}T00:00:00`).toLocaleDateString(
-        locale === "fr" ? "fr-FR" : "en-US",
-        { weekday: "long", year: "numeric", month: "long", day: "numeric" },
-      )
+  const dateLabel = preview.event_date
+    ? new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(new Date(`${preview.event_date}T00:00:00Z`))
     : null;
 
-  const redirectToGuest = (token: string) => {
+  const redirectToGuest = useCallback((token: string) => {
     setView("redirecting");
-    window.location.href = `/guest/${token}`;
-  };
+    window.location.assign(`/guest/${token}`);
+  }, []);
 
-  const finishVerification = (
-    token: string,
-    hasOrganiser: boolean,
-    showSavedNotice: boolean,
-    coupleLabel?: string | null,
-  ) => {
-    if (hasOrganiser || showSavedNotice) {
-      setPendingToken(token);
-      setHasOrganiserAccount(hasOrganiser);
-      setSavedEmailNotice(showSavedNotice);
-      setPendingCoupleLabel(coupleLabel ?? null);
-      setView("verified");
-    } else {
-      redirectToGuest(token);
-    }
-  };
-
-  // ---------------- Phone-bootstrap tier ----------------
-
-  const submitPhoneForm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!firstName.trim() || !phone.trim()) return;
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      const supabase = getSupabase();
-      const { data, error: rpcError } = await supabase.rpc("find_guest_by_phone", {
-        p_join_code: code,
-        p_first_name: firstName.trim(),
-        p_last_name: lastName.trim() || undefined,
-        p_phone: phone.trim(),
-      });
-      if (rpcError) throw rpcError;
-      const result = data as unknown as FindGuestByPhoneResult;
-      if (result.status === "match") {
-        if (result.has_email) {
-          await requestBootstrapOtp(undefined);
-        } else {
-          setView("phone_collect_email");
-        }
-      } else {
-        setView("phone_not_found");
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t.joinOtp.genericError);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const requestBootstrapOtp = async (emailOverride: string | undefined) => {
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      const res = await fetch("/api/guest-otp/request", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          mode: "bootstrap",
-          joinCode: code,
-          firstName: firstName.trim(),
-          lastName: lastName.trim() || undefined,
-          phone: phone.trim(),
-          email: emailOverride,
-        }),
-      });
-      const result = (await res.json()) as RequestOtpRouteResult;
-      if (result.status === "sent") {
-        if (emailOverride) setBootstrapEmail(emailOverride);
-        setMaskedEmail(result.maskedEmail ?? null);
-        setPhoneCode("");
-        setView("phone_code");
-      } else if (result.status === "email_required") {
-        setView("phone_collect_email");
-      } else if (result.status === "cooldown") {
-        setNotice(t.joinOtp.cooldown);
-      } else if (result.status === "too_many_requests") {
-        setNotice(t.joinOtp.tooManyRequests);
-      } else {
-        setView("phone_not_found");
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t.joinOtp.genericError);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const submitCollectEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!collectEmailInput.trim()) return;
-    await requestBootstrapOtp(collectEmailInput.trim());
-  };
-
-  const submitPhoneCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phoneCode.trim()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const supabase = getSupabase();
-      const { data, error: rpcError } = await supabase.rpc("verify_guest_email_otp", {
-        p_join_code: code,
-        p_first_name: firstName.trim(),
-        p_last_name: lastName.trim() || undefined,
-        p_phone: phone.trim(),
-        p_code: phoneCode.trim(),
-        p_email: bootstrapEmail ?? undefined,
-      });
-      if (rpcError) throw rpcError;
-      const result = data as unknown as VerifyGuestEmailOtpResult;
-      if (result.status === "verified" && result.token) {
-        finishVerification(
-          result.token,
-          !!result.has_organiser_account,
-          !!bootstrapEmail,
+  const claimAndContinue = useCallback(
+    async (guestId: string) => {
+      setBusy(true);
+      setError(null);
+      try {
+        const supabase = getBrowserSupabase();
+        const { data, error: rpcError } = await supabase.rpc(
+          "claim_guest_access",
+          { p_guest_id: guestId },
         );
-      } else {
-        setError(t.joinOtp.invalidOrExpired);
+        if (rpcError) throw rpcError;
+
+        const result = data as unknown as ClaimGuestAccessResult;
+        if (result.status !== "verified" || !result.token) {
+          throw new Error(t.joinOtp.accessUnavailable);
+        }
+        redirectToGuest(result.token);
+      } catch (reason) {
+        setError(
+          reason instanceof Error ? reason.message : t.joinOtp.genericError,
+        );
+        setBusy(false);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t.joinOtp.genericError);
+    },
+    [redirectToGuest, t],
+  );
+
+  const loadGuestOptions = useCallback(async () => {
+    const supabase = getBrowserSupabase();
+    const { data, error: rpcError } = await supabase.rpc(
+      "get_guest_access_options",
+      { p_join_code: code },
+    );
+    if (rpcError) throw rpcError;
+
+    const result = data as unknown as GuestAccessOptionsResult;
+    const found = result.matches ?? [];
+    if (result.status !== "ok" || found.length === 0) {
+      setView("no_match");
+      return;
+    }
+    if (found.length === 1) {
+      await claimAndContinue(found[0].guest_id);
+      return;
+    }
+    setMatches(found);
+    setView("matches");
+  }, [claimAndContinue, code]);
+
+  useEffect(() => {
+    let active = true;
+
+    try {
+      const lastEmail = window.localStorage.getItem(LAST_EMAIL_KEY);
+      if (lastEmail) setEmail(lastEmail);
+    } catch {
+      // Prefill is optional.
+    }
+
+    void getBrowserSupabase()
+      .auth.getSession()
+      .then(async ({ data }) => {
+        if (!active) return;
+        if (!data.session) {
+          setView("email_form");
+          return;
+        }
+        try {
+          await loadGuestOptions();
+        } catch {
+          if (active) setView("email_form");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [loadGuestOptions]);
+
+  const requestEmailCode = async () => {
+    if (!email.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await sendEmailOtp(email);
+      setOtp("");
+      setView("email_code");
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : t.joinOtp.genericError,
+      );
     } finally {
       setBusy(false);
     }
   };
 
-  const startOverPhone = () => {
-    setFirstName("");
-    setLastName("");
-    setPhone("");
-    setCollectEmailInput("");
-    setBootstrapEmail(null);
-    setMaskedEmail(null);
-    setPhoneCode("");
-    setError(null);
-    setNotice(null);
-    setView("phone_form");
+  const submitEmail = (event: React.FormEvent) => {
+    event.preventDefault();
+    void requestEmailCode();
   };
 
-  // ---------------- Direct-email tier ----------------
-
-  const switchToEmailTier = () => {
+  const submitOtp = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!otp.trim()) return;
+    setBusy(true);
     setError(null);
-    setNotice(null);
+    try {
+      await verifyEmailOtp(email, otp);
+      await loadGuestOptions();
+    } catch {
+      setError(t.joinOtp.invalidOrExpired);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resetEmail = () => {
+    setOtp("");
+    setMatches([]);
+    setError(null);
     setView("email_form");
   };
 
-  const requestDirectOtp = async () => {
-    if (!directEmail.trim()) return;
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      const res = await fetch("/api/guest-otp/request", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mode: "direct", email: directEmail.trim() }),
-      });
-      const result = (await res.json()) as RequestOtpRouteResult;
-      if (result.status === "cooldown") {
-        setNotice(t.joinOtp.cooldown);
-      } else if (result.status === "too_many_requests") {
-        setNotice(t.joinOtp.tooManyRequests);
-      } else {
-        setEmailCode("");
-        setView("email_code");
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t.joinOtp.genericError);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const submitEmailForm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await requestDirectOtp();
-  };
-
-  const submitEmailCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailCode.trim()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const supabase = getSupabase();
-      const { data, error: rpcError } = await supabase.rpc("verify_guest_otp", {
-        p_email: directEmail.trim(),
-        p_code: emailCode.trim(),
-      });
-      if (rpcError) throw rpcError;
-      const result = data as unknown as VerifyGuestOtpResult;
-      if (result.status !== "verified") {
-        setError(t.joinOtp.invalidOrExpired);
-        return;
-      }
-      const found = result.matches ?? [];
-      setHasOrganiserAccount(!!result.has_organiser_account);
-      if (found.length === 1) {
-        const m = found[0];
-        const coupleLabel =
-          [m.wedding_partner_one, m.wedding_partner_two].filter(Boolean).join(" & ") ||
-          partners;
-        finishVerification(m.token, !!result.has_organiser_account, false, coupleLabel);
-      } else if (found.length > 1) {
-        setMatches(found);
-        setView("email_matches");
-      } else {
-        setError(t.joinOtp.genericError);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t.joinOtp.genericError);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const startOverEmail = () => {
-    setDirectEmail("");
-    setEmailCode("");
-    setMatches([]);
-    setError(null);
-    setNotice(null);
-    setView("phone_form");
-  };
-
-  // ---------------- Name-only fallback tier (existing 0026 flow) ----------------
-
-  const switchToNameTier = () => {
-    setError(null);
-    setNotice(null);
-    setView("name_form");
-  };
-
-  const submitNameForm = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitName = async (
+    event: React.FormEvent,
+    contact?: string,
+  ) => {
+    event.preventDefault();
     if (!firstName.trim()) return;
     setBusy(true);
     setError(null);
     try {
       const supabase = getSupabase();
-      const { data, error: rpcError } = await supabase.rpc("find_guest_by_name", {
-        p_join_code: code,
-        p_first_name: firstName.trim(),
-        p_last_name: lastName.trim() || undefined,
-      });
+      const { data, error: rpcError } = await supabase.rpc(
+        "find_guest_by_name",
+        {
+          p_join_code: code,
+          p_first_name: firstName.trim(),
+          p_last_name: lastName.trim() || undefined,
+          p_contact: contact?.trim() || undefined,
+        },
+      );
       if (rpcError) throw rpcError;
+
       const result = data as unknown as FindGuestByNameResult;
-      if (result.status === "match") {
+      if (result.status === "match" && result.token && result.first_name) {
         setNameMatch({
-          token: result.token!,
-          first_name: result.first_name!,
+          token: result.token,
+          first_name: result.first_name,
           last_name: result.last_name ?? null,
         });
         setView("name_confirm");
-      } else if (result.status === "ambiguous") {
+      } else if (result.status === "ambiguous" && !contact) {
         setView("name_contact");
       } else {
         setView("name_not_found");
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t.join.errorGeneric);
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : t.join.errorGeneric,
+      );
     } finally {
       setBusy(false);
     }
   };
 
-  const submitNameContact = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nameContact.trim()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const supabase = getSupabase();
-      const { data, error: rpcError } = await supabase.rpc("find_guest_by_name", {
-        p_join_code: code,
-        p_first_name: firstName.trim(),
-        p_last_name: lastName.trim() || undefined,
-        p_contact: nameContact.trim(),
-      });
-      if (rpcError) throw rpcError;
-      const result = data as unknown as FindGuestByNameResult;
-      if (result.status === "match") {
-        setNameMatch({
-          token: result.token!,
-          first_name: result.first_name!,
-          last_name: result.last_name ?? null,
-        });
-        setView("name_confirm");
-      } else {
-        setView("name_not_found");
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t.join.errorGeneric);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const confirmNameYes = () => {
-    if (!nameMatch) return;
-    redirectToGuest(nameMatch.token);
-  };
-
-  const startOverName = () => {
-    setNameMatch(null);
+  const resetName = () => {
+    setFirstName("");
+    setLastName("");
     setNameContact("");
+    setNameMatch(null);
     setError(null);
     setView("name_form");
   };
 
-  // ---------------- shared style helpers ----------------
+  const renderContent = () => {
+    if (view === "checking" || view === "redirecting") {
+      return (
+        <div style={{ textAlign: "center", color: "#756b65", padding: "28px 0" }}>
+          {view === "checking"
+            ? t.joinOtp.checkingSession
+            : t.join.redirecting}
+        </div>
+      );
+    }
 
-  const cardStyle: React.CSSProperties = {
-    maxWidth: 460,
-    width: "100%",
-    background: "white",
-    padding: "40px 32px",
-    borderRadius: 24,
-    boxShadow: "0 15px 45px rgba(43, 39, 36, 0.05)",
-  };
-
-  const fieldStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "14px 16px",
-    borderRadius: 12,
-    border: "1px solid #e1dec3",
-    fontFamily: "'Instrument Sans', sans-serif",
-    fontSize: 15,
-    background: "#fbfbf8",
-    color: "#2b2724",
-    marginBottom: 14,
-  };
-
-  const codeFieldStyle: React.CSSProperties = {
-    ...fieldStyle,
-    letterSpacing: "0.35em",
-    textAlign: "center",
-    fontVariantNumeric: "tabular-nums",
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    width: "100%",
-    padding: 16,
-    background: "#43353a",
-    color: "white",
-    border: "none",
-    borderRadius: 14,
-    fontWeight: 600,
-    fontSize: 15,
-    cursor: "pointer",
-  };
-
-  const secondaryButtonStyle: React.CSSProperties = {
-    flex: 1,
-    padding: 16,
-    background: "#fbfbf8",
-    color: "#43353a",
-    border: "1px solid #e1dec3",
-    borderRadius: 14,
-    fontWeight: 600,
-    fontSize: 15,
-    cursor: "pointer",
-  };
-
-  const linkButtonStyle: React.CSSProperties = {
-    background: "transparent",
-    border: "none",
-    color: "#8a817c",
-    fontWeight: 600,
-    fontSize: 13,
-    cursor: "pointer",
-    padding: 0,
-    textDecoration: "underline",
-  };
-
-  const h2Style: React.CSSProperties = {
-    fontFamily: "'Cormorant Garamond', serif",
-    fontSize: 24,
-    fontWeight: 600,
-    marginTop: 0,
-    marginBottom: 6,
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    fontWeight: 600,
-    fontSize: 13,
-    marginBottom: 6,
-  };
-
-  const disabled = (ready: boolean) => busy || !ready;
-
-  return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#f4f1ea",
-        fontFamily: "'Instrument Sans', sans-serif",
-        padding: 24,
-        color: "#2b2724",
-      }}
-    >
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Instrument+Sans:wght@300;400;600;700&display=swap');`,
-        }}
-      />
-      <div style={{ position: "absolute", top: 20, right: 24 }}>
-        <LanguageSwitcher compact />
-      </div>
-
-      <div style={{ textAlign: "center", marginBottom: 28 }}>
-        <p
-          style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: 14,
-            textTransform: "uppercase",
-            letterSpacing: 2,
-            color: "#b07c82",
-            fontWeight: 600,
-          }}
-        >
-          {t.join.heroKicker}
-        </p>
-        <h1
-          style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: 44,
-            fontWeight: 300,
-            letterSpacing: -1,
-            margin: "4px 0 8px",
-          }}
-        >
-          {partners}
-        </h1>
-        {displayDate && (
-          <p
-            style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 18,
-              color: "#8a817c",
-              fontStyle: "italic",
-              margin: 0,
-            }}
-          >
-            {displayDate}
-            {preview.venue_name ? ` • ${preview.venue_name}` : ""}
-          </p>
-        )}
-      </div>
-
-      <div style={cardStyle}>
-        {/* ---------------- Phone-bootstrap tier ---------------- */}
-
-        {view === "phone_form" && (
-          <form onSubmit={submitPhoneForm}>
-            <h2 style={h2Style}>{t.joinOtp.title}</h2>
-            <p style={{ color: "#8a817c", fontSize: 14, marginBottom: 20 }}>
-              {t.joinOtp.subtitle}
-            </p>
-            <label htmlFor="jf-first" style={labelStyle}>
-              {t.join.firstNameLabel}
-            </label>
-            <input
-              id="jf-first"
-              autoFocus
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              style={fieldStyle}
-            />
-            <label htmlFor="jf-last" style={labelStyle}>
-              {t.join.lastNameLabel}
-            </label>
-            <input
-              id="jf-last"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              style={fieldStyle}
-            />
-            <label htmlFor="jf-phone" style={labelStyle}>
-              {t.joinOtp.phoneLabel}
-            </label>
-            <input
-              id="jf-phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder={t.joinOtp.phonePlaceholder}
-              style={{ ...fieldStyle, marginBottom: 20 }}
-            />
-            {error && (
-              <p style={{ color: "#b0524f", fontSize: 13, marginBottom: 14 }}>{error}</p>
-            )}
-            <button
-              type="submit"
-              disabled={disabled(!!firstName.trim() && !!phone.trim())}
-              style={{
-                ...buttonStyle,
-                opacity: disabled(!!firstName.trim() && !!phone.trim()) ? 0.6 : 1,
-                cursor: disabled(!!firstName.trim() && !!phone.trim())
-                  ? "not-allowed"
-                  : "pointer",
-              }}
-            >
-              {busy ? t.joinOtp.searching : t.joinOtp.continueButton}
-            </button>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                marginTop: 18,
-                textAlign: "center",
-              }}
-            >
-              <button type="button" onClick={switchToEmailTier} style={linkButtonStyle}>
-                {t.joinOtp.useEmailInstead}
-              </button>
-              {preview.allow_name_fallback && (
-                <button type="button" onClick={switchToNameTier} style={linkButtonStyle}>
-                  {t.joinOtp.useNameFallback}
-                </button>
-              )}
-            </div>
-          </form>
-        )}
-
-        {view === "phone_collect_email" && (
-          <form onSubmit={submitCollectEmail}>
-            <h2 style={h2Style}>{t.joinOtp.emailCollectTitle}</h2>
-            <p style={{ color: "#8a817c", fontSize: 14, marginBottom: 20 }}>
-              {t.joinOtp.emailCollectSubtitle}
-            </p>
-            <label htmlFor="jf-collect-email" style={labelStyle}>
-              {t.joinOtp.emailLabel}
-            </label>
-            <input
-              id="jf-collect-email"
-              autoFocus
-              type="email"
-              value={collectEmailInput}
-              onChange={(e) => setCollectEmailInput(e.target.value)}
-              placeholder={t.joinOtp.emailPlaceholder}
-              style={{ ...fieldStyle, marginBottom: 20 }}
-            />
-            {notice && (
-              <p style={{ color: "#b8860b", fontSize: 13, marginBottom: 14 }}>{notice}</p>
-            )}
-            {error && (
-              <p style={{ color: "#b0524f", fontSize: 13, marginBottom: 14 }}>{error}</p>
-            )}
-            <button
-              type="submit"
-              disabled={disabled(!!collectEmailInput.trim())}
-              style={{
-                ...buttonStyle,
-                opacity: disabled(!!collectEmailInput.trim()) ? 0.6 : 1,
-                cursor: disabled(!!collectEmailInput.trim()) ? "not-allowed" : "pointer",
-              }}
-            >
+    if (view === "email_form") {
+      return (
+        <>
+          <h2 style={titleStyle}>{t.joinOtp.title}</h2>
+          <p style={bodyStyle}>{t.joinOtp.subtitle}</p>
+          <form onSubmit={submitEmail} style={{ display: "grid", gap: 16 }}>
+            <FieldLabel label={t.joinOtp.emailLabel}>
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder={t.joinOtp.emailPlaceholder}
+                required
+                style={inputStyle}
+              />
+            </FieldLabel>
+            <button disabled={busy} style={primaryButtonStyle}>
               {busy ? t.joinOtp.searching : t.joinOtp.sendCodeButton}
             </button>
           </form>
-        )}
-
-        {view === "phone_code" && (
-          <form onSubmit={submitPhoneCode}>
-            <h2 style={h2Style}>{t.joinOtp.codeLabel}</h2>
-            {maskedEmail && (
-              <p style={{ color: "#8a817c", fontSize: 14, marginBottom: 20 }}>
-                {t.joinOtp.codeSentTo(maskedEmail)}
-              </p>
-            )}
-            <input
-              autoFocus
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={6}
-              value={phoneCode}
-              onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, ""))}
-              placeholder={t.joinOtp.codePlaceholder}
-              style={{ ...codeFieldStyle, marginBottom: 20 }}
-            />
-            {error && (
-              <p style={{ color: "#b0524f", fontSize: 13, marginBottom: 14 }}>{error}</p>
-            )}
-            <button
-              type="submit"
-              disabled={disabled(phoneCode.length === 6)}
-              style={{
-                ...buttonStyle,
-                opacity: disabled(phoneCode.length === 6) ? 0.6 : 1,
-                cursor: disabled(phoneCode.length === 6) ? "not-allowed" : "pointer",
-              }}
-            >
-              {busy ? t.joinOtp.verifying : t.joinOtp.verifyButton}
-            </button>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: 14,
-              }}
-            >
-              <button type="button" onClick={startOverPhone} style={linkButtonStyle}>
-                {t.joinOtp.startOverButton}
-              </button>
-              <button
-                type="button"
-                onClick={() => requestBootstrapOtp(bootstrapEmail ?? undefined)}
-                disabled={busy}
-                style={linkButtonStyle}
-              >
-                {t.joinOtp.resendButton}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {view === "phone_not_found" && (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>🤔</div>
-            <h2 style={h2Style}>{t.join.notFoundTitle}</h2>
-            <p style={{ color: "#8a817c", fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
-              {t.join.notFoundBody(partners)}
-            </p>
-            <button type="button" onClick={startOverPhone} style={buttonStyle}>
-              {t.join.tryAgainButton}
-            </button>
-          </div>
-        )}
-
-        {/* ---------------- Direct-email tier ---------------- */}
-
-        {view === "email_form" && (
-          <form onSubmit={submitEmailForm}>
-            <h2 style={h2Style}>{t.joinOtp.emailCollectTitle}</h2>
-            <label htmlFor="jf-direct-email" style={labelStyle}>
-              {t.joinOtp.emailLabel}
-            </label>
-            <input
-              id="jf-direct-email"
-              autoFocus
-              type="email"
-              value={directEmail}
-              onChange={(e) => setDirectEmail(e.target.value)}
-              placeholder={t.joinOtp.emailPlaceholder}
-              style={{ ...fieldStyle, marginBottom: 20 }}
-            />
-            {notice && (
-              <p style={{ color: "#b8860b", fontSize: 13, marginBottom: 14 }}>{notice}</p>
-            )}
-            {error && (
-              <p style={{ color: "#b0524f", fontSize: 13, marginBottom: 14 }}>{error}</p>
-            )}
-            <button
-              type="submit"
-              disabled={disabled(!!directEmail.trim())}
-              style={{
-                ...buttonStyle,
-                opacity: disabled(!!directEmail.trim()) ? 0.6 : 1,
-                cursor: disabled(!!directEmail.trim()) ? "not-allowed" : "pointer",
-              }}
-            >
-              {busy ? t.joinOtp.searching : t.joinOtp.sendCodeButton}
-            </button>
-            <div style={{ textAlign: "center", marginTop: 18 }}>
-              <button type="button" onClick={startOverEmail} style={linkButtonStyle}>
-                {t.joinOtp.backButton}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {view === "email_code" && (
-          <form onSubmit={submitEmailCode}>
-            <h2 style={h2Style}>{t.joinOtp.codeLabel}</h2>
-            <p style={{ color: "#8a817c", fontSize: 14, marginBottom: 20 }}>
-              {t.joinOtp.codeSentTo(directEmail.trim())}
-            </p>
-            <input
-              autoFocus
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={6}
-              value={emailCode}
-              onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, ""))}
-              placeholder={t.joinOtp.codePlaceholder}
-              style={{ ...codeFieldStyle, marginBottom: 20 }}
-            />
-            {error && (
-              <p style={{ color: "#b0524f", fontSize: 13, marginBottom: 14 }}>{error}</p>
-            )}
-            <button
-              type="submit"
-              disabled={disabled(emailCode.length === 6)}
-              style={{
-                ...buttonStyle,
-                opacity: disabled(emailCode.length === 6) ? 0.6 : 1,
-                cursor: disabled(emailCode.length === 6) ? "not-allowed" : "pointer",
-              }}
-            >
-              {busy ? t.joinOtp.verifying : t.joinOtp.verifyButton}
-            </button>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: 14,
-              }}
-            >
-              <button type="button" onClick={startOverEmail} style={linkButtonStyle}>
-                {t.joinOtp.startOverButton}
-              </button>
-              <button
-                type="button"
-                onClick={() => requestDirectOtp()}
-                disabled={busy}
-                style={linkButtonStyle}
-              >
-                {t.joinOtp.resendButton}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {view === "email_matches" && (
-          <div>
-            <h2 style={h2Style}>{t.joinOtp.matchesTitle}</h2>
-            {hasOrganiserAccount && (
-              <p style={{ color: "#8a817c", fontSize: 13, marginBottom: 16 }}>
-                {t.joinOtp.organiserHintText}{" "}
-                <a href="/sign-in" style={{ color: "#43353a", fontWeight: 600 }}>
-                  {t.joinOtp.organiserHintLink}
-                </a>
-              </p>
-            )}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {matches.map((m) => {
-                const coupleLabel =
-                  [m.wedding_partner_one, m.wedding_partner_two]
-                    .filter(Boolean)
-                    .join(" & ") || partners;
-                return (
-                  <button
-                    key={m.token}
-                    type="button"
-                    onClick={() => redirectToGuest(m.token)}
-                    style={{
-                      ...secondaryButtonStyle,
-                      textAlign: "left",
-                      width: "100%",
-                    }}
-                  >
-                    {t.joinOtp.matchLine(coupleLabel, m.first_name)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ---------------- Verified interstitial (shared) ---------------- */}
-
-        {view === "verified" && pendingToken && (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>✅</div>
-            {pendingCoupleLabel && (
-              <h2 style={h2Style}>{pendingCoupleLabel}</h2>
-            )}
-            {savedEmailNotice && (
-              <p style={{ color: "#8a817c", fontSize: 14, marginBottom: 14 }}>
-                {t.joinOtp.savedEmailNotice}
-              </p>
-            )}
-            {hasOrganiserAccount && (
-              <p style={{ color: "#8a817c", fontSize: 13, marginBottom: 20 }}>
-                {t.joinOtp.organiserHintText}{" "}
-                <a href="/sign-in" style={{ color: "#43353a", fontWeight: 600 }}>
-                  {t.joinOtp.organiserHintLink}
-                </a>
-              </p>
-            )}
+          <p style={securityStyle}>{t.joinOtp.securityNote}</p>
+          {preview.allow_name_fallback && (
             <button
               type="button"
-              onClick={() => redirectToGuest(pendingToken)}
-              style={buttonStyle}
+              onClick={() => {
+                setError(null);
+                setView("name_form");
+              }}
+              style={textButtonStyle}
             >
-              {t.joinOtp.continueToInvitation}
+              {t.joinOtp.useNameFallback}
+            </button>
+          )}
+        </>
+      );
+    }
+
+    if (view === "email_code") {
+      return (
+        <>
+          <h2 style={titleStyle}>{t.joinOtp.emailCollectTitle}</h2>
+          <p style={bodyStyle}>{t.joinOtp.codeSentTo(email)}</p>
+          <form onSubmit={submitOtp} style={{ display: "grid", gap: 16 }}>
+            <FieldLabel label={t.joinOtp.codeLabel}>
+              <input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={otp}
+                onChange={(event) => setOtp(event.target.value)}
+                placeholder={t.joinOtp.codePlaceholder}
+                required
+                style={{
+                  ...inputStyle,
+                  textAlign: "center",
+                  letterSpacing: "0.25em",
+                  fontSize: 20,
+                }}
+              />
+            </FieldLabel>
+            <button disabled={busy} style={primaryButtonStyle}>
+              {busy ? t.joinOtp.verifying : t.joinOtp.verifyButton}
+            </button>
+          </form>
+          <div style={linkRowStyle}>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void requestEmailCode()}
+              style={textButtonStyle}
+            >
+              {t.joinOtp.resendButton}
+            </button>
+            <button type="button" onClick={resetEmail} style={textButtonStyle}>
+              {t.joinOtp.useAnotherEmail}
             </button>
           </div>
-        )}
+        </>
+      );
+    }
 
-        {/* ---------------- Name-only fallback tier (existing) ---------------- */}
+    if (view === "matches") {
+      return (
+        <>
+          <h2 style={titleStyle}>{t.joinOtp.matchesTitle}</h2>
+          <p style={bodyStyle}>{t.joinOtp.matchesSubtitle}</p>
+          <div style={{ display: "grid", gap: 10 }}>
+            {matches.map((match) => {
+              const couple =
+                [match.wedding_partner_one, match.wedding_partner_two]
+                  .filter(Boolean)
+                  .join(" & ") || partners;
+              return (
+                <button
+                  key={match.guest_id}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void claimAndContinue(match.guest_id)}
+                  style={{ ...primaryButtonStyle, minHeight: 56 }}
+                >
+                  {t.joinOtp.matchLine(couple, match.first_name)}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      );
+    }
 
-        {view === "name_form" && (
-          <form onSubmit={submitNameForm}>
-            <h2 style={h2Style}>{t.join.namePromptTitle}</h2>
-            <p style={{ color: "#8a817c", fontSize: 14, marginBottom: 20 }}>
-              {t.join.namePromptSubtitle}
-            </p>
-            <label htmlFor="jn-first" style={labelStyle}>
-              {t.join.firstNameLabel}
-            </label>
-            <input
-              id="jn-first"
-              autoFocus
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              style={fieldStyle}
-            />
-            <label htmlFor="jn-last" style={labelStyle}>
-              {t.join.lastNameLabel}
-            </label>
-            <input
-              id="jn-last"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              style={{ ...fieldStyle, marginBottom: 20 }}
-            />
-            {error && (
-              <p style={{ color: "#b0524f", fontSize: 13, marginBottom: 14 }}>{error}</p>
-            )}
+    if (view === "no_match") {
+      return (
+        <>
+          <h2 style={titleStyle}>{t.joinOtp.noMatchTitle}</h2>
+          <p style={bodyStyle}>{t.joinOtp.noMatchBody(partners)}</p>
+          <button type="button" onClick={resetEmail} style={primaryButtonStyle}>
+            {t.joinOtp.useAnotherEmail}
+          </button>
+          {preview.allow_name_fallback && (
             <button
-              type="submit"
-              disabled={disabled(!!firstName.trim())}
-              style={{
-                ...buttonStyle,
-                opacity: disabled(!!firstName.trim()) ? 0.6 : 1,
-                cursor: disabled(!!firstName.trim()) ? "not-allowed" : "pointer",
-              }}
+              type="button"
+              onClick={() => setView("name_form")}
+              style={textButtonStyle}
             >
+              {t.joinOtp.useNameFallback}
+            </button>
+          )}
+        </>
+      );
+    }
+
+    if (view === "name_form") {
+      return (
+        <>
+          <h2 style={titleStyle}>{t.join.namePromptTitle}</h2>
+          <p style={bodyStyle}>{t.join.namePromptSubtitle}</p>
+          <form
+            onSubmit={(event) => void submitName(event)}
+            style={{ display: "grid", gap: 14 }}
+          >
+            <FieldLabel label={t.join.firstNameLabel}>
+              <input
+                autoComplete="given-name"
+                value={firstName}
+                onChange={(event) => setFirstName(event.target.value)}
+                required
+                style={inputStyle}
+              />
+            </FieldLabel>
+            <FieldLabel label={t.join.lastNameLabel}>
+              <input
+                autoComplete="family-name"
+                value={lastName}
+                onChange={(event) => setLastName(event.target.value)}
+                style={inputStyle}
+              />
+            </FieldLabel>
+            <button disabled={busy} style={primaryButtonStyle}>
               {busy ? t.join.searching : t.join.continueButton}
             </button>
-            <div style={{ textAlign: "center", marginTop: 18 }}>
-              <button
-                type="button"
-                onClick={() => setView("phone_form")}
-                style={linkButtonStyle}
-              >
-                {t.joinOtp.backButton}
-              </button>
-            </div>
           </form>
-        )}
+          <button type="button" onClick={resetEmail} style={textButtonStyle}>
+            {t.joinOtp.backButton}
+          </button>
+        </>
+      );
+    }
 
-        {view === "name_confirm" && nameMatch && (
-          <div style={{ textAlign: "center" }}>
-            <h2 style={h2Style}>{t.join.confirmTitle}</h2>
-            <p
-              style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: 28,
-                fontWeight: 600,
-                color: "#b07c82",
-                margin: "8px 0 24px",
-              }}
-            >
-              {nameMatch.first_name} {nameMatch.last_name ?? ""}
-            </p>
-            <div style={{ display: "flex", gap: 12 }}>
-              <button type="button" onClick={startOverName} style={secondaryButtonStyle}>
-                {t.join.noButton}
-              </button>
-              <button
-                type="button"
-                onClick={confirmNameYes}
-                style={{ ...buttonStyle, flex: 1 }}
-              >
-                {t.join.yesButton}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {view === "name_contact" && (
-          <form onSubmit={submitNameContact}>
-            <h2 style={h2Style}>{t.join.contactTitle}</h2>
-            <p style={{ color: "#8a817c", fontSize: 14, marginBottom: 20 }}>
-              {t.join.contactSubtitle}
-            </p>
-            <label htmlFor="jn-contact" style={labelStyle}>
-              {t.join.contactLabel}
-            </label>
-            <input
-              id="jn-contact"
-              autoFocus
-              value={nameContact}
-              onChange={(e) => setNameContact(e.target.value)}
-              placeholder={t.join.contactPlaceholder}
-              style={{ ...fieldStyle, marginBottom: 20 }}
-            />
-            {error && (
-              <p style={{ color: "#b0524f", fontSize: 13, marginBottom: 14 }}>{error}</p>
-            )}
-            <button
-              type="submit"
-              disabled={disabled(!!nameContact.trim())}
-              style={{
-                ...buttonStyle,
-                opacity: disabled(!!nameContact.trim()) ? 0.6 : 1,
-                cursor: disabled(!!nameContact.trim()) ? "not-allowed" : "pointer",
-              }}
-            >
+    if (view === "name_contact") {
+      return (
+        <>
+          <h2 style={titleStyle}>{t.join.contactTitle}</h2>
+          <p style={bodyStyle}>{t.join.contactSubtitle}</p>
+          <form
+            onSubmit={(event) => void submitName(event, nameContact)}
+            style={{ display: "grid", gap: 16 }}
+          >
+            <FieldLabel label={t.join.contactLabel}>
+              <input
+                value={nameContact}
+                onChange={(event) => setNameContact(event.target.value)}
+                placeholder={t.join.contactPlaceholder}
+                required
+                style={inputStyle}
+              />
+            </FieldLabel>
+            <button disabled={busy} style={primaryButtonStyle}>
               {busy ? t.join.searching : t.join.contactSubmit}
             </button>
           </form>
-        )}
+        </>
+      );
+    }
 
-        {view === "name_not_found" && (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>🤔</div>
-            <h2 style={h2Style}>{t.join.notFoundTitle}</h2>
-            <p style={{ color: "#8a817c", fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
-              {t.join.notFoundBody(partners)}
-            </p>
-            <button type="button" onClick={startOverName} style={buttonStyle}>
-              {t.join.tryAgainButton}
-            </button>
-          </div>
-        )}
+    if (view === "name_confirm" && nameMatch) {
+      const fullName = [nameMatch.first_name, nameMatch.last_name]
+        .filter(Boolean)
+        .join(" ");
+      return (
+        <>
+          <h2 style={titleStyle}>{t.join.confirmTitle}</h2>
+          <p
+            style={{
+              ...bodyStyle,
+              color: "#2b2724",
+              fontFamily: "var(--font-serif)",
+              fontSize: 27,
+            }}
+          >
+            {fullName}
+          </p>
+          <button
+            type="button"
+            onClick={() => redirectToGuest(nameMatch.token)}
+            style={primaryButtonStyle}
+          >
+            {t.join.yesButton}
+          </button>
+          <button type="button" onClick={resetName} style={textButtonStyle}>
+            {t.join.noButton}
+          </button>
+        </>
+      );
+    }
 
-        {view === "redirecting" && (
-          <div style={{ textAlign: "center", padding: "12px 0" }}>
-            <p style={{ color: "#8a817c", fontSize: 14 }}>{t.join.redirecting}</p>
-          </div>
-        )}
+    return (
+      <>
+        <h2 style={titleStyle}>{t.join.notFoundTitle}</h2>
+        <p style={bodyStyle}>{t.join.notFoundBody(partners)}</p>
+        <button type="button" onClick={resetName} style={primaryButtonStyle}>
+          {t.join.tryAgainButton}
+        </button>
+      </>
+    );
+  };
+
+  return (
+    <main style={pageStyle}>
+      <div style={{ position: "absolute", top: 20, right: 20 }}>
+        <LanguageSwitcher />
       </div>
+      <section style={cardStyle}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={kickerStyle}>{t.join.heroKicker}</div>
+          <h1 style={heroStyle}>{partners}</h1>
+          {(dateLabel || preview.venue_name) && (
+            <p style={{ ...bodyStyle, marginBottom: 0 }}>
+              {[dateLabel, preview.venue_name].filter(Boolean).join(" · ")}
+            </p>
+          )}
+        </div>
+        <div style={{ borderTop: "1px solid #eee8e1", paddingTop: 28 }}>
+          {error && <div style={errorStyle}>{error}</div>}
+          {renderContent()}
+        </div>
+      </section>
     </main>
   );
 }
+
+function FieldLabel({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label style={{ display: "grid", gap: 7, textAlign: "left" }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: "#4f4742" }}>
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+const pageStyle: React.CSSProperties = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "#f4f1ea",
+  padding: "80px 20px 32px",
+  color: "#2b2724",
+};
+
+const cardStyle: React.CSSProperties = {
+  width: "100%",
+  maxWidth: 480,
+  borderRadius: 24,
+  background: "#fff",
+  boxShadow: "0 18px 55px rgba(43, 39, 36, 0.08)",
+  padding: "38px 32px",
+  boxSizing: "border-box",
+};
+
+const kickerStyle: React.CSSProperties = {
+  color: "#9a7d66",
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  marginBottom: 10,
+};
+
+const heroStyle: React.CSSProperties = {
+  fontFamily: "var(--font-serif)",
+  fontSize: 38,
+  lineHeight: 1.05,
+  margin: "0 0 12px",
+  fontWeight: 600,
+};
+
+const titleStyle: React.CSSProperties = {
+  fontFamily: "var(--font-serif)",
+  fontSize: 29,
+  lineHeight: 1.15,
+  margin: "0 0 10px",
+  fontWeight: 600,
+  textAlign: "center",
+};
+
+const bodyStyle: React.CSSProperties = {
+  color: "#756b65",
+  fontSize: 15,
+  lineHeight: 1.55,
+  textAlign: "center",
+  margin: "0 0 22px",
+};
+
+const securityStyle: React.CSSProperties = {
+  color: "#968b84",
+  fontSize: 12,
+  lineHeight: 1.45,
+  textAlign: "center",
+  margin: "14px 0 6px",
+};
+
+const linkRowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexWrap: "wrap",
+  gap: 12,
+  marginTop: 12,
+};
+
+const errorStyle: React.CSSProperties = {
+  background: "#fff1ed",
+  border: "1px solid #f0c6b9",
+  color: "#8c3f2f",
+  padding: "11px 13px",
+  borderRadius: 10,
+  fontSize: 13,
+  marginBottom: 18,
+};

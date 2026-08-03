@@ -174,36 +174,6 @@ export type Database = {
           },
         ]
       }
-      guest_otp_codes: {
-        Row: {
-          attempt_count: number
-          code_hash: string
-          consumed_at: string | null
-          contact_key: string
-          expires_at: string
-          id: string
-          requested_at: string
-        }
-        Insert: {
-          attempt_count?: number
-          code_hash: string
-          consumed_at?: string | null
-          contact_key: string
-          expires_at: string
-          id?: string
-          requested_at?: string
-        }
-        Update: {
-          attempt_count?: number
-          code_hash?: string
-          consumed_at?: string | null
-          contact_key?: string
-          expires_at?: string
-          id?: string
-          requested_at?: string
-        }
-        Relationships: []
-      }
       guest_relationships: {
         Row: {
           created_at: string
@@ -698,13 +668,9 @@ export type Database = {
         }
         Returns: Json
       }
-      find_guest_by_phone: {
-        Args: {
-          p_first_name: string
-          p_join_code: string
-          p_last_name?: string
-          p_phone: string
-        }
+      claim_guest_access: { Args: { p_guest_id: string }; Returns: Json }
+      get_guest_access_options: {
+        Args: { p_join_code?: string }
         Returns: Json
       }
       get_invitation: { Args: { p_token: string }; Returns: Json }
@@ -725,17 +691,6 @@ export type Database = {
         }
         Returns: Json
       }
-      request_guest_email_otp: {
-        Args: {
-          p_email?: string
-          p_first_name: string
-          p_join_code: string
-          p_last_name?: string
-          p_phone: string
-        }
-        Returns: Json
-      }
-      request_guest_otp: { Args: { p_email: string }; Returns: Json }
       rsvp_merge_into: {
         Args: { p_target_guest_id: string; p_token: string }
         Returns: Json
@@ -775,21 +730,6 @@ export type Database = {
       unhide_duplicate_cluster: {
         Args: { p_guest_ids: string[]; p_wedding_id: string }
         Returns: undefined
-      }
-      verify_guest_email_otp: {
-        Args: {
-          p_code: string
-          p_email?: string
-          p_first_name: string
-          p_join_code: string
-          p_last_name?: string
-          p_phone: string
-        }
-        Returns: Json
-      }
-      verify_guest_otp: {
-        Args: { p_code: string; p_email: string }
-        Returns: Json
       }
     }
     Enums: {
