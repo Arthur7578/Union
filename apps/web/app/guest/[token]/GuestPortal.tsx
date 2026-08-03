@@ -298,6 +298,18 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     { weekday: "long", year: "numeric", month: "long", day: "numeric" }
   ) : "Saturday, September 20, 2026";
 
+  // What the couple has chosen to share so far — "hidden" strips the
+  // address entirely (venue name still shows, if set), "partial" only
+  // reveals postal code + city so guests can start planning travel.
+  const address = invitation.wedding.address;
+  const addressLines = address
+    ? [address.line, [address.postal_code, address.city].filter(Boolean).join(" "), address.area, address.country].filter(Boolean)
+    : [];
+  const addressText = addressLines.join(", ");
+  const addressPending = locale === "fr"
+    ? "L'adresse complète sera communiquée prochainement."
+    : "The full address will be shared closer to the date.";
+
   // Form Locking Logic helper
   const isDeclined = primaryRsvp === "declined";
   const isPending = primaryRsvp === "pending";
@@ -1319,25 +1331,33 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 <h4 style={{ fontWeight: "600", fontSize: "16px", marginBottom: "16px" }}>📍 {locale === "fr" ? "Le Lieu du Mariage" : "The Venue Address"}</h4>
                 <div style={{ border: "1px solid #e1dec3", padding: "20px", borderRadius: "16px", background: "#fcfbfa", marginBottom: "24px" }}>
                   <p style={{ margin: "0 0 6px", fontWeight: "bold", fontSize: "16px" }}>{invitation.wedding.venue_name || "Wildflower Barn"}</p>
-                  <p style={{ margin: "0 0 16px", color: "var(--muted)", fontSize: "14px" }}>{invitation.wedding.venue_address || "123 Orchard Rd, Hood River, OR"}</p>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(invitation.wedding.venue_address || "123 Orchard Rd, Hood River, OR")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "inline-block",
-                      padding: "10px 16px",
-                      background: "white",
-                      border: "1px solid #e1dec3",
-                      borderRadius: "10px",
-                      color: "var(--primary)",
-                      fontWeight: "600",
-                      fontSize: "13px",
-                      textDecoration: "none",
-                    }}
-                  >
-                    🗺️ {locale === "fr" ? "Ouvrir sur Google Maps" : "Open in Google Maps"}
-                  </a>
+                  {addressText ? (
+                    <>
+                      <p style={{ margin: "0 0 16px", color: "var(--muted)", fontSize: "14px" }}>{addressText}</p>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressText)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-block",
+                          padding: "10px 16px",
+                          background: "white",
+                          border: "1px solid #e1dec3",
+                          borderRadius: "10px",
+                          color: "var(--primary)",
+                          fontWeight: "600",
+                          fontSize: "13px",
+                          textDecoration: "none",
+                        }}
+                      >
+                        🗺️ {locale === "fr" ? "Ouvrir sur Google Maps" : "Open in Google Maps"}
+                      </a>
+                    </>
+                  ) : (
+                    <p style={{ margin: 0, color: "var(--muted)", fontSize: "14px", fontStyle: "italic" }}>
+                      {addressPending}
+                    </p>
+                  )}
                 </div>
 
                 <h4 style={{ fontWeight: "600", fontSize: "16px", marginBottom: "16px" }}>🕒 {locale === "fr" ? "Déroulement du Mariage" : "Wedding Schedule"}</h4>

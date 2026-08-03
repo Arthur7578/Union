@@ -13,7 +13,17 @@ export interface DBInvitation {
     partner_two: string | null;
     event_date: string | null;
     venue_name: string | null;
-    venue_address: string | null;
+    address_visibility: "hidden" | "partial" | "full";
+    /** Null when the couple has chosen to keep the address fully hidden.
+     *  Fields the couple hasn't shared yet (per address_visibility) come
+     *  through as null rather than being omitted. */
+    address: {
+      line: string | null;
+      postal_code: string | null;
+      city: string | null;
+      area: string | null;
+      country: string | null;
+    } | null;
   };
   guest: {
     id: string;
@@ -95,7 +105,14 @@ export default async function GuestExperiencePage({
         partner_two: "Daniel",
         event_date: "2026-09-20",
         venue_name: "Wildflower Barn",
-        venue_address: "123 Orchard Rd, Hood River, OR",
+        address_visibility: "full",
+        address: {
+          line: "123 Orchard Rd",
+          postal_code: "97031",
+          city: "Hood River",
+          area: "OR",
+          country: "United States",
+        },
       },
       guest: {
         id: "demo-guest-id",
