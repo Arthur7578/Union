@@ -13,7 +13,7 @@ export interface DBInvitation {
     partner_two: string | null;
     event_date: string | null;
     venue_name: string | null;
-    address_visibility: "hidden" | "partial" | "full";
+    address_visibility: "hidden" | "area" | "partial" | "full";
     /** Null when the couple has chosen to keep the address fully hidden.
      *  Fields the couple hasn't shared yet (per address_visibility) come
      *  through as null rather than being omitted. */

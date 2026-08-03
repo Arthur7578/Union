@@ -24,7 +24,7 @@ export default function WeddingSettingsPage() {
   const [addressCity, setAddressCity] = useState("");
   const [addressArea, setAddressArea] = useState("");
   const [addressCountry, setAddressCountry] = useState("");
-  const [addressVisibility, setAddressVisibility] = useState<"hidden" | "partial" | "full">("full");
+  const [addressVisibility, setAddressVisibility] = useState<"hidden" | "area" | "partial" | "full">("full");
   const [guestTarget, setGuestTarget] = useState("");
   const [styleVibe, setStyleVibe] = useState("");
   const [busy, setBusy] = useState(false);
@@ -261,10 +261,11 @@ export default function WeddingSettingsPage() {
             id="avis"
             value={addressVisibility}
             onChange={(e) =>
-              setAddressVisibility(e.target.value as "hidden" | "partial" | "full")
+              setAddressVisibility(e.target.value as "hidden" | "area" | "partial" | "full")
             }
           >
             <option value="hidden">{t.account.addressVisibilityHidden}</option>
+            <option value="area">{t.account.addressVisibilityArea}</option>
             <option value="partial">{t.account.addressVisibilityPartial}</option>
             <option value="full">{t.account.addressVisibilityFull}</option>
           </select>

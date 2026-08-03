@@ -730,7 +730,7 @@ export type Database = {
       }
     }
     Enums: {
-      address_visibility: "hidden" | "partial" | "full"
+      address_visibility: "hidden" | "area" | "partial" | "full"
       guest_relationship_kind: "parent_of" | "partner_of"
       rsvp_status: "pending" | "attending" | "declined"
     }
@@ -860,7 +860,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      address_visibility: ["hidden", "partial", "full"],
+      address_visibility: ["hidden", "area", "partial", "full"],
       guest_relationship_kind: ["parent_of", "partner_of"],
       rsvp_status: ["pending", "attending", "declined"],
     },

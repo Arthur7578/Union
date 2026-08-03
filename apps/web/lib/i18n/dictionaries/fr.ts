@@ -477,10 +477,11 @@ export const fr: Dictionary = {
     addressCountryPlaceholder: "États-Unis",
     addressVisibilityLabel: "Ce que les invités voient avant l'adresse complète",
     addressVisibilityHidden: "Rien — garder confidentiel pour l'instant",
-    addressVisibilityPartial: "Zone générale uniquement — sans l'adresse précise",
+    addressVisibilityArea: "Région et pays uniquement",
+    addressVisibilityPartial: "Code postal, ville et région — sans l'adresse précise",
     addressVisibilityFull: "Adresse complète",
     addressVisibilityHint:
-      "Les invités voient toujours le nom du lieu, si vous en avez renseigné un. « Zone générale » partage le code postal, la ville, la région et le pays — tout sauf l'adresse précise. Passez sur « Adresse complète » dès qu'elle est prête à partager.",
+      "Les invités voient toujours le nom du lieu, si vous en avez renseigné un. « Région et pays » est l'option la plus discrète — utile quand même la ville ou le code postal suffirait à deviner un lieu isolé ou peu peuplé. « Code postal, ville et région » partage tout sauf l'adresse précise. Passez sur « Adresse complète » dès qu'elle est prête à partager.",
     guestTargetLabel: "Nombre d'invités · objectif",
     styleLabel: "Style et ambiance",
     stylePlaceholder: "Jardin · tons neutres chauds · décontracté",

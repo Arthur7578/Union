@@ -6,6 +6,10 @@
 -- choose how much of it guests see before the venue is locked in:
 --
 --   * hidden  — nothing but the venue name (if set) is shown
+--   * area    — just area + country. For a venue in a small town or a
+--               sparsely populated postal code, even the city/zip can
+--               be enough to pinpoint it, so this tier exists for
+--               couples who need to stay coarser than that
 --   * partial — everything except the street line (postal code, city,
 --               area, country), so guests can start planning travel
 --               without being able to pinpoint the exact venue
@@ -15,7 +19,7 @@
 -- existing rows keep whatever freeform text they already had.
 -- ============================================================
 
-create type public.address_visibility as enum ('hidden', 'partial', 'full');
+create type public.address_visibility as enum ('hidden', 'area', 'partial', 'full');
 
 alter table public.weddings
   add column if not exists address_line text,
@@ -76,6 +80,13 @@ begin
       'line',         null,
       'postal_code',  v_wedding.address_postal_code,
       'city',         v_wedding.address_city,
+      'area',         v_wedding.address_area,
+      'country',      v_wedding.address_country
+    )
+    when 'area' then jsonb_build_object(
+      'line',         null,
+      'postal_code',  null,
+      'city',         null,
       'area',         v_wedding.address_area,
       'country',      v_wedding.address_country
     )
