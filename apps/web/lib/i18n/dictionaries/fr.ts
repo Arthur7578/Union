@@ -398,6 +398,10 @@ export const fr: Dictionary = {
     inviteSending: "Envoi de l'invitation…",
     inviteInvalid: "Saisissez une adresse e-mail valide.",
     inviteDuplicate: "Déjà invité·e.",
+    inviteSelf: "C'est votre propre adresse — vous faites déjà partie de l'équipe.",
+    inviteSent: (email: string) => `Invitation envoyée à ${email}.`,
+    inviteSavedNotSent: (reason: string) =>
+      `Enregistré, mais l'e-mail n'a pas pu partir${reason ? ` — ${reason}` : "."} La personne rejoindra l'équipe automatiquement dès sa première connexion avec cette adresse.`,
     inviteError: "Impossible d'envoyer cette invitation — réessayez.",
     cancelInvite: "Annuler l'invitation",
     whoDidWhat: "Qui a fait quoi",

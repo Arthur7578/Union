@@ -1172,28 +1172,64 @@ export async function fetchCollaborators(weddingId: string): Promise<Collaborato
   return (data ?? []) as CollaboratorWithProfile[];
 }
 
-/** Invite someone by email. Fails with a friendly message if they're
- *  already invited (the DB enforces one invite per email per wedding). */
+/** What actually happened when we tried to invite someone: the row is always
+ *  written, but the email that tells them about it can fail on its own. */
+export type InviteResult = {
+  collaborator: CollaboratorWithProfile;
+  /** False when the row saved but no mail went out — `reason` says why. */
+  delivered: boolean;
+  /** "invited" = brand-new account, "existing" = they already had one and got
+   *  a sign-in mail instead (signing in is what accepts the invite). */
+  kind?: "invited" | "existing";
+  reason?: string;
+};
+
+/**
+ * Invite someone by email.
+ *
+ * Goes through /api/invite-collaborator rather than inserting directly:
+ * sending the invitation mail needs the service-role key, which can only
+ * live server-side. The route still writes the row under the caller's own
+ * JWT, so RLS remains the thing that authorises the invite.
+ *
+ * Throws "Already invited." for a duplicate and "Can't invite yourself." for
+ * the owner's own address; both are mapped to friendly copy by the caller.
+ */
 export async function inviteCollaborator(
   weddingId: string,
   email: string,
-): Promise<CollaboratorWithProfile> {
+): Promise<InviteResult> {
   const supabase = getBrowserSupabase();
-  const clean = email.trim().toLowerCase();
-  const { data, error } = await supabase
-    .from("wedding_collaborators")
-    .insert({ wedding_id: weddingId, email: clean })
-    .select("*")
-    .single();
-  if (error) {
-    if ((error as { code?: string }).code === "23505") {
-      throw new Error("Already invited.");
-    }
-    throw error;
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error("You're signed out.");
+
+  const res = await fetch("/api/invite-collaborator", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ weddingId, email: email.trim().toLowerCase() }),
+  });
+  const payload = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    if (payload.error === "duplicate") throw new Error("Already invited.");
+    if (payload.error === "self_invite") throw new Error("Can't invite yourself.");
+    throw new Error(
+      typeof payload.error === "string" ? payload.error : "Couldn't send that invite.",
+    );
   }
-  // A brand-new invite has no profile behind it yet — the name fills in the
-  // first time that email signs in and accept_pending_invites() runs.
-  return { ...data, profile_full_name: null };
+
+  return {
+    collaborator: payload.collaborator as CollaboratorWithProfile,
+    delivered: payload.delivered === true,
+    kind: payload.kind,
+    reason: typeof payload.reason === "string" ? payload.reason : undefined,
+  };
 }
 
 /** Revoke a pending invite, or remove an active collaborator. */

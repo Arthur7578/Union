@@ -416,6 +416,11 @@ export const en = {
     inviteInvalid: "Enter a valid email address.",
     inviteDuplicate: "Already invited.",
     inviteError: "Couldn't send that invite — try again.",
+    inviteSelf: "That's your own address — you're already on the team.",
+    inviteSent: (email: string) => `Invitation emailed to ${email}.`,
+    // The row saves even when the mail doesn't, so don't claim it was sent.
+    inviteSavedNotSent: (reason: string) =>
+      `Saved, but we couldn't email them${reason ? ` — ${reason}` : "."} They'll join automatically the first time they sign in with that address.`,
     cancelInvite: "Cancel invite",
     whoDidWhat: "Who did what",
     activityEmpty: "Nothing yet — what you and Union do together will show up here.",

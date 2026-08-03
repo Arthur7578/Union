@@ -32,6 +32,9 @@ export default function TeamPage() {
   const [email, setEmail] = useState("");
   const [inviteBusy, setInviteBusy] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteNotice, setInviteNotice] = useState<
+    { tone: "ok" | "warn"; text: string } | null
+  >(null);
   const [autonomyBusy, setAutonomyBusy] = useState(false);
   const [autonomyError, setAutonomyError] = useState<string | null>(null);
 
@@ -69,16 +72,27 @@ export default function TeamPage() {
     }
     setInviteBusy(true);
     setInviteError(null);
+    setInviteNotice(null);
     try {
-      const row = await inviteCollaborator(wedding.id, clean);
-      setCollaborators((prev) => [...(prev ?? []), row]);
+      const result = await inviteCollaborator(wedding.id, clean);
+      setCollaborators((prev) => [...(prev ?? []), result.collaborator]);
       setEmail("");
+      // The row always saves; the mail is the part that can fail on its own,
+      // so say which of the two actually happened rather than a bare "done".
+      setInviteNotice(
+        result.delivered
+          ? { tone: "ok", text: t.plan.inviteSent(clean) }
+          : { tone: "warn", text: t.plan.inviteSavedNotSent(result.reason ?? "") },
+      );
       refreshActivity();
     } catch (err) {
+      const message = err instanceof Error ? err.message : "";
       setInviteError(
-        err instanceof Error && err.message === "Already invited."
+        message === "Already invited."
           ? t.plan.inviteDuplicate
-          : t.plan.inviteError,
+          : message === "Can't invite yourself."
+            ? t.plan.inviteSelf
+            : t.plan.inviteError,
       );
     } finally {
       setInviteBusy(false);
@@ -219,6 +233,7 @@ export default function TeamPage() {
             onChange={(e) => {
               setEmail(e.target.value);
               setInviteError(null);
+              setInviteNotice(null);
             }}
             placeholder={t.plan.invitePlaceholder}
             disabled={inviteBusy}
@@ -230,6 +245,18 @@ export default function TeamPage() {
         </form>
         {inviteError && (
           <div style={{ fontSize: 12.5, color: T.accentInk, marginTop: 8 }}>{inviteError}</div>
+        )}
+        {inviteNotice && (
+          <div
+            style={{
+              fontSize: 12.5,
+              color: inviteNotice.tone === "ok" ? T.ink2 : T.accentInk,
+              marginTop: 8,
+              lineHeight: 1.45,
+            }}
+          >
+            {inviteNotice.text}
+          </div>
         )}
       </div>
 
