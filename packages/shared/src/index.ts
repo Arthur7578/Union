@@ -26,6 +26,14 @@ export type GuestRelationshipKind = Enums<"guest_relationship_kind">;
 export type Collaborator = Tables<"wedding_collaborators">;
 export type CollaboratorStatus = "pending" | "active";
 export type ActivityLogEntry = Tables<"activity_log">;
+export type ActivityActionKey =
+  | "guest_added"
+  | "rsvp_attending"
+  | "rsvp_declined"
+  | "collaborator_invited"
+  | "collaborator_joined"
+  | "autonomy_changed"
+  | "legacy";
 export type ActorKind = "person" | "union";
 export type Autonomy = "ask" | "suggest" | "auto";
 

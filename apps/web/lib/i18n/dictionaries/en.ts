@@ -424,6 +424,14 @@ export const en = {
     cancelInvite: "Cancel invite",
     whoDidWhat: "Who did what",
     activityEmpty: "Nothing yet — what you and Union do together will show up here.",
+    activityGuestAdded: (name: string) => `added ${name} as a guest`,
+    activityRsvpAttending: "RSVP'd yes",
+    activityRsvpDeclined: "RSVP'd no",
+    activityCollaboratorInvited: (email: string) =>
+      `invited ${email} to plan together`,
+    activityCollaboratorJoined: "joined to plan together",
+    activityAutonomyChanged: (level: string) =>
+      `set how much Union does on its own to “${level}”`,
     you: "you",
     roles: {
       owner: "Owner",

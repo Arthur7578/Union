@@ -5,15 +5,25 @@ import type { Guest, Rsvp, Wedding } from "@union/shared";
 export type GuestWithRsvp = Guest & { rsvps: Rsvp | null };
 
 export async function fetchWedding(ownerId: string): Promise<Wedding | null> {
-  const { data, error } = await supabase
+  const { data: owned, error: ownedError } = await supabase
     .from("weddings")
     .select("*")
     .eq("owner_id", ownerId)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  if (error) throw error;
-  return data;
+  if (ownedError) throw ownedError;
+  if (owned) return owned;
+
+  // RLS exposes shared weddings to active/invited collaborators.
+  const { data: shared, error: sharedError } = await supabase
+    .from("weddings")
+    .select("*")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (sharedError) throw sharedError;
+  return shared;
 }
 
 export async function createWedding(

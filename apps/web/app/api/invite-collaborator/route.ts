@@ -155,8 +155,12 @@ export async function POST(request: Request) {
     .filter(Boolean)
     .join(" & ");
 
+  const teamUrl = origin
+    ? `${origin}/plan/team?wedding=${encodeURIComponent(weddingId)}`
+    : undefined;
+
   const { error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: origin ? `${origin}/plan/team` : undefined,
+    redirectTo: teamUrl,
     // Surfaced to the email template as {{ .Data.* }} so the invite can read
     // as "Arthur invited you" rather than a bare product notification.
     data: {
@@ -184,7 +188,7 @@ export async function POST(request: Request) {
       email,
       options: {
         shouldCreateUser: false,
-        emailRedirectTo: origin ? `${origin}/plan/team` : undefined,
+        emailRedirectTo: teamUrl,
       },
     });
     if (!otpErr) {

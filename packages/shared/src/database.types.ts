@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       activity_log: {
         Row: {
+          action_data: Json
+          action_key: string
           action_text: string
           actor_kind: string
           actor_label: string
@@ -24,6 +26,8 @@ export type Database = {
           wedding_id: string
         }
         Insert: {
+          action_data?: Json
+          action_key?: string
           action_text: string
           actor_kind: string
           actor_label: string
@@ -32,6 +36,8 @@ export type Database = {
           wedding_id: string
         }
         Update: {
+          action_data?: Json
+          action_key?: string
           action_text?: string
           actor_kind?: string
           actor_label?: string

@@ -406,6 +406,14 @@ export const fr: Dictionary = {
     cancelInvite: "Annuler l'invitation",
     whoDidWhat: "Qui a fait quoi",
     activityEmpty: "Rien pour l'instant — ce que vous et Union faites apparaîtra ici.",
+    activityGuestAdded: (name: string) => `a ajouté ${name} à la liste des invités`,
+    activityRsvpAttending: "a répondu présent·e",
+    activityRsvpDeclined: "a répondu absent·e",
+    activityCollaboratorInvited: (email: string) =>
+      `a invité ${email} à organiser ensemble`,
+    activityCollaboratorJoined: "a rejoint l'équipe d'organisation",
+    activityAutonomyChanged: (level: string) =>
+      `a réglé le niveau d'autonomie d'Union sur « ${level} »`,
     you: "vous",
     roles: {
       owner: "Propriétaire",

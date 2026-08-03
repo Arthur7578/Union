@@ -34,17 +34,44 @@ export type GuestWithRsvp = Guest & {
   groups: GuestGroupRef[];
 };
 
-export async function fetchWedding(ownerId: string): Promise<Wedding | null> {
+export async function fetchWedding(
+  ownerId: string,
+  preferredWeddingId?: string | null,
+): Promise<Wedding | null> {
   const supabase = getBrowserSupabase();
-  const { data, error } = await supabase
+  // Invite links carry the shared wedding id. RLS decides whether the signed-in
+  // user may open it, so a guessed/stale id simply returns no row.
+  if (preferredWeddingId) {
+    const { data: preferred, error: preferredError } = await supabase
+      .from("weddings")
+      .select("*")
+      .eq("id", preferredWeddingId)
+      .maybeSingle();
+    if (preferredError) throw preferredError;
+    if (preferred) return preferred;
+  }
+
+  // Preserve the existing behavior for people who own a wedding.
+  const { data: owned, error: ownedError } = await supabase
     .from("weddings")
     .select("*")
     .eq("owner_id", ownerId)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  if (error) throw error;
-  return data;
+  if (ownedError) throw ownedError;
+  if (owned) return owned;
+
+  // An invited planner may not own a wedding. The database only exposes rows
+  // they can access, so the first remaining row is one of their shared weddings.
+  const { data: shared, error: sharedError } = await supabase
+    .from("weddings")
+    .select("*")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (sharedError) throw sharedError;
+  return shared;
 }
 
 export async function createWedding(

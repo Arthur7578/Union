@@ -6,6 +6,7 @@ import { BackHeader } from "@/components/BackHeader";
 import { Card, SectionLabel, Button, Avatar, StatusPill, Loading } from "@/components/ui";
 import { Spark } from "@/components/icons";
 import { useWedding } from "@/lib/wedding";
+import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { useLocale } from "@/lib/i18n/client";
 import { initial, timeAgo } from "@/lib/format";
@@ -17,12 +18,13 @@ import {
   updateWedding,
   type CollaboratorWithProfile,
 } from "@/lib/data";
-import type { ActivityLogEntry, Autonomy } from "@union/shared";
+import type { ActivityActionKey, ActivityLogEntry, Autonomy } from "@union/shared";
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 export default function TeamPage() {
   const { t, locale } = useLocale();
+  const { session } = useAuth();
   const { wedding, setWedding } = useWedding();
   const { profile } = useProfile();
 
@@ -54,7 +56,9 @@ export default function TeamPage() {
 
   if (!wedding) return null;
 
-  const ownerName = profile?.full_name || wedding.partner_one || t.account.title;
+  const isOwner = session?.user.id === wedding.owner_id;
+  const ownerName =
+    (isOwner ? profile?.full_name : null) || wedding.partner_one || t.account.title;
   const teamCount = 1 + (collaborators?.length ?? 0);
 
   const refreshActivity = () => {
@@ -117,6 +121,45 @@ export default function TeamPage() {
   const autonomy = (wedding.autonomy as Autonomy) || "ask";
   const currentAutonomy = AUTONOMY.find((a) => a.key === autonomy) ?? AUTONOMY[0];
 
+  const activityAction = (entry: ActivityLogEntry): string => {
+    const payload =
+      entry.action_data &&
+      typeof entry.action_data === "object" &&
+      !Array.isArray(entry.action_data)
+        ? entry.action_data
+        : {};
+    const textValue = (key: string) => {
+      const value = payload[key];
+      return typeof value === "string" ? value : "";
+    };
+
+    switch (entry.action_key as ActivityActionKey) {
+      case "guest_added": {
+        const guestName = textValue("guest_name");
+        return guestName ? t.plan.activityGuestAdded(guestName) : entry.action_text;
+      }
+      case "rsvp_attending":
+        return t.plan.activityRsvpAttending;
+      case "rsvp_declined":
+        return t.plan.activityRsvpDeclined;
+      case "collaborator_invited": {
+        const invitedEmail = textValue("email");
+        return invitedEmail
+          ? t.plan.activityCollaboratorInvited(invitedEmail)
+          : entry.action_text;
+      }
+      case "collaborator_joined":
+        return t.plan.activityCollaboratorJoined;
+      case "autonomy_changed": {
+        const level = textValue("level") as Autonomy;
+        const label = AUTONOMY.find((option) => option.key === level)?.label;
+        return label ? t.plan.activityAutonomyChanged(label) : entry.action_text;
+      }
+      default:
+        return entry.action_text;
+    }
+  };
+
   const setAutonomy = async (value: Autonomy) => {
     if (value === autonomy || autonomyBusy) return;
     setAutonomyBusy(true);
@@ -147,7 +190,9 @@ export default function TeamPage() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>
               {ownerName}{" "}
-              <span style={{ fontWeight: 400, color: T.faint }}>· {t.plan.you}</span>
+              {isOwner && (
+                <span style={{ fontWeight: 400, color: T.faint }}>· {t.plan.you}</span>
+              )}
             </div>
             <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>{t.plan.ownerSub}</div>
           </div>
@@ -177,13 +222,16 @@ export default function TeamPage() {
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {name}
+                    {name}{" "}
+                    {c.user_id === session?.user.id && (
+                      <span style={{ fontWeight: 400, color: T.faint }}>· {t.plan.you}</span>
+                    )}
                   </div>
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
                     {active ? t.plan.activeSub(when) : t.plan.pendingSub(when)}
                   </div>
                 </div>
-                {!active && (
+                {isOwner && !active && (
                   <button
                     type="button"
                     onClick={() => cancelInvite(c.id)}
@@ -211,54 +259,56 @@ export default function TeamPage() {
       </div>
 
       {/* Invite */}
-      <div
-        style={{
-          marginTop: 14,
-          borderRadius: 20,
-          background: "linear-gradient(158deg,#F8EDEA 0%,#F2E1E0 100%)",
-          padding: "16px 16px 15px",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
-        }}
-      >
-        <div className="u-serif" style={{ fontWeight: 600, fontSize: 19, color: T.ink }}>
-          {t.plan.inviteHelper}
-        </div>
-        <div style={{ fontSize: 13, color: T.ink2, marginTop: 4, lineHeight: 1.45 }}>
-          {t.plan.inviteBody}
-        </div>
-        <form onSubmit={submitInvite} style={{ display: "flex", gap: 9, marginTop: 13 }}>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setInviteError(null);
-              setInviteNotice(null);
-            }}
-            placeholder={t.plan.invitePlaceholder}
-            disabled={inviteBusy}
-            style={{ flex: 1, minHeight: 44 }}
-          />
-          <Button type="submit" disabled={inviteBusy} style={{ flexShrink: 0 }}>
-            {inviteBusy ? t.plan.inviteSending : t.common.invite}
-          </Button>
-        </form>
-        {inviteError && (
-          <div style={{ fontSize: 12.5, color: T.accentInk, marginTop: 8 }}>{inviteError}</div>
-        )}
-        {inviteNotice && (
-          <div
-            style={{
-              fontSize: 12.5,
-              color: inviteNotice.tone === "ok" ? T.ink2 : T.accentInk,
-              marginTop: 8,
-              lineHeight: 1.45,
-            }}
-          >
-            {inviteNotice.text}
+      {isOwner && (
+        <div
+          style={{
+            marginTop: 14,
+            borderRadius: 20,
+            background: "linear-gradient(158deg,#F8EDEA 0%,#F2E1E0 100%)",
+            padding: "16px 16px 15px",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
+          }}
+        >
+          <div className="u-serif" style={{ fontWeight: 600, fontSize: 19, color: T.ink }}>
+            {t.plan.inviteHelper}
           </div>
-        )}
-      </div>
+          <div style={{ fontSize: 13, color: T.ink2, marginTop: 4, lineHeight: 1.45 }}>
+            {t.plan.inviteBody}
+          </div>
+          <form onSubmit={submitInvite} style={{ display: "flex", gap: 9, marginTop: 13 }}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setInviteError(null);
+                setInviteNotice(null);
+              }}
+              placeholder={t.plan.invitePlaceholder}
+              disabled={inviteBusy}
+              style={{ flex: 1, minHeight: 44 }}
+            />
+            <Button type="submit" disabled={inviteBusy} style={{ flexShrink: 0 }}>
+              {inviteBusy ? t.plan.inviteSending : t.common.invite}
+            </Button>
+          </form>
+          {inviteError && (
+            <div style={{ fontSize: 12.5, color: T.accentInk, marginTop: 8 }}>{inviteError}</div>
+          )}
+          {inviteNotice && (
+            <div
+              style={{
+                fontSize: 12.5,
+                color: inviteNotice.tone === "ok" ? T.ink2 : T.accentInk,
+                marginTop: 8,
+                lineHeight: 1.45,
+              }}
+            >
+              {inviteNotice.text}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Union as teammate — how much it does on its own */}
       <SectionLabel>{t.plan.unionTeammateKicker}</SectionLabel>
@@ -379,7 +429,7 @@ export default function TeamPage() {
                 )}
               </span>
               <div style={{ fontWeight: 500, fontSize: 14, color: T.ink, lineHeight: 1.4 }}>
-                <b style={{ fontWeight: 600 }}>{a.actor_label}</b> {a.action_text}
+                <b style={{ fontWeight: 600 }}>{a.actor_label}</b> {activityAction(a)}
               </div>
               <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>
                 {timeAgo(a.created_at, locale)}
