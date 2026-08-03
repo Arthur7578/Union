@@ -426,6 +426,7 @@ export const fr: Dictionary = {
       "Union recommande la prochaine étape et attend votre feu vert avant d'agir.",
     autonomyDescAuto:
       "Union gère elle-même les démarches courantes, et ne vous sollicite que pour les décisions qui comptent.",
+    autonomyError: "Impossible d'enregistrer — réessayez.",
   },
 
   settings: {
@@ -444,7 +445,9 @@ export const fr: Dictionary = {
     weddingSection: "Votre mariage",
     weddingRowFallback: "Ajoutez votre date et votre lieu",
     teamRowTitle: "Qui organise",
-    teamRowSub: (n: number) => `${n} personnes organisent ensemble`,
+    // Now that this counts real collaborators it can legitimately be 1.
+    teamRowSub: (n: number) =>
+      n <= 1 ? "Vous organisez seul·e pour l'instant" : `${n} personnes organisent ensemble`,
 
     plusKicker: "Union Plus",
     plusTitle: "Votre planificateur, sans limites",

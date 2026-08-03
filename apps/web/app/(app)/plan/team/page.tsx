@@ -33,6 +33,7 @@ export default function TeamPage() {
   const [inviteBusy, setInviteBusy] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [autonomyBusy, setAutonomyBusy] = useState(false);
+  const [autonomyError, setAutonomyError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!wedding) return;
@@ -105,10 +106,14 @@ export default function TeamPage() {
   const setAutonomy = async (value: Autonomy) => {
     if (value === autonomy || autonomyBusy) return;
     setAutonomyBusy(true);
+    setAutonomyError(null);
     try {
       const updated = await updateWedding(wedding.id, { autonomy: value });
       setWedding(updated);
       refreshActivity();
+    } catch {
+      // Without this the toggle just silently refuses to move.
+      setAutonomyError(t.plan.autonomyError);
     } finally {
       setAutonomyBusy(false);
     }
@@ -295,6 +300,9 @@ export default function TeamPage() {
         <div style={{ fontSize: 13, color: T.muted, marginTop: 12, lineHeight: 1.5 }}>
           {currentAutonomy.desc}
         </div>
+        {autonomyError && (
+          <div style={{ fontSize: 12.5, color: T.accentInk, marginTop: 8 }}>{autonomyError}</div>
+        )}
       </div>
 
       {/* Activity */}

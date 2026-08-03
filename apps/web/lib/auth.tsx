@@ -49,12 +49,24 @@ export async function verifyEmailOtp(
     type: "email",
   });
   if (error) throw error;
-  // Best-effort: if someone invited this email to plan together, this
-  // flips that invite from pending to active. Never blocks sign-in.
+  await acceptPendingInvites();
+}
+
+/**
+ * If someone invited this email to plan together, flip that invite from
+ * pending to active. Best-effort in every sense: a no-op when nothing is
+ * pending, and it swallows its own failures so it can never block sign-in
+ * or app boot.
+ *
+ * Called both right after a code is verified and whenever a session
+ * resolves — an invite that lands while you're already signed in would
+ * otherwise sit pending until your next sign-in.
+ */
+export async function acceptPendingInvites(): Promise<void> {
   try {
-    await supabase.rpc("accept_pending_invites");
+    await getBrowserSupabase().rpc("accept_pending_invites");
   } catch {
-    // ignore — nothing pending, or the call failed; sign-in already succeeded
+    // ignore — the caller's flow already succeeded without this.
   }
 }
 
@@ -76,16 +88,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
     const supabase = getBrowserSupabase();
 
+    // Only worth one call per signed-in user id — this runs on every
+    // auth event, and re-accepting invites we've already accepted is
+    // pure noise.
+    let acceptedFor: string | null = null;
+    const acceptOnce = (next: Session | null) => {
+      const uid = next?.user?.id ?? null;
+      if (!uid || uid === acceptedFor) return;
+      acceptedFor = uid;
+      void acceptPendingInvites();
+    };
+
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
       setSession(data.session);
       setLoading(false);
+      acceptOnce(data.session);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
+      acceptOnce(nextSession);
     });
 
     return () => {
