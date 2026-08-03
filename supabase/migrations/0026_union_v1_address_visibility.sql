@@ -6,9 +6,10 @@
 -- choose how much of it guests see before the venue is locked in:
 --
 --   * hidden  — nothing but the venue name (if set) is shown
---   * partial — just postal code + city, so guests can start planning
---               travel without the exact address
---   * full    — the complete address
+--   * partial — everything except the street line (postal code, city,
+--               area, country), so guests can start planning travel
+--               without being able to pinpoint the exact venue
+--   * full    — the complete address, street line included
 --
 -- `venue_address` itself is left in place (unused going forward) so
 -- existing rows keep whatever freeform text they already had.
@@ -75,7 +76,7 @@ begin
       'line',         null,
       'postal_code',  v_wedding.address_postal_code,
       'city',         v_wedding.address_city,
-      'area',         null,
+      'area',         v_wedding.address_area,
       'country',      v_wedding.address_country
     )
     else null

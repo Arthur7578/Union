@@ -299,8 +299,9 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   ) : "Saturday, September 20, 2026";
 
   // What the couple has chosen to share so far — "hidden" strips the
-  // address entirely (venue name still shows, if set), "partial" only
-  // reveals postal code + city so guests can start planning travel.
+  // address entirely (venue name still shows, if set), "partial" shows
+  // everything except the street line so guests can start planning
+  // travel without being able to pinpoint the exact venue.
   const address = invitation.wedding.address;
   const addressLines = address
     ? [address.line, [address.postal_code, address.city].filter(Boolean).join(" "), address.area, address.country].filter(Boolean)

@@ -496,10 +496,10 @@ export const en = {
     addressCountryPlaceholder: "United States",
     addressVisibilityLabel: "What guests see before the full address",
     addressVisibilityHidden: "Nothing — keep it confidential for now",
-    addressVisibilityPartial: "Zip code & city only",
+    addressVisibilityPartial: "General area only — no street address",
     addressVisibilityFull: "Full address",
     addressVisibilityHint:
-      "Guests always see the venue name, if you've set one. Switch to \"Full address\" once it's ready to share.",
+      "Guests always see the venue name, if you've set one. \"General area\" shares the zip code, city, area & country — everything but the exact street address. Switch to \"Full address\" once it's ready to share.",
     guestTargetLabel: "Guest count · target",
     styleLabel: "Style & vibe",
     stylePlaceholder: "Garden · warm neutrals · relaxed",
