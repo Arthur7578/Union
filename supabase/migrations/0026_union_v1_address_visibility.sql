@@ -15,8 +15,9 @@
 --               without being able to pinpoint the exact venue
 --   * full    — the complete address, street line included
 --
--- `venue_address` itself is left in place (unused going forward) so
--- existing rows keep whatever freeform text they already had.
+-- `venue_address` itself is left in place for older clients. Its current
+-- value is copied into address_line so existing weddings keep showing the
+-- address guests already had before this migration.
 -- ============================================================
 
 create type public.address_visibility as enum ('hidden', 'area', 'partial', 'full');
@@ -28,6 +29,14 @@ alter table public.weddings
   add column if not exists address_area text,
   add column if not exists address_country text,
   add column if not exists address_visibility public.address_visibility not null default 'full';
+
+-- Preserve legacy addresses without attempting to guess their component
+-- parts. Couples can split the freeform value in wedding settings later.
+update public.weddings
+set address_line = venue_address
+where address_line is null
+  and venue_address is not null
+  and btrim(venue_address) <> '';
 
 -- ---------- get_invitation: gate the address by visibility ----------
 -- Same function as 0025, with the flat venue_address swapped for a
@@ -98,7 +107,10 @@ begin
       'partner_one',        v_wedding.partner_one,
       'partner_two',        v_wedding.partner_two,
       'event_date',         v_wedding.event_date,
-      'venue_name',         v_wedding.venue_name,
+      'venue_name',         case
+                              when v_wedding.address_visibility = 'hidden' then null
+                              else v_wedding.venue_name
+                            end,
       'address_visibility', v_wedding.address_visibility,
       'address',            v_address
     ),

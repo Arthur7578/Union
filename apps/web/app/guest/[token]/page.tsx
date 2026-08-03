@@ -1,60 +1,13 @@
 import { getSupabase } from "@/lib/supabase";
 import { resolveLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n";
-import type { FormAnswers, RsvpQuestion } from "@union/shared";
+import type { FormAnswers, Invitation, RsvpQuestion } from "@union/shared";
 import { GuestPortal } from "./GuestPortal";
 
 // Always fetch fresh invitation data (no static caching of personal links).
 export const dynamic = "force-dynamic";
 
-export interface DBInvitation {
-  wedding: {
-    partner_one: string | null;
-    partner_two: string | null;
-    event_date: string | null;
-    venue_name: string | null;
-    address_visibility: "hidden" | "area" | "partial" | "full";
-    /** Null when the couple has chosen to keep the address fully hidden.
-     *  Fields the couple hasn't shared yet (per address_visibility) come
-     *  through as null rather than being omitted. */
-    address: {
-      line: string | null;
-      postal_code: string | null;
-      city: string | null;
-      area: string | null;
-      country: string | null;
-    } | null;
-  };
-  guest: {
-    id: string;
-    first_name: string;
-    last_name: string | null;
-    age_years: number | null;
-    rsvp_status: "pending" | "attending" | "declined";
-    dietary_notes: string | null;
-    message: string | null;
-  };
-  companions: Array<{
-    id: string;
-    first_name: string;
-    last_name: string | null;
-    age_years: number | null;
-    relationship: "parent_of" | "partner_of" | null;
-    rsvp_status: "pending" | "attending" | "declined";
-    dietary_notes: string | null;
-  }>;
-  permissions: {
-    can_add_partner: boolean;
-    can_add_kids: boolean;
-    kids_remaining: number | null;
-  };
-  self_merge_candidates: Array<{
-    id: string;
-    first_name: string;
-    last_name: string | null;
-    age_years: number | null;
-    added_by_first_name?: string | null;
-  }>;
+export type DBInvitation = Invitation & {
   /** Guest-facing wording overrides for the primary RSVP block — null keys
    *  mean "use the system default", never a blank/empty label. */
   rsvp_form?: {
@@ -83,7 +36,7 @@ export interface DBInvitation {
     closes_at: string | null;
     answers: FormAnswers | null;
   }>;
-}
+};
 
 export default async function GuestExperiencePage({
   params,

@@ -500,7 +500,7 @@ export const en = {
     addressVisibilityPartial: "Zip code, city, area & country — no street address",
     addressVisibilityFull: "Full address",
     addressVisibilityHint:
-      "Guests always see the venue name, if you've set one. \"Area & country\" is the most discreet option — useful when even the city or zip code would give away a venue in a small or sparsely populated place. \"Zip code, city & area\" shares everything but the exact street address. Switch to \"Full address\" once it's ready to share.",
+      "\"Nothing\" also hides the venue name. \"Area & country\" is the most discreet location option — useful when even the city or zip code would give away a venue in a small or sparsely populated place. \"Zip code, city, area & country\" shares everything but the exact street address. Switch to \"Full address\" once it's ready to share.",
     guestTargetLabel: "Guest count · target",
     styleLabel: "Style & vibe",
     stylePlaceholder: "Garden · warm neutrals · relaxed",

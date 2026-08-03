@@ -299,9 +299,9 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   ) : "Saturday, September 20, 2026";
 
   // What the couple has chosen to share so far — "hidden" strips the
-  // address entirely (venue name still shows, if set), "partial" shows
-  // everything except the street line so guests can start planning
-  // travel without being able to pinpoint the exact venue.
+  // venue identity and address entirely, while "partial" shows everything
+  // except the street line so guests can start planning travel without
+  // being able to pinpoint the exact venue.
   const address = invitation.wedding.address;
   const addressLines = address
     ? [address.line, [address.postal_code, address.city].filter(Boolean).join(" "), address.area, address.country].filter(Boolean)
@@ -941,7 +941,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         </p>
         <h1>{coupleNames}</h1>
         <p className="u-serif" style={{ fontSize: "20px", color: "var(--muted)", fontStyle: "italic" }}>
-          {displayDate} • {invitation.wedding.venue_name || "Wildflower Barn"}
+          {displayDate}
+          {invitation.wedding.venue_name ? ` • ${invitation.wedding.venue_name}` : ""}
         </p>
 
         {timeLeft.days > 0 && (
@@ -1331,7 +1332,11 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               <div>
                 <h4 style={{ fontWeight: "600", fontSize: "16px", marginBottom: "16px" }}>📍 {locale === "fr" ? "Le Lieu du Mariage" : "The Venue Address"}</h4>
                 <div style={{ border: "1px solid #e1dec3", padding: "20px", borderRadius: "16px", background: "#fcfbfa", marginBottom: "24px" }}>
-                  <p style={{ margin: "0 0 6px", fontWeight: "bold", fontSize: "16px" }}>{invitation.wedding.venue_name || "Wildflower Barn"}</p>
+                  {invitation.wedding.venue_name ? (
+                    <p style={{ margin: "0 0 6px", fontWeight: "bold", fontSize: "16px" }}>
+                      {invitation.wedding.venue_name}
+                    </p>
+                  ) : null}
                   {addressText ? (
                     <>
                       <p style={{ margin: "0 0 16px", color: "var(--muted)", fontSize: "14px" }}>{addressText}</p>
@@ -1417,11 +1422,11 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               </div>
 
               <div className="faq-item">
-                <h4 style={{ fontWeight: "600", fontSize: "15px", margin: "0 0 6px" }}>🚗 {locale === "fr" ? "Où se garer à la grange ?" : "Is parking available at the venue?"}</h4>
+                <h4 style={{ fontWeight: "600", fontSize: "15px", margin: "0 0 6px" }}>🚗 {locale === "fr" ? "Le stationnement est-il disponible sur place ?" : "Is parking available at the venue?"}</h4>
                 <p style={{ color: "var(--muted)", fontSize: "14px", margin: 0, lineHeight: "1.5" }}>
                   {locale === "fr"
                     ? "Oui, un parking privé gratuit est disponible sur place. Le covoiturage reste conseillé."
-                    : "Yes, ample free parking is available on-site at Wildflower Barn. You can also match with other drivers using our Travel Board."}
+                    : "Yes, ample free parking is available on-site. You can also match with other drivers using our Travel Board."}
                 </p>
               </div>
             </div>
