@@ -645,10 +645,12 @@ export const en = {
     organiserHintText:
       "This contact is also linked to an organiser account on Union.",
     organiserHintLink: "Sign in as the organiser instead",
-    matchesTitle: "You're linked to a few invitations",
-    matchesSubtitle: "Choose who you're responding for.",
-    matchLine: (couple: string, firstName: string) =>
-      `${couple} — continue as ${firstName}`,
+    matchesTitle: "Choose your invitation",
+    matchesSubtitle:
+      "Confirm who you're responding for. Union never chooses a guest identity automatically.",
+    matchLine: (couple: string, guestName: string) =>
+      `${couple} — continue as ${guestName}`,
+    linkedElsewhere: "Already linked to another Union account",
     invalidOrExpired: "That code didn't work, or it's expired.",
     cooldown: "Please wait a moment before requesting another code.",
     tooManyRequests: "Too many attempts — please try again in a bit.",

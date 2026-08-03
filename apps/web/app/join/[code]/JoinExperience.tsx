@@ -7,6 +7,7 @@ import {
   sendEmailOtp,
   verifyEmailOtp,
 } from "@/lib/auth";
+import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { getSupabase } from "@/lib/supabase";
@@ -31,7 +32,7 @@ interface GuestAccessOption {
   wedding_partner_one: string | null;
   wedding_partner_two: string | null;
   wedding_event_date: string | null;
-  already_linked: boolean;
+  access_status: "linked" | "claimable" | "linked_elsewhere";
 }
 
 interface GuestAccessOptionsResult {
@@ -137,20 +138,31 @@ export function JoinExperience({
   }, []);
 
   const claimAndContinue = useCallback(
-    async (guestId: string) => {
+    async (match: GuestAccessOption) => {
       setBusy(true);
       setError(null);
       try {
         const supabase = getBrowserSupabase();
         const { data, error: rpcError } = await supabase.rpc(
           "claim_guest_access",
-          { p_guest_id: guestId },
+          { p_guest_id: match.guest_id },
         );
         if (rpcError) throw rpcError;
 
         const result = data as unknown as ClaimGuestAccessResult;
         if (result.status !== "verified" || !result.token) {
           throw new Error(t.joinOtp.accessUnavailable);
+        }
+
+        const { data: authData } = await supabase.auth.getSession();
+        if (authData.session) {
+          writeActiveGuestIdentity({
+            userId: authData.session.user.id,
+            guestId: match.guest_id,
+            guestName: [match.first_name, match.last_name]
+              .filter(Boolean)
+              .join(" "),
+          });
         }
         redirectToGuest(result.token);
       } catch (reason) {
@@ -175,10 +187,6 @@ export function JoinExperience({
     const found = result.matches ?? [];
     if (result.status !== "ok" || found.length === 0) {
       setView("no_match");
-      return;
-    }
-    if (found.length === 1) {
-      await claimAndContinue(found[0].guest_id);
       return;
     }
     setMatches(found);
@@ -414,19 +422,39 @@ export function JoinExperience({
                 [match.wedding_partner_one, match.wedding_partner_two]
                   .filter(Boolean)
                   .join(" & ") || partners;
+              const unavailable = match.access_status === "linked_elsewhere";
+              const guestName = [match.first_name, match.last_name]
+                .filter(Boolean)
+                .join(" ");
               return (
                 <button
                   key={match.guest_id}
                   type="button"
-                  disabled={busy}
-                  onClick={() => void claimAndContinue(match.guest_id)}
-                  style={{ ...primaryButtonStyle, minHeight: 56 }}
+                  disabled={busy || unavailable}
+                  onClick={() => void claimAndContinue(match)}
+                  style={{
+                    ...primaryButtonStyle,
+                    minHeight: 56,
+                    opacity: unavailable ? 0.55 : 1,
+                    cursor: unavailable ? "not-allowed" : "pointer",
+                    display: "grid",
+                    gap: 3,
+                    alignContent: "center",
+                  }}
                 >
-                  {t.joinOtp.matchLine(couple, match.first_name)}
+                  <span>{t.joinOtp.matchLine(couple, guestName)}</span>
+                  {unavailable && (
+                    <span style={{ fontSize: 11, fontWeight: 400 }}>
+                      {t.joinOtp.linkedElsewhere}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
+          <button type="button" onClick={resetEmail} style={textButtonStyle}>
+            {t.joinOtp.useAnotherEmail}
+          </button>
         </>
       );
     }

@@ -626,10 +626,12 @@ export const fr: Dictionary = {
     organiserHintText:
       "Ce contact est aussi lié à un compte organisateur sur Union.",
     organiserHintLink: "Se connecter en tant qu'organisateur",
-    matchesTitle: "Vous êtes lié à plusieurs invitations",
-    matchesSubtitle: "Choisissez la personne pour laquelle vous répondez.",
-    matchLine: (couple: string, firstName: string) =>
-      `${couple} — continuer en tant que ${firstName}`,
+    matchesTitle: "Choisissez votre invitation",
+    matchesSubtitle:
+      "Confirmez la personne pour laquelle vous répondez. Union ne choisit jamais automatiquement une identité d’invité.",
+    matchLine: (couple: string, guestName: string) =>
+      `${couple} — continuer en tant que ${guestName}`,
+    linkedElsewhere: "Déjà liée à un autre compte Union",
     invalidOrExpired: "Ce code n'a pas fonctionné, ou il a expiré.",
     cooldown: "Merci de patienter un instant avant de redemander un code.",
     tooManyRequests: "Trop de tentatives — réessayez un peu plus tard.",

@@ -3,6 +3,7 @@ import { resolveLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n";
 import type { FormAnswers, RsvpQuestion } from "@union/shared";
 import { GuestPortal } from "./GuestPortal";
+import { GuestIdentityGate } from "./GuestIdentityGate";
 
 // Always fetch fresh invitation data (no static caching of personal links).
 export const dynamic = "force-dynamic";
@@ -211,11 +212,20 @@ export default async function GuestExperiencePage({
     );
   }
 
+  const guestName = [invitation.guest.first_name, invitation.guest.last_name]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <GuestPortal
-      token={token}
-      invitation={invitation}
-      isDemo={isDemo}
-    />
+    <GuestIdentityGate
+      guestId={invitation.guest.id}
+      guestName={guestName}
+    >
+      <GuestPortal
+        token={token}
+        invitation={invitation}
+        isDemo={isDemo}
+      />
+    </GuestIdentityGate>
   );
 }
