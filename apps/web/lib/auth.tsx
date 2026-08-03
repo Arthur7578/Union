@@ -49,6 +49,13 @@ export async function verifyEmailOtp(
     type: "email",
   });
   if (error) throw error;
+  // Best-effort: if someone invited this email to plan together, this
+  // flips that invite from pending to active. Never blocks sign-in.
+  try {
+    await supabase.rpc("accept_pending_invites");
+  } catch {
+    // ignore — nothing pending, or the call failed; sign-in already succeeded
+  }
 }
 
 type AuthContextValue = {

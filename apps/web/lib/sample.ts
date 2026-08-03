@@ -1,10 +1,10 @@
 /**
  * Sample data for the Union web app.
  *
- * Screens backed by a real Supabase schema (Today countdown, Guests) use live
- * data. Everything else — Vendors, negotiation, budget, seating, stays, the
- * weekend run-of-show, collaborators — is not backed by tables yet, so it
- * renders from this module.
+ * Screens backed by a real Supabase schema (Today countdown, Guests, the
+ * team/activity feed on Plan together) use live data. Everything else —
+ * Vendors, negotiation, budget, seating, stays, the weekend run-of-show —
+ * is not backed by tables yet, so it renders from this module.
  *
  * All user-visible text lives in the i18n dictionaries (`sample.*`), so a
  * locale switch changes the demo copy too. Structural fields (ids, tones,
@@ -181,26 +181,6 @@ export function getSample(t: Dictionary) {
     accent: i === 2,
   }));
 
-  const roleLabel: Record<string, string> = {
-    Owner: t.plan.roles.owner,
-    Partner: t.plan.roles.partner,
-    Pending: t.plan.roles.pending,
-  };
-  const team = t.sample.team.map((m, i) => ({
-    name: m.name,
-    sub: m.sub,
-    role: roleLabel[m.role] ?? m.role,
-    roleKey: m.role,
-    you: i === 0,
-    monogram: m.name.charAt(0),
-    tone: (["accent", "green", "amber"] as const)[i] ?? "accent",
-  }));
-
-  const activity = t.sample.activity.map((a) => ({
-    ...a,
-    kind: a.who === "Union" ? ("union" as const) : ("person" as const),
-  }));
-
   const search = {
     ...t.sample.search,
     reachedOut: 6,
@@ -218,8 +198,6 @@ export function getSample(t: Dictionary) {
     bookSoon: t.sample.bookSoon,
     later: t.sample.later,
     schedule,
-    team,
-    activity,
     search,
   };
 }

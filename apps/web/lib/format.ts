@@ -79,6 +79,38 @@ export function initial(name: string | null | undefined): string {
   return name.trim().charAt(0).toUpperCase();
 }
 
+/** Relative time for activity feeds, e.g. "2 hours ago" / "il y a 2 heures". */
+export function timeAgo(iso: string | null | undefined, locale: Locale = "en"): string {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const seconds = Math.max(0, Math.round((Date.now() - then) / 1000));
+  const fr = locale === "fr";
+  if (seconds < 60) return fr ? "à l'instant" : "just now";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return fr ? `il y a ${minutes} min` : `${minutes} min ago`;
+  }
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    if (fr) return `il y a ${hours} heure${hours > 1 ? "s" : ""}`;
+    return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  }
+  const days = Math.round(hours / 24);
+  if (days < 30) {
+    if (days === 1) return fr ? "hier" : "yesterday";
+    return fr ? `il y a ${days} jours` : `${days} days ago`;
+  }
+  const months = Math.round(days / 30);
+  if (months < 12) {
+    if (fr) return `il y a ${months} mois`;
+    return `${months} month${months > 1 ? "s" : ""} ago`;
+  }
+  const years = Math.round(months / 12);
+  if (fr) return `il y a ${years} an${years > 1 ? "s" : ""}`;
+  return `${years} year${years > 1 ? "s" : ""} ago`;
+}
+
 /** Locale-aware currency formatting. Defaults to USD for backwards compat. */
 export function money(n: number, locale: Locale = "en"): string {
   if (locale === "fr") {

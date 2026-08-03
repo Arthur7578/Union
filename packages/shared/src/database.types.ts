@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action_text: string
+          actor_kind: string
+          actor_label: string
+          created_at: string
+          id: string
+          wedding_id: string
+        }
+        Insert: {
+          action_text: string
+          actor_kind: string
+          actor_label: string
+          created_at?: string
+          id?: string
+          wedding_id: string
+        }
+        Update: {
+          action_text?: string
+          actor_kind?: string
+          actor_label?: string
+          created_at?: string
+          id?: string
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       form_responses: {
         Row: {
           answers: Json
@@ -510,10 +545,56 @@ export type Database = {
           },
         ]
       }
+      wedding_collaborators: {
+        Row: {
+          email: string
+          id: string
+          invited_at: string
+          joined_at: string | null
+          status: string
+          user_id: string | null
+          wedding_id: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          invited_at?: string
+          joined_at?: string | null
+          status?: string
+          user_id?: string | null
+          wedding_id: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          invited_at?: string
+          joined_at?: string | null
+          status?: string
+          user_id?: string | null
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wedding_collaborators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wedding_collaborators_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weddings: {
         Row: {
           allow_guests_add_children: boolean
           allow_guests_add_partner: boolean
+          autonomy: string
           ceremony_reserved_rows: number
           ceremony_rows: number
           created_at: string
@@ -535,6 +616,7 @@ export type Database = {
         Insert: {
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
+          autonomy?: string
           ceremony_reserved_rows?: number
           ceremony_rows?: number
           created_at?: string
@@ -556,6 +638,7 @@ export type Database = {
         Update: {
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
+          autonomy?: string
           ceremony_reserved_rows?: number
           ceremony_rows?: number
           created_at?: string
@@ -589,6 +672,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_pending_invites: { Args: Record<PropertyKey, never>; Returns: undefined }
       _cluster_key: { Args: { p_ids: string[] }; Returns: string }
       _guest_matches: {
         Args: {
