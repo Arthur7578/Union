@@ -2,6 +2,8 @@
 
 import { getBrowserSupabase } from "./supabaseClient";
 import type {
+  ActivityLogEntry,
+  Collaborator,
   Form,
   FormStatus,
   Guest,
@@ -61,6 +63,7 @@ export async function createWedding(
     | "sms_sender"
     | "sms_template"
     | "sms_brevo_api_key"
+    | "autonomy"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
@@ -73,6 +76,7 @@ export async function createWedding(
     sms_sender?: string | null;
     sms_template?: string | null;
     sms_brevo_api_key?: string | null;
+    autonomy?: Wedding["autonomy"];
   },
 ): Promise<Wedding> {
   const supabase = getBrowserSupabase();
@@ -1139,6 +1143,77 @@ export async function deleteForm(form: Form): Promise<void> {
   const supabase = getBrowserSupabase();
   const { error } = await supabase.from("forms").delete().eq("id", form.id);
   if (error) throw error;
+}
+
+// ============================================================
+// Team (wedding_collaborators) & activity (activity_log)
+//
+// Backs the "who's planning" entry point and /plan/team. The owner is
+// never stored as a collaborator row — it's derived from wedding.owner_id
+// + the signed-in profile. Rows here are only ever the people invited
+// beyond the owner.
+// ============================================================
+
+/** A collaborator row with the joined person's real name, once they've
+ *  accepted and it exists. Before that, all we have is the invited email. */
+export type CollaboratorWithProfile = Collaborator & { profile_full_name: string | null };
+
+export async function fetchCollaborators(weddingId: string): Promise<CollaboratorWithProfile[]> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase
+    .from("wedding_collaborators")
+    .select("*, profiles(full_name)")
+    .eq("wedding_id", weddingId)
+    .order("invited_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((c: any) => ({
+    ...c,
+    profile_full_name: c.profiles?.full_name ?? null,
+  }));
+}
+
+/** Invite someone by email. Fails with a friendly message if they're
+ *  already invited (the DB enforces one invite per email per wedding). */
+export async function inviteCollaborator(
+  weddingId: string,
+  email: string,
+): Promise<CollaboratorWithProfile> {
+  const supabase = getBrowserSupabase();
+  const clean = email.trim().toLowerCase();
+  const { data, error } = await supabase
+    .from("wedding_collaborators")
+    .insert({ wedding_id: weddingId, email: clean })
+    .select("*, profiles(full_name)")
+    .single();
+  if (error) {
+    if ((error as { code?: string }).code === "23505") {
+      throw new Error("Already invited.");
+    }
+    throw error;
+  }
+  return { ...(data as any), profile_full_name: (data as any).profiles?.full_name ?? null };
+}
+
+/** Revoke a pending invite, or remove an active collaborator. */
+export async function removeCollaborator(id: string): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const { error } = await supabase.from("wedding_collaborators").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function fetchActivity(
+  weddingId: string,
+  limit = 20,
+): Promise<ActivityLogEntry[]> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("*")
+    .eq("wedding_id", weddingId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
 }
 
 /** Roll up a guest list into the headline counts shown on Today / Guests. */

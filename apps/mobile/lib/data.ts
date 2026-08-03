@@ -32,6 +32,7 @@ export async function createWedding(
     | "sms_sender"
     | "sms_template"
     | "sms_brevo_api_key"
+    | "autonomy"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
@@ -44,6 +45,7 @@ export async function createWedding(
     sms_sender?: string | null;
     sms_template?: string | null;
     sms_brevo_api_key?: string | null;
+    autonomy?: Wedding["autonomy"];
   },
 ): Promise<Wedding> {
   const { data, error } = await supabase
