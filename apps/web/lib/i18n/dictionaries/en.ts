@@ -445,6 +445,7 @@ export const en = {
       "Union recommends the next step and gets your go-ahead before anything happens.",
     autonomyDescAuto:
       "Union handles the routine calls itself, and only interrupts you for the decisions that matter.",
+    autonomyError: "Couldn't save that — try again.",
   },
 
   // Settings
@@ -465,7 +466,9 @@ export const en = {
     weddingSection: "Your wedding",
     weddingRowFallback: "Add your date & venue",
     teamRowTitle: "Who's planning",
-    teamRowSub: (n: number) => `${n} planning together`,
+    // Now that this counts real collaborators it can legitimately be 1.
+    teamRowSub: (n: number) =>
+      n <= 1 ? "Just you so far" : `${n} planning together`,
 
     plusKicker: "Union Plus",
     plusTitle: "Your planner, fully unlocked",

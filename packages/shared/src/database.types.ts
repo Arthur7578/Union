@@ -673,6 +673,19 @@ export type Database = {
     }
     Functions: {
       accept_pending_invites: { Args: Record<PropertyKey, never>; Returns: undefined }
+      list_collaborators: {
+        Args: { p_wedding_id: string }
+        Returns: {
+          email: string
+          id: string
+          invited_at: string
+          joined_at: string | null
+          profile_full_name: string | null
+          status: string
+          user_id: string | null
+          wedding_id: string
+        }[]
+      }
       _cluster_key: { Args: { p_ids: string[] }; Returns: string }
       _guest_matches: {
         Args: {

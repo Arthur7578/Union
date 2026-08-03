@@ -1158,18 +1158,18 @@ export async function deleteForm(form: Form): Promise<void> {
  *  accepted and it exists. Before that, all we have is the invited email. */
 export type CollaboratorWithProfile = Collaborator & { profile_full_name: string | null };
 
+/** Goes through `list_collaborators` rather than selecting the table with a
+ *  `profiles(full_name)` embed: profiles' RLS only ever exposes your own row,
+ *  so the embed would silently return null and every teammate who had actually
+ *  joined would still show up as a raw email address. The RPC resolves the
+ *  name server-side and checks that you belong to the wedding. */
 export async function fetchCollaborators(weddingId: string): Promise<CollaboratorWithProfile[]> {
   const supabase = getBrowserSupabase();
-  const { data, error } = await supabase
-    .from("wedding_collaborators")
-    .select("*, profiles(full_name)")
-    .eq("wedding_id", weddingId)
-    .order("invited_at", { ascending: true });
+  const { data, error } = await supabase.rpc("list_collaborators", {
+    p_wedding_id: weddingId,
+  });
   if (error) throw error;
-  return (data ?? []).map((c: any) => ({
-    ...c,
-    profile_full_name: c.profiles?.full_name ?? null,
-  }));
+  return (data ?? []) as CollaboratorWithProfile[];
 }
 
 /** Invite someone by email. Fails with a friendly message if they're
@@ -1183,7 +1183,7 @@ export async function inviteCollaborator(
   const { data, error } = await supabase
     .from("wedding_collaborators")
     .insert({ wedding_id: weddingId, email: clean })
-    .select("*, profiles(full_name)")
+    .select("*")
     .single();
   if (error) {
     if ((error as { code?: string }).code === "23505") {
@@ -1191,7 +1191,9 @@ export async function inviteCollaborator(
     }
     throw error;
   }
-  return { ...(data as any), profile_full_name: (data as any).profiles?.full_name ?? null };
+  // A brand-new invite has no profile behind it yet — the name fills in the
+  // first time that email signs in and accept_pending_invites() runs.
+  return { ...data, profile_full_name: null };
 }
 
 /** Revoke a pending invite, or remove an active collaborator. */
