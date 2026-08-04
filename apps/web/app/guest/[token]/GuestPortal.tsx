@@ -317,6 +317,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           : []
     : [];
   const addressText = addressParts.filter(Boolean).join(", ");
+  const guestLocationSummary = invitation.wedding.venue_name || addressText;
   const addressPending = locale === "fr"
     ? "L'adresse complète sera communiquée prochainement."
     : "The full address will be shared closer to the date.";
@@ -952,7 +953,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         <h1>{coupleNames}</h1>
         <p className="u-serif" style={{ fontSize: "20px", color: "var(--muted)", fontStyle: "italic" }}>
           {displayDate}
-          {invitation.wedding.venue_name ? ` • ${invitation.wedding.venue_name}` : ""}
+          {guestLocationSummary ? ` • ${guestLocationSummary}` : ""}
         </p>
 
         {timeLeft.days > 0 && (

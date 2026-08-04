@@ -479,16 +479,16 @@ export const fr: Dictionary = {
     addressVisibilityLabel: "Ce que les invités voient",
     addressVisibilityHidden: "Rien — garder confidentiel pour l'instant",
     addressVisibilityArea: "Région et pays uniquement",
-    addressVisibilityPartial: "Ville + code postal — pays facultatif",
+    addressVisibilityPartial: "Ville + code postal",
     addressVisibilityFull: "Nom du lieu + adresse complète",
     addressVisibilityHint:
-      "La région et le pays sont obligatoires pour l'option Région. L'option partielle affiche Ville (code postal), puis le pays s'il est renseigné. L'option complète affiche le nom du lieu, la rue, Ville (code postal), puis le pays s'il est renseigné. La région n'apparaît jamais dans les adresses partielles ou complètes.",
+      "La région et le pays sont obligatoires pour l'option Région. L'option partielle affiche Ville (code postal). L'option complète affiche le nom du lieu, la rue et Ville (code postal). La région n'apparaît jamais dans les adresses partielles ou complètes.",
     addressVisibilityAreaError:
       "Renseignez la région et le pays avant de partager cette option.",
     addressVisibilityPartialError:
       "Renseignez la ville et le code postal avant de partager cette option.",
     addressVisibilityFullError:
-      "Renseignez la rue, la ville et le code postal avant de partager l'adresse complète.",
+      "Renseignez le nom du lieu, la rue, la ville et le code postal avant de partager l'adresse complète.",
     guestTargetLabel: "Nombre d'invités · objectif",
     styleLabel: "Style et ambiance",
     stylePlaceholder: "Jardin · tons neutres chauds · décontracté",

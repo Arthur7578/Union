@@ -498,15 +498,15 @@ export const en = {
     addressVisibilityLabel: "What guests see",
     addressVisibilityHidden: "Nothing — keep it confidential for now",
     addressVisibilityArea: "Area & country only",
-    addressVisibilityPartial: "City + zip / postal code — country optional",
+    addressVisibilityPartial: "City + zip / postal code",
     addressVisibilityFull: "Venue name + full address",
     addressVisibilityHint:
-      "Area requires both area and country. Partial shows City (postal code), plus country when provided. Full shows the venue name, street address, City (postal code), plus country when provided. Area is never included in partial or full addresses.",
+      "Area requires both area and country. Partial shows City (postal code). Full shows the venue name, street address, and City (postal code). Area is never included in partial or full addresses.",
     addressVisibilityAreaError: "Enter both an area and country before sharing this option.",
     addressVisibilityPartialError:
       "Enter both a city and zip / postal code before sharing this option.",
     addressVisibilityFullError:
-      "Enter the street address, city, and zip / postal code before sharing the full address.",
+      "Enter the venue name, street address, city, and zip / postal code before sharing the full address.",
     guestTargetLabel: "Guest count · target",
     styleLabel: "Style & vibe",
     stylePlaceholder: "Garden · warm neutrals · relaxed",

@@ -82,7 +82,10 @@ export default function WeddingSettingsPage() {
     }
     if (
       addressVisibility === "full" &&
-      (!addressLine.trim() || !addressPostalCode.trim() || !addressCity.trim())
+      (!venueName.trim() ||
+        !addressLine.trim() ||
+        !addressPostalCode.trim() ||
+        !addressCity.trim())
     ) {
       setError(t.account.addressVisibilityFullError);
       return;
@@ -221,6 +224,7 @@ export default function WeddingSettingsPage() {
             value={venueName}
             onChange={(e) => setVenueName(e.target.value)}
             placeholder={t.onboarding.venuePlaceholder}
+            required={addressVisibility === "full"}
           />
           <div style={{ fontSize: 12, color: T.faint, marginTop: 6 }}>
             {t.account.venueVisibilityHint}

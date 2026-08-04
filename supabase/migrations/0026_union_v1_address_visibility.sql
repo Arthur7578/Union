@@ -54,6 +54,7 @@ alter table public.weddings
     )
     or (
       address_visibility = 'full'
+      and nullif(btrim(venue_name), '') is not null
       and nullif(btrim(address_line), '') is not null
       and nullif(btrim(address_postal_code), '') is not null
       and nullif(btrim(address_city), '') is not null
