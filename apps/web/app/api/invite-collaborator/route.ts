@@ -27,9 +27,9 @@ const SUPABASE_ADMIN_KEY = (
  *
  * The email goes out through Supabase Auth rather than a new provider,
  * because Auth's mailer is already the one delivering this app's sign-in
- * codes — it's the one channel we know works on this project. That needs
- * a Supabase secret key (or the legacy service-role key), which is why this
- * lives in a server-only route: the key must never reach the browser.
+ * codes. Existing users can receive that ordinary sign-in email with the
+ * publishable key. Only creating a brand-new invited Auth user needs the
+ * server-only Supabase secret key (or legacy service-role key).
  *
  * The row is written first, with the caller's own JWT so RLS still decides
  * whether they may invite anyone here at all. If the mail then fails we
@@ -146,15 +146,6 @@ export async function POST(request: Request) {
 
   const collaborator = { ...row, profile_full_name: null };
 
-  if (!SUPABASE_ADMIN_KEY) {
-    return NextResponse.json({
-      collaborator,
-      delivered: false,
-      reason:
-        "The invite is saved, but no email could be sent: this deployment has neither SUPABASE_SECRET_KEY nor the legacy SUPABASE_SERVICE_ROLE_KEY. Connect the Supabase integration to this Vercel environment (or add one server-only key) and redeploy.",
-    });
-  }
-
   const origin =
     request.headers.get("origin") ||
     (() => {
@@ -164,6 +155,62 @@ export async function POST(request: Request) {
         return "";
       }
     })();
+
+  const teamUrl = origin
+    ? `${origin}/plan/team?wedding=${encodeURIComponent(weddingId)}`
+    : undefined;
+
+  // A publishable Auth client can email an existing account; no elevated key
+  // is needed. Ask the database only about this owner's already-saved pending
+  // invite so the route does not become a general account lookup endpoint.
+  const { data: recipientExists, error: recipientLookupErr } = await supabase.rpc(
+    "invitation_recipient_exists",
+    { p_wedding_id: weddingId, p_email: email },
+  );
+  if (recipientLookupErr) {
+    return NextResponse.json({
+      collaborator,
+      delivered: false,
+      reason: `The invite is saved, but we couldn't determine how to email them: ${recipientLookupErr.message}`,
+    });
+  }
+
+  if (recipientExists) {
+    // Deliberately not the `supabase` client above: that one carries the
+    // inviter's bearer token on every request, and this call is about a
+    // different person's session entirely.
+    const anon = createUnionClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error: otpErr } = await anon.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: teamUrl,
+      },
+    });
+    if (!otpErr) {
+      return NextResponse.json({
+        collaborator,
+        delivered: true,
+        kind: "existing",
+      });
+    }
+    return NextResponse.json({
+      collaborator,
+      delivered: false,
+      reason: otpErr.message,
+    });
+  }
+
+  if (!SUPABASE_ADMIN_KEY) {
+    return NextResponse.json({
+      collaborator,
+      delivered: false,
+      reason:
+        "The invite is saved, but this address does not have a Union account yet and this deployment has no SUPABASE_SECRET_KEY with which to create one. Connect the Supabase integration to this Vercel environment (or add the server-only key) and redeploy.",
+    });
+  }
 
   const admin = createUnionClient(SUPABASE_URL, SUPABASE_ADMIN_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -177,10 +224,6 @@ export async function POST(request: Request) {
     .map((n) => n?.trim())
     .filter(Boolean)
     .join(" & ");
-
-  const teamUrl = origin
-    ? `${origin}/plan/team?wedding=${encodeURIComponent(weddingId)}`
-    : undefined;
 
   const { error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
     redirectTo: teamUrl,
@@ -197,13 +240,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ collaborator, delivered: true, kind: "invited" });
   }
 
-  // Already has a Union account: Auth won't "invite" them again, and there's
-  // nothing to create. Send the ordinary sign-in mail instead — signing in is
-  // exactly what accept_pending_invites() is waiting on.
+  // The account may have been created between our lookup and admin invite.
+  // Retry through the existing-user path in that narrow race.
   if (isExistingUser(inviteErr)) {
-    // Deliberately not the `supabase` client above: that one carries the
-    // inviter's bearer token on every request, and this call is about a
-    // different person's session entirely.
     const anon = createUnionClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });

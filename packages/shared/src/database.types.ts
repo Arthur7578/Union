@@ -697,6 +697,10 @@ export type Database = {
     }
     Functions: {
       accept_pending_invites: { Args: Record<PropertyKey, never>; Returns: undefined }
+      invitation_recipient_exists: {
+        Args: { p_email: string; p_wedding_id: string }
+        Returns: boolean
+      }
       list_collaborators: {
         Args: { p_wedding_id: string }
         Returns: {
