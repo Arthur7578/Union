@@ -477,7 +477,7 @@ export const fr: Dictionary = {
     addressCountryLabel: "Pays",
     addressCountryPlaceholder: "États-Unis",
     addressVisibilityLabel: "Ce que les invités voient",
-    addressVisibilityHidden: "Rien — garder confidentiel pour l'instant",
+    addressVisibilityHidden: "Rien — lieu du mariage non communiqué pour l'instant",
     addressVisibilityArea: "Région et pays uniquement",
     addressVisibilityPartial: "Ville + code postal",
     addressVisibilityFull: "Nom du lieu + adresse complète",

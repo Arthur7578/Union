@@ -496,7 +496,7 @@ export const en = {
     addressCountryLabel: "Country",
     addressCountryPlaceholder: "United States",
     addressVisibilityLabel: "What guests see",
-    addressVisibilityHidden: "Nothing — keep it confidential for now",
+    addressVisibilityHidden: "Nothing — venue location not shared yet",
     addressVisibilityArea: "Area & country only",
     addressVisibilityPartial: "City + zip / postal code",
     addressVisibilityFull: "Venue name + full address",
