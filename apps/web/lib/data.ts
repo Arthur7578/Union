@@ -1215,9 +1215,10 @@ export type InviteResult = {
  * Invite someone by email.
  *
  * Goes through /api/invite-collaborator rather than inserting directly:
- * sending the invitation mail needs the service-role key, which can only
+ * sending the invitation mail needs a Supabase secret key, which can only
  * live server-side. The route still writes the row under the caller's own
- * JWT, so RLS remains the thing that authorises the invite.
+ * JWT, so RLS remains the thing that authorises the invite. Retrying a
+ * pending address resends its mail instead of requiring the row be removed.
  *
  * Throws "Already invited." for a duplicate and "Can't invite yourself." for
  * the owner's own address; both are mapped to friendly copy by the caller.

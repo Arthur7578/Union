@@ -5,11 +5,18 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SUPABASE_URL =
+  process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
   "https://jriyeblycrzpozjuexvr.supabase.co";
-const SUPABASE_ANON_KEY =
+const SUPABASE_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "sb_publishable_G0fMYmSyYm4hJWterPh3eg_GLdE92V-";
+const SUPABASE_ADMIN_KEY = (
+  process.env.SUPABASE_SECRET_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  ""
+).trim();
 
 /**
  * Inviting a collaborator is two things that have to happen together: a
@@ -21,8 +28,8 @@ const SUPABASE_ANON_KEY =
  * The email goes out through Supabase Auth rather than a new provider,
  * because Auth's mailer is already the one delivering this app's sign-in
  * codes — it's the one channel we know works on this project. That needs
- * the service-role key, which is why this lives in a server-only route:
- * the key must never reach the browser.
+ * a Supabase secret key (or the legacy service-role key), which is why this
+ * lives in a server-only route: the key must never reach the browser.
  *
  * The row is written first, with the caller's own JWT so RLS still decides
  * whether they may invite anyone here at all. If the mail then fails we
@@ -80,7 +87,7 @@ export async function POST(request: Request) {
 
   // Bound to the caller's JWT, so RLS — not this route — is what decides
   // whether they own the wedding they're inviting into.
-  const supabase = createUnionClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createUnionClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
@@ -108,27 +115,43 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "self_invite" }, { status: 400 });
   }
 
-  const { data: row, error: insertErr } = await supabase
+  const { data: insertedRow, error: insertErr } = await supabase
     .from("wedding_collaborators")
     .insert({ wedding_id: weddingId, email })
     .select("*")
     .single();
+  let row = insertedRow;
   if (insertErr) {
     if ((insertErr as { code?: string }).code === "23505") {
-      return NextResponse.json({ error: "duplicate" }, { status: 409 });
+      // A previous delivery failure leaves a useful pending row behind. Let
+      // the owner retry that address without first deleting and recreating it.
+      const { data: existing, error: existingErr } = await supabase
+        .from("wedding_collaborators")
+        .select("*")
+        .eq("wedding_id", weddingId)
+        .ilike("email", email)
+        .maybeSingle();
+      if (existingErr || !existing || existing.status !== "pending") {
+        return NextResponse.json({ error: "duplicate" }, { status: 409 });
+      }
+      row = existing;
+    } else {
+      return NextResponse.json({ error: insertErr.message }, { status: 400 });
     }
-    return NextResponse.json({ error: insertErr.message }, { status: 400 });
+  }
+
+  if (!row) {
+    return NextResponse.json({ error: "Couldn't save that invite." }, { status: 500 });
   }
 
   const collaborator = { ...row, profile_full_name: null };
 
-  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim();
-  if (!serviceKey) {
+  if (!SUPABASE_ADMIN_KEY) {
     return NextResponse.json({
       collaborator,
       delivered: false,
       reason:
-        "The invite is saved, but no email could be sent: SUPABASE_SERVICE_ROLE_KEY isn't configured on this deployment. Add it in Vercel → Settings → Environment Variables and redeploy.",
+        "The invite is saved, but no email could be sent: this deployment has neither SUPABASE_SECRET_KEY nor the legacy SUPABASE_SERVICE_ROLE_KEY. Connect the Supabase integration to this Vercel environment (or add one server-only key) and redeploy.",
     });
   }
 
@@ -142,7 +165,7 @@ export async function POST(request: Request) {
       }
     })();
 
-  const admin = createUnionClient(SUPABASE_URL, serviceKey, {
+  const admin = createUnionClient(SUPABASE_URL, SUPABASE_ADMIN_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
@@ -181,7 +204,7 @@ export async function POST(request: Request) {
     // Deliberately not the `supabase` client above: that one carries the
     // inviter's bearer token on every request, and this call is about a
     // different person's session entirely.
-    const anon = createUnionClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const anon = createUnionClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const { error: otpErr } = await anon.auth.signInWithOtp({

@@ -600,7 +600,7 @@ export const fr: Dictionary = {
   configNotice: {
     title: "Union n'est pas encore configuré",
     body:
-      "Renseignez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY, puis rechargez.",
+      "Renseignez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, puis rechargez.",
   },
 
   sample: {

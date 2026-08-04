@@ -624,7 +624,7 @@ export const en = {
   configNotice: {
     title: "Union isn't configured yet",
     body:
-      "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then reload.",
+      "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, then reload.",
   },
 
   // Localized sample content: keys shared with sample.ts so /vendors, /plan,
