@@ -391,17 +391,54 @@ export const fr: Dictionary = {
       "Union envoie à chaque prestataire uniquement sa partie — heure d'arrivée, lieu, contact — une semaine avant.",
 
     teamTitle: "Planifier à plusieurs",
-    teamSubtitle: "Votre équipe · 2",
+    teamSubtitle: (n: number) => `Votre équipe · ${n}`,
     inviteHelper: "Invitez quelqu'un à vous aider",
     inviteBody: "Il/elle voit tout et peut agir avec vous.",
     invitePlaceholder: "Adresse e-mail…",
+    inviteSending: "Envoi de l'invitation…",
+    inviteInvalid: "Saisissez une adresse e-mail valide.",
+    inviteDuplicate: "Déjà invité·e.",
+    inviteSelf: "C'est votre propre adresse — vous faites déjà partie de l'équipe.",
+    inviteSent: (email: string) => `Invitation envoyée à ${email}.`,
+    inviteSavedNotSent: (reason: string) =>
+      `Enregistré, mais l'e-mail n'a pas pu partir${reason ? ` — ${reason}` : "."} La personne rejoindra l'équipe automatiquement dès sa première connexion avec cette adresse.`,
+    inviteError: "Impossible d'envoyer cette invitation — réessayez.",
+    cancelInvite: "Annuler l'invitation",
     whoDidWhat: "Qui a fait quoi",
+    activityEmpty: "Rien pour l'instant — ce que vous et Union faites apparaîtra ici.",
+    activityGuestAdded: (name: string) => `a ajouté ${name} à la liste des invités`,
+    activityRsvpAttending: "a répondu présent·e",
+    activityRsvpDeclined: "a répondu absent·e",
+    activityCollaboratorInvited: (email: string) =>
+      `a invité ${email} à organiser ensemble`,
+    activityCollaboratorJoined: "a rejoint l'équipe d'organisation",
+    activityAutonomyChanged: (level: string) =>
+      `a réglé le niveau d'autonomie d'Union sur « ${level} »`,
     you: "vous",
     roles: {
       owner: "Propriétaire",
       partner: "Partenaire",
       pending: "En attente",
     },
+    ownerSub: "Propriétaire · accès complet",
+    activeSub: (when: string) => `A rejoint ${when} · accès complet`,
+    pendingSub: (when: string) => `Invité·e ${when} · en attente de réponse`,
+
+    // Union en tant que coéquipière (déplacé depuis les Réglages)
+    unionTeammateKicker: "Union fait partie de cette équipe",
+    unionTeammateBody:
+      "Elle apparaît dans l'activité ci-dessous, et voici ce qu'elle fait seule avant de vous en parler.",
+    autonomyLabel: "Ce qu'Union fait seule",
+    autonomyAsk: "Demander d'abord",
+    autonomySuggest: "Suggérer",
+    autonomyAuto: "Automatique",
+    autonomyDescAsk:
+      "Union vous présente chaque option et attend votre accord avant de réserver, payer ou répondre en votre nom.",
+    autonomyDescSuggest:
+      "Union recommande la prochaine étape et attend votre feu vert avant d'agir.",
+    autonomyDescAuto:
+      "Union gère elle-même les démarches courantes, et ne vous sollicite que pour les décisions qui comptent.",
+    autonomyError: "Impossible d'enregistrer — réessayez.",
   },
 
   settings: {
@@ -420,7 +457,9 @@ export const fr: Dictionary = {
     weddingSection: "Votre mariage",
     weddingRowFallback: "Ajoutez votre date et votre lieu",
     teamRowTitle: "Qui organise",
-    teamRowSub: (n: number) => `${n} personnes organisent ensemble`,
+    // Now that this counts real collaborators it can legitimately be 1.
+    teamRowSub: (n: number) =>
+      n <= 1 ? "Vous organisez seul·e pour l'instant" : `${n} personnes organisent ensemble`,
 
     plusKicker: "Union Plus",
     plusTitle: "Votre planificateur, sans limites",
@@ -506,16 +545,6 @@ export const fr: Dictionary = {
     // App settings
     settingsTitle: "Réglages",
     settingsKicker: "Réglages de l'application",
-    autonomyLabel: "Ce qu'Union fait seule",
-    autonomyAsk: "Demander d'abord",
-    autonomySuggest: "Suggérer",
-    autonomyAuto: "Automatique",
-    autonomyDescAsk:
-      "Union vous présente chaque option et attend votre accord avant de réserver, payer ou répondre en votre nom.",
-    autonomyDescSuggest:
-      "Union recommande la prochaine étape et attend votre feu vert avant d'agir.",
-    autonomyDescAuto:
-      "Union gère elle-même les démarches courantes, et ne vous sollicite que pour les décisions qui comptent.",
     connectedSection: "Connecté",
     connectedCalendar: "Calendrier",
     connectedCalendarStatus: "Apple · activé",
@@ -594,7 +623,7 @@ export const fr: Dictionary = {
   configNotice: {
     title: "Union n'est pas encore configuré",
     body:
-      "Renseignez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY, puis rechargez.",
+      "Renseignez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, puis rechargez.",
   },
 
   sample: {
@@ -750,47 +779,6 @@ export const fr: Dictionary = {
         title: "Départ aux cierges magiques",
         sub: "Navette n°1 vers l'auberge",
         loc: "Allée d'entrée",
-      },
-    ],
-
-    team: [
-      { name: "Maya", sub: "Accès complet", role: "Owner" },
-      {
-        name: "Daniel",
-        sub: "Rejoint il y a 3 jours · accès complet",
-        role: "Partner",
-      },
-      {
-        name: "Line · maman de Maya",
-        sub: "Invitée · peut consulter",
-        role: "Pending",
-      },
-    ],
-    activity: [
-      {
-        who: "Daniel",
-        text: "a validé le devis de The Wild Stem",
-        sub: "Fleurs · il y a 2 heures",
-      },
-      {
-        who: "Union",
-        text: "a négocié les fleurs à 3 300 $",
-        sub: "540 $ économisés · il y a 2 heures",
-      },
-      {
-        who: "Maya",
-        text: "a ajouté Fernwood Film Co.",
-        sub: "Nouveau prestataire · hier",
-      },
-      {
-        who: "Daniel",
-        text: "a invité Maya à planifier ensemble",
-        sub: "il y a 3 jours",
-      },
-      {
-        who: "Maya",
-        text: "a défini le budget fleurs à 3 200 $",
-        sub: "il y a 3 jours",
       },
     ],
 

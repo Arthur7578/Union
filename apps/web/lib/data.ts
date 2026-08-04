@@ -2,6 +2,8 @@
 
 import { getBrowserSupabase } from "./supabaseClient";
 import type {
+  ActivityLogEntry,
+  Collaborator,
   Form,
   FormStatus,
   Guest,
@@ -32,17 +34,44 @@ export type GuestWithRsvp = Guest & {
   groups: GuestGroupRef[];
 };
 
-export async function fetchWedding(ownerId: string): Promise<Wedding | null> {
+export async function fetchWedding(
+  ownerId: string,
+  preferredWeddingId?: string | null,
+): Promise<Wedding | null> {
   const supabase = getBrowserSupabase();
-  const { data, error } = await supabase
+  // Invite links carry the shared wedding id. RLS decides whether the signed-in
+  // user may open it, so a guessed/stale id simply returns no row.
+  if (preferredWeddingId) {
+    const { data: preferred, error: preferredError } = await supabase
+      .from("weddings")
+      .select("*")
+      .eq("id", preferredWeddingId)
+      .maybeSingle();
+    if (preferredError) throw preferredError;
+    if (preferred) return preferred;
+  }
+
+  // Preserve the existing behavior for people who own a wedding.
+  const { data: owned, error: ownedError } = await supabase
     .from("weddings")
     .select("*")
     .eq("owner_id", ownerId)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  if (error) throw error;
-  return data;
+  if (ownedError) throw ownedError;
+  if (owned) return owned;
+
+  // An invited planner may not own a wedding. The database only exposes rows
+  // they can access, so the first remaining row is one of their shared weddings.
+  const { data: shared, error: sharedError } = await supabase
+    .from("weddings")
+    .select("*")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (sharedError) throw sharedError;
+  return shared;
 }
 
 export async function createWedding(
@@ -61,6 +90,7 @@ export async function createWedding(
     | "sms_sender"
     | "sms_template"
     | "sms_brevo_api_key"
+    | "autonomy"
     | "address_line"
     | "address_postal_code"
     | "address_city"
@@ -79,6 +109,7 @@ export async function createWedding(
     sms_sender?: string | null;
     sms_template?: string | null;
     sms_brevo_api_key?: string | null;
+    autonomy?: Wedding["autonomy"];
     address_line?: string | null;
     address_postal_code?: string | null;
     address_city?: string | null;
@@ -1151,6 +1182,117 @@ export async function deleteForm(form: Form): Promise<void> {
   const supabase = getBrowserSupabase();
   const { error } = await supabase.from("forms").delete().eq("id", form.id);
   if (error) throw error;
+}
+
+// ============================================================
+// Team (wedding_collaborators) & activity (activity_log)
+//
+// Backs the "who's planning" entry point and /plan/team. The owner is
+// never stored as a collaborator row — it's derived from wedding.owner_id
+// + the signed-in profile. Rows here are only ever the people invited
+// beyond the owner.
+// ============================================================
+
+/** A collaborator row with the joined person's real name, once they've
+ *  accepted and it exists. Before that, all we have is the invited email. */
+export type CollaboratorWithProfile = Collaborator & { profile_full_name: string | null };
+
+/** Goes through `list_collaborators` rather than selecting the table with a
+ *  `profiles(full_name)` embed: profiles' RLS only ever exposes your own row,
+ *  so the embed would silently return null and every teammate who had actually
+ *  joined would still show up as a raw email address. The RPC resolves the
+ *  name server-side and checks that you belong to the wedding. */
+export async function fetchCollaborators(weddingId: string): Promise<CollaboratorWithProfile[]> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase.rpc("list_collaborators", {
+    p_wedding_id: weddingId,
+  });
+  if (error) throw error;
+  return (data ?? []) as CollaboratorWithProfile[];
+}
+
+/** What actually happened when we tried to invite someone: the row is always
+ *  written, but the email that tells them about it can fail on its own. */
+export type InviteResult = {
+  collaborator: CollaboratorWithProfile;
+  /** False when the row saved but no mail went out — `reason` says why. */
+  delivered: boolean;
+  /** "invited" = brand-new account, "existing" = they already had one and got
+   *  a sign-in mail instead (signing in is what accepts the invite). */
+  kind?: "invited" | "existing";
+  reason?: string;
+};
+
+/**
+ * Invite someone by email.
+ *
+ * Goes through /api/invite-collaborator rather than inserting directly:
+ * existing users receive a passwordless sign-in email, while creating a new
+ * invited Auth user needs a Supabase secret key that can only live server-side.
+ * The route still writes the row under the caller's own JWT, so RLS remains
+ * the thing that authorises the invite. Retrying a pending address resends its
+ * mail instead of requiring the row be removed.
+ *
+ * Throws "Already invited." for a duplicate and "Can't invite yourself." for
+ * the owner's own address; both are mapped to friendly copy by the caller.
+ */
+export async function inviteCollaborator(
+  weddingId: string,
+  email: string,
+): Promise<InviteResult> {
+  const supabase = getBrowserSupabase();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error("You're signed out.");
+
+  const res = await fetch("/api/invite-collaborator", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ weddingId, email: email.trim().toLowerCase() }),
+  });
+  const payload = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    if (payload.error === "duplicate") throw new Error("Already invited.");
+    if (payload.error === "self_invite") throw new Error("Can't invite yourself.");
+    throw new Error(
+      typeof payload.error === "string" ? payload.error : "Couldn't send that invite.",
+    );
+  }
+
+  return {
+    collaborator: payload.collaborator as CollaboratorWithProfile,
+    delivered: payload.delivered === true,
+    kind: payload.kind,
+    reason: typeof payload.reason === "string" ? payload.reason : undefined,
+  };
+}
+
+/** Revoke a pending invite, or remove an active collaborator. */
+export async function removeCollaborator(id: string): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const { error } = await supabase.from("wedding_collaborators").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function fetchActivity(
+  weddingId: string,
+  limit = 20,
+): Promise<ActivityLogEntry[]> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("*")
+    .eq("wedding_id", weddingId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
 }
 
 /** Roll up a guest list into the headline counts shown on Today / Guests. */

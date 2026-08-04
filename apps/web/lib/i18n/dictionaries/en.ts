@@ -408,17 +408,57 @@ export const en = {
 
     // Team
     teamTitle: "Plan together",
-    teamSubtitle: "Your team · 2",
+    teamSubtitle: (n: number) => `Your team · ${n}`,
     inviteHelper: "Invite someone to help",
     inviteBody: "They'll see everything and can act with you.",
     invitePlaceholder: "Email address…",
+    inviteSending: "Inviting…",
+    inviteInvalid: "Enter a valid email address.",
+    inviteDuplicate: "Already invited.",
+    inviteError: "Couldn't send that invite — try again.",
+    inviteSelf: "That's your own address — you're already on the team.",
+    inviteSent: (email: string) => `Invitation emailed to ${email}.`,
+    // The row saves even when the mail doesn't, so don't claim it was sent.
+    inviteSavedNotSent: (reason: string) =>
+      `Saved, but we couldn't email them${reason ? ` — ${reason}` : "."} They'll join automatically the first time they sign in with that address.`,
+    cancelInvite: "Cancel invite",
     whoDidWhat: "Who did what",
+    activityEmpty: "Nothing yet — what you and Union do together will show up here.",
+    activityGuestAdded: (name: string) => `added ${name} as a guest`,
+    activityRsvpAttending: "RSVP'd yes",
+    activityRsvpDeclined: "RSVP'd no",
+    activityCollaboratorInvited: (email: string) =>
+      `invited ${email} to plan together`,
+    activityCollaboratorJoined: "joined to plan together",
+    activityAutonomyChanged: (level: string) =>
+      `set how much Union does on its own to “${level}”`,
     you: "you",
     roles: {
       owner: "Owner",
       partner: "Partner",
       pending: "Pending",
     },
+    ownerSub: "Owner · full access",
+    activeSub: (when: string) => `Joined ${when} · full access`,
+    pendingSub: (when: string) => `Invited ${when} · awaiting reply`,
+
+    // Union as teammate (this used to live under Settings — moved here
+    // so it reads as "this is how much of the team's work Union does",
+    // not a buried app preference).
+    unionTeammateKicker: "Union is part of this team",
+    unionTeammateBody:
+      "It shows up in the activity below, and this is how much it gets done on its own before checking with you.",
+    autonomyLabel: "How much Union does on its own",
+    autonomyAsk: "Ask first",
+    autonomySuggest: "Suggest",
+    autonomyAuto: "Auto",
+    autonomyDescAsk:
+      "Union brings you every option and waits for your yes before it books, pays, or replies on your behalf.",
+    autonomyDescSuggest:
+      "Union recommends the next step and gets your go-ahead before anything happens.",
+    autonomyDescAuto:
+      "Union handles the routine calls itself, and only interrupts you for the decisions that matter.",
+    autonomyError: "Couldn't save that — try again.",
   },
 
   // Settings
@@ -439,7 +479,9 @@ export const en = {
     weddingSection: "Your wedding",
     weddingRowFallback: "Add your date & venue",
     teamRowTitle: "Who's planning",
-    teamRowSub: (n: number) => `${n} planning together`,
+    // Now that this counts real collaborators it can legitimately be 1.
+    teamRowSub: (n: number) =>
+      n <= 1 ? "Just you so far" : `${n} planning together`,
 
     plusKicker: "Union Plus",
     plusTitle: "Your planner, fully unlocked",
@@ -524,16 +566,6 @@ export const en = {
     // App settings
     settingsTitle: "Settings",
     settingsKicker: "App settings",
-    autonomyLabel: "How much Union does on its own",
-    autonomyAsk: "Ask first",
-    autonomySuggest: "Suggest",
-    autonomyAuto: "Auto",
-    autonomyDescAsk:
-      "Union brings you every option and waits for your yes before it books, pays, or replies on your behalf.",
-    autonomyDescSuggest:
-      "Union recommends the next step and gets your go-ahead before anything happens.",
-    autonomyDescAuto:
-      "Union handles the routine calls itself, and only interrupts you for the decisions that matter.",
     connectedSection: "Connected",
     connectedCalendar: "Calendar",
     connectedCalendarStatus: "Apple · on",
@@ -614,7 +646,7 @@ export const en = {
   configNotice: {
     title: "Union isn't configured yet",
     body:
-      "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then reload.",
+      "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, then reload.",
   },
 
   // Localized sample content: keys shared with sample.ts so /vendors, /plan,
@@ -777,44 +809,6 @@ export const en = {
         loc: "Front drive",
       },
     ] as { time: string; title: string; sub: string; loc: string }[],
-
-    // Team & activity
-    team: [
-      { name: "Maya", sub: "Full access", role: "Owner" as const },
-      {
-        name: "Daniel",
-        sub: "Joined 3 days ago · full access",
-        role: "Partner" as const,
-      },
-      {
-        name: "Line · Maya's mom",
-        sub: "Invited · can view",
-        role: "Pending" as const,
-      },
-    ],
-    activity: [
-      {
-        who: "Daniel",
-        text: "approved The Wild Stem's quote",
-        sub: "Florals · 2 hours ago",
-      },
-      {
-        who: "Union",
-        text: "negotiated florals to $3,300",
-        sub: "Saved $540 · 2 hours ago",
-      },
-      {
-        who: "Maya",
-        text: "added Fernwood Film Co.",
-        sub: "New vendor · yesterday",
-      },
-      { who: "Daniel", text: "invited Maya to plan together", sub: "3 days ago" },
-      {
-        who: "Maya",
-        text: "set the florals budget to $3,200",
-        sub: "3 days ago",
-      },
-    ] as { who: string; text: string; sub: string }[],
 
     // Photographer search
     search: {

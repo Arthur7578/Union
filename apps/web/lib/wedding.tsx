@@ -11,6 +11,8 @@ import type { Wedding } from "@union/shared";
 import { useAuth } from "./auth";
 import { fetchWedding } from "./data";
 
+const ACTIVE_WEDDING_KEY = "union.activeWeddingId";
+
 type WeddingContextValue = {
   wedding: Wedding | null;
   loading: boolean;
@@ -33,8 +35,22 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
     }
     setLoading(true);
     try {
-      const w = await fetchWedding(session.user.id);
+      let preferredWeddingId: string | null = null;
+      try {
+        const requested = new URLSearchParams(window.location.search).get("wedding");
+        preferredWeddingId = requested || window.localStorage.getItem(ACTIVE_WEDDING_KEY);
+      } catch {
+        // Storage can be unavailable in private browsing; RLS-backed fallback
+        // resolution below still finds an owned or shared wedding.
+      }
+      const w = await fetchWedding(session.user.id, preferredWeddingId);
       setWedding(w);
+      try {
+        if (w) window.localStorage.setItem(ACTIVE_WEDDING_KEY, w.id);
+        else window.localStorage.removeItem(ACTIVE_WEDDING_KEY);
+      } catch {
+        // Best-effort preference only.
+      }
     } finally {
       setLoading(false);
     }

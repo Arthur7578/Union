@@ -5,15 +5,25 @@ import type { Guest, Rsvp, Wedding } from "@union/shared";
 export type GuestWithRsvp = Guest & { rsvps: Rsvp | null };
 
 export async function fetchWedding(ownerId: string): Promise<Wedding | null> {
-  const { data, error } = await supabase
+  const { data: owned, error: ownedError } = await supabase
     .from("weddings")
     .select("*")
     .eq("owner_id", ownerId)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  if (error) throw error;
-  return data;
+  if (ownedError) throw ownedError;
+  if (owned) return owned;
+
+  // RLS exposes shared weddings to active/invited collaborators.
+  const { data: shared, error: sharedError } = await supabase
+    .from("weddings")
+    .select("*")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (sharedError) throw sharedError;
+  return shared;
 }
 
 export async function createWedding(
@@ -32,6 +42,7 @@ export async function createWedding(
     | "sms_sender"
     | "sms_template"
     | "sms_brevo_api_key"
+    | "autonomy"
     | "address_line"
     | "address_postal_code"
     | "address_city"
@@ -50,6 +61,7 @@ export async function createWedding(
     sms_sender?: string | null;
     sms_template?: string | null;
     sms_brevo_api_key?: string | null;
+    autonomy?: Wedding["autonomy"];
     address_line?: string | null;
     address_postal_code?: string | null;
     address_city?: string | null;
