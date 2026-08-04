@@ -598,6 +598,12 @@ export type Database = {
       }
       weddings: {
         Row: {
+          address_area: string | null
+          address_city: string | null
+          address_country: string | null
+          address_line: string | null
+          address_postal_code: string | null
+          address_visibility: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children: boolean
           allow_guests_add_partner: boolean
           autonomy: string
@@ -620,6 +626,12 @@ export type Database = {
           venue_name: string | null
         }
         Insert: {
+          address_area?: string | null
+          address_city?: string | null
+          address_country?: string | null
+          address_line?: string | null
+          address_postal_code?: string | null
+          address_visibility?: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
           autonomy?: string
@@ -642,6 +654,12 @@ export type Database = {
           venue_name?: string | null
         }
         Update: {
+          address_area?: string | null
+          address_city?: string | null
+          address_country?: string | null
+          address_line?: string | null
+          address_postal_code?: string | null
+          address_visibility?: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
           autonomy?: string
@@ -815,6 +833,7 @@ export type Database = {
       }
     }
     Enums: {
+      address_visibility: "hidden" | "area" | "partial" | "full"
       guest_relationship_kind: "parent_of" | "partner_of"
       rsvp_status: "pending" | "attending" | "declined"
     }
@@ -944,6 +963,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      address_visibility: ["hidden", "area", "partial", "full"],
       guest_relationship_kind: ["parent_of", "partner_of"],
       rsvp_status: ["pending", "attending", "declined"],
     },

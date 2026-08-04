@@ -298,6 +298,30 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     { weekday: "long", year: "numeric", month: "long", day: "numeric" }
   ) : "Saturday, September 20, 2026";
 
+  // The RPC removes every field the couple has not chosen to disclose. The
+  // formatter still switches on the visibility tier so the guest UI cannot
+  // accidentally reintroduce area into precise addresses later.
+  const address = invitation.wedding.address;
+  const cityAndPostalCode = address?.city
+    ? `${address.city}${address.postal_code ? ` (${address.postal_code})` : ""}`
+    : address?.postal_code
+      ? `(${address.postal_code})`
+      : "";
+  const addressParts = address
+    ? invitation.wedding.address_visibility === "area"
+      ? [address.area, address.country]
+      : invitation.wedding.address_visibility === "partial"
+        ? [cityAndPostalCode, address.country]
+        : invitation.wedding.address_visibility === "full"
+          ? [address.line, cityAndPostalCode, address.country]
+          : []
+    : [];
+  const addressText = addressParts.filter(Boolean).join(", ");
+  const guestLocationSummary = invitation.wedding.venue_name || addressText;
+  const addressPending = locale === "fr"
+    ? "L'adresse complète sera communiquée prochainement."
+    : "The full address will be shared closer to the date.";
+
   // Form Locking Logic helper
   const isDeclined = primaryRsvp === "declined";
   const isPending = primaryRsvp === "pending";
@@ -928,7 +952,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         </p>
         <h1>{coupleNames}</h1>
         <p className="u-serif" style={{ fontSize: "20px", color: "var(--muted)", fontStyle: "italic" }}>
-          {displayDate} • {invitation.wedding.venue_name || "Wildflower Barn"}
+          {displayDate}
+          {guestLocationSummary ? ` • ${guestLocationSummary}` : ""}
         </p>
 
         {timeLeft.days > 0 && (
@@ -1318,26 +1343,38 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               <div>
                 <h4 style={{ fontWeight: "600", fontSize: "16px", marginBottom: "16px" }}>📍 {locale === "fr" ? "Le Lieu du Mariage" : "The Venue Address"}</h4>
                 <div style={{ border: "1px solid #e1dec3", padding: "20px", borderRadius: "16px", background: "#fcfbfa", marginBottom: "24px" }}>
-                  <p style={{ margin: "0 0 6px", fontWeight: "bold", fontSize: "16px" }}>{invitation.wedding.venue_name || "Wildflower Barn"}</p>
-                  <p style={{ margin: "0 0 16px", color: "var(--muted)", fontSize: "14px" }}>{invitation.wedding.venue_address || "123 Orchard Rd, Hood River, OR"}</p>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(invitation.wedding.venue_address || "123 Orchard Rd, Hood River, OR")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "inline-block",
-                      padding: "10px 16px",
-                      background: "white",
-                      border: "1px solid #e1dec3",
-                      borderRadius: "10px",
-                      color: "var(--primary)",
-                      fontWeight: "600",
-                      fontSize: "13px",
-                      textDecoration: "none",
-                    }}
-                  >
-                    🗺️ {locale === "fr" ? "Ouvrir sur Google Maps" : "Open in Google Maps"}
-                  </a>
+                  {invitation.wedding.venue_name ? (
+                    <p style={{ margin: "0 0 6px", fontWeight: "bold", fontSize: "16px" }}>
+                      {invitation.wedding.venue_name}
+                    </p>
+                  ) : null}
+                  {addressText ? (
+                    <>
+                      <p style={{ margin: "0 0 16px", color: "var(--muted)", fontSize: "14px" }}>{addressText}</p>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressText)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-block",
+                          padding: "10px 16px",
+                          background: "white",
+                          border: "1px solid #e1dec3",
+                          borderRadius: "10px",
+                          color: "var(--primary)",
+                          fontWeight: "600",
+                          fontSize: "13px",
+                          textDecoration: "none",
+                        }}
+                      >
+                        🗺️ {locale === "fr" ? "Ouvrir sur Google Maps" : "Open in Google Maps"}
+                      </a>
+                    </>
+                  ) : (
+                    <p style={{ margin: 0, color: "var(--muted)", fontSize: "14px", fontStyle: "italic" }}>
+                      {addressPending}
+                    </p>
+                  )}
                 </div>
 
                 <h4 style={{ fontWeight: "600", fontSize: "16px", marginBottom: "16px" }}>🕒 {locale === "fr" ? "Déroulement du Mariage" : "Wedding Schedule"}</h4>
@@ -1396,11 +1433,11 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               </div>
 
               <div className="faq-item">
-                <h4 style={{ fontWeight: "600", fontSize: "15px", margin: "0 0 6px" }}>🚗 {locale === "fr" ? "Où se garer à la grange ?" : "Is parking available at the venue?"}</h4>
+                <h4 style={{ fontWeight: "600", fontSize: "15px", margin: "0 0 6px" }}>🚗 {locale === "fr" ? "Le stationnement est-il disponible sur place ?" : "Is parking available at the venue?"}</h4>
                 <p style={{ color: "var(--muted)", fontSize: "14px", margin: 0, lineHeight: "1.5" }}>
                   {locale === "fr"
                     ? "Oui, un parking privé gratuit est disponible sur place. Le covoiturage reste conseillé."
-                    : "Yes, ample free parking is available on-site at Wildflower Barn. You can also match with other drivers using our Travel Board."}
+                    : "Yes, ample free parking is available on-site. You can also match with other drivers using our Travel Board."}
                 </p>
               </div>
             </div>

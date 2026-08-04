@@ -101,7 +101,7 @@ export const en = {
     weddingDate: "Wedding date",
     dateHint: "Format: YYYY-MM-DD",
     venue: "Venue",
-    venueAddress: "Venue address",
+    venueAddress: "Venue address (number & street)",
     save: "Save",
     signedInAs: "Signed in as",
     language: "Language",

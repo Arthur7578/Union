@@ -88,7 +88,15 @@ export type Invitation = {
     partner_two: string | null;
     event_date: string | null;
     venue_name: string | null;
-    venue_address: string | null;
+    address_visibility: "hidden" | "area" | "partial" | "full";
+    /** Null when the couple has chosen to keep the venue fully hidden. */
+    address: {
+      line: string | null;
+      postal_code: string | null;
+      city: string | null;
+      area: string | null;
+      country: string | null;
+    } | null;
   };
   guest: {
     id: string;

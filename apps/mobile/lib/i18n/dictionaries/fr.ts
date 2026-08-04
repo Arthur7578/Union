@@ -103,7 +103,7 @@ export const fr: Dictionary = {
     weddingDate: "Date du mariage",
     dateHint: "Format : AAAA-MM-JJ",
     venue: "Lieu",
-    venueAddress: "Adresse du lieu",
+    venueAddress: "Adresse du lieu (numéro et rue)",
     save: "Enregistrer",
     signedInAs: "Connecté·e en tant que",
     language: "Langue",
