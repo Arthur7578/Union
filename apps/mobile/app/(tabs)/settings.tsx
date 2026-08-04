@@ -20,7 +20,7 @@ export default function Settings() {
   const [partnerTwo, setPartnerTwo] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [venueName, setVenueName] = useState("");
-  const [venueAddress, setVenueAddress] = useState("");
+  const [addressLine, setAddressLine] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function Settings() {
     setPartnerTwo(wedding.partner_two ?? "");
     setEventDate(wedding.event_date ?? "");
     setVenueName(wedding.venue_name ?? "");
-    setVenueAddress(wedding.venue_address ?? "");
+    setAddressLine(wedding.address_line ?? wedding.venue_address ?? "");
   }, [wedding?.id]);
 
   const save = async () => {
@@ -45,7 +45,7 @@ export default function Settings() {
         partner_two: partnerTwo.trim() || null,
         event_date: eventDate.trim() || null,
         venue_name: venueName.trim() || null,
-        venue_address: venueAddress.trim() || null,
+        address_line: addressLine.trim() || null,
       });
       setWedding(updated);
       Alert.alert(t.common.saved);
@@ -93,8 +93,8 @@ export default function Settings() {
       />
       <Input
         label={t.settings.venueAddress}
-        value={venueAddress}
-        onChangeText={setVenueAddress}
+        value={addressLine}
+        onChangeText={setAddressLine}
       />
       <Button label={t.settings.save} onPress={save} loading={busy} />
 
