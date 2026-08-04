@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useLocale } from "@/lib/i18n/client";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { getSupabase } from "@/lib/supabase";
+import { clearActiveGuestIdentity } from "@/lib/guestIdentity";
+import { getBrowserSupabase } from "@/lib/supabaseClient";
 import type { FormAnswers, RsvpQuestion } from "@union/shared";
 import type { DBInvitation } from "./page";
 
@@ -89,6 +90,8 @@ const STAYS = [
 
 export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const { t, locale } = useLocale();
+  const [hasAuthSession, setHasAuthSession] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"forms" | "travel" | "logistics" | "faq">("forms");
 
@@ -165,6 +168,26 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   // Countdown timer state
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0 });
 
+  useEffect(() => {
+    let mounted = true;
+    const supabase = getBrowserSupabase();
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (mounted) setHasAuthSession(Boolean(data.session));
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) setHasAuthSession(Boolean(session));
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
   // Update Countdown timer
   useEffect(() => {
     const targetDate = invitation.wedding.event_date ? new Date(`${invitation.wedding.event_date}T00:00:00`) : new Date("2026-09-20T16:00:00");
@@ -195,7 +218,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     setSubmittingRsvp(true);
     try {
       if (!isDemo) {
-        const supabase = getSupabase();
+        const supabase = getBrowserSupabase();
 
         // 1. Submit RSVP for primary guest
         const { error: primaryError } = await supabase.rpc("submit_rsvp", {
@@ -293,6 +316,21 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   };
 
   const coupleNames = `${invitation.wedding.partner_one} & ${invitation.wedding.partner_two}`;
+
+  const handleGuestSignOut = async () => {
+    setSigningOut(true);
+    try {
+      const { error } = await getBrowserSupabase().auth.signOut({
+        scope: "local",
+      });
+      if (error) throw error;
+      clearActiveGuestIdentity();
+      window.location.assign("/");
+    } catch (error) {
+      console.error("Failed to sign out guest:", error);
+      setSigningOut(false);
+    }
+  };
   const displayDate = invitation.wedding.event_date ? new Date(`${invitation.wedding.event_date}T00:00:00`).toLocaleDateString(
     locale === "fr" ? "fr-FR" : "en-US",
     { weekday: "long", year: "numeric", month: "long", day: "numeric" }
@@ -364,7 +402,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     setCustomSubmitting(true);
     setCustomError(null);
     try {
-      const supabase = getSupabase();
+      const supabase = getBrowserSupabase();
       const { error } = await supabase.rpc("submit_form_response", {
         p_token: token,
         p_form_id: activeCustomForm.id,
@@ -403,7 +441,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     setAddCompanionBusy(true);
     setAddCompanionError(null);
     try {
-      const supabase = getSupabase();
+      const supabase = getBrowserSupabase();
       const { data, error } = await supabase.rpc("rsvp_register_companion", {
         p_token: token,
         p_kind: addCompanionKind,
@@ -920,7 +958,32 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
       {/* Hero Header */}
       <header className="hero-banner">
-        <div style={{ position: "absolute", top: "20px", right: "24px" }}>
+        <div style={{
+          position: "absolute",
+          top: "20px",
+          right: "24px",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+        }}>
+          {hasAuthSession && !isDemo && (
+            <button
+              type="button"
+              disabled={signingOut}
+              onClick={() => void handleGuestSignOut()}
+              style={{
+                border: 0,
+                background: "transparent",
+                color: "var(--muted)",
+                fontSize: "13px",
+                textDecoration: "underline",
+                cursor: signingOut ? "wait" : "pointer",
+                padding: "6px 2px",
+              }}
+            >
+              {signingOut ? t.common.signingOut : t.common.signOut}
+            </button>
+          )}
           <LanguageSwitcher compact />
         </div>
         <p className="u-serif" style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "2px", color: "var(--accent)", fontWeight: "600" }}>

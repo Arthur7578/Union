@@ -648,15 +648,13 @@ export const en = {
     matchesTitle: "Choose your invitation",
     matchesSubtitle:
       "Confirm who you're responding for. Union never chooses a guest identity automatically.",
-    matchLine: (couple: string, guestName: string) =>
-      `${couple} — continue as ${guestName}`,
-    linkedElsewhere: "Already linked to another Union account",
+    matchLine: (guestName: string) => `Continue as ${guestName}`,
     invalidOrExpired: "That code didn't work, or it's expired.",
     cooldown: "Please wait a moment before requesting another code.",
     tooManyRequests: "Too many attempts — please try again in a bit.",
     genericError: "Something went wrong. Please try again.",
     accessUnavailable:
-      "That invitation is already linked to another account or is no longer available.",
+      "That invitation is no longer available for this verified email.",
     checkingSession: "Checking your Union account…",
     securityNote:
       "Union verifies this email through the same secure sign-in used by organisers.",

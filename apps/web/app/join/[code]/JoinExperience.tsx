@@ -10,7 +10,6 @@ import {
 import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
-import { getSupabase } from "@/lib/supabase";
 import type { JoinWeddingPreview } from "./page";
 
 type View =
@@ -276,14 +275,14 @@ export function JoinExperience({
     setBusy(true);
     setError(null);
     try {
-      const supabase = getSupabase();
+      const supabase = getBrowserSupabase();
       const { data, error: rpcError } = await supabase.rpc(
         "find_guest_by_name",
         {
           p_join_code: code,
           p_first_name: firstName.trim(),
-          p_last_name: lastName.trim() || undefined,
-          p_contact: contact?.trim() || undefined,
+          p_last_name: lastName.trim() || null,
+          p_contact: contact?.trim() || null,
         },
       );
       if (rpcError) throw rpcError;
@@ -407,6 +406,11 @@ export function JoinExperience({
               {t.joinOtp.useAnotherEmail}
             </button>
           </div>
+          {preview.allow_name_fallback && (
+            <button type="button" onClick={resetName} style={textButtonStyle}>
+              {t.joinOtp.useNameFallback}
+            </button>
+          )}
         </>
       );
     }
@@ -418,11 +422,6 @@ export function JoinExperience({
           <p style={bodyStyle}>{t.joinOtp.matchesSubtitle}</p>
           <div style={{ display: "grid", gap: 10 }}>
             {matches.map((match) => {
-              const couple =
-                [match.wedding_partner_one, match.wedding_partner_two]
-                  .filter(Boolean)
-                  .join(" & ") || partners;
-              const unavailable = match.access_status === "linked_elsewhere";
               const guestName = [match.first_name, match.last_name]
                 .filter(Boolean)
                 .join(" ");
@@ -430,24 +429,17 @@ export function JoinExperience({
                 <button
                   key={match.guest_id}
                   type="button"
-                  disabled={busy || unavailable}
+                  disabled={busy}
                   onClick={() => void claimAndContinue(match)}
                   style={{
                     ...primaryButtonStyle,
                     minHeight: 56,
-                    opacity: unavailable ? 0.55 : 1,
-                    cursor: unavailable ? "not-allowed" : "pointer",
                     display: "grid",
                     gap: 3,
                     alignContent: "center",
                   }}
                 >
-                  <span>{t.joinOtp.matchLine(couple, guestName)}</span>
-                  {unavailable && (
-                    <span style={{ fontSize: 11, fontWeight: 400 }}>
-                      {t.joinOtp.linkedElsewhere}
-                    </span>
-                  )}
+                  <span>{t.joinOtp.matchLine(guestName)}</span>
                 </button>
               );
             })}
@@ -455,6 +447,11 @@ export function JoinExperience({
           <button type="button" onClick={resetEmail} style={textButtonStyle}>
             {t.joinOtp.useAnotherEmail}
           </button>
+          {preview.allow_name_fallback && (
+            <button type="button" onClick={resetName} style={textButtonStyle}>
+              {t.joinOtp.useNameFallback}
+            </button>
+          )}
         </>
       );
     }
@@ -470,7 +467,7 @@ export function JoinExperience({
           {preview.allow_name_fallback && (
             <button
               type="button"
-              onClick={() => setView("name_form")}
+              onClick={resetName}
               style={textButtonStyle}
             >
               {t.joinOtp.useNameFallback}

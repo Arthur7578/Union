@@ -661,10 +661,10 @@ export type Database = {
       find_duplicate_groups: { Args: { p_wedding_id: string }; Returns: Json }
       find_guest_by_name: {
         Args: {
-          p_contact?: string
+          p_contact?: string | null
           p_first_name: string
           p_join_code: string
-          p_last_name?: string
+          p_last_name?: string | null
         }
         Returns: Json
       }

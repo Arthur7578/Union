@@ -629,15 +629,13 @@ export const fr: Dictionary = {
     matchesTitle: "Choisissez votre invitation",
     matchesSubtitle:
       "Confirmez la personne pour laquelle vous répondez. Union ne choisit jamais automatiquement une identité d’invité.",
-    matchLine: (couple: string, guestName: string) =>
-      `${couple} — continuer en tant que ${guestName}`,
-    linkedElsewhere: "Déjà liée à un autre compte Union",
+    matchLine: (guestName: string) => `Continuer en tant que ${guestName}`,
     invalidOrExpired: "Ce code n'a pas fonctionné, ou il a expiré.",
     cooldown: "Merci de patienter un instant avant de redemander un code.",
     tooManyRequests: "Trop de tentatives — réessayez un peu plus tard.",
     genericError: "Une erreur est survenue. Merci de réessayer.",
     accessUnavailable:
-      "Cette invitation est déjà liée à un autre compte ou n'est plus disponible.",
+      "Cette invitation n'est plus disponible pour cet e-mail vérifié.",
     checkingSession: "Vérification de votre compte Union…",
     securityNote:
       "Union vérifie cet e-mail avec la même connexion sécurisée que celle des organisateurs.",
