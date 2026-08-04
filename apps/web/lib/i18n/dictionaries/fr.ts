@@ -464,6 +464,7 @@ export const fr: Dictionary = {
     detailsHeading: "Les informations",
     dateLabel: "Date du mariage",
     venueLabel: "Lieu",
+    venueVisibilityHint: "Les invités voient le nom du lieu uniquement avec l'adresse complète.",
     addressLineLabel: "Adresse (numéro et rue)",
     addressLinePlaceholder: "123 Orchard Rd",
     addressPostalCodeLabel: "Code postal",
@@ -475,13 +476,19 @@ export const fr: Dictionary = {
     addressAreaHint: "Région, département, état, ou toute autre précision utile.",
     addressCountryLabel: "Pays",
     addressCountryPlaceholder: "États-Unis",
-    addressVisibilityLabel: "Ce que les invités voient avant l'adresse complète",
+    addressVisibilityLabel: "Ce que les invités voient",
     addressVisibilityHidden: "Rien — garder confidentiel pour l'instant",
     addressVisibilityArea: "Région et pays uniquement",
-    addressVisibilityPartial: "Code postal, ville, région et pays — sans l'adresse précise",
-    addressVisibilityFull: "Adresse complète",
+    addressVisibilityPartial: "Ville + code postal — pays facultatif",
+    addressVisibilityFull: "Nom du lieu + adresse complète",
     addressVisibilityHint:
-      "« Rien » masque également le nom du lieu. « Région et pays » est l'option de localisation la plus discrète — utile quand même la ville ou le code postal suffirait à deviner un lieu isolé ou peu peuplé. « Code postal, ville, région et pays » partage tout sauf l'adresse précise. Passez sur « Adresse complète » dès qu'elle est prête à partager.",
+      "La région et le pays sont obligatoires pour l'option Région. L'option partielle affiche Ville (code postal), puis le pays s'il est renseigné. L'option complète affiche le nom du lieu, la rue, Ville (code postal), puis le pays s'il est renseigné. La région n'apparaît jamais dans les adresses partielles ou complètes.",
+    addressVisibilityAreaError:
+      "Renseignez la région et le pays avant de partager cette option.",
+    addressVisibilityPartialError:
+      "Renseignez la ville et le code postal avant de partager cette option.",
+    addressVisibilityFullError:
+      "Renseignez la rue, la ville et le code postal avant de partager l'adresse complète.",
     guestTargetLabel: "Nombre d'invités · objectif",
     styleLabel: "Style et ambiance",
     stylePlaceholder: "Jardin · tons neutres chauds · décontracté",

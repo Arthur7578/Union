@@ -64,8 +64,31 @@ export default function WeddingSettingsPage() {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true);
     setError(null);
+
+    if (
+      addressVisibility === "area" &&
+      (!addressArea.trim() || !addressCountry.trim())
+    ) {
+      setError(t.account.addressVisibilityAreaError);
+      return;
+    }
+    if (
+      addressVisibility === "partial" &&
+      (!addressPostalCode.trim() || !addressCity.trim())
+    ) {
+      setError(t.account.addressVisibilityPartialError);
+      return;
+    }
+    if (
+      addressVisibility === "full" &&
+      (!addressLine.trim() || !addressPostalCode.trim() || !addressCity.trim())
+    ) {
+      setError(t.account.addressVisibilityFullError);
+      return;
+    }
+
+    setBusy(true);
     try {
       const updated = await updateWedding(wedding.id, {
         partner_one: partnerOne.trim() || null,
@@ -165,7 +188,7 @@ export default function WeddingSettingsPage() {
       )}
 
       <SectionLabel>{t.account.detailsHeading}</SectionLabel>
-      <form onSubmit={save}>
+      <form onSubmit={save} noValidate>
         <div className="field">
           <label htmlFor="p1">{t.onboarding.yourName}</label>
           <input
@@ -199,6 +222,9 @@ export default function WeddingSettingsPage() {
             onChange={(e) => setVenueName(e.target.value)}
             placeholder={t.onboarding.venuePlaceholder}
           />
+          <div style={{ fontSize: 12, color: T.faint, marginTop: 6 }}>
+            {t.account.venueVisibilityHint}
+          </div>
         </div>
         <div className="field">
           <label htmlFor="al">{t.account.addressLineLabel}</label>
@@ -208,6 +234,7 @@ export default function WeddingSettingsPage() {
             value={addressLine}
             onChange={(e) => setAddressLine(e.target.value)}
             placeholder={t.account.addressLinePlaceholder}
+            required={addressVisibility === "full"}
           />
         </div>
         <div style={{ display: "flex", gap: 12 }}>
@@ -219,6 +246,7 @@ export default function WeddingSettingsPage() {
               value={addressPostalCode}
               onChange={(e) => setAddressPostalCode(e.target.value)}
               placeholder={t.account.addressPostalCodePlaceholder}
+              required={addressVisibility === "partial" || addressVisibility === "full"}
             />
           </div>
           <div className="field" style={{ flex: 2 }}>
@@ -229,6 +257,7 @@ export default function WeddingSettingsPage() {
               value={addressCity}
               onChange={(e) => setAddressCity(e.target.value)}
               placeholder={t.account.addressCityPlaceholder}
+              required={addressVisibility === "partial" || addressVisibility === "full"}
             />
           </div>
         </div>
@@ -240,6 +269,7 @@ export default function WeddingSettingsPage() {
             value={addressArea}
             onChange={(e) => setAddressArea(e.target.value)}
             placeholder={t.account.addressAreaPlaceholder}
+            required={addressVisibility === "area"}
           />
           <div style={{ fontSize: 12, color: T.faint, marginTop: 6 }}>
             {t.account.addressAreaHint}
@@ -253,6 +283,7 @@ export default function WeddingSettingsPage() {
             value={addressCountry}
             onChange={(e) => setAddressCountry(e.target.value)}
             placeholder={t.account.addressCountryPlaceholder}
+            required={addressVisibility === "area"}
           />
         </div>
         <div className="field">
@@ -294,7 +325,11 @@ export default function WeddingSettingsPage() {
             placeholder={t.account.stylePlaceholder}
           />
         </div>
-        {error && <div className="error">{error}</div>}
+        {error ? (
+          <div className="error" role="alert">
+            {error}
+          </div>
+        ) : null}
         <Button type="submit" disabled={busy} style={{ width: "100%" }}>
           {busy ? t.common.saving : t.common.save}
         </Button>

@@ -298,15 +298,25 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     { weekday: "long", year: "numeric", month: "long", day: "numeric" }
   ) : "Saturday, September 20, 2026";
 
-  // What the couple has chosen to share so far — "hidden" strips the
-  // venue identity and address entirely, while "partial" shows everything
-  // except the street line so guests can start planning travel without
-  // being able to pinpoint the exact venue.
+  // The RPC removes every field the couple has not chosen to disclose. The
+  // formatter still switches on the visibility tier so the guest UI cannot
+  // accidentally reintroduce area into precise addresses later.
   const address = invitation.wedding.address;
-  const addressLines = address
-    ? [address.line, [address.postal_code, address.city].filter(Boolean).join(" "), address.area, address.country].filter(Boolean)
+  const cityAndPostalCode = address?.city
+    ? `${address.city}${address.postal_code ? ` (${address.postal_code})` : ""}`
+    : address?.postal_code
+      ? `(${address.postal_code})`
+      : "";
+  const addressParts = address
+    ? invitation.wedding.address_visibility === "area"
+      ? [address.area, address.country]
+      : invitation.wedding.address_visibility === "partial"
+        ? [cityAndPostalCode, address.country]
+        : invitation.wedding.address_visibility === "full"
+          ? [address.line, cityAndPostalCode, address.country]
+          : []
     : [];
-  const addressText = addressLines.join(", ");
+  const addressText = addressParts.filter(Boolean).join(", ");
   const addressPending = locale === "fr"
     ? "L'adresse complète sera communiquée prochainement."
     : "The full address will be shared closer to the date.";

@@ -63,7 +63,7 @@ export default async function GuestExperiencePage({
           line: "123 Orchard Rd",
           postal_code: "97031",
           city: "Hood River",
-          area: "OR",
+          area: null,
           country: "United States",
         },
       },

@@ -1,42 +1,32 @@
--- ============================================================
--- Union v1 · Structured venue address + guest-facing visibility
---
--- Splits the single freeform `venue_address` into structured parts
--- (number+street, postal code, city, area, country) so the couple can
--- choose how much of it guests see before the venue is locked in:
---
---   * hidden  — neither venue identity nor address is shown
---   * area    — just area + country. For a venue in a small town or a
---               sparsely populated postal code, even the city/zip can
---               be enough to pinpoint it, so this tier exists for
---               couples who need to stay coarser than that
---   * partial — city + postal code, with country when provided; venue
---               name, street line, and area stay private
---   * full    — venue name + street, city, and postal code, with country
---               when provided; area is not part of a precise address
---
--- `venue_address` itself is left in place for older clients. Its current
--- value is copied into address_line so existing weddings keep showing the
--- address guests already had before this migration.
--- ============================================================
+-- Keep incomplete or newly-created weddings private until the organiser has
+-- populated every field needed by the selected disclosure tier.
+alter table public.weddings
+  alter column address_visibility set default 'hidden';
 
-create type public.address_visibility as enum ('hidden', 'area', 'partial', 'full');
+update public.weddings
+set address_visibility = 'hidden'
+where not (
+  address_visibility = 'hidden'
+  or (
+    address_visibility = 'area'
+    and nullif(btrim(address_area), '') is not null
+    and nullif(btrim(address_country), '') is not null
+  )
+  or (
+    address_visibility = 'partial'
+    and nullif(btrim(address_postal_code), '') is not null
+    and nullif(btrim(address_city), '') is not null
+  )
+  or (
+    address_visibility = 'full'
+    and nullif(btrim(address_line), '') is not null
+    and nullif(btrim(address_postal_code), '') is not null
+    and nullif(btrim(address_city), '') is not null
+  )
+);
 
 alter table public.weddings
-  add column if not exists address_line text,
-  add column if not exists address_postal_code text,
-  add column if not exists address_city text,
-  add column if not exists address_area text,
-  add column if not exists address_country text,
-  add column if not exists address_visibility public.address_visibility not null default 'hidden';
-
--- Preserve legacy addresses without attempting to guess their component
--- parts. Couples can split the freeform value in wedding settings later.
-update public.weddings
-set address_line = venue_address
-where address_line is null
-  and venue_address is not null
-  and btrim(venue_address) <> '';
+  drop constraint if exists weddings_address_visibility_required_fields_check;
 
 alter table public.weddings
   add constraint weddings_address_visibility_required_fields_check
@@ -60,12 +50,8 @@ alter table public.weddings
     )
   );
 
--- ---------- get_invitation: gate the address by visibility ----------
--- Same function as 0025, with the flat venue_address swapped for a
--- structured `address` object whose fields are filtered server-side
--- per address_visibility — the guest's browser never receives more
--- than the couple chose to share, regardless of what the client asks
--- for.
+-- Only the full tier discloses the venue name. Precise tiers deliberately
+-- exclude area; the guest UI formats city and postal code as City (code).
 create or replace function public.get_invitation(p_token uuid)
 returns jsonb
 language plpgsql
