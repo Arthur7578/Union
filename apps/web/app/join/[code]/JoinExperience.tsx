@@ -2,11 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import {
-  LAST_EMAIL_KEY,
-  sendEmailOtp,
-  verifyEmailOtp,
-} from "@/lib/auth";
+import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
@@ -14,24 +10,29 @@ import type { JoinWeddingPreview } from "./page";
 
 type View =
   | "checking"
-  | "email_form"
+  | "contact_form"
+  | "first_name"
   | "email_code"
-  | "matches"
   | "no_match"
-  | "name_form"
-  | "name_confirm"
-  | "name_contact"
-  | "name_not_found"
   | "redirecting";
+
+type DisambiguationSource = "contact" | "authenticated" | null;
+
+interface ContactLookupResult {
+  status:
+    | "match"
+    | "ambiguous"
+    | "otp_required"
+    | "email_required"
+    | "not_found"
+    | "invalid_link";
+  token?: string;
+}
 
 interface GuestAccessOption {
   guest_id: string;
   first_name: string;
   last_name: string | null;
-  wedding_partner_one: string | null;
-  wedding_partner_two: string | null;
-  wedding_event_date: string | null;
-  access_status: "linked" | "claimable" | "linked_elsewhere";
 }
 
 interface GuestAccessOptionsResult {
@@ -49,55 +50,6 @@ interface ClaimGuestAccessResult {
   token?: string;
 }
 
-interface FindGuestByNameResult {
-  status: "match" | "ambiguous" | "not_found" | "invalid_link";
-  token?: string;
-  first_name?: string;
-  last_name?: string | null;
-}
-
-type NameMatch = {
-  token: string;
-  first_name: string;
-  last_name: string | null;
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  minHeight: 50,
-  borderRadius: 12,
-  border: "1px solid #d8d0c8",
-  background: "#fff",
-  color: "#2b2724",
-  fontSize: 16,
-  padding: "0 14px",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  width: "100%",
-  minHeight: 50,
-  border: 0,
-  borderRadius: 999,
-  background: "#2b2724",
-  color: "#fff",
-  fontSize: 15,
-  fontWeight: 600,
-  cursor: "pointer",
-  padding: "0 20px",
-};
-
-const textButtonStyle: React.CSSProperties = {
-  border: 0,
-  background: "transparent",
-  color: "#6f655f",
-  fontSize: 14,
-  textDecoration: "underline",
-  cursor: "pointer",
-  padding: 4,
-};
-
 export function JoinExperience({
   code,
   preview,
@@ -106,17 +58,16 @@ export function JoinExperience({
   preview: JoinWeddingPreview;
 }) {
   const { t, locale } = useLocale();
+  const otpMode = preview.guest_join_auth_mode === "otp";
   const [view, setView] = useState<View>("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [contact, setContact] = useState("");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [matches, setMatches] = useState<GuestAccessOption[]>([]);
-
   const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [nameContact, setNameContact] = useState("");
-  const [nameMatch, setNameMatch] = useState<NameMatch | null>(null);
+  const [otp, setOtp] = useState("");
+  const [disambiguationSource, setDisambiguationSource] =
+    useState<DisambiguationSource>(null);
 
   const partners =
     [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") ||
@@ -150,7 +101,7 @@ export function JoinExperience({
 
         const result = data as unknown as ClaimGuestAccessResult;
         if (result.status !== "verified" || !result.token) {
-          throw new Error(t.joinOtp.accessUnavailable);
+          throw new Error(t.guestJoin.accessUnavailable);
         }
 
         const { data: authData } = await supabase.auth.getSession();
@@ -166,7 +117,9 @@ export function JoinExperience({
         redirectToGuest(result.token);
       } catch (reason) {
         setError(
-          reason instanceof Error ? reason.message : t.joinOtp.genericError,
+          reason instanceof Error
+            ? reason.message
+            : t.guestJoin.genericError,
         );
         setBusy(false);
       }
@@ -174,30 +127,47 @@ export function JoinExperience({
     [redirectToGuest, t],
   );
 
-  const loadGuestOptions = useCallback(async () => {
-    const supabase = getBrowserSupabase();
-    const { data, error: rpcError } = await supabase.rpc(
-      "get_guest_access_options",
-      { p_join_code: code },
-    );
-    if (rpcError) throw rpcError;
+  const loadAuthenticatedOptions = useCallback(
+    async (name?: string) => {
+      const supabase = getBrowserSupabase();
+      const { data, error: rpcError } = await supabase.rpc(
+        "get_guest_access_options",
+        {
+          p_join_code: code,
+          p_first_name: name?.trim() || null,
+        },
+      );
+      if (rpcError) throw rpcError;
 
-    const result = data as unknown as GuestAccessOptionsResult;
-    const found = result.matches ?? [];
-    if (result.status !== "ok" || found.length === 0) {
-      setView("no_match");
-      return;
-    }
-    setMatches(found);
-    setView("matches");
-  }, [claimAndContinue, code]);
+      const result = data as unknown as GuestAccessOptionsResult;
+      const found = result.matches ?? [];
+      if (result.status !== "ok" || found.length === 0) {
+        setView("no_match");
+        return;
+      }
+      if (found.length > 1) {
+        if (name) {
+          setView("no_match");
+        } else {
+          setDisambiguationSource("authenticated");
+          setView("first_name");
+        }
+        return;
+      }
+      await claimAndContinue(found[0]);
+    },
+    [claimAndContinue, code],
+  );
 
   useEffect(() => {
     let active = true;
 
     try {
       const lastEmail = window.localStorage.getItem(LAST_EMAIL_KEY);
-      if (lastEmail) setEmail(lastEmail);
+      if (lastEmail && otpMode) {
+        setContact(lastEmail);
+        setEmail(lastEmail);
+      }
     } catch {
       // Prefill is optional.
     }
@@ -207,41 +177,99 @@ export function JoinExperience({
       .then(async ({ data }) => {
         if (!active) return;
         if (!data.session) {
-          setView("email_form");
+          setView("contact_form");
           return;
         }
         try {
-          await loadGuestOptions();
+          await loadAuthenticatedOptions();
         } catch {
-          if (active) setView("email_form");
+          if (active) setView("contact_form");
         }
       });
 
     return () => {
       active = false;
     };
-  }, [loadGuestOptions]);
+  }, [loadAuthenticatedOptions, otpMode]);
 
-  const requestEmailCode = async () => {
-    if (!email.trim()) return;
+  const requestEmailCode = async (address = email) => {
+    const cleanEmail = address.trim();
+    if (!cleanEmail) return;
     setBusy(true);
     setError(null);
     try {
-      await sendEmailOtp(email);
+      setEmail(cleanEmail);
+      await sendEmailOtp(cleanEmail);
       setOtp("");
       setView("email_code");
-    } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : t.joinOtp.genericError,
-      );
+    } catch {
+      setError(t.guestJoin.sendCodeError);
     } finally {
       setBusy(false);
     }
   };
 
-  const submitEmail = (event: React.FormEvent) => {
+  const resolveContact = async (name?: string) => {
+    const cleanContact = contact.trim();
+    if (!cleanContact) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const supabase = getBrowserSupabase();
+      const { data, error: rpcError } = await supabase.rpc(
+        "find_guest_by_contact",
+        {
+          p_join_code: code,
+          p_contact: cleanContact,
+          p_first_name: name?.trim() || null,
+        },
+      );
+      if (rpcError) throw rpcError;
+
+      const result = data as unknown as ContactLookupResult;
+      if (result.status === "match" && result.token) {
+        redirectToGuest(result.token);
+        return;
+      }
+      if (result.status === "ambiguous" && !name) {
+        setDisambiguationSource("contact");
+        setView("first_name");
+        return;
+      }
+      if (result.status === "otp_required") {
+        await requestEmailCode(cleanContact);
+        return;
+      }
+      if (result.status === "email_required") {
+        setError(t.guestJoin.emailRequired);
+        setView("contact_form");
+        return;
+      }
+      setView("no_match");
+    } catch {
+      setError(t.guestJoin.genericError);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitContact = (event: React.FormEvent) => {
     event.preventDefault();
-    void requestEmailCode();
+    void resolveContact();
+  };
+
+  const submitFirstName = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!firstName.trim()) return;
+    if (disambiguationSource === "authenticated") {
+      setBusy(true);
+      setError(null);
+      void loadAuthenticatedOptions(firstName)
+        .catch(() => setError(t.guestJoin.genericError))
+        .finally(() => setBusy(false));
+    } else {
+      void resolveContact(firstName);
+    }
   };
 
   const submitOtp = async (event: React.FormEvent) => {
@@ -251,71 +279,21 @@ export function JoinExperience({
     setError(null);
     try {
       await verifyEmailOtp(email, otp);
-      await loadGuestOptions();
+      await loadAuthenticatedOptions(firstName || undefined);
     } catch {
-      setError(t.joinOtp.invalidOrExpired);
+      setError(t.guestJoin.invalidCode);
     } finally {
       setBusy(false);
     }
   };
 
-  const resetEmail = () => {
-    setOtp("");
-    setMatches([]);
-    setError(null);
-    setView("email_form");
-  };
-
-  const submitName = async (
-    event: React.FormEvent,
-    contact?: string,
-  ) => {
-    event.preventDefault();
-    if (!firstName.trim()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const supabase = getBrowserSupabase();
-      const { data, error: rpcError } = await supabase.rpc(
-        "find_guest_by_name",
-        {
-          p_join_code: code,
-          p_first_name: firstName.trim(),
-          p_last_name: lastName.trim() || null,
-          p_contact: contact?.trim() || null,
-        },
-      );
-      if (rpcError) throw rpcError;
-
-      const result = data as unknown as FindGuestByNameResult;
-      if (result.status === "match" && result.token && result.first_name) {
-        setNameMatch({
-          token: result.token,
-          first_name: result.first_name,
-          last_name: result.last_name ?? null,
-        });
-        setView("name_confirm");
-      } else if (result.status === "ambiguous" && !contact) {
-        setView("name_contact");
-      } else {
-        setView("name_not_found");
-      }
-    } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : t.join.errorGeneric,
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const resetName = () => {
+  const startOver = () => {
     setFirstName("");
-    setLastName("");
-    setNameContact("");
-    setNameMatch(null);
+    setOtp("");
+    setEmail("");
+    setDisambiguationSource(null);
     setError(null);
-    setView("name_form");
+    setView("contact_form");
   };
 
   const renderContent = () => {
@@ -323,46 +301,78 @@ export function JoinExperience({
       return (
         <div style={{ textAlign: "center", color: "#756b65", padding: "28px 0" }}>
           {view === "checking"
-            ? t.joinOtp.checkingSession
-            : t.join.redirecting}
+            ? t.guestJoin.checkingSession
+            : t.guestJoin.redirecting}
         </div>
       );
     }
 
-    if (view === "email_form") {
+    if (view === "contact_form") {
       return (
         <>
-          <h2 style={titleStyle}>{t.joinOtp.title}</h2>
-          <p style={bodyStyle}>{t.joinOtp.subtitle}</p>
-          <form onSubmit={submitEmail} style={{ display: "grid", gap: 16 }}>
-            <FieldLabel label={t.joinOtp.emailLabel}>
+          <h2 style={titleStyle}>{t.guestJoin.title}</h2>
+          <p style={bodyStyle}>
+            {otpMode
+              ? t.guestJoin.otpSubtitle
+              : t.guestJoin.contactSubtitle}
+          </p>
+          <form onSubmit={submitContact} style={{ display: "grid", gap: 16 }}>
+            <FieldLabel
+              label={
+                otpMode
+                  ? t.guestJoin.emailLabel
+                  : t.guestJoin.contactLabel
+              }
+            >
               <input
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder={t.joinOtp.emailPlaceholder}
+                type={otpMode ? "email" : "text"}
+                autoComplete={otpMode ? "email" : "username"}
+                value={contact}
+                onChange={(event) => setContact(event.target.value)}
+                placeholder={
+                  otpMode
+                    ? t.guestJoin.emailPlaceholder
+                    : t.guestJoin.contactPlaceholder
+                }
                 required
                 style={inputStyle}
               />
             </FieldLabel>
             <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.joinOtp.searching : t.joinOtp.sendCodeButton}
+              {busy ? t.guestJoin.searching : t.guestJoin.continueButton}
             </button>
           </form>
-          <p style={securityStyle}>{t.joinOtp.securityNote}</p>
-          {preview.allow_name_fallback && (
-            <button
-              type="button"
-              onClick={() => {
-                setError(null);
-                setView("name_form");
-              }}
-              style={textButtonStyle}
-            >
-              {t.joinOtp.useNameFallback}
+          <p style={securityStyle}>
+            {otpMode
+              ? t.guestJoin.otpSecurityNote
+              : t.guestJoin.contactSecurityNote}
+          </p>
+        </>
+      );
+    }
+
+    if (view === "first_name") {
+      return (
+        <>
+          <h2 style={titleStyle}>{t.guestJoin.firstNameTitle}</h2>
+          <p style={bodyStyle}>{t.guestJoin.firstNameSubtitle}</p>
+          <form onSubmit={submitFirstName} style={{ display: "grid", gap: 16 }}>
+            <FieldLabel label={t.guestJoin.firstNameLabel}>
+              <input
+                autoComplete="given-name"
+                value={firstName}
+                onChange={(event) => setFirstName(event.target.value)}
+                required
+                style={inputStyle}
+              />
+            </FieldLabel>
+            <button disabled={busy} style={primaryButtonStyle}>
+              {busy ? t.guestJoin.searching : t.guestJoin.continueButton}
             </button>
-          )}
+          </form>
+          <button type="button" onClick={startOver} style={textButtonStyle}>
+            {t.guestJoin.useAnotherContact}
+          </button>
         </>
       );
     }
@@ -370,16 +380,16 @@ export function JoinExperience({
     if (view === "email_code") {
       return (
         <>
-          <h2 style={titleStyle}>{t.joinOtp.emailCollectTitle}</h2>
-          <p style={bodyStyle}>{t.joinOtp.codeSentTo(email)}</p>
+          <h2 style={titleStyle}>{t.guestJoin.codeTitle}</h2>
+          <p style={bodyStyle}>{t.guestJoin.codeSent(email)}</p>
           <form onSubmit={submitOtp} style={{ display: "grid", gap: 16 }}>
-            <FieldLabel label={t.joinOtp.codeLabel}>
+            <FieldLabel label={t.guestJoin.codeLabel}>
               <input
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 value={otp}
                 onChange={(event) => setOtp(event.target.value)}
-                placeholder={t.joinOtp.codePlaceholder}
+                placeholder={t.guestJoin.codePlaceholder}
                 required
                 style={{
                   ...inputStyle,
@@ -390,7 +400,7 @@ export function JoinExperience({
               />
             </FieldLabel>
             <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.joinOtp.verifying : t.joinOtp.verifyButton}
+              {busy ? t.guestJoin.verifying : t.guestJoin.verifyButton}
             </button>
           </form>
           <div style={linkRowStyle}>
@@ -400,183 +410,22 @@ export function JoinExperience({
               onClick={() => void requestEmailCode()}
               style={textButtonStyle}
             >
-              {t.joinOtp.resendButton}
+              {t.guestJoin.resendButton}
             </button>
-            <button type="button" onClick={resetEmail} style={textButtonStyle}>
-              {t.joinOtp.useAnotherEmail}
+            <button type="button" onClick={startOver} style={textButtonStyle}>
+              {t.guestJoin.useAnotherContact}
             </button>
           </div>
-          {preview.allow_name_fallback && (
-            <button type="button" onClick={resetName} style={textButtonStyle}>
-              {t.joinOtp.useNameFallback}
-            </button>
-          )}
-        </>
-      );
-    }
-
-    if (view === "matches") {
-      return (
-        <>
-          <h2 style={titleStyle}>{t.joinOtp.matchesTitle}</h2>
-          <p style={bodyStyle}>{t.joinOtp.matchesSubtitle}</p>
-          <div style={{ display: "grid", gap: 10 }}>
-            {matches.map((match) => {
-              const guestName = [match.first_name, match.last_name]
-                .filter(Boolean)
-                .join(" ");
-              return (
-                <button
-                  key={match.guest_id}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void claimAndContinue(match)}
-                  style={{
-                    ...primaryButtonStyle,
-                    minHeight: 56,
-                    display: "grid",
-                    gap: 3,
-                    alignContent: "center",
-                  }}
-                >
-                  <span>{t.joinOtp.matchLine(guestName)}</span>
-                </button>
-              );
-            })}
-          </div>
-          <button type="button" onClick={resetEmail} style={textButtonStyle}>
-            {t.joinOtp.useAnotherEmail}
-          </button>
-          {preview.allow_name_fallback && (
-            <button type="button" onClick={resetName} style={textButtonStyle}>
-              {t.joinOtp.useNameFallback}
-            </button>
-          )}
-        </>
-      );
-    }
-
-    if (view === "no_match") {
-      return (
-        <>
-          <h2 style={titleStyle}>{t.joinOtp.noMatchTitle}</h2>
-          <p style={bodyStyle}>{t.joinOtp.noMatchBody(partners)}</p>
-          <button type="button" onClick={resetEmail} style={primaryButtonStyle}>
-            {t.joinOtp.useAnotherEmail}
-          </button>
-          {preview.allow_name_fallback && (
-            <button
-              type="button"
-              onClick={resetName}
-              style={textButtonStyle}
-            >
-              {t.joinOtp.useNameFallback}
-            </button>
-          )}
-        </>
-      );
-    }
-
-    if (view === "name_form") {
-      return (
-        <>
-          <h2 style={titleStyle}>{t.join.namePromptTitle}</h2>
-          <p style={bodyStyle}>{t.join.namePromptSubtitle}</p>
-          <form
-            onSubmit={(event) => void submitName(event)}
-            style={{ display: "grid", gap: 14 }}
-          >
-            <FieldLabel label={t.join.firstNameLabel}>
-              <input
-                autoComplete="given-name"
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                required
-                style={inputStyle}
-              />
-            </FieldLabel>
-            <FieldLabel label={t.join.lastNameLabel}>
-              <input
-                autoComplete="family-name"
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-                style={inputStyle}
-              />
-            </FieldLabel>
-            <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.join.searching : t.join.continueButton}
-            </button>
-          </form>
-          <button type="button" onClick={resetEmail} style={textButtonStyle}>
-            {t.joinOtp.backButton}
-          </button>
-        </>
-      );
-    }
-
-    if (view === "name_contact") {
-      return (
-        <>
-          <h2 style={titleStyle}>{t.join.contactTitle}</h2>
-          <p style={bodyStyle}>{t.join.contactSubtitle}</p>
-          <form
-            onSubmit={(event) => void submitName(event, nameContact)}
-            style={{ display: "grid", gap: 16 }}
-          >
-            <FieldLabel label={t.join.contactLabel}>
-              <input
-                value={nameContact}
-                onChange={(event) => setNameContact(event.target.value)}
-                placeholder={t.join.contactPlaceholder}
-                required
-                style={inputStyle}
-              />
-            </FieldLabel>
-            <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.join.searching : t.join.contactSubmit}
-            </button>
-          </form>
-        </>
-      );
-    }
-
-    if (view === "name_confirm" && nameMatch) {
-      const fullName = [nameMatch.first_name, nameMatch.last_name]
-        .filter(Boolean)
-        .join(" ");
-      return (
-        <>
-          <h2 style={titleStyle}>{t.join.confirmTitle}</h2>
-          <p
-            style={{
-              ...bodyStyle,
-              color: "#2b2724",
-              fontFamily: "var(--font-serif)",
-              fontSize: 27,
-            }}
-          >
-            {fullName}
-          </p>
-          <button
-            type="button"
-            onClick={() => redirectToGuest(nameMatch.token)}
-            style={primaryButtonStyle}
-          >
-            {t.join.yesButton}
-          </button>
-          <button type="button" onClick={resetName} style={textButtonStyle}>
-            {t.join.noButton}
-          </button>
         </>
       );
     }
 
     return (
       <>
-        <h2 style={titleStyle}>{t.join.notFoundTitle}</h2>
-        <p style={bodyStyle}>{t.join.notFoundBody(partners)}</p>
-        <button type="button" onClick={resetName} style={primaryButtonStyle}>
-          {t.join.tryAgainButton}
+        <h2 style={titleStyle}>{t.guestJoin.noMatchTitle}</h2>
+        <p style={bodyStyle}>{t.guestJoin.noMatchBody(partners)}</p>
+        <button type="button" onClick={startOver} style={primaryButtonStyle}>
+          {t.guestJoin.tryAgainButton}
         </button>
       </>
     );
@@ -692,6 +541,42 @@ const linkRowStyle: React.CSSProperties = {
   flexWrap: "wrap",
   gap: 12,
   marginTop: 12,
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  minHeight: 50,
+  borderRadius: 12,
+  border: "1px solid #d8d0c8",
+  background: "#fff",
+  color: "#2b2724",
+  fontSize: 16,
+  padding: "0 14px",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const primaryButtonStyle: React.CSSProperties = {
+  width: "100%",
+  minHeight: 50,
+  border: 0,
+  borderRadius: 999,
+  background: "#2b2724",
+  color: "#fff",
+  fontSize: 15,
+  fontWeight: 600,
+  cursor: "pointer",
+  padding: "0 20px",
+};
+
+const textButtonStyle: React.CSSProperties = {
+  border: 0,
+  background: "transparent",
+  color: "#6f655f",
+  fontSize: 14,
+  textDecoration: "underline",
+  cursor: "pointer",
+  padding: 4,
 };
 
 const errorStyle: React.CSSProperties = {

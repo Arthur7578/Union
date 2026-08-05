@@ -11,7 +11,7 @@ export interface JoinWeddingPreview {
   partner_two: string | null;
   event_date: string | null;
   venue_name: string | null;
-  allow_name_fallback: boolean;
+  guest_join_auth_mode: "contact" | "otp";
 }
 
 export default async function JoinPage({

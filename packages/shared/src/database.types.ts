@@ -237,6 +237,7 @@ export type Database = {
           last_name: string | null
           notes: string | null
           phone: string | null
+          phone_e164: string | null
           profile_id: string | null
           role: string | null
           room_block_id: string | null
@@ -260,6 +261,7 @@ export type Database = {
           last_name?: string | null
           notes?: string | null
           phone?: string | null
+          phone_e164?: never
           profile_id?: string | null
           role?: string | null
           room_block_id?: string | null
@@ -283,6 +285,7 @@ export type Database = {
           last_name?: string | null
           notes?: string | null
           phone?: string | null
+          phone_e164?: never
           profile_id?: string | null
           role?: string | null
           room_block_id?: string | null
@@ -520,6 +523,7 @@ export type Database = {
           created_at: string
           event_date: string | null
           guest_count_target: number | null
+          guest_join_auth_mode: Database["public"]["Enums"]["guest_join_auth_mode"]
           id: string
           join_code: string
           max_children_per_guest: number | null
@@ -543,6 +547,7 @@ export type Database = {
           created_at?: string
           event_date?: string | null
           guest_count_target?: number | null
+          guest_join_auth_mode?: Database["public"]["Enums"]["guest_join_auth_mode"]
           id?: string
           join_code?: string
           max_children_per_guest?: number | null
@@ -566,6 +571,7 @@ export type Database = {
           created_at?: string
           event_date?: string | null
           guest_count_target?: number | null
+          guest_join_auth_mode?: Database["public"]["Enums"]["guest_join_auth_mode"]
           id?: string
           join_code?: string
           max_children_per_guest?: number | null
@@ -668,11 +674,21 @@ export type Database = {
         }
         Returns: Json
       }
-      claim_guest_access: { Args: { p_guest_id: string }; Returns: Json }
-      get_guest_access_options: {
-        Args: { p_join_code?: string }
+      find_guest_by_contact: {
+        Args: {
+          p_contact: string
+          p_first_name?: string | null
+          p_join_code: string
+        }
         Returns: Json
       }
+      claim_guest_access: { Args: { p_guest_id: string }; Returns: Json }
+      complete_guest_email_setup: { Args: { p_token: string }; Returns: Json }
+      get_guest_access_options: {
+        Args: { p_first_name?: string | null; p_join_code?: string | null }
+        Returns: Json
+      }
+      get_guest_email_status: { Args: { p_token: string }; Returns: Json }
       get_invitation: { Args: { p_token: string }; Returns: Json }
       get_wedding_by_join_code: { Args: { p_join_code: string }; Returns: Json }
       hide_duplicate_cluster: {
@@ -733,6 +749,7 @@ export type Database = {
       }
     }
     Enums: {
+      guest_join_auth_mode: "contact" | "otp"
       guest_relationship_kind: "parent_of" | "partner_of"
       rsvp_status: "pending" | "attending" | "declined"
     }
@@ -862,6 +879,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      guest_join_auth_mode: ["contact", "otp"],
       guest_relationship_kind: ["parent_of", "partner_of"],
       rsvp_status: ["pending", "attending", "declined"],
     },

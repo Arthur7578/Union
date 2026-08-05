@@ -23,6 +23,7 @@ export async function createWedding(
     | "created_at"
     | "join_code"
     | "allow_name_fallback"
+    | "guest_join_auth_mode"
     | "rsvp_form_questions"
     | "ceremony_rows"
     | "ceremony_reserved_rows"

@@ -52,6 +52,7 @@ export async function createWedding(
     | "created_at"
     | "join_code"
     | "allow_name_fallback"
+    | "guest_join_auth_mode"
     | "rsvp_form_questions"
     | "ceremony_rows"
     | "ceremony_reserved_rows"
@@ -194,6 +195,22 @@ export async function fetchGuests(weddingId: string): Promise<GuestWithRsvp[]> {
     rsvps: Array.isArray(g.rsvps) ? (g.rsvps[0] ?? null) : (g.rsvps ?? null),
     groups: unionGroups(g.guest_group, g.guest_group_members, allGroups),
   })) as GuestWithRsvp[];
+}
+
+export async function fetchGuestEmailCoverage(
+  weddingId: string,
+): Promise<{ withEmail: number; total: number }> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase
+    .from("guests")
+    .select("email")
+    .eq("wedding_id", weddingId);
+  if (error) throw error;
+  return {
+    withEmail: (data ?? []).filter((guest) => Boolean(guest.email?.trim()))
+      .length,
+    total: data?.length ?? 0,
+  };
 }
 
 export async function fetchGuest(id: string): Promise<GuestWithRsvp | null> {

@@ -598,6 +598,69 @@ export const fr: Dictionary = {
     errorGeneric: "Une erreur est survenue. Merci de réessayer.",
   },
 
+  guestJoin: {
+    title: "Retrouver votre invitation",
+    contactSubtitle:
+      "Indiquez l'adresse e-mail ou le numéro de téléphone renseigné par le couple.",
+    otpSubtitle:
+      "Indiquez l'adresse e-mail de votre invitation. Nous vous enverrons un code de vérification.",
+    contactLabel: "E-mail ou numéro de téléphone",
+    contactPlaceholder: "vous@email.com ou 06 12 34 56 78",
+    emailLabel: "E-mail",
+    emailPlaceholder: "vous@email.com",
+    continueButton: "Continuer",
+    searching: "Recherche…",
+    contactSecurityNote:
+      "Vos coordonnées servent uniquement à retrouver votre invitation. Union n'affiche jamais de liste d'invités.",
+    otpSecurityNote:
+      "Ce mariage exige un code à usage unique avant d'ouvrir une invitation.",
+    firstNameTitle: "Quel est votre prénom ?",
+    firstNameSubtitle:
+      "Saisissez-le au plus proche. Cela nous aide à retrouver la bonne invitation.",
+    firstNameLabel: "Prénom",
+    codeTitle: "Consultez vos e-mails",
+    codeSent: (email: string) => `Nous avons envoyé un code de connexion à ${email}.`,
+    codeLabel: "Code de connexion",
+    codePlaceholder: "12345678",
+    verifyButton: "Vérifier",
+    verifying: "Vérification…",
+    resendButton: "Renvoyer le code",
+    useAnotherContact: "Utiliser un autre e-mail ou téléphone",
+    emailRequired: "Ce mariage exige actuellement une adresse e-mail.",
+    invalidCode: "Ce code n'a pas fonctionné, ou il a expiré.",
+    sendCodeError: "Impossible d'envoyer le code. Merci de réessayer.",
+    noMatchTitle: "Nous n'avons pas retrouvé votre invitation",
+    noMatchBody: (couple: string) =>
+      `Vérifiez les informations saisies ou contactez directement ${couple}.`,
+    tryAgainButton: "Réessayer",
+    accessUnavailable:
+      "Cette invitation n'est plus disponible pour ces coordonnées vérifiées.",
+    genericError: "Une erreur est survenue. Merci de réessayer.",
+    checkingSession: "Vérification de votre compte Union…",
+    redirecting: "Direction votre invitation…",
+  },
+
+  guestEmailSetup: {
+    kicker: "Conservez l'accès à votre invitation",
+    title: "Ajoutez votre e-mail",
+    subtitle:
+      "Une adresse e-mail est nécessaire pour continuer. Nous allons la vérifier afin que vous seul puissiez l'utiliser pour vous reconnecter.",
+    emailLabel: "E-mail",
+    emailPlaceholder: "vous@email.com",
+    sendCode: "Envoyer le code de vérification",
+    sending: "Envoi…",
+    codeTitle: "Vérifiez votre e-mail",
+    codeSent: (email: string) => `Saisissez le code envoyé à ${email}.`,
+    codeLabel: "Code de vérification",
+    codePlaceholder: "12345678",
+    verify: "Vérifier et continuer",
+    verifying: "Vérification…",
+    resend: "Renvoyer le code",
+    changeEmail: "Utiliser un autre e-mail",
+    sendError: "Impossible d'envoyer le code. Merci de réessayer.",
+    verifyError: "Ce code n'a pas fonctionné, ou l'e-mail n'a pas pu être enregistré.",
+  },
+
   // Connexion invité (/join/[code]) — Supabase Auth vérifie l'e-mail,
   // puis les RPC authentifiés ne révèlent que les invitations associées.
   joinOtp: {
@@ -660,7 +723,16 @@ export const fr: Dictionary = {
       `Bonjour à tous ! 👋\n\n${couple} seraient ravis que vous confirmiez votre présence :\n${link}`,
     howItWorksTitle: "Comment ça marche",
     howItWorksBody:
-      "Partagez ce lien partout où vous joindriez tout le groupe d'un coup — une conversation WhatsApp, un e-mail groupé, un chat familial. Les invités vérifient l'e-mail de leur invitation avec le code de connexion sécurisé d'Union : aucune liste publique et aucun lien personnel à retrouver.",
+      "Partagez ce lien dans une conversation WhatsApp, un e-mail groupé ou un chat familial. Par défaut, les invités retrouvent leur invitation avec l'e-mail ou le téléphone que vous avez renseigné ; Union demande le prénom uniquement si nécessaire et n'affiche jamais de liste d'invités.",
+    authModeTitle: "Vérification des invités",
+    contactModeLabel: "Correspondance des coordonnées — recommandé",
+    contactModeHint:
+      "Les invités utilisent leur e-mail ou téléphone, puis leur prénom uniquement si plusieurs invitations partagent ces coordonnées. Aucun code n'est demandé sauf si l'e-mail a déjà été vérifié comme connexion Union.",
+    otpModeLabel: "Exiger un code de vérification",
+    otpModeHint:
+      "Les invités doivent vérifier l'e-mail de leur invitation. La vérification par téléphone pourra être ajoutée plus tard ; les invités sans e-mail ne peuvent pas encore utiliser ce mode.",
+    otpCoverage: (withEmail: number, total: number) =>
+      `${withEmail} invité${withEmail > 1 ? "s" : ""} sur ${total} ${total > 1 ? "ont" : "a"} actuellement un e-mail et ${total > 1 ? "peuvent" : "peut"} utiliser ce mode.`,
     allowNameFallbackLabel: "Autoriser aussi une recherche simple par nom",
     allowNameFallbackHint:
       "Saute la vérification de l'e-mail — les invités peuvent se retrouver par leur seul nom. Moins sûr, mais zéro friction pour les invités qui préfèrent éviter le code.",

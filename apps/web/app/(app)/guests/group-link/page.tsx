@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
-import { updateWedding } from "@/lib/data";
+import { fetchGuestEmailCoverage, updateWedding } from "@/lib/data";
 import { BackHeader } from "@/components/BackHeader";
 import { Button, Card, SectionLabel, Loading } from "@/components/ui";
 import { useT } from "@/lib/i18n/client";
@@ -12,7 +12,27 @@ export default function GroupLinkPage() {
   const t = useT();
   const { wedding, refresh } = useWedding();
   const [copied, setCopied] = useState(false);
-  const [fallbackBusy, setFallbackBusy] = useState(false);
+  const [modeBusy, setModeBusy] = useState(false);
+  const [coverage, setCoverage] = useState<{
+    withEmail: number;
+    total: number;
+  } | null>(null);
+  const weddingId = wedding?.id;
+
+  useEffect(() => {
+    if (!weddingId) return;
+    let active = true;
+    void fetchGuestEmailCoverage(weddingId)
+      .then((result) => {
+        if (active) setCoverage(result);
+      })
+      .catch(() => {
+        if (active) setCoverage(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [weddingId]);
 
   if (!wedding)
     return (
@@ -21,13 +41,13 @@ export default function GroupLinkPage() {
       </main>
     );
 
-  const toggleNameFallback = async (next: boolean) => {
-    setFallbackBusy(true);
+  const setAuthMode = async (next: "contact" | "otp") => {
+    setModeBusy(true);
     try {
-      await updateWedding(wedding.id, { allow_name_fallback: next });
+      await updateWedding(wedding.id, { guest_join_auth_mode: next });
       await refresh();
     } finally {
-      setFallbackBusy(false);
+      setModeBusy(false);
     }
   };
 
@@ -97,28 +117,89 @@ export default function GroupLinkPage() {
         <div style={{ fontSize: 13.5, color: T.ink2, lineHeight: 1.6, marginBottom: 16 }}>
           {t.groupLink.howItWorksBody}
         </div>
-        <label
-          htmlFor="allow-name-fallback"
-          style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}
-        >
-          <input
-            id="allow-name-fallback"
-            type="checkbox"
-            checked={wedding.allow_name_fallback}
-            disabled={fallbackBusy}
-            onChange={(e) => toggleNameFallback(e.target.checked)}
-            style={{ marginTop: 3 }}
+        <div style={{ fontSize: 14, color: T.ink, fontWeight: 600, marginBottom: 12 }}>
+          {t.groupLink.authModeTitle}
+        </div>
+        <div style={{ display: "grid", gap: 10 }}>
+          <AuthModeOption
+            id="guest-auth-contact"
+            checked={wedding.guest_join_auth_mode === "contact"}
+            disabled={modeBusy}
+            label={t.groupLink.contactModeLabel}
+            hint={t.groupLink.contactModeHint}
+            onChange={() => void setAuthMode("contact")}
           />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, color: T.ink }}>
-              {t.groupLink.allowNameFallbackLabel}
-            </div>
-            <div style={{ fontSize: 12, color: T.faint, marginTop: 4 }}>
-              {t.groupLink.allowNameFallbackHint}
-            </div>
-          </div>
-        </label>
+          <AuthModeOption
+            id="guest-auth-otp"
+            checked={wedding.guest_join_auth_mode === "otp"}
+            disabled={modeBusy}
+            label={t.groupLink.otpModeLabel}
+            hint={t.groupLink.otpModeHint}
+            warning={
+              coverage
+                ? t.groupLink.otpCoverage(coverage.withEmail, coverage.total)
+                : undefined
+            }
+            onChange={() => void setAuthMode("otp")}
+          />
+        </div>
       </Card>
     </main>
+  );
+}
+
+function AuthModeOption({
+  id,
+  checked,
+  disabled,
+  label,
+  hint,
+  warning,
+  onChange,
+}: {
+  id: string;
+  checked: boolean;
+  disabled: boolean;
+  label: string;
+  hint: string;
+  warning?: string;
+  onChange: () => void;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 12,
+        cursor: disabled ? "wait" : "pointer",
+        border: checked ? `1px solid ${T.accent}` : `1px solid ${T.line}`,
+        borderRadius: 12,
+        padding: 14,
+      }}
+    >
+      <input
+        id={id}
+        name="guest-join-auth-mode"
+        type="radio"
+        checked={checked}
+        disabled={disabled}
+        onChange={onChange}
+        style={{ marginTop: 3 }}
+      />
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 14, color: T.ink, fontWeight: 600 }}>
+          {label}
+        </div>
+        <div style={{ fontSize: 12, color: T.faint, marginTop: 4, lineHeight: 1.45 }}>
+          {hint}
+        </div>
+        {warning && (
+          <div style={{ fontSize: 12, color: "#9a5b23", marginTop: 8, lineHeight: 1.45 }}>
+            {warning}
+          </div>
+        )}
+      </div>
+    </label>
   );
 }
