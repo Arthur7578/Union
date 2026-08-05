@@ -3,6 +3,8 @@ import { resolveLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n";
 import type { FormAnswers, Invitation, RsvpQuestion } from "@union/shared";
 import { GuestPortal } from "./GuestPortal";
+import { GuestEmailGate } from "./GuestEmailGate";
+import { GuestIdentityGate } from "./GuestIdentityGate";
 
 // Always fetch fresh invitation data (no static caching of personal links).
 export const dynamic = "force-dynamic";
@@ -49,6 +51,7 @@ export default async function GuestExperiencePage({
 
   let invitation: DBInvitation | null = null;
   let isDemo = false;
+  let emailMissing = false;
 
   if (token === "demo") {
     isDemo = true;
@@ -98,13 +101,22 @@ export default async function GuestExperiencePage({
     // Attempt to load from Supabase for all other tokens
     try {
       const supabase = getSupabase();
-      const { data, error } = await supabase.rpc("get_invitation", {
-        p_token: token,
-      });
+      const [invitationResult, emailStatusResult] = await Promise.all([
+        supabase.rpc("get_invitation", { p_token: token }),
+        supabase.rpc("get_guest_email_status", { p_token: token }),
+      ]);
 
-      if (!error && data) {
+      if (
+        !invitationResult.error &&
+        invitationResult.data &&
+        !emailStatusResult.error &&
+        emailStatusResult.data
+      ) {
         // Since get_invitation returns a JSONB object, cast it directly to DBInvitation
-        invitation = data as unknown as DBInvitation;
+        invitation = invitationResult.data as unknown as DBInvitation;
+        emailMissing = Boolean(
+          (emailStatusResult.data as { email_missing?: boolean }).email_missing,
+        );
       }
     } catch (e) {
       console.error("Failed to load invitation from Supabase:", e);
@@ -181,11 +193,27 @@ export default async function GuestExperiencePage({
     );
   }
 
+  const guestName = [invitation.guest.first_name, invitation.guest.last_name]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <GuestPortal
-      token={token}
-      invitation={invitation}
-      isDemo={isDemo}
-    />
+    <GuestIdentityGate
+      guestId={invitation.guest.id}
+      guestName={guestName}
+    >
+      <GuestEmailGate
+        token={token}
+        guestId={invitation.guest.id}
+        guestName={guestName}
+        emailMissing={emailMissing}
+      >
+        <GuestPortal
+          token={token}
+          invitation={invitation}
+          isDemo={isDemo}
+        />
+      </GuestEmailGate>
+    </GuestIdentityGate>
   );
 }

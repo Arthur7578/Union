@@ -13,9 +13,9 @@ const anonKey =
 let client: UnionClient | null = null;
 
 /**
- * Browser Supabase client for the couple's planning app. Unlike the public
- * RSVP client (`lib/supabase.ts`), this one persists the session in
- * localStorage and refreshes tokens, so the couple stays signed in.
+ * Browser Supabase client for authenticated organiser and guest flows. Unlike
+ * the public RSVP client (`lib/supabase.ts`), this one persists the session in
+ * localStorage and refreshes tokens so the verified identity stays signed in.
  *
  * Returns a lazily-created singleton so every hook shares one auth session.
  */

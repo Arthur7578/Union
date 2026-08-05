@@ -174,6 +174,8 @@ export const en = {
       formsSub: "RSVP, and any forms you add",
       smsTemplateLabel: "SMS template",
       smsTemplateSub: "Sender + invite copy",
+      groupLinkLabel: "Group link",
+      groupLinkSub: "One link for a WhatsApp group",
     },
     guestList: "Guest list",
     reminderPromptStrong: (n: number) => `${n} still deciding`,
@@ -604,6 +606,177 @@ export const en = {
     thanksDecline: (couple: string) =>
       `Your reply has been sent. ${couple} will miss you.`,
     update: "Update my reply",
+  },
+
+  // Generic guest join link (/join/[code]) — the WhatsApp-group entry
+  // point, where a guest identifies themselves by name instead of
+  // opening a personal link.
+  join: {
+    invalidTitle: "Link not found",
+    invalidBody:
+      "This invitation link is missing or no longer valid. Check with the couple for a fresh one.",
+    heroKicker: "Wedding Invitation",
+    namePromptTitle: "What's your name?",
+    namePromptSubtitle:
+      "Enter your name as the couple would have it, and we'll find your invitation.",
+    firstNameLabel: "First name",
+    lastNameLabel: "Last name",
+    continueButton: "Find my invitation",
+    searching: "Searching…",
+    confirmTitle: "Is this you?",
+    yesButton: "Yes, that's me",
+    noButton: "No, try again",
+    contactTitle: "Just to confirm",
+    contactSubtitle:
+      "A few guests share that name. Enter the phone number or email used on your invitation.",
+    contactLabel: "Phone number or email",
+    contactPlaceholder: "e.g. 555-123-4567 or you@email.com",
+    contactSubmit: "Confirm",
+    notFoundTitle: "We couldn't find you",
+    notFoundBody: (couple: string) =>
+      `We couldn't match that to an invitation. Please reach out to ${couple} directly and they'll sort you out.`,
+    tryAgainButton: "Try again",
+    redirecting: "Taking you to your invitation…",
+    errorGeneric: "Something went wrong. Please try again.",
+  },
+
+  guestJoin: {
+    title: "Find your invitation",
+    contactSubtitle:
+      "Enter the email address or phone number the couple has for you.",
+    otpSubtitle:
+      "Enter the email address on your invitation. We'll send you a verification code.",
+    contactLabel: "Email or phone number",
+    contactPlaceholder: "you@email.com or +33 6 12 34 56 78",
+    emailLabel: "Email",
+    emailPlaceholder: "you@email.com",
+    continueButton: "Continue",
+    searching: "Searching…",
+    contactSecurityNote:
+      "Your details are used only to find your invitation. Union never displays a guest list.",
+    otpSecurityNote:
+      "This wedding requires a one-time code before an invitation can be opened.",
+    firstNameTitle: "What's your first name?",
+    firstNameSubtitle:
+      "Enter it as closely as you can. This helps us find the right invitation.",
+    firstNameLabel: "First name",
+    codeTitle: "Check your email",
+    codeSent: (email: string) => `We sent a sign-in code to ${email}.`,
+    codeLabel: "Sign-in code",
+    codePlaceholder: "12345678",
+    verifyButton: "Verify",
+    verifying: "Verifying…",
+    resendButton: "Resend code",
+    useAnotherContact: "Use another email or phone number",
+    emailRequired: "This wedding currently requires an email address.",
+    invalidCode: "That code didn't work, or it's expired.",
+    sendCodeError: "We couldn't send the code. Please try again.",
+    noMatchTitle: "We couldn't find your invitation",
+    noMatchBody: (couple: string) =>
+      `Check the details you entered or contact ${couple} directly for help.`,
+    tryAgainButton: "Try again",
+    accessUnavailable:
+      "That invitation is no longer available for this verified contact.",
+    genericError: "Something went wrong. Please try again.",
+    checkingSession: "Checking your Union account…",
+    redirecting: "Taking you to your invitation…",
+  },
+
+  guestEmailSetup: {
+    kicker: "Keep access to your invitation",
+    title: "Add your email",
+    subtitle:
+      "An email address is required before you continue. We'll verify it now so only you can use it to sign in later.",
+    emailLabel: "Email",
+    emailPlaceholder: "you@email.com",
+    sendCode: "Send verification code",
+    sending: "Sending…",
+    codeTitle: "Verify your email",
+    codeSent: (email: string) => `Enter the code we sent to ${email}.`,
+    codeLabel: "Verification code",
+    codePlaceholder: "12345678",
+    verify: "Verify and continue",
+    verifying: "Verifying…",
+    resend: "Resend code",
+    changeEmail: "Use another email",
+    sendError: "We couldn't send the code. Please try again.",
+    verifyError: "That code didn't work, or the email could not be saved.",
+  },
+
+  // Guest sign-in (/join/[code]) — Supabase Auth verifies the email,
+  // then authenticated RPCs expose only invitations tied to that account.
+  joinOtp: {
+    title: "Find your invitation",
+    subtitle:
+      "Enter the email address the couple has on your invitation.",
+    phoneLabel: "Phone number",
+    phonePlaceholder: "e.g. +1 555 123 4567",
+    continueButton: "Continue",
+    searching: "Searching…",
+    emailCollectTitle: "Check your email",
+    emailCollectSubtitle:
+      "Enter the one-time code from Union to finish signing in.",
+    emailLabel: "Email",
+    emailPlaceholder: "you@email.com",
+    sendCodeButton: "Send code",
+    codeSentTo: (email: string) => `We sent a sign-in code to ${email}.`,
+    codeLabel: "Sign-in code",
+    codePlaceholder: "12345678",
+    verifyButton: "Verify",
+    verifying: "Verifying…",
+    resendButton: "Resend code",
+    startOverButton: "Start over",
+    savedEmailNotice: "Saved — you can sign in with just this email next time.",
+    organiserHintText:
+      "This contact is also linked to an organiser account on Union.",
+    organiserHintLink: "Sign in as the organiser instead",
+    matchesTitle: "Choose your invitation",
+    matchesSubtitle:
+      "Confirm who you're responding for. Union never chooses a guest identity automatically.",
+    matchLine: (guestName: string) => `Continue as ${guestName}`,
+    invalidOrExpired: "That code didn't work, or it's expired.",
+    cooldown: "Please wait a moment before requesting another code.",
+    tooManyRequests: "Too many attempts — please try again in a bit.",
+    genericError: "Something went wrong. Please try again.",
+    accessUnavailable:
+      "That invitation is no longer available for this verified email.",
+    checkingSession: "Checking your Union account…",
+    securityNote:
+      "Union verifies this email through the same secure sign-in used by organisers.",
+    noMatchTitle: "No invitation found for this email",
+    noMatchBody: (couple: string) =>
+      `This verified email isn't on an invitation for ${couple}. Try another address or contact the couple.`,
+    useAnotherEmail: "Use another email",
+    useEmailInstead: "I already have an email on file — use that instead",
+    useNameFallback: "Search by name instead",
+    backButton: "Back",
+    continueToInvitation: "Continue to your invitation",
+  },
+
+  // Organiser-facing "Group link" tool — the /guests/group-link page.
+  groupLink: {
+    title: "Group link",
+    subtitle: "Share one link with a whole group",
+    copyButton: "Copy link",
+    copied: "Copied!",
+    whatsappButton: "Share on WhatsApp",
+    whatsappMessage: (couple: string, link: string) =>
+      `Hello everyone! 👋\n\n${couple} would love for you to confirm your attendance:\n${link}`,
+    howItWorksTitle: "How it works",
+    howItWorksBody:
+      "Share this link in a WhatsApp thread, group email, or family chat. By default, guests find their invitation with the email or phone number you have for them; Union asks for a first name only when needed and never displays a guest list.",
+    authModeTitle: "Guest verification",
+    contactModeLabel: "Contact matching — recommended",
+    contactModeHint:
+      "Guests use their email or phone number, then their first name only when several invitations share that contact. No code is required unless the email was previously verified as a Union login.",
+    otpModeLabel: "Require a verification code",
+    otpModeHint:
+      "Guests must verify the email on their invitation. Phone verification can be added later; guests without an email cannot currently use this mode.",
+    otpCoverage: (withEmail: number, total: number) =>
+      `${withEmail} of ${total} guests currently have an email and can use this mode.`,
+    allowNameFallbackLabel: "Also allow a simpler name search",
+    allowNameFallbackHint:
+      "Skips email verification — guests can find themselves by name alone. Less secure, but zero fuss for guests who'd rather not deal with a code.",
   },
 
   // Errors and misc

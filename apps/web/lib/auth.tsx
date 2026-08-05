@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { clearActiveGuestIdentity } from "./guestIdentity";
 import { getBrowserSupabase } from "./supabaseClient";
 
 /** Where we stash the last email a sign-in code was sent to, so we can
@@ -97,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const supabase = getBrowserSupabase();
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
+        clearActiveGuestIdentity();
       },
     }),
     [session, loading],
