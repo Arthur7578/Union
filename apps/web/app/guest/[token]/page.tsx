@@ -1,7 +1,7 @@
 import { getSupabase } from "@/lib/supabase";
 import { resolveLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n";
-import type { FormAnswers, RsvpQuestion } from "@union/shared";
+import type { FormAnswers, Invitation, RsvpQuestion } from "@union/shared";
 import { GuestPortal } from "./GuestPortal";
 import { GuestEmailGate } from "./GuestEmailGate";
 import { GuestIdentityGate } from "./GuestIdentityGate";
@@ -9,44 +9,7 @@ import { GuestIdentityGate } from "./GuestIdentityGate";
 // Always fetch fresh invitation data (no static caching of personal links).
 export const dynamic = "force-dynamic";
 
-export interface DBInvitation {
-  wedding: {
-    partner_one: string | null;
-    partner_two: string | null;
-    event_date: string | null;
-    venue_name: string | null;
-    venue_address: string | null;
-  };
-  guest: {
-    id: string;
-    first_name: string;
-    last_name: string | null;
-    age_years: number | null;
-    rsvp_status: "pending" | "attending" | "declined";
-    dietary_notes: string | null;
-    message: string | null;
-  };
-  companions: Array<{
-    id: string;
-    first_name: string;
-    last_name: string | null;
-    age_years: number | null;
-    relationship: "parent_of" | "partner_of" | null;
-    rsvp_status: "pending" | "attending" | "declined";
-    dietary_notes: string | null;
-  }>;
-  permissions: {
-    can_add_partner: boolean;
-    can_add_kids: boolean;
-    kids_remaining: number | null;
-  };
-  self_merge_candidates: Array<{
-    id: string;
-    first_name: string;
-    last_name: string | null;
-    age_years: number | null;
-    added_by_first_name?: string | null;
-  }>;
+export type DBInvitation = Invitation & {
   /** Guest-facing wording overrides for the primary RSVP block — null keys
    *  mean "use the system default", never a blank/empty label. */
   rsvp_form?: {
@@ -75,7 +38,7 @@ export interface DBInvitation {
     closes_at: string | null;
     answers: FormAnswers | null;
   }>;
-}
+};
 
 export default async function GuestExperiencePage({
   params,
@@ -98,7 +61,14 @@ export default async function GuestExperiencePage({
         partner_two: "Daniel",
         event_date: "2026-09-20",
         venue_name: "Wildflower Barn",
-        venue_address: "123 Orchard Rd, Hood River, OR",
+        address_visibility: "full",
+        address: {
+          line: "123 Orchard Rd",
+          postal_code: "97031",
+          city: "Hood River",
+          area: null,
+          country: "United States",
+        },
       },
       guest: {
         id: "demo-guest-id",

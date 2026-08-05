@@ -64,6 +64,12 @@ export async function createWedding(
     | "sms_sender"
     | "sms_template"
     | "sms_brevo_api_key"
+    | "address_line"
+    | "address_postal_code"
+    | "address_city"
+    | "address_area"
+    | "address_country"
+    | "address_visibility"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
@@ -76,6 +82,12 @@ export async function createWedding(
     sms_sender?: string | null;
     sms_template?: string | null;
     sms_brevo_api_key?: string | null;
+    address_line?: string | null;
+    address_postal_code?: string | null;
+    address_city?: string | null;
+    address_area?: string | null;
+    address_country?: string | null;
+    address_visibility?: Wedding["address_visibility"];
   },
 ): Promise<Wedding> {
   const supabase = getBrowserSupabase();
