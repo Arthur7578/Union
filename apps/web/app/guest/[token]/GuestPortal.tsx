@@ -221,10 +221,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         }
       }
 
-      // Update the local instance in state or alert success
-      invitation.guest.rsvp_status = primaryRsvp;
-      invitation.guest.dietary_notes = primaryDietary;
-      invitation.guest.message = primaryMessage;
+      // RSVP submitted successfully.
 
       // Update companions' statuses in invitation object
       companions.forEach(c => {
