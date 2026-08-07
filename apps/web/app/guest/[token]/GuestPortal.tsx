@@ -221,15 +221,9 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         }
       }
 
-      // RSVP submitted successfully.
-
-      // Update companions' statuses in invitation object
-      companions.forEach(c => {
-        if (companionsRsvp[c.id]) {
-          c.rsvp_status = companionsRsvp[c.id].rsvp_status;
-          c.dietary_notes = companionsRsvp[c.id].dietary_notes;
-        }
-      });
+      // companionsRsvp is the source of truth for what the guest picked, and the
+      // rows above are already persisted, so there is nothing to sync back onto
+      // the invitation prop.
 
       setActiveFormModal(null);
     } catch (e) {

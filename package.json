@@ -15,9 +15,5 @@
   },
   "engines": {
     "node": "22.x"
-  },
-  "devDependencies": {
-    "supabase": "^2.112.0",
-    "vercel": "^58.8.0"
   }
 }
