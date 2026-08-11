@@ -14,15 +14,34 @@ export default function ChooseWeddingPage() {
   const router = useRouter();
   const { locale, t } = useLocale();
   const { session, loading: authLoading, signOut } = useAuth();
-  const { weddings, loading: weddingLoading, setWedding } = useWedding();
+  const {
+    weddings,
+    loading: weddingLoading,
+    selectionIssue,
+    setWedding,
+  } = useWedding();
 
   useEffect(() => {
     if (authLoading) return;
     if (!session) router.replace("/sign-in");
-    else if (!weddingLoading && weddings.length === 0) router.replace("/onboarding");
-  }, [authLoading, session, weddingLoading, weddings.length, router]);
+    else if (!weddingLoading && weddings.length === 0 && !selectionIssue) {
+      router.replace("/onboarding");
+    }
+  }, [
+    authLoading,
+    session,
+    weddingLoading,
+    weddings.length,
+    selectionIssue,
+    router,
+  ]);
 
-  if (authLoading || weddingLoading || !session || weddings.length === 0) {
+  if (
+    authLoading ||
+    weddingLoading ||
+    !session ||
+    (weddings.length === 0 && !selectionIssue)
+  ) {
     return (
       <main className="page">
         <Loading label={t.weddingPicker.loading} />
@@ -55,6 +74,12 @@ export default function ChooseWeddingPage() {
             {t.weddingPicker.sub}
           </p>
         </div>
+
+        {selectionIssue === "invited_wedding_unavailable" && (
+          <div className="error" style={{ marginBottom: 14 }}>
+            {t.weddingPicker.invitedUnavailable}
+          </div>
+        )}
 
         <div style={{ display: "grid", gap: 10 }}>
           {weddings.map((w) => {

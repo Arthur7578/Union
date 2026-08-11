@@ -1248,8 +1248,14 @@ export async function inviteCollaborator(
 /** Revoke a pending invite, or remove an active collaborator. */
 export async function removeCollaborator(id: string): Promise<void> {
   const supabase = getBrowserSupabase();
-  const { error } = await supabase.from("wedding_collaborators").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("wedding_collaborators")
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!data) throw new Error("Collaborator was not removed.");
 }
 
 export async function fetchActivity(

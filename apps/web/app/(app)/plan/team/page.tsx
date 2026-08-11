@@ -39,6 +39,8 @@ export default function TeamPage() {
   >(null);
   const [autonomyBusy, setAutonomyBusy] = useState(false);
   const [autonomyError, setAutonomyError] = useState<string | null>(null);
+  const [removeBusyId, setRemoveBusyId] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!wedding) return;
@@ -103,13 +105,25 @@ export default function TeamPage() {
     }
   };
 
-  const cancelInvite = async (id: string) => {
+  const removeTeamMember = async (collaborator: CollaboratorWithProfile) => {
+    const name = collaborator.profile_full_name || collaborator.email;
+    if (
+      collaborator.status === "active" &&
+      !window.confirm(t.plan.removeConfirm(name))
+    ) {
+      return;
+    }
     const prev = collaborators;
-    setCollaborators((cur) => (cur ?? []).filter((c) => c.id !== id));
+    setRemoveBusyId(collaborator.id);
+    setRemoveError(null);
+    setCollaborators((cur) => (cur ?? []).filter((c) => c.id !== collaborator.id));
     try {
-      await removeCollaborator(id);
+      await removeCollaborator(collaborator.id);
     } catch {
       setCollaborators(prev ?? null);
+      setRemoveError(t.plan.removeError);
+    } finally {
+      setRemoveBusyId(null);
     }
   };
 
@@ -231,10 +245,11 @@ export default function TeamPage() {
                     {active ? t.plan.activeSub(when) : t.plan.pendingSub(when)}
                   </div>
                 </div>
-                {isOwner && !active && (
+                {isOwner && (
                   <button
                     type="button"
-                    onClick={() => cancelInvite(c.id)}
+                    onClick={() => removeTeamMember(c)}
+                    disabled={removeBusyId === c.id}
                     style={{
                       background: "transparent",
                       border: "none",
@@ -246,17 +261,22 @@ export default function TeamPage() {
                       flexShrink: 0,
                     }}
                   >
-                    {t.plan.cancelInvite}
+                    {active ? t.plan.removeCoOrganiser : t.plan.cancelInvite}
                   </button>
                 )}
                 <StatusPill tone={active ? "green" : "amber"}>
-                  {active ? t.plan.roles.partner : t.plan.roles.pending}
+                  {active ? t.plan.roles.coOrganiser : t.plan.roles.pending}
                 </StatusPill>
               </Card>
             );
           })
         )}
       </div>
+      {removeError && (
+        <div className="error" style={{ marginTop: 10 }}>
+          {removeError}
+        </div>
+      )}
 
       {/* Invite */}
       {isOwner && (

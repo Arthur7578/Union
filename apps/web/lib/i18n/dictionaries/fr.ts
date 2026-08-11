@@ -104,6 +104,8 @@ export const fr: Dictionary = {
     owner: "Votre mariage",
     coOrganiser: "Co-organisateur·rice",
     differentAccount: "Se déconnecter et changer de compte",
+    invitedUnavailable:
+      "Cette invitation ne peut pas encore être ouverte. Ce mariage n'est pas disponible pour ce compte ; Union ne vous a donc pas redirigé vers un autre mariage.",
   },
 
   today: {
@@ -414,6 +416,10 @@ export const fr: Dictionary = {
       `Enregistré, mais l'e-mail n'a pas pu partir${reason ? ` — ${reason}` : "."} La personne rejoindra l'équipe automatiquement dès sa première connexion avec cette adresse.`,
     inviteError: "Impossible d'envoyer cette invitation — réessayez.",
     cancelInvite: "Annuler l'invitation",
+    removeCoOrganiser: "Retirer",
+    removeConfirm: (name: string) =>
+      `Retirer ${name} des co-organisateurs ? Cette personne perdra immédiatement l'accès à ce mariage.`,
+    removeError: "Impossible de retirer ce co-organisateur — réessayez.",
     whoDidWhat: "Qui a fait quoi",
     activityEmpty: "Rien pour l'instant — ce que vous et Union faites apparaîtra ici.",
     activityGuestAdded: (name: string) => `a ajouté ${name} à la liste des invités`,
@@ -427,7 +433,7 @@ export const fr: Dictionary = {
     you: "vous",
     roles: {
       owner: "Propriétaire",
-      partner: "Partenaire",
+      coOrganiser: "Co-organisateur",
       pending: "En attente",
     },
     ownerSub: "Propriétaire · accès complet",

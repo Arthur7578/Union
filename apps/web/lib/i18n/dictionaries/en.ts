@@ -105,6 +105,8 @@ export const en = {
     owner: "Owned by you",
     coOrganiser: "Co-organiser",
     differentAccount: "Sign out and use a different account",
+    invitedUnavailable:
+      "This invitation could not be opened yet. The wedding was not available to this account, so Union did not send you to a different wedding.",
   },
 
   // Today page
@@ -432,6 +434,10 @@ export const en = {
     inviteSavedNotSent: (reason: string) =>
       `Saved, but we couldn't email them${reason ? ` — ${reason}` : "."} They'll join automatically the first time they sign in with that address.`,
     cancelInvite: "Cancel invite",
+    removeCoOrganiser: "Remove",
+    removeConfirm: (name: string) =>
+      `Remove ${name} as a co-organiser? They will immediately lose access to this wedding.`,
+    removeError: "Couldn't remove that co-organiser — try again.",
     whoDidWhat: "Who did what",
     activityEmpty: "Nothing yet — what you and Union do together will show up here.",
     activityGuestAdded: (name: string) => `added ${name} as a guest`,
@@ -445,7 +451,7 @@ export const en = {
     you: "you",
     roles: {
       owner: "Owner",
-      partner: "Partner",
+      coOrganiser: "Co-organiser",
       pending: "Pending",
     },
     ownerSub: "Owner · full access",

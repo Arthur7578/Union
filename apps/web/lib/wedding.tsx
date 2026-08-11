@@ -10,12 +10,16 @@ import React, {
 import type { Wedding } from "@union/shared";
 import { acceptPendingInvites, useAuth } from "./auth";
 import { fetchWeddings } from "./data";
-import { ACTIVE_WEDDING_KEY } from "./weddingSelection";
+import {
+  ACTIVE_WEDDING_KEY,
+  INVITED_WEDDING_KEY,
+} from "./weddingSelection";
 
 type WeddingContextValue = {
   wedding: Wedding | null;
   weddings: Wedding[];
   needsSelection: boolean;
+  selectionIssue: "invited_wedding_unavailable" | null;
   loading: boolean;
   refresh: () => Promise<void>;
   setWedding: (w: Wedding | null) => void;
@@ -27,10 +31,14 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
   const { session, loading: authLoading } = useAuth();
   const [wedding, setWedding] = useState<Wedding | null>(null);
   const [weddings, setWeddings] = useState<Wedding[]>([]);
+  const [selectionIssue, setSelectionIssue] = useState<
+    "invited_wedding_unavailable" | null
+  >(null);
   const [loading, setLoading] = useState(true);
 
   const chooseWedding = useCallback((next: Wedding | null) => {
     setWedding(next);
+    setSelectionIssue(null);
     setWeddings((current) => {
       if (!next) return current;
       const found = current.some((w) => w.id === next.id);
@@ -41,6 +49,7 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
     try {
       if (next) window.sessionStorage.setItem(ACTIVE_WEDDING_KEY, next.id);
       else window.sessionStorage.removeItem(ACTIVE_WEDDING_KEY);
+      window.sessionStorage.removeItem(INVITED_WEDDING_KEY);
       // Stop older deployments from silently selecting a wedding next login.
       window.localStorage.removeItem(ACTIVE_WEDDING_KEY);
     } catch {
@@ -52,6 +61,7 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
     if (!session?.user) {
       setWedding(null);
       setWeddings([]);
+      setSelectionIssue(null);
       setLoading(false);
       return;
     }
@@ -61,25 +71,40 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
       // RLS cannot see the just-invited wedding and the app picks another one.
       await acceptPendingInvites().catch(() => {});
 
-      let preferredWeddingId: string | null = null;
+      let invitedWeddingId: string | null = null;
+      let activeWeddingId: string | null = null;
       try {
         const requested = new URLSearchParams(window.location.search).get("wedding");
-        preferredWeddingId =
-          requested || window.sessionStorage.getItem(ACTIVE_WEDDING_KEY);
+        invitedWeddingId =
+          requested || window.sessionStorage.getItem(INVITED_WEDDING_KEY);
+        activeWeddingId = window.sessionStorage.getItem(ACTIVE_WEDDING_KEY);
       } catch {
         // Storage can be unavailable in private browsing; RLS-backed fallback
         // resolution below still finds accessible weddings.
       }
       const available = await fetchWeddings();
       setWeddings(available);
-      const preferred = preferredWeddingId
-        ? available.find((w) => w.id === preferredWeddingId) ?? null
+      const invited = invitedWeddingId
+        ? available.find((w) => w.id === invitedWeddingId) ?? null
         : null;
-      const next = preferred || (available.length === 1 ? available[0] : null);
+      const active = activeWeddingId
+        ? available.find((w) => w.id === activeWeddingId) ?? null
+        : null;
+
+      // An emailed invitation is an explicit destination. Never replace it
+      // with another wedding just because RLS did not return the requested
+      // one; that was the source of the misleading cross-wedding redirect.
+      const next = invitedWeddingId
+        ? invited
+        : active || (available.length === 1 ? available[0] : null);
+      setSelectionIssue(
+        invitedWeddingId && !invited ? "invited_wedding_unavailable" : null,
+      );
       setWedding(next);
       if (next) {
         try {
           window.sessionStorage.setItem(ACTIVE_WEDDING_KEY, next.id);
+          if (invited) window.sessionStorage.removeItem(INVITED_WEDDING_KEY);
           window.localStorage.removeItem(ACTIVE_WEDDING_KEY);
         } catch {
           // Best-effort preference only.
@@ -103,7 +128,12 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
       value={{
         wedding,
         weddings,
-        needsSelection: !loading && !wedding && weddings.length > 1,
+        needsSelection:
+          !loading &&
+          !wedding &&
+          (weddings.length > 1 ||
+            selectionIssue === "invited_wedding_unavailable"),
+        selectionIssue,
         loading,
         refresh,
         setWedding: chooseWedding,
