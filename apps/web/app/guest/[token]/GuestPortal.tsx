@@ -221,18 +221,9 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         }
       }
 
-      // Update the local instance in state or alert success
-      invitation.guest.rsvp_status = primaryRsvp;
-      invitation.guest.dietary_notes = primaryDietary;
-      invitation.guest.message = primaryMessage;
-
-      // Update companions' statuses in invitation object
-      companions.forEach(c => {
-        if (companionsRsvp[c.id]) {
-          c.rsvp_status = companionsRsvp[c.id].rsvp_status;
-          c.dietary_notes = companionsRsvp[c.id].dietary_notes;
-        }
-      });
+      // companionsRsvp is the source of truth for what the guest picked, and the
+      // rows above are already persisted, so there is nothing to sync back onto
+      // the invitation prop.
 
       setActiveFormModal(null);
     } catch (e) {
