@@ -33,7 +33,7 @@ export default function AccountPage() {
   const router = useRouter();
   const { session, signOut } = useAuth();
   const { profile } = useProfile();
-  const { wedding } = useWedding();
+  const { wedding, weddings } = useWedding();
   const { locale, t } = useLocale();
   const [teamCount, setTeamCount] = useState(1);
 
@@ -91,6 +91,19 @@ export default function AccountPage() {
 
       <SectionLabel>{t.account.weddingSection}</SectionLabel>
       <div style={{ borderRadius: 18, background: T.surface, border: `1px solid ${T.line}`, overflow: "hidden" }}>
+        {weddings.length > 1 && (
+          <Link href="/choose-wedding" style={{ ...rowStyle, borderBottom: `1px solid ${T.line}` }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>
+                {t.account.switchWedding}
+              </div>
+              <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
+                {t.account.switchWeddingSub(weddings.length)}
+              </div>
+            </div>
+            <ChevronRight size={16} stroke="#CBBCB6" />
+          </Link>
+        )}
         <Link href="/account/wedding" style={{ ...rowStyle, borderBottom: `1px solid ${T.line}` }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>{coupleLine}</div>

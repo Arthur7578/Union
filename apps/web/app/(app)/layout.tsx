@@ -14,7 +14,7 @@ import { useT } from "@/lib/i18n/client";
 
 function Guard({ children }: { children: React.ReactNode }) {
   const { session, loading: authLoading } = useAuth();
-  const { wedding, loading: wLoading } = useWedding();
+  const { wedding, needsSelection, loading: wLoading } = useWedding();
   const router = useRouter();
   const t = useT();
 
@@ -25,9 +25,9 @@ function Guard({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!wLoading && !wedding) {
-      router.replace("/onboarding");
+      router.replace(needsSelection ? "/choose-wedding" : "/onboarding");
     }
-  }, [authLoading, session, wLoading, wedding, router]);
+  }, [authLoading, session, wLoading, wedding, needsSelection, router]);
 
   if (authLoading || (session && wLoading)) {
     return (

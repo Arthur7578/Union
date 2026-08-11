@@ -96,6 +96,16 @@ export const fr: Dictionary = {
     venuePlaceholder: "Domaine des Fleurs Sauvages",
   },
 
+  weddingPicker: {
+    title: "Quel mariage organisez-vous ?",
+    sub: "Choisissez le mariage à ouvrir. Vous pourrez en changer depuis Compte.",
+    loading: "Recherche de vos mariages…",
+    untitled: "Mariage",
+    owner: "Votre mariage",
+    coOrganiser: "Co-organisateur·rice",
+    differentAccount: "Se déconnecter et changer de compte",
+  },
+
   today: {
     goodMorning: (name: string) => `Bonjour, ${name}.`,
     onTrack: "Tout roule",
@@ -456,6 +466,8 @@ export const fr: Dictionary = {
 
     weddingSection: "Votre mariage",
     weddingRowFallback: "Ajoutez votre date et votre lieu",
+    switchWedding: "Changer de mariage",
+    switchWeddingSub: (n: number) => `${n} mariages disponibles`,
     teamRowTitle: "Qui organise",
     // Now that this counts real collaborators it can legitimately be 1.
     teamRowSub: (n: number) =>

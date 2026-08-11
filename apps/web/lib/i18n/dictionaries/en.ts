@@ -97,6 +97,16 @@ export const en = {
     venuePlaceholder: "Wildflower Barn",
   },
 
+  weddingPicker: {
+    title: "Which wedding are you planning?",
+    sub: "Choose the wedding you want to open. You can switch again from Account.",
+    loading: "Finding your weddings…",
+    untitled: "Wedding",
+    owner: "Owned by you",
+    coOrganiser: "Co-organiser",
+    differentAccount: "Sign out and use a different account",
+  },
+
   // Today page
   today: {
     goodMorning: (name: string) => `Good morning, ${name}.`,
@@ -478,6 +488,8 @@ export const en = {
 
     weddingSection: "Your wedding",
     weddingRowFallback: "Add your date & venue",
+    switchWedding: "Switch wedding",
+    switchWeddingSub: (n: number) => `${n} weddings available`,
     teamRowTitle: "Who's planning",
     // Now that this counts real collaborators it can legitimately be 1.
     teamRowSub: (n: number) =>

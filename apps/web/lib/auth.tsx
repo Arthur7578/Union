@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getBrowserSupabase } from "./supabaseClient";
+import { clearActiveWedding } from "./weddingSelection";
 
 /** Where we stash the last email a sign-in code was sent to, so we can
  *  prefill the form on subsequent visits (works on the same browser;
@@ -49,25 +50,22 @@ export async function verifyEmailOtp(
     type: "email",
   });
   if (error) throw error;
-  await acceptPendingInvites();
+  await acceptPendingInvites().catch(() => {});
 }
 
 /**
  * If someone invited this email to plan together, flip that invite from
- * pending to active. Best-effort in every sense: a no-op when nothing is
- * pending, and it swallows its own failures so it can never block sign-in
- * or app boot.
+ * pending to active. A no-op when nothing is pending. Callers that treat this
+ * as best-effort catch the error themselves; WeddingProvider awaits completion
+ * before reading RLS-visible weddings to avoid an invitation race.
  *
  * Called both right after a code is verified and whenever a session
  * resolves — an invite that lands while you're already signed in would
  * otherwise sit pending until your next sign-in.
  */
 export async function acceptPendingInvites(): Promise<void> {
-  try {
-    await getBrowserSupabase().rpc("accept_pending_invites");
-  } catch {
-    // ignore — the caller's flow already succeeded without this.
-  }
+  const { error } = await getBrowserSupabase().rpc("accept_pending_invites");
+  if (error) throw error;
 }
 
 type AuthContextValue = {
@@ -96,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const uid = next?.user?.id ?? null;
       if (!uid || uid === acceptedFor) return;
       acceptedFor = uid;
-      void acceptPendingInvites();
+      void acceptPendingInvites().catch(() => {});
     };
 
     supabase.auth.getSession().then(({ data }) => {
@@ -110,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
+      if (!nextSession) clearActiveWedding();
       acceptOnce(nextSession);
     });
 
@@ -129,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const supabase = getBrowserSupabase();
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
+        clearActiveWedding();
       },
     }),
     [session, loading],
