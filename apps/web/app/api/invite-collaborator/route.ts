@@ -45,6 +45,28 @@ type Body = {
   email?: unknown;
 };
 
+/**
+ * "This deployment has no secret key" is an unhelpful thing to be told when
+ * you're certain you set one — the useful questions are always *which*
+ * deployment is saying it, and whether the name is present under a different
+ * spelling or scoped to an environment this deployment isn't in.
+ *
+ * Reports the deployment's own identity plus the *names* of every
+ * Supabase-ish variable the function can actually see. Names only, never
+ * values — a secret key in an error string is a secret key in a screenshot.
+ */
+function describeEnv(): string {
+  const visible = Object.keys(process.env)
+    .filter((k) => /SUPABASE/i.test(k))
+    .sort();
+  return [
+    `VERCEL_ENV=${process.env.VERCEL_ENV ?? "unset"}`,
+    `VERCEL_TARGET_ENV=${process.env.VERCEL_TARGET_ENV ?? "unset"}`,
+    `deployment=${process.env.VERCEL_URL ?? "unset"}`,
+    `Supabase vars visible here: ${visible.length ? visible.join(", ") : "none"}`,
+  ].join(" · ");
+}
+
 /** Supabase surfaces "there's already an account here" through a few
  *  different shapes depending on version; treat any of them as the same
  *  case, since it changes which mail we send rather than being an error. */
@@ -208,7 +230,8 @@ export async function POST(request: Request) {
       collaborator,
       delivered: false,
       reason:
-        "The invite is saved, but this address does not have a Union account yet and this deployment has no SUPABASE_SECRET_KEY with which to create one. Connect the Supabase integration to this Vercel environment (or add the server-only key) and redeploy.",
+        "The invite is saved, but this address does not have a Union account yet and this deployment has no SUPABASE_SECRET_KEY with which to create one. Connect the Supabase integration to this Vercel environment (or add the server-only key) and redeploy. " +
+        `[${describeEnv()}]`,
     });
   }
 
