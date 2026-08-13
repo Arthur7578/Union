@@ -11,7 +11,8 @@
     "mobile": "npm run start --workspace apps/mobile",
     "web": "npm run dev --workspace apps/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
   },
   "engines": {
     "node": "22.x"
