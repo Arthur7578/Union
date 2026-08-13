@@ -237,6 +237,7 @@ export type Database = {
           last_name: string | null
           notes: string | null
           phone: string | null
+          phone_e164: string | null
           profile_id: string | null
           role: string | null
           room_block_id: string | null
@@ -260,6 +261,7 @@ export type Database = {
           last_name?: string | null
           notes?: string | null
           phone?: string | null
+          phone_e164?: never
           profile_id?: string | null
           role?: string | null
           room_block_id?: string | null
@@ -283,6 +285,7 @@ export type Database = {
           last_name?: string | null
           notes?: string | null
           phone?: string | null
+          phone_e164?: never
           profile_id?: string | null
           role?: string | null
           room_block_id?: string | null

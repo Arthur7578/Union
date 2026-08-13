@@ -465,6 +465,7 @@ export default function GuestDetailPage() {
       setAge(finalAge != null ? String(finalAge) : "");
       setEditingAge(false);
     } catch (err) {
+      console.error("Failed to save guest age", err);
       setAgeError(err instanceof Error ? err.message : "Couldn't save age.");
     } finally {
       setAgeBusy(false);
