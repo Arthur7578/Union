@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useLocale } from "@/lib/i18n/client";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getSupabase } from "@/lib/supabase";
+import { submitGuestRsvp } from "@/lib/submitRsvp";
 import type { FormAnswers, RsvpQuestion } from "@union/shared";
 import type { DBInvitation } from "./page";
 
@@ -192,33 +193,26 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
   // Submissions
   const handleSaveRsvp = async () => {
+    if (primaryRsvp === "pending") return;
+
     setSubmittingRsvp(true);
     try {
       if (!isDemo) {
         const supabase = getSupabase();
-
-        // 1. Submit RSVP for primary guest
-        const { error: primaryError } = await supabase.rpc("submit_rsvp", {
-          p_token: token,
-          p_status: primaryRsvp,
-          p_dietary_notes: primaryDietary.trim() || undefined,
-          p_message: primaryMessage.trim() || undefined,
-        });
-        if (primaryError) throw primaryError;
-
-        // 2. Submit RSVPs for all companions (only if they made a choice!)
-        for (const companion of companions) {
-          const companionState = companionsRsvp[companion.id];
-          if (companionState && companionState.rsvp_status !== "pending") {
-            const { error: companionError } = await supabase.rpc("submit_companion_rsvp", {
-              p_token: token,
-              p_companion_guest_id: companion.id,
-              p_status: companionState.rsvp_status,
-              p_dietary_notes: companionState.dietary_notes.trim() || undefined,
-            });
-            if (companionError) throw companionError;
-          }
-        }
+        await submitGuestRsvp(
+          {
+            submitPrimary: (args) => supabase.rpc("submit_rsvp", args),
+            submitCompanion: (args) => supabase.rpc("submit_companion_rsvp", args),
+          },
+          {
+            token,
+            primaryStatus: primaryRsvp,
+            primaryDietary,
+            primaryMessage,
+            companions,
+            companionsRsvp,
+          },
+        );
       }
 
       // companionsRsvp is the source of truth for what the guest picked, and the

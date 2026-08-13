@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 27"
+    "lint": "eslint . --max-warnings 27",
+    "test": "vitest run"
   },
   "dependencies": {
     "@contentsquare/tag-sdk": "^1.1.0",
@@ -25,7 +26,8 @@
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": "22.x"
