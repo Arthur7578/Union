@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
 import type { GuestGroup, RoomBlock, RsvpStatus, SeatingTable } from "@union/shared";
@@ -764,12 +765,12 @@ export default function GuestDetailPage() {
                   {i === hints.length - 1 && !hasSender && (
                     <>
                       {" "}
-                      <a
+                      <Link
                         href="/guests/sms-template"
                         style={{ color: T.ink, textDecoration: "underline" }}
                       >
                         Open SMS Template settings →
-                      </a>
+                      </Link>
                     </>
                   )}
                 </div>

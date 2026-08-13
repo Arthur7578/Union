@@ -1,6 +1,7 @@
 import { getSupabase } from "@/lib/supabase";
 import { resolveLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n";
+import Link from "next/link";
 import type { FormAnswers, Invitation, RsvpQuestion } from "@union/shared";
 import { GuestPortal } from "./GuestPortal";
 
@@ -159,7 +160,7 @@ export default async function GuestExperiencePage({
           >
             {t.rsvp.invalidBody}
           </p>
-          <a
+          <Link
             href="/guest/demo"
             style={{
               display: "inline-block",
@@ -175,7 +176,7 @@ export default async function GuestExperiencePage({
             }}
           >
             {locale === "fr" ? "Voir la version démo" : "View demo experience"}
-          </a>
+          </Link>
         </div>
       </main>
     );
