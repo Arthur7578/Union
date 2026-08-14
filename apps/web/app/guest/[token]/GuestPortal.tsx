@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useLocale } from "@/lib/i18n/client";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { clearActiveGuestIdentity } from "@/lib/guestIdentity";
@@ -91,6 +92,7 @@ const STAYS = [
 
 export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const { t, locale } = useLocale();
+  const router = useRouter();
   const [hasAuthSession, setHasAuthSession] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -310,7 +312,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       });
       if (error) throw error;
       clearActiveGuestIdentity();
-      window.location.assign("/");
+      router.push("/");
     } catch (error) {
       console.error("Failed to sign out guest:", error);
       setSigningOut(false);

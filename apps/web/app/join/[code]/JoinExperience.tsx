@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
@@ -50,6 +51,14 @@ interface ClaimGuestAccessResult {
   token?: string;
 }
 
+function readLastEmail(): string {
+  try {
+    return window.localStorage.getItem(LAST_EMAIL_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export function JoinExperience({
   code,
   preview,
@@ -58,12 +67,13 @@ export function JoinExperience({
   preview: JoinWeddingPreview;
 }) {
   const { t, locale } = useLocale();
+  const router = useRouter();
   const otpMode = preview.guest_join_auth_mode === "otp";
   const [view, setView] = useState<View>("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [contact, setContact] = useState("");
-  const [email, setEmail] = useState("");
+  const [contact, setContact] = useState(() => (otpMode ? readLastEmail() : ""));
+  const [email, setEmail] = useState(() => (otpMode ? readLastEmail() : ""));
   const [firstName, setFirstName] = useState("");
   const [otp, setOtp] = useState("");
   const [disambiguationSource, setDisambiguationSource] =
@@ -82,10 +92,13 @@ export function JoinExperience({
       }).format(new Date(`${preview.event_date}T00:00:00Z`))
     : null;
 
-  const redirectToGuest = useCallback((token: string) => {
-    setView("redirecting");
-    window.location.assign(`/guest/${token}`);
-  }, []);
+  const redirectToGuest = useCallback(
+    (token: string) => {
+      setView("redirecting");
+      router.push(`/guest/${token}`);
+    },
+    [router],
+  );
 
   const claimAndContinue = useCallback(
     async (match: GuestAccessOption) => {
@@ -161,16 +174,6 @@ export function JoinExperience({
 
   useEffect(() => {
     let active = true;
-
-    try {
-      const lastEmail = window.localStorage.getItem(LAST_EMAIL_KEY);
-      if (lastEmail && otpMode) {
-        setContact(lastEmail);
-        setEmail(lastEmail);
-      }
-    } catch {
-      // Prefill is optional.
-    }
 
     void getBrowserSupabase()
       .auth.getSession()
