@@ -18,6 +18,7 @@ export type Wedding = Tables<"weddings">;
 export type Guest = Tables<"guests">;
 export type Rsvp = Tables<"rsvps">;
 export type RsvpStatus = Enums<"rsvp_status">;
+export type GuestJoinAuthMode = Enums<"guest_join_auth_mode">;
 export type GuestGroup = Tables<"guest_groups">;
 export type RoomBlock = Tables<"room_blocks">;
 export type SeatingTable = Tables<"seating_tables">;

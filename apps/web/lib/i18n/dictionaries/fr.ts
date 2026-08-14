@@ -170,6 +170,8 @@ export const fr: Dictionary = {
       formsSub: "RSVP, et vos formulaires ajoutés",
       smsTemplateLabel: "Modèle SMS",
       smsTemplateSub: "Expéditeur + texte d'invitation",
+      groupLinkLabel: "Lien de groupe",
+      groupLinkSub: "Un seul lien pour un groupe WhatsApp",
     },
     guestList: "Liste des invités",
     reminderPromptStrong: (n: number) =>
@@ -585,6 +587,178 @@ export const fr: Dictionary = {
     thanksDecline: (couple: string) =>
       `Votre réponse a été envoyée. ${couple} regretteront votre absence.`,
     update: "Modifier ma réponse",
+  },
+
+  // Lien d'accès générique (/join/[code]) — le point d'entrée pour un
+  // groupe WhatsApp, où l'invité s'identifie par son nom plutôt que
+  // d'ouvrir un lien personnel.
+  join: {
+    invalidTitle: "Lien introuvable",
+    invalidBody:
+      "Ce lien d'invitation est incorrect ou n'est plus valide. Demandez au couple un nouveau lien.",
+    heroKicker: "Invitation de Mariage",
+    namePromptTitle: "Quel est votre nom ?",
+    namePromptSubtitle:
+      "Entrez votre nom tel que le couple l'a renseigné, et nous retrouverons votre invitation.",
+    firstNameLabel: "Prénom",
+    lastNameLabel: "Nom",
+    continueButton: "Retrouver mon invitation",
+    searching: "Recherche…",
+    confirmTitle: "C'est bien vous ?",
+    yesButton: "Oui, c'est moi",
+    noButton: "Non, réessayer",
+    contactTitle: "Une dernière vérification",
+    contactSubtitle:
+      "Plusieurs invités partagent ce nom. Indiquez le numéro de téléphone ou l'email utilisé sur votre invitation.",
+    contactLabel: "Téléphone ou email",
+    contactPlaceholder: "ex. 06 12 34 56 78 ou vous@email.com",
+    contactSubmit: "Confirmer",
+    notFoundTitle: "Nous ne vous trouvons pas",
+    notFoundBody: (couple: string) =>
+      `Nous n'avons pas pu faire correspondre ce nom à une invitation. Contactez ${couple} directement, ils vous aideront.`,
+    tryAgainButton: "Réessayer",
+    redirecting: "Direction votre invitation…",
+    errorGeneric: "Une erreur est survenue. Merci de réessayer.",
+  },
+
+  guestJoin: {
+    title: "Retrouver votre invitation",
+    contactSubtitle:
+      "Indiquez l'adresse e-mail ou le numéro de téléphone renseigné par le couple.",
+    otpSubtitle:
+      "Indiquez l'adresse e-mail de votre invitation. Nous vous enverrons un code de vérification.",
+    contactLabel: "E-mail ou numéro de téléphone",
+    contactPlaceholder: "vous@email.com ou 06 12 34 56 78",
+    emailLabel: "E-mail",
+    emailPlaceholder: "vous@email.com",
+    continueButton: "Continuer",
+    searching: "Recherche…",
+    contactSecurityNote:
+      "Vos coordonnées servent uniquement à retrouver votre invitation. Union n'affiche jamais de liste d'invités.",
+    otpSecurityNote:
+      "Ce mariage exige un code à usage unique avant d'ouvrir une invitation.",
+    firstNameTitle: "Quel est votre prénom ?",
+    firstNameSubtitle:
+      "Saisissez-le au plus proche. Cela nous aide à retrouver la bonne invitation.",
+    firstNameLabel: "Prénom",
+    codeTitle: "Consultez vos e-mails",
+    codeSent: (email: string) => `Nous avons envoyé un code de connexion à ${email}.`,
+    codeLabel: "Code de connexion",
+    codePlaceholder: "12345678",
+    verifyButton: "Vérifier",
+    verifying: "Vérification…",
+    resendButton: "Renvoyer le code",
+    useAnotherContact: "Utiliser un autre e-mail ou téléphone",
+    emailRequired: "Ce mariage exige actuellement une adresse e-mail.",
+    invalidCode: "Ce code n'a pas fonctionné, ou il a expiré.",
+    sendCodeError: "Impossible d'envoyer le code. Merci de réessayer.",
+    noMatchTitle: "Nous n'avons pas retrouvé votre invitation",
+    noMatchBody: (couple: string) =>
+      `Vérifiez les informations saisies ou contactez directement ${couple}.`,
+    tryAgainButton: "Réessayer",
+    accessUnavailable:
+      "Cette invitation n'est plus disponible pour ces coordonnées vérifiées.",
+    genericError: "Une erreur est survenue. Merci de réessayer.",
+    checkingSession: "Vérification de votre compte Union…",
+    redirecting: "Direction votre invitation…",
+  },
+
+  guestEmailSetup: {
+    kicker: "Conservez l'accès à votre invitation",
+    title: "Ajoutez votre e-mail",
+    subtitle:
+      "Une adresse e-mail est nécessaire pour continuer. Nous allons la vérifier afin que vous seul puissiez l'utiliser pour vous reconnecter.",
+    emailLabel: "E-mail",
+    emailPlaceholder: "vous@email.com",
+    sendCode: "Envoyer le code de vérification",
+    sending: "Envoi…",
+    codeTitle: "Vérifiez votre e-mail",
+    codeSent: (email: string) => `Saisissez le code envoyé à ${email}.`,
+    codeLabel: "Code de vérification",
+    codePlaceholder: "12345678",
+    verify: "Vérifier et continuer",
+    verifying: "Vérification…",
+    resend: "Renvoyer le code",
+    changeEmail: "Utiliser un autre e-mail",
+    sendError: "Impossible d'envoyer le code. Merci de réessayer.",
+    verifyError: "Ce code n'a pas fonctionné, ou l'e-mail n'a pas pu être enregistré.",
+  },
+
+  // Connexion invité (/join/[code]) — Supabase Auth vérifie l'e-mail,
+  // puis les RPC authentifiés ne révèlent que les invitations associées.
+  joinOtp: {
+    title: "Retrouver votre invitation",
+    subtitle:
+      "Indiquez l'adresse e-mail renseignée par le couple sur votre invitation.",
+    phoneLabel: "Numéro de téléphone",
+    phonePlaceholder: "ex. +33 6 12 34 56 78",
+    continueButton: "Continuer",
+    searching: "Recherche…",
+    emailCollectTitle: "Consultez vos e-mails",
+    emailCollectSubtitle:
+      "Saisissez le code à usage unique envoyé par Union pour terminer la connexion.",
+    emailLabel: "Email",
+    emailPlaceholder: "vous@email.com",
+    sendCodeButton: "Envoyer le code",
+    codeSentTo: (email: string) => `Nous avons envoyé un code de connexion à ${email}.`,
+    codeLabel: "Code de connexion",
+    codePlaceholder: "12345678",
+    verifyButton: "Vérifier",
+    verifying: "Vérification…",
+    resendButton: "Renvoyer le code",
+    startOverButton: "Recommencer",
+    savedEmailNotice:
+      "Enregistré — vous pourrez vous connecter avec cet email seul la prochaine fois.",
+    organiserHintText:
+      "Ce contact est aussi lié à un compte organisateur sur Union.",
+    organiserHintLink: "Se connecter en tant qu'organisateur",
+    matchesTitle: "Choisissez votre invitation",
+    matchesSubtitle:
+      "Confirmez la personne pour laquelle vous répondez. Union ne choisit jamais automatiquement une identité d’invité.",
+    matchLine: (guestName: string) => `Continuer en tant que ${guestName}`,
+    invalidOrExpired: "Ce code n'a pas fonctionné, ou il a expiré.",
+    cooldown: "Merci de patienter un instant avant de redemander un code.",
+    tooManyRequests: "Trop de tentatives — réessayez un peu plus tard.",
+    genericError: "Une erreur est survenue. Merci de réessayer.",
+    accessUnavailable:
+      "Cette invitation n'est plus disponible pour cet e-mail vérifié.",
+    checkingSession: "Vérification de votre compte Union…",
+    securityNote:
+      "Union vérifie cet e-mail avec la même connexion sécurisée que celle des organisateurs.",
+    noMatchTitle: "Aucune invitation pour cet e-mail",
+    noMatchBody: (couple: string) =>
+      `Cet e-mail vérifié ne figure pas sur une invitation pour ${couple}. Essayez une autre adresse ou contactez le couple.`,
+    useAnotherEmail: "Utiliser un autre e-mail",
+    useEmailInstead: "J'ai déjà un email enregistré — l'utiliser plutôt",
+    useNameFallback: "Rechercher par nom à la place",
+    backButton: "Retour",
+    continueToInvitation: "Accéder à votre invitation",
+  },
+
+  // Outil organisateur "Lien de groupe" — la page /guests/group-link.
+  groupLink: {
+    title: "Lien de groupe",
+    subtitle: "Partagez un seul lien avec tout un groupe",
+    copyButton: "Copier le lien",
+    copied: "Copié !",
+    whatsappButton: "Partager sur WhatsApp",
+    whatsappMessage: (couple: string, link: string) =>
+      `Bonjour à tous ! 👋\n\n${couple} seraient ravis que vous confirmiez votre présence :\n${link}`,
+    howItWorksTitle: "Comment ça marche",
+    howItWorksBody:
+      "Partagez ce lien dans une conversation WhatsApp, un e-mail groupé ou un chat familial. Par défaut, les invités retrouvent leur invitation avec l'e-mail ou le téléphone que vous avez renseigné ; Union demande le prénom uniquement si nécessaire et n'affiche jamais de liste d'invités.",
+    authModeTitle: "Vérification des invités",
+    contactModeLabel: "Correspondance des coordonnées — recommandé",
+    contactModeHint:
+      "Les invités utilisent leur e-mail ou téléphone, puis leur prénom uniquement si plusieurs invitations partagent ces coordonnées. Aucun code n'est demandé sauf si l'e-mail a déjà été vérifié comme connexion Union.",
+    otpModeLabel: "Exiger un code de vérification",
+    otpModeHint:
+      "Les invités doivent vérifier l'e-mail de leur invitation. La vérification par téléphone pourra être ajoutée plus tard ; les invités sans e-mail ne peuvent pas encore utiliser ce mode.",
+    otpCoverage: (withEmail: number, total: number) =>
+      `${withEmail} invité${withEmail > 1 ? "s" : ""} sur ${total} ${total > 1 ? "ont" : "a"} actuellement un e-mail et ${total > 1 ? "peuvent" : "peut"} utiliser ce mode.`,
+    allowNameFallbackLabel: "Autoriser aussi une recherche simple par nom",
+    allowNameFallbackHint:
+      "Saute la vérification de l'e-mail — les invités peuvent se retrouver par leur seul nom. Moins sûr, mais zéro friction pour les invités qui préfèrent éviter le code.",
   },
 
   offline: {
