@@ -11,8 +11,10 @@ import type { Wedding } from "@union/shared";
 import { acceptPendingInvites, useAuth } from "./auth";
 import { fetchWeddings } from "./data";
 import {
-  ACTIVE_WEDDING_KEY,
   INVITED_WEDDING_KEY,
+  clearActiveWeddingPreference,
+  readActiveWedding,
+  rememberActiveWedding,
 } from "./weddingSelection";
 
 type WeddingContextValue = {
@@ -29,6 +31,7 @@ const WeddingContext = createContext<WeddingContextValue | undefined>(undefined)
 
 export function WeddingProvider({ children }: { children: React.ReactNode }) {
   const { session, loading: authLoading } = useAuth();
+  const sessionUserId = session?.user.id;
   const [wedding, setWedding] = useState<Wedding | null>(null);
   const [weddings, setWeddings] = useState<Wedding[]>([]);
   const [selectionIssue, setSelectionIssue] = useState<
@@ -47,15 +50,16 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
         : [...current, next];
     });
     try {
-      if (next) window.sessionStorage.setItem(ACTIVE_WEDDING_KEY, next.id);
-      else window.sessionStorage.removeItem(ACTIVE_WEDDING_KEY);
+      if (next && sessionUserId) {
+        rememberActiveWedding(next.id, sessionUserId);
+      } else {
+        clearActiveWeddingPreference();
+      }
       window.sessionStorage.removeItem(INVITED_WEDDING_KEY);
-      // Stop older deployments from silently selecting a wedding next login.
-      window.localStorage.removeItem(ACTIVE_WEDDING_KEY);
     } catch {
       // Best-effort preference only.
     }
-  }, []);
+  }, [sessionUserId]);
 
   const refresh = useCallback(async () => {
     if (!session?.user) {
@@ -77,7 +81,7 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
         const requested = new URLSearchParams(window.location.search).get("wedding");
         invitedWeddingId =
           requested || window.sessionStorage.getItem(INVITED_WEDDING_KEY);
-        activeWeddingId = window.sessionStorage.getItem(ACTIVE_WEDDING_KEY);
+        activeWeddingId = readActiveWedding(session.user.id);
       } catch {
         // Storage can be unavailable in private browsing; RLS-backed fallback
         // resolution below still finds accessible weddings.
@@ -103,9 +107,8 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
       setWedding(next);
       if (next) {
         try {
-          window.sessionStorage.setItem(ACTIVE_WEDDING_KEY, next.id);
+          rememberActiveWedding(next.id, session.user.id);
           if (invited) window.sessionStorage.removeItem(INVITED_WEDDING_KEY);
-          window.localStorage.removeItem(ACTIVE_WEDDING_KEY);
         } catch {
           // Best-effort preference only.
         }

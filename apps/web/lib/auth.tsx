@@ -9,7 +9,10 @@ import React, {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getBrowserSupabase } from "./supabaseClient";
-import { clearActiveWedding } from "./weddingSelection";
+import {
+  clearActiveWedding,
+  clearActiveWeddingPreference,
+} from "./weddingSelection";
 
 /** Where we stash the last email a sign-in code was sent to, so we can
  *  prefill the form on subsequent visits (works on the same browser;
@@ -97,19 +100,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       void acceptPendingInvites().catch(() => {});
     };
 
-    supabase.auth.getSession().then(({ data }) => {
+    // `getSession()` and the initial auth event can race. Once an auth event
+    // has arrived, it is authoritative; do not let the earlier read replace a
+    // freshly established magic-link session.
+    let authEventSeen = false;
+    let currentUserId: string | null | undefined;
+    const applySession = (nextSession: Session | null) => {
       if (!mounted) return;
-      setSession(data.session);
+      const nextUserId = nextSession?.user.id ?? null;
+      if (
+        currentUserId !== undefined &&
+        currentUserId !== nextUserId
+      ) {
+        if (nextUserId) clearActiveWeddingPreference();
+        else clearActiveWedding();
+      }
+      currentUserId = nextUserId;
+      setSession(nextSession);
       setLoading(false);
-      acceptOnce(data.session);
+      acceptOnce(nextSession);
+    };
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted || authEventSeen) return;
+      applySession(data.session);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      if (!nextSession) clearActiveWedding();
-      acceptOnce(nextSession);
+      authEventSeen = true;
+      applySession(nextSession);
     });
 
     return () => {
