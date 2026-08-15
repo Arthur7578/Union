@@ -7,6 +7,8 @@ import {
   clearActiveWeddingPreference,
   readActiveWedding,
   rememberActiveWedding,
+  rememberInvitedWedding,
+  resolveInitialWeddingId,
 } from "./weddingSelection";
 
 function createStorage() {
@@ -28,6 +30,39 @@ function installWindow() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account-scoped wedding selection", () => {
+  it("never auto-selects an invitation", () => {
+    expect(
+      resolveInitialWeddingId(
+        "invited-wedding",
+        "previous-wedding",
+        ["invited-wedding", "previous-wedding"],
+      ),
+    ).toBeNull();
+  });
+
+  it("uses an ordinary active preference or sole accessible wedding", () => {
+    expect(
+      resolveInitialWeddingId(null, "wedding-b", ["wedding-a", "wedding-b"]),
+    ).toBe("wedding-b");
+    expect(resolveInitialWeddingId(null, null, ["wedding-a"])).toBe(
+      "wedding-a",
+    );
+    expect(
+      resolveInitialWeddingId(null, "unavailable", ["wedding-a", "wedding-b"]),
+    ).toBeNull();
+  });
+
+  it("remembers the invited wedding without selecting it", () => {
+    installWindow();
+
+    rememberInvitedWedding("invited-wedding");
+
+    expect(window.sessionStorage.getItem(INVITED_WEDDING_KEY)).toBe(
+      "invited-wedding",
+    );
+    expect(window.sessionStorage.getItem(ACTIVE_WEDDING_KEY)).toBeNull();
+  });
+
   it("returns a selection only to the account that made it", () => {
     installWindow();
     rememberActiveWedding("wedding-a", "user-a");

@@ -15,11 +15,14 @@ import {
   clearActiveWeddingPreference,
   readActiveWedding,
   rememberActiveWedding,
+  resolveInitialWeddingId,
 } from "./weddingSelection";
 
 type WeddingContextValue = {
   wedding: Wedding | null;
   weddings: Wedding[];
+  invitedWeddingId: string | null;
+  invitedWedding: Wedding | null;
   needsSelection: boolean;
   selectionIssue: "invited_wedding_unavailable" | null;
   loading: boolean;
@@ -34,6 +37,8 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
   const sessionUserId = session?.user.id;
   const [wedding, setWedding] = useState<Wedding | null>(null);
   const [weddings, setWeddings] = useState<Wedding[]>([]);
+  const [invitedWeddingId, setInvitedWeddingId] = useState<string | null>(null);
+  const [invitedWedding, setInvitedWedding] = useState<Wedding | null>(null);
   const [selectionIssue, setSelectionIssue] = useState<
     "invited_wedding_unavailable" | null
   >(null);
@@ -41,6 +46,8 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
 
   const chooseWedding = useCallback((next: Wedding | null) => {
     setWedding(next);
+    setInvitedWeddingId(null);
+    setInvitedWedding(null);
     setSelectionIssue(null);
     setWeddings((current) => {
       if (!next) return current;
@@ -65,6 +72,8 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
     if (!session?.user) {
       setWedding(null);
       setWeddings([]);
+      setInvitedWeddingId(null);
+      setInvitedWedding(null);
       setSelectionIssue(null);
       setLoading(false);
       return;
@@ -91,16 +100,21 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
       const invited = invitedWeddingId
         ? available.find((w) => w.id === invitedWeddingId) ?? null
         : null;
-      const active = activeWeddingId
-        ? available.find((w) => w.id === activeWeddingId) ?? null
-        : null;
+      setInvitedWeddingId(invitedWeddingId);
+      setInvitedWedding(invited);
 
-      // An emailed invitation is an explicit destination. Never replace it
-      // with another wedding just because RLS did not return the requested
-      // one; that was the source of the misleading cross-wedding redirect.
-      const next = invitedWeddingId
-        ? invited
-        : active || (available.length === 1 ? available[0] : null);
+      // An emailed invitation is a pending destination, not an implicit
+      // selection. Keep it separate until the recipient explicitly opens a
+      // wedding on the welcome screen. Never replace an unavailable invited
+      // wedding with another wedding.
+      const nextId = resolveInitialWeddingId(
+        invitedWeddingId,
+        activeWeddingId,
+        available.map((w) => w.id),
+      );
+      const next = nextId
+        ? available.find((w) => w.id === nextId) ?? null
+        : null;
       setSelectionIssue(
         invitedWeddingId && !invited ? "invited_wedding_unavailable" : null,
       );
@@ -108,7 +122,6 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
       if (next) {
         try {
           rememberActiveWedding(next.id, session.user.id);
-          if (invited) window.sessionStorage.removeItem(INVITED_WEDDING_KEY);
         } catch {
           // Best-effort preference only.
         }
@@ -131,6 +144,8 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
       value={{
         wedding,
         weddings,
+        invitedWeddingId,
+        invitedWedding,
         needsSelection:
           !loading &&
           !wedding &&

@@ -14,7 +14,12 @@ import { useT } from "@/lib/i18n/client";
 
 function Guard({ children }: { children: React.ReactNode }) {
   const { session, loading: authLoading } = useAuth();
-  const { wedding, needsSelection, loading: wLoading } = useWedding();
+  const {
+    wedding,
+    invitedWeddingId,
+    needsSelection,
+    loading: wLoading,
+  } = useWedding();
   const router = useRouter();
   const t = useT();
 
@@ -24,10 +29,22 @@ function Guard({ children }: { children: React.ReactNode }) {
       router.replace("/sign-in");
       return;
     }
+    if (!wLoading && invitedWeddingId) {
+      router.replace("/invitation");
+      return;
+    }
     if (!wLoading && !wedding) {
       router.replace(needsSelection ? "/choose-wedding" : "/onboarding");
     }
-  }, [authLoading, session, wLoading, wedding, needsSelection, router]);
+  }, [
+    authLoading,
+    session,
+    wLoading,
+    wedding,
+    invitedWeddingId,
+    needsSelection,
+    router,
+  ]);
 
   if (authLoading || (session && wLoading)) {
     return (
@@ -36,7 +53,7 @@ function Guard({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  if (!session || !wedding) {
+  if (!session || !wedding || invitedWeddingId) {
     return (
       <div className="u-app">
         <Loading label={t.common.oneMoment} />

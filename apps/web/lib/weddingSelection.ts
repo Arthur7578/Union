@@ -4,6 +4,20 @@ export const ACTIVE_WEDDING_KEY = "union.activeWeddingId";
 export const ACTIVE_WEDDING_USER_KEY = "union.activeWeddingUserId";
 export const INVITED_WEDDING_KEY = "union.invitedWeddingId";
 
+/** Resolve an ordinary active preference, but never auto-select an emailed
+ * invitation. Invitations require an explicit choice on their welcome page. */
+export function resolveInitialWeddingId(
+  invitedWeddingId: string | null,
+  activeWeddingId: string | null,
+  availableWeddingIds: string[],
+): string | null {
+  if (invitedWeddingId) return null;
+  if (activeWeddingId && availableWeddingIds.includes(activeWeddingId)) {
+    return activeWeddingId;
+  }
+  return availableWeddingIds.length === 1 ? availableWeddingIds[0] : null;
+}
+
 /** Remember the wedding encoded in an emailed authentication link before the
  * browser leaves Union for Supabase's verification endpoint. This survives
  * Supabase falling back to the configured Site URL when a path-specific

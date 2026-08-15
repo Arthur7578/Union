@@ -108,6 +108,25 @@ export const fr: Dictionary = {
       "Cette invitation ne peut pas encore être ouverte. Ce mariage n'est pas disponible pour ce compte ; Union ne vous a donc pas redirigé vers un autre mariage.",
   },
 
+  invitation: {
+    loading: "Ouverture de votre invitation…",
+    kicker: "Invitation à organiser",
+    title: (couple: string) =>
+      `Vous êtes invité·e à organiser le mariage de ${couple}`,
+    sub: "Rejoignez les organisateurs dans Union pour préparer ce mariage ensemble.",
+    invitedWedding: "Votre invitation",
+    openInvited: "Commencer à organiser ce mariage",
+    otherTitle: "Vos autres mariages",
+    otherSub:
+      "Vous pouvez ouvrir un autre mariage. Votre invitation restera disponible jusqu'à votre choix.",
+    openOther: "Ouvrir ce mariage",
+    unavailableTitle: "Cette invitation n'est pas encore disponible",
+    unavailableBody:
+      "Union ne peut pas ouvrir le mariage invité avec ce compte. Vous pouvez choisir un autre mariage disponible ou vous connecter avec un autre compte.",
+    signedInAs: (email: string) => `Connecté·e en tant que ${email}`,
+    differentAccount: "Se déconnecter et changer de compte",
+  },
+
   today: {
     goodMorning: (name: string) => `Bonjour, ${name}.`,
     onTrack: "Tout roule",

@@ -109,6 +109,25 @@ export const en = {
       "This invitation could not be opened yet. The wedding was not available to this account, so Union did not send you to a different wedding.",
   },
 
+  invitation: {
+    loading: "Opening your invitation…",
+    kicker: "Planning invitation",
+    title: (couple: string) =>
+      `You're invited to help plan the wedding of ${couple}`,
+    sub: "Join the organisers in Union to plan this wedding together.",
+    invitedWedding: "Your invitation",
+    openInvited: "Start planning this wedding",
+    otherTitle: "Your other weddings",
+    otherSub:
+      "You can open another wedding instead. Your invitation will remain available until you choose.",
+    openOther: "Open this wedding",
+    unavailableTitle: "This invitation isn't available yet",
+    unavailableBody:
+      "Union couldn't open the invited wedding for this account. You can choose another available wedding or sign in with a different account.",
+    signedInAs: (email: string) => `Signed in as ${email}`,
+    differentAccount: "Sign out and use a different account",
+  },
+
   // Today page
   today: {
     goodMorning: (name: string) => `Good morning, ${name}.`,

@@ -67,6 +67,29 @@ function describeEnv(): string {
   ].join(" · ");
 }
 
+/** Prefer the canonical production URL when configured. Supabase only honors
+ * redirect targets on its allow list, so using a transient Host header in
+ * production can silently fall back to the project's Site URL. */
+function appOrigin(request: Request): string {
+  const candidates = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.VERCEL_ENV === "production"
+      ? "https://union-silk.vercel.app"
+      : null,
+    request.headers.get("origin"),
+    request.url,
+  ];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      return new URL(candidate).origin;
+    } catch {
+      // Try the next source.
+    }
+  }
+  return "";
+}
+
 /** Supabase surfaces "there's already an account here" through a few
  *  different shapes depending on version; treat any of them as the same
  *  case, since it changes which mail we send rather than being an error. */
@@ -168,18 +191,10 @@ export async function POST(request: Request) {
 
   const collaborator = { ...row, profile_full_name: null };
 
-  const origin =
-    request.headers.get("origin") ||
-    (() => {
-      try {
-        return new URL(request.url).origin;
-      } catch {
-        return "";
-      }
-    })();
+  const origin = appOrigin(request);
 
-  const teamUrl = origin
-    ? `${origin}/plan/team?wedding=${encodeURIComponent(weddingId)}`
+  const invitationUrl = origin
+    ? `${origin}/invitation?wedding=${encodeURIComponent(weddingId)}`
     : undefined;
 
   // A publishable Auth client can email an existing account; no elevated key
@@ -208,7 +223,7 @@ export async function POST(request: Request) {
       email,
       options: {
         shouldCreateUser: false,
-        emailRedirectTo: teamUrl,
+        emailRedirectTo: invitationUrl,
       },
     });
     if (!otpErr) {
@@ -249,7 +264,7 @@ export async function POST(request: Request) {
     .join(" & ");
 
   const { error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: teamUrl,
+    redirectTo: invitationUrl,
     // Surfaced to the email template as {{ .Data.* }} so the invite can read
     // as "Arthur invited you" rather than a bare product notification.
     data: {
@@ -273,7 +288,7 @@ export async function POST(request: Request) {
       email,
       options: {
         shouldCreateUser: false,
-        emailRedirectTo: teamUrl,
+        emailRedirectTo: invitationUrl,
       },
     });
     if (!otpErr) {
