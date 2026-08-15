@@ -2,30 +2,16 @@
 <html>
   <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #2B2724; background: #FBF7F4; padding: 32px;">
     <div style="max-width: 480px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E7DED6; border-radius: 16px; padding: 32px; text-align: center;">
-      {{ if .RedirectTo }}
       <h1 style="font-size: 22px; font-weight: 600; margin: 0 0 8px;">You've been invited to plan a wedding in Union</h1>
       <p style="font-size: 15px; line-height: 1.5; color: #8A817C; margin: 0 0 24px;">
-        Open the invitation to join the couple's planning team. This secure link signs you in and takes you directly to their wedding.
+        Open the invitation to create your Union account and join the couple's planning team.
       </p>
       <a href="{{ .SiteURL }}/accept-invite#confirmation_url={{ .ConfirmationURL }}" style="display: inline-block; background: #B07C82; color: #FFFFFF; text-decoration: none; font-size: 15px; font-weight: 600; padding: 13px 22px; border-radius: 12px;">
-        Open wedding invitation
+        Accept wedding invitation
       </a>
       <p style="font-size: 13px; color: #8A817C; margin: 24px 0 0;">
         This link expires shortly and can only be used once. If you weren't expecting this invitation, you can safely ignore this email.
       </p>
-      {{ else }}
-      <h1 style="font-size: 22px; font-weight: 600; margin: 0 0 8px;">Your Union sign-in code</h1>
-      <p style="font-size: 15px; color: #8A817C; margin: 0 0 24px;">
-        Enter this code in the Union app to finish signing in.
-      </p>
-      <div style="font-size: 34px; font-weight: 700; letter-spacing: 8px; color: #2B2724; padding: 16px 0; background: #F3EBE4; border-radius: 12px; font-variant-numeric: tabular-nums;">
-        {{ .Token }}
-      </div>
-      <p style="font-size: 13px; color: #8A817C; margin: 24px 0 0;">
-        This code expires shortly and can only be used once. If you didn't
-        request it, you can safely ignore this email.
-      </p>
-      {{ end }}
     </div>
   </body>
 </html>

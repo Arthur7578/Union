@@ -63,7 +63,7 @@ export default function SignInPage() {
     try {
       await verifyEmailOtp(email, code);
       setRedirecting(true);
-      router.replace("/today");
+      router.replace("/choose-wedding");
     } catch (err) {
       setError(err instanceof Error ? err.message : t.signIn.errVerify);
       setBusy(false);
@@ -154,7 +154,7 @@ export default function SignInPage() {
           )}
           <Button
             type="button"
-            onClick={() => router.replace("/today")}
+            onClick={() => router.replace("/choose-wedding")}
             style={{ width: "100%" }}
           >
             {t.signIn.continue}

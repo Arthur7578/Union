@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { useWedding } from "@/lib/wedding";
 import { useLocale } from "@/lib/i18n/client";
-import { getSample } from "@/lib/sample";
+import { fetchCollaborators } from "@/lib/data";
 import { initial, formatShortDate } from "@/lib/format";
 import { ujOpenWidget } from "@/lib/userjot";
 import { PageHeader, Card, SectionLabel, Avatar, Button } from "@/components/ui";
@@ -33,9 +33,20 @@ export default function AccountPage() {
   const router = useRouter();
   const { session, signOut } = useAuth();
   const { profile } = useProfile();
-  const { wedding } = useWedding();
+  const { wedding, weddings } = useWedding();
   const { locale, t } = useLocale();
-  const sample = getSample(t);
+  const [teamCount, setTeamCount] = useState(1);
+
+  useEffect(() => {
+    if (!wedding) return;
+    let ok = true;
+    fetchCollaborators(wedding.id)
+      .then((c) => ok && setTeamCount(1 + c.length))
+      .catch(() => {});
+    return () => {
+      ok = false;
+    };
+  }, [wedding]);
 
   if (!wedding) return null;
 
@@ -80,6 +91,19 @@ export default function AccountPage() {
 
       <SectionLabel>{t.account.weddingSection}</SectionLabel>
       <div style={{ borderRadius: 18, background: T.surface, border: `1px solid ${T.line}`, overflow: "hidden" }}>
+        {weddings.length > 1 && (
+          <Link href="/choose-wedding" style={{ ...rowStyle, borderBottom: `1px solid ${T.line}` }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>
+                {t.account.switchWedding}
+              </div>
+              <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
+                {t.account.switchWeddingSub(weddings.length)}
+              </div>
+            </div>
+            <ChevronRight size={16} stroke="#CBBCB6" />
+          </Link>
+        )}
         <Link href="/account/wedding" style={{ ...rowStyle, borderBottom: `1px solid ${T.line}` }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>{coupleLine}</div>
@@ -89,14 +113,11 @@ export default function AccountPage() {
         </Link>
         <Link href="/plan/team" style={rowStyle}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>
-                {t.account.teamRowTitle}
-              </span>
-              <SampleBadge />
-            </div>
+            <span style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>
+              {t.account.teamRowTitle}
+            </span>
             <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
-              {t.account.teamRowSub(sample.team.length)}
+              {t.account.teamRowSub(teamCount)}
             </div>
           </div>
           <ChevronRight size={16} stroke="#CBBCB6" />

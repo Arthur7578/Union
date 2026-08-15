@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
+import { useAuth } from "@/lib/auth";
 import { useWedding } from "@/lib/wedding";
 import { updateWedding, deleteWedding } from "@/lib/data";
 import { formatLongDate, initial } from "@/lib/format";
@@ -12,6 +13,7 @@ import { Avatar, Button, SectionLabel, UnionNote } from "@/components/ui";
 
 export default function WeddingSettingsPage() {
   const router = useRouter();
+  const { session } = useAuth();
   const { wedding, setWedding } = useWedding();
   const { locale, t } = useLocale();
 
@@ -61,6 +63,7 @@ export default function WeddingSettingsPage() {
     wedding.partner_one ||
     t.account.weddingTitle;
   const confirmPhrase = t.account.deletePhrase(wedding.partner_one || t.account.partnerNotSet);
+  const isOwner = session?.user.id === wedding.owner_id;
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -344,27 +347,31 @@ export default function WeddingSettingsPage() {
         )}
       </form>
 
-      <SectionLabel>{t.account.manageSection}</SectionLabel>
-      <button
-        type="button"
-        onClick={openConfirm}
-        style={{
-          width: "100%",
-          textAlign: "left",
-          padding: "14px 15px",
-          borderRadius: 18,
-          background: T.surfaceAlt,
-          border: `1px solid ${T.line}`,
-          color: "#B0664E",
-          fontWeight: 600,
-          fontSize: 14.5,
-          cursor: "pointer",
-        }}
-      >
-        {t.account.deleteWedding}
-      </button>
+      {isOwner && (
+        <>
+          <SectionLabel>{t.account.manageSection}</SectionLabel>
+          <button
+            type="button"
+            onClick={openConfirm}
+            style={{
+              width: "100%",
+              textAlign: "left",
+              padding: "14px 15px",
+              borderRadius: 18,
+              background: T.surfaceAlt,
+              border: `1px solid ${T.line}`,
+              color: "#B0664E",
+              fontWeight: 600,
+              fontSize: 14.5,
+              cursor: "pointer",
+            }}
+          >
+            {t.account.deleteWedding}
+          </button>
+        </>
+      )}
 
-      {confirmOpen && (
+      {isOwner && confirmOpen && (
         <DeleteConfirmModal
           coupleLine={coupleLine}
           phrase={confirmPhrase}
