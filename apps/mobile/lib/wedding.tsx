@@ -20,26 +20,28 @@ const WeddingContext = createContext<WeddingContextValue | undefined>(undefined)
 
 export function WeddingProvider({ children }: { children: React.ReactNode }) {
   const { session } = useAuth();
+  const userId = session?.user?.id;
   const [wedding, setWedding] = useState<Wedding | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!session?.user) {
+    if (!userId) {
       setWedding(null);
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const w = await fetchWedding(session.user.id);
+      const w = await fetchWedding(userId);
       setWedding(w);
     } finally {
       setLoading(false);
     }
-  }, [session?.user?.id]);
+  }, [userId]);
 
   useEffect(() => {
-    void refresh();
+    const timeoutId = setTimeout(() => void refresh(), 0);
+    return () => clearTimeout(timeoutId);
   }, [refresh]);
 
   return (

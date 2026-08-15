@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import type { Profile } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
@@ -71,23 +72,7 @@ function guessDefaultDial(): string {
 
 export default function EditProfilePage() {
   const t = useT();
-  const { session } = useAuth();
-  const { profile, loading, setProfile } = useProfile();
-  const { wedding } = useWedding();
-
-  const defaultDial = useMemo(() => guessDefaultDial(), []);
-  const [dial, setDial] = useState(defaultDial);
-  const [local, setLocal] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [note, setNote] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!profile) return;
-    const parts = splitPhone(profile.phone ?? "", defaultDial);
-    setDial(parts.dial);
-    setLocal(parts.local);
-  }, [profile, defaultDial]);
+  const { profile, loading } = useProfile();
 
   if (loading) {
     return (
@@ -97,6 +82,23 @@ export default function EditProfilePage() {
     );
   }
   if (!profile) return null;
+
+  return <EditProfileForm key={profile.id} profile={profile} />;
+}
+
+function EditProfileForm({ profile }: { profile: Profile }) {
+  const t = useT();
+  const { session } = useAuth();
+  const { setProfile } = useProfile();
+  const { wedding } = useWedding();
+
+  const defaultDial = useMemo(() => guessDefaultDial(), []);
+  const initialPhone = splitPhone(profile.phone ?? "", defaultDial);
+  const [dial, setDial] = useState(initialPhone.dial);
+  const [local, setLocal] = useState(initialPhone.local);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   const email = session?.user?.email ?? "";
   const displayName =

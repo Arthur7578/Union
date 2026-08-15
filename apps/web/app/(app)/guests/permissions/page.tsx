@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import type { Wedding } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import { updateWedding } from "@/lib/data";
@@ -17,26 +18,6 @@ type ToggleValue = boolean;
  */
 export default function GuestPermissionsPage() {
   const { wedding, refresh } = useWedding();
-  const [allowPartner, setAllowPartner] = useState<ToggleValue>(false);
-  const [allowKids, setAllowKids] = useState<ToggleValue>(false);
-  const [maxKidsMode, setMaxKidsMode] = useState<"unlimited" | "capped">("unlimited");
-  const [maxKidsCap, setMaxKidsCap] = useState<string>("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (!wedding) return;
-    setAllowPartner(wedding.allow_guests_add_partner);
-    setAllowKids(wedding.allow_guests_add_children);
-    if (wedding.max_children_per_guest == null) {
-      setMaxKidsMode("unlimited");
-      setMaxKidsCap("");
-    } else {
-      setMaxKidsMode("capped");
-      setMaxKidsCap(String(wedding.max_children_per_guest));
-    }
-  }, [wedding]);
 
   if (!wedding)
     return (
@@ -44,6 +25,40 @@ export default function GuestPermissionsPage() {
         <Loading />
       </main>
     );
+
+  return (
+    <GuestPermissionsForm
+      key={wedding.id}
+      wedding={wedding}
+      refresh={refresh}
+    />
+  );
+}
+
+function GuestPermissionsForm({
+  wedding,
+  refresh,
+}: {
+  wedding: Wedding;
+  refresh: () => Promise<void>;
+}) {
+  const [allowPartner, setAllowPartner] = useState<ToggleValue>(
+    wedding.allow_guests_add_partner,
+  );
+  const [allowKids, setAllowKids] = useState<ToggleValue>(
+    wedding.allow_guests_add_children,
+  );
+  const [maxKidsMode, setMaxKidsMode] = useState<"unlimited" | "capped">(
+    wedding.max_children_per_guest == null ? "unlimited" : "capped",
+  );
+  const [maxKidsCap, setMaxKidsCap] = useState<string>(
+    wedding.max_children_per_guest == null
+      ? ""
+      : String(wedding.max_children_per_guest),
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();

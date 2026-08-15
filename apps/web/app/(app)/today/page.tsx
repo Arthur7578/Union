@@ -15,7 +15,7 @@ import {
 } from "@/lib/format";
 import { Card, SectionLabel, Button } from "@/components/ui";
 import { SampleBadge } from "@/components/SampleBadge";
-import { Spark, Check } from "@/components/icons";
+import { Check } from "@/components/icons";
 import { getSample } from "@/lib/sample";
 import { useLocale } from "@/lib/i18n/client";
 

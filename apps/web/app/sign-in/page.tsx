@@ -26,13 +26,16 @@ export default function SignInPage() {
   const codeInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    let stored: string | null = null;
-    try {
-      stored = window.localStorage.getItem(LAST_EMAIL_KEY);
-    } catch {
-      stored = null;
-    }
-    if (stored) setEmail((cur) => cur || stored);
+    const timeoutId = window.setTimeout(() => {
+      let stored: string | null = null;
+      try {
+        stored = window.localStorage.getItem(LAST_EMAIL_KEY);
+      } catch {
+        stored = null;
+      }
+      if (stored) setEmail((cur) => cur || stored);
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {

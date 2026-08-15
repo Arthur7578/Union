@@ -53,9 +53,12 @@ export default function StaysPage() {
   };
 
   useEffect(() => {
-    reload().catch((err) =>
-      setError(err instanceof Error ? err.message : "Couldn't load stays."),
-    );
+    const timeoutId = window.setTimeout(() => {
+      void reload().catch((err) =>
+        setError(err instanceof Error ? err.message : "Couldn't load stays."),
+      );
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding?.id]);
 

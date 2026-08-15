@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 27",
+    "typecheck": "next typegen && tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
     "test": "vitest run"
   },
   "dependencies": {
@@ -16,16 +16,16 @@
     "@union/shared": "*",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^1.3.1",
-    "next": "^15.1.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "next": "16.3.1",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.3.0",
+    "eslint-config-next": "16.3.1",
     "typescript": "^5.7.0",
     "vitest": "^4.1.10"
   },

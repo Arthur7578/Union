@@ -32,6 +32,17 @@ export type GuestWithRsvp = Guest & {
   groups: GuestGroupRef[];
 };
 
+type GuestQueryRow = Guest & {
+  rsvps: Rsvp | Rsvp[] | null;
+  guest_group_members:
+    | Array<{ guest_groups: GuestGroupRef | null } | null>
+    | null;
+};
+
+type GroupMembershipWithCreatedAt = {
+  guest_groups: { name: string; created_at: string } | null;
+};
+
 export async function fetchWedding(ownerId: string): Promise<Wedding | null> {
   const supabase = getBrowserSupabase();
   const { data, error } = await supabase
@@ -202,11 +213,12 @@ export async function fetchGuests(weddingId: string): Promise<GuestWithRsvp[]> {
   if (guestsRes.error) throw guestsRes.error;
   if (groupsRes.error) throw groupsRes.error;
   const allGroups = (groupsRes.data ?? []) as GuestGroup[];
-  return (guestsRes.data ?? []).map((g: any) => ({
+  const guests = (guestsRes.data ?? []) as GuestQueryRow[];
+  return guests.map<GuestWithRsvp>((g) => ({
     ...g,
     rsvps: Array.isArray(g.rsvps) ? (g.rsvps[0] ?? null) : (g.rsvps ?? null),
     groups: unionGroups(g.guest_group, g.guest_group_members, allGroups),
-  })) as GuestWithRsvp[];
+  }));
 }
 
 export async function fetchGuestEmailCoverage(
@@ -236,22 +248,23 @@ export async function fetchGuest(id: string): Promise<GuestWithRsvp | null> {
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
+  const guest = data as GuestQueryRow;
   // Load parent wedding's groups so we can fill in colours for the primary.
   const { data: groups } = await supabase
     .from("guest_groups")
     .select("*")
-    .eq("wedding_id", (data as any).wedding_id);
+    .eq("wedding_id", guest.wedding_id);
   return {
-    ...(data as any),
-    rsvps: Array.isArray((data as any).rsvps)
-      ? ((data as any).rsvps[0] ?? null)
-      : ((data as any).rsvps ?? null),
+    ...guest,
+    rsvps: Array.isArray(guest.rsvps)
+      ? (guest.rsvps[0] ?? null)
+      : (guest.rsvps ?? null),
     groups: unionGroups(
-      (data as any).guest_group,
-      (data as any).guest_group_members,
+      guest.guest_group,
+      guest.guest_group_members,
       (groups ?? []) as GuestGroup[],
     ),
-  } as GuestWithRsvp;
+  };
 }
 
 export type NewGuest = {
@@ -506,10 +519,14 @@ export async function deleteGuestGroup(
     )
     .eq("wedding_id", weddingId)
     .eq("guest_group", name);
-  for (const g of (affected as any[] | null) ?? []) {
-    const rows = ((g.guest_group_members as any[]) ?? [])
-      .map((m) => m?.guest_groups)
-      .filter(Boolean) as { name: string; created_at: string }[];
+  const affectedGuests = (affected ?? []) as Array<{
+    id: string;
+    guest_group_members: GroupMembershipWithCreatedAt[] | null;
+  }>;
+  for (const g of affectedGuests) {
+    const rows = (g.guest_group_members ?? []).flatMap((membership) =>
+      membership.guest_groups ? [membership.guest_groups] : [],
+    );
     rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
     const nextPrimary = rows[0]?.name ?? null;
     await supabase
@@ -577,9 +594,10 @@ export async function removeGuestFromGroup(
       .from("guest_group_members")
       .select("guest_groups(name, created_at)")
       .eq("guest_id", guestId);
-    const rows = ((remaining as any[]) ?? [])
-      .map((m) => m?.guest_groups)
-      .filter(Boolean) as { name: string; created_at: string }[];
+    const memberships = (remaining ?? []) as GroupMembershipWithCreatedAt[];
+    const rows = memberships.flatMap((membership) =>
+      membership.guest_groups ? [membership.guest_groups] : [],
+    );
     rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
     const next = rows[0]?.name ?? null;
     await supabase
@@ -731,6 +749,11 @@ export type GuestLink = {
   direction: "outgoing" | "incoming";
 };
 
+type GuestLinkQueryRow = {
+  kind: GuestRelationshipKind;
+  guests: GuestLink["guest"] | null;
+};
+
 /**
  * All relationships anchored to a single guest, in both directions.
  * Outgoing: this guest → other. Incoming: other → this guest.
@@ -758,13 +781,15 @@ export async function fetchGuestLinks(guestId: string): Promise<GuestLink[]> {
 
   const seenPartner = new Set<string>();
   const out: GuestLink[] = [];
-  for (const r of (outgoing.data as any[]) ?? []) {
+  const outgoingRows = (outgoing.data ?? []) as GuestLinkQueryRow[];
+  const incomingRows = (incoming.data ?? []) as GuestLinkQueryRow[];
+  for (const r of outgoingRows) {
     const g = r.guests;
     if (!g) continue;
     if (r.kind === "partner_of") seenPartner.add(g.id);
     out.push({ guest: g, kind: r.kind, direction: "outgoing" });
   }
-  for (const r of (incoming.data as any[]) ?? []) {
+  for (const r of incomingRows) {
     const g = r.guests;
     if (!g) continue;
     // Skip the mirror side of a partner_of pair we've already recorded.

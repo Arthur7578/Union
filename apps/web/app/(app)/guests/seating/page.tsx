@@ -55,9 +55,7 @@ function toneKey(v: string | null | undefined): ToneKey {
 
 /** Sum of party sizes for a list of guests — the true "seats used" number. */
 function seatsUsed(gs: GuestWithRsvp[]): number {
-  let n = 0;
-  for (const g of gs) n += 1;
-  return n;
+  return gs.length;
 }
 
 /** Clamp a percentage into the visible plan (with padding). */
@@ -126,9 +124,12 @@ export default function SeatingPage() {
   }, [wedding]);
 
   useEffect(() => {
-    reload().catch((err) =>
-      setError(err instanceof Error ? err.message : "Couldn't load seating."),
-    );
+    const timeoutId = window.setTimeout(() => {
+      void reload().catch((err) =>
+        setError(err instanceof Error ? err.message : "Couldn't load seating."),
+      );
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [reload]);
 
   const saveCeremony = async (next: CeremonyPrefs) => {
@@ -1838,7 +1839,7 @@ export default function SeatingPage() {
 
           <div style={{ display: "flex", gap: 9, marginTop: 13 }}>
             <StatTile
-              value={(guests ?? []).reduce((s, g) => s + (1), 0)}
+              value={guests?.length ?? 0}
               label="seats needed"
             />
             <StatTile

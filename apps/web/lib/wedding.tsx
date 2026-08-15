@@ -45,7 +45,8 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
   // session still null, and the /(app) Guard redirects back to /onboarding.
   useEffect(() => {
     if (authLoading) return;
-    void refresh();
+    const timeoutId = window.setTimeout(() => void refresh(), 0);
+    return () => window.clearTimeout(timeoutId);
   }, [authLoading, refresh]);
 
   return (

@@ -4,7 +4,6 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -13,7 +12,6 @@ import {
   LOCALE_COOKIE,
   LOCALES,
   getDictionary,
-  isLocale,
   type Dictionary,
   type Locale,
 } from "./index";
@@ -26,16 +24,6 @@ type LocaleContextValue = {
 };
 
 const LocaleContext = createContext<LocaleContextValue | undefined>(undefined);
-
-function readCookieLocale(): Locale | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith(`${LOCALE_COOKIE}=`));
-  if (!match) return null;
-  const value = decodeURIComponent(match.slice(LOCALE_COOKIE.length + 1));
-  return isLocale(value) ? value : null;
-}
 
 function writeCookieLocale(locale: Locale) {
   if (typeof document === "undefined") return;
@@ -54,17 +42,6 @@ export function LocaleProvider({
   children: React.ReactNode;
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
-
-  // If the server render used a fallback (no cookie yet) and the client already
-  // has a cookie from a previous session, reconcile.
-  useEffect(() => {
-    const cookieValue = readCookieLocale();
-    if (cookieValue && cookieValue !== locale) {
-      setLocaleState(cookieValue);
-    }
-    // Only run on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const setLocale = useCallback((next: Locale) => {
     writeCookieLocale(next);

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { Wedding } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import { updateWedding, deleteWedding } from "@/lib/data";
@@ -11,22 +12,48 @@ import { BackHeader } from "@/components/BackHeader";
 import { Avatar, Button, SectionLabel, UnionNote } from "@/components/ui";
 
 export default function WeddingSettingsPage() {
-  const router = useRouter();
   const { wedding, setWedding } = useWedding();
+  if (!wedding) return null;
+
+  return (
+    <WeddingSettingsForm
+      key={wedding.id}
+      wedding={wedding}
+      setWedding={setWedding}
+    />
+  );
+}
+
+function WeddingSettingsForm({
+  wedding,
+  setWedding,
+}: {
+  wedding: Wedding;
+  setWedding: (wedding: Wedding | null) => void;
+}) {
+  const router = useRouter();
   const { locale, t } = useLocale();
 
-  const [partnerOne, setPartnerOne] = useState("");
-  const [partnerTwo, setPartnerTwo] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [venueName, setVenueName] = useState("");
-  const [addressLine, setAddressLine] = useState("");
-  const [addressPostalCode, setAddressPostalCode] = useState("");
-  const [addressCity, setAddressCity] = useState("");
-  const [addressArea, setAddressArea] = useState("");
-  const [addressCountry, setAddressCountry] = useState("");
-  const [addressVisibility, setAddressVisibility] = useState<"hidden" | "area" | "partial" | "full">("full");
-  const [guestTarget, setGuestTarget] = useState("");
-  const [styleVibe, setStyleVibe] = useState("");
+  const [partnerOne, setPartnerOne] = useState(wedding.partner_one ?? "");
+  const [partnerTwo, setPartnerTwo] = useState(wedding.partner_two ?? "");
+  const [eventDate, setEventDate] = useState(wedding.event_date ?? "");
+  const [venueName, setVenueName] = useState(wedding.venue_name ?? "");
+  const [addressLine, setAddressLine] = useState(wedding.address_line ?? "");
+  const [addressPostalCode, setAddressPostalCode] = useState(
+    wedding.address_postal_code ?? "",
+  );
+  const [addressCity, setAddressCity] = useState(wedding.address_city ?? "");
+  const [addressArea, setAddressArea] = useState(wedding.address_area ?? "");
+  const [addressCountry, setAddressCountry] = useState(
+    wedding.address_country ?? "",
+  );
+  const [addressVisibility, setAddressVisibility] = useState<
+    "hidden" | "area" | "partial" | "full"
+  >(wedding.address_visibility);
+  const [guestTarget, setGuestTarget] = useState(
+    wedding.guest_count_target != null ? String(wedding.guest_count_target) : "",
+  );
+  const [styleVibe, setStyleVibe] = useState(wedding.style_vibe ?? "");
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,26 +61,6 @@ export default function WeddingSettingsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmInput, setConfirmInput] = useState("");
   const [confirmError, setConfirmError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!wedding) return;
-    setPartnerOne(wedding.partner_one ?? "");
-    setPartnerTwo(wedding.partner_two ?? "");
-    setEventDate(wedding.event_date ?? "");
-    setVenueName(wedding.venue_name ?? "");
-    setAddressLine(wedding.address_line ?? "");
-    setAddressPostalCode(wedding.address_postal_code ?? "");
-    setAddressCity(wedding.address_city ?? "");
-    setAddressArea(wedding.address_area ?? "");
-    setAddressCountry(wedding.address_country ?? "");
-    setAddressVisibility(wedding.address_visibility);
-    setGuestTarget(
-      wedding.guest_count_target != null ? String(wedding.guest_count_target) : "",
-    );
-    setStyleVibe(wedding.style_vibe ?? "");
-  }, [wedding]);
-
-  if (!wedding) return null;
 
   const complete = Boolean(wedding.partner_two && wedding.event_date && wedding.venue_name);
   const coupleLine =
