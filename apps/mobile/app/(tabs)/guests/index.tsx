@@ -27,16 +27,17 @@ export default function GuestList() {
   const t = useT();
   const [guests, setGuests] = useState<GuestWithRsvp[]>([]);
   const [loading, setLoading] = useState(true);
+  const weddingId = wedding?.id;
 
   const load = useCallback(async () => {
-    if (!wedding) return;
+    if (!weddingId) return;
     setLoading(true);
     try {
-      setGuests(await fetchGuests(wedding.id));
+      setGuests(await fetchGuests(weddingId));
     } finally {
       setLoading(false);
     }
-  }, [wedding?.id]);
+  }, [weddingId]);
 
   useFocusEffect(
     useCallback(() => {

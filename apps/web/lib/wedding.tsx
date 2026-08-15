@@ -136,7 +136,8 @@ export function WeddingProvider({ children }: { children: React.ReactNode }) {
   // session still null and the route guard redirects before access is known.
   useEffect(() => {
     if (authLoading) return;
-    void refresh();
+    const timeoutId = window.setTimeout(() => void refresh(), 0);
+    return () => window.clearTimeout(timeoutId);
   }, [authLoading, refresh]);
 
   return (

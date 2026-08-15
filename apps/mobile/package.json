@@ -32,7 +32,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 6"
+    "lint": "eslint . --max-warnings 0"
   },
   "private": true
 }

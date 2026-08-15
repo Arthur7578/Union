@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
+import type { Wedding } from "@union/shared";
 import { Screen } from "../../components/Screen";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
@@ -16,24 +17,68 @@ export default function Settings() {
   const { session, signOut } = useAuth();
   const { wedding, setWedding, refresh } = useWedding();
   const t = useT();
-  const [partnerOne, setPartnerOne] = useState("");
-  const [partnerTwo, setPartnerTwo] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [venueName, setVenueName] = useState("");
-  const [addressLine, setAddressLine] = useState("");
+
+  return (
+    <Screen scroll>
+      <Text style={styles.sectionTitle}>{t.settings.language}</Text>
+      <Text style={styles.helper}>{t.settings.languageHint}</Text>
+      <View style={styles.switcherBox}>
+        <LanguageSwitcher />
+      </View>
+
+      <Text style={styles.sectionTitle}>{t.settings.weddingDetails}</Text>
+      {wedding ? (
+        <WeddingDetails
+          key={wedding.id}
+          wedding={wedding}
+          setWedding={setWedding}
+        />
+      ) : null}
+
+      <Card style={styles.accountCard}>
+        <Text style={styles.accountLabel}>{t.settings.signedInAs}</Text>
+        <Text style={styles.accountValue}>{session?.user.email}</Text>
+      </Card>
+
+      <Button
+        label={t.common.signOut}
+        variant="ghost"
+        onPress={() =>
+          Alert.alert(t.common.signOutTitle, t.common.signOutConfirm, [
+            { text: t.common.cancel, style: "cancel" },
+            {
+              text: t.common.signOut,
+              style: "destructive",
+              onPress: async () => {
+                await signOut();
+                await refresh();
+              },
+            },
+          ])
+        }
+      />
+    </Screen>
+  );
+}
+
+function WeddingDetails({
+  wedding,
+  setWedding,
+}: {
+  wedding: Wedding;
+  setWedding: (wedding: Wedding | null) => void;
+}) {
+  const t = useT();
+  const [partnerOne, setPartnerOne] = useState(wedding.partner_one ?? "");
+  const [partnerTwo, setPartnerTwo] = useState(wedding.partner_two ?? "");
+  const [eventDate, setEventDate] = useState(wedding.event_date ?? "");
+  const [venueName, setVenueName] = useState(wedding.venue_name ?? "");
+  const [addressLine, setAddressLine] = useState(
+    wedding.address_line ?? wedding.venue_address ?? "",
+  );
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (!wedding) return;
-    setPartnerOne(wedding.partner_one ?? "");
-    setPartnerTwo(wedding.partner_two ?? "");
-    setEventDate(wedding.event_date ?? "");
-    setVenueName(wedding.venue_name ?? "");
-    setAddressLine(wedding.address_line ?? wedding.venue_address ?? "");
-  }, [wedding?.id]);
-
   const save = async () => {
-    if (!wedding) return;
     if (eventDate.trim() && !isValidISODate(eventDate.trim())) {
       Alert.alert(t.common.invalidDate, t.common.invalidDateBody);
       return;
@@ -57,14 +102,7 @@ export default function Settings() {
   };
 
   return (
-    <Screen scroll>
-      <Text style={styles.sectionTitle}>{t.settings.language}</Text>
-      <Text style={styles.helper}>{t.settings.languageHint}</Text>
-      <View style={styles.switcherBox}>
-        <LanguageSwitcher />
-      </View>
-
-      <Text style={styles.sectionTitle}>{t.settings.weddingDetails}</Text>
+    <>
       <Input
         label={t.settings.partnerOne}
         value={partnerOne}
@@ -97,30 +135,7 @@ export default function Settings() {
         onChangeText={setAddressLine}
       />
       <Button label={t.settings.save} onPress={save} loading={busy} />
-
-      <Card style={styles.accountCard}>
-        <Text style={styles.accountLabel}>{t.settings.signedInAs}</Text>
-        <Text style={styles.accountValue}>{session?.user.email}</Text>
-      </Card>
-
-      <Button
-        label={t.common.signOut}
-        variant="ghost"
-        onPress={() =>
-          Alert.alert(t.common.signOutTitle, t.common.signOutConfirm, [
-            { text: t.common.cancel, style: "cancel" },
-            {
-              text: t.common.signOut,
-              style: "destructive",
-              onPress: async () => {
-                await signOut();
-                await refresh();
-              },
-            },
-          ])
-        }
-      />
-    </Screen>
+    </>
   );
 }
 

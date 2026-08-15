@@ -23,17 +23,9 @@ export function Contentsquare() {
       process.env.NODE_ENV === "production" &&
       process.env.NEXT_PUBLIC_VERCEL_ENV === "production";
 
-    if (!clientId) {
-      console.warn("Contentsquare: clientId not found. Script injection skipped.");
-      return;
-    }
-
-    if (!isProduction) {
-      console.log(
-        "Contentsquare: Gated to production only. Script injection skipped in development/preview."
-      );
-      return;
-    }
+    // Analytics is optional. An absent ID or a non-production environment is
+    // an expected no-op, not a console warning.
+    if (!clientId || !isProduction) return;
 
     // Guard against double-injection if component remounts
     if (initializedRef.current) return;

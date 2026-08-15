@@ -105,9 +105,12 @@ export default function GroupsPage() {
   };
 
   useEffect(() => {
-    reload().catch((err) => {
-      setError(err instanceof Error ? err.message : "Couldn't load groups.");
-    });
+    const timeoutId = window.setTimeout(() => {
+      void reload().catch((err) => {
+        setError(err instanceof Error ? err.message : "Couldn't load groups.");
+      });
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding?.id]);
 

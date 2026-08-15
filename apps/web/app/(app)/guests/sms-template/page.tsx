@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
+import type { Wedding } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import { updateWedding } from "@/lib/data";
@@ -14,22 +15,37 @@ import {
 } from "@/lib/sms";
 
 export default function SmsTemplatePage() {
-  const t = useT();
   const { wedding, refresh } = useWedding();
-  const [sender, setSender] = useState("");
-  const [template, setTemplate] = useState("");
-  const [apiKey, setApiKey] = useState("");
+
+  if (!wedding)
+    return (
+      <main className="u-main">
+        <Loading />
+      </main>
+    );
+
+  return (
+    <SmsTemplateForm key={wedding.id} wedding={wedding} refresh={refresh} />
+  );
+}
+
+function SmsTemplateForm({
+  wedding,
+  refresh,
+}: {
+  wedding: Wedding;
+  refresh: () => Promise<void>;
+}) {
+  const t = useT();
+  const [sender, setSender] = useState(wedding.sms_sender ?? "");
+  const [template, setTemplate] = useState(
+    wedding.sms_template ?? DEFAULT_SMS_TEMPLATE,
+  );
+  const [apiKey, setApiKey] = useState(wedding.sms_brevo_api_key ?? "");
   const [showApiKey, setShowApiKey] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!wedding) return;
-    setSender(wedding.sms_sender ?? "");
-    setTemplate(wedding.sms_template ?? DEFAULT_SMS_TEMPLATE);
-    setApiKey(wedding.sms_brevo_api_key ?? "");
-  }, [wedding]);
 
   const previewOrigin =
     typeof window !== "undefined" ? window.location.origin : "https://union.app";
@@ -39,10 +55,10 @@ export default function SmsTemplatePage() {
       resolveSmsTemplate(template, {
         guest_first_name: "Priya",
         guest_access_link: `${previewOrigin}/guest/sample-token`,
-        partner_1_first_name: wedding?.partner_one || "Maya",
-        partner_2_first_name: wedding?.partner_two || "Daniel",
+        partner_1_first_name: wedding.partner_one || "Maya",
+        partner_2_first_name: wedding.partner_two || "Daniel",
       }),
-    [template, wedding?.partner_one, wedding?.partner_two, previewOrigin],
+    [template, wedding.partner_one, wedding.partner_two, previewOrigin],
   );
 
   const charCount = preview.length;
@@ -53,13 +69,6 @@ export default function SmsTemplatePage() {
   );
   const perSegment = gsm ? 160 : 70;
   const segments = Math.max(1, Math.ceil(charCount / perSegment));
-
-  if (!wedding)
-    return (
-      <main className="u-main">
-        <Loading />
-      </main>
-    );
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();

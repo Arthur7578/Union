@@ -52,7 +52,8 @@ export default function AcceptInvitePage() {
 
       window.location.replace(confirmation.toString());
     } catch {
-      setInvalid(true);
+      const timeoutId = window.setTimeout(() => setInvalid(true), 0);
+      return () => window.clearTimeout(timeoutId);
     }
   }, []);
 

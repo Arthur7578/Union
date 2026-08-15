@@ -14,12 +14,13 @@ export default function Dashboard() {
   const { t, locale } = useLocale();
   const [guests, setGuests] = useState<GuestWithRsvp[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const weddingId = wedding?.id;
 
   const load = useCallback(async () => {
-    if (!wedding) return;
-    const data = await fetchGuests(wedding.id);
+    if (!weddingId) return;
+    const data = await fetchGuests(weddingId);
     setGuests(data);
-  }, [wedding?.id]);
+  }, [weddingId]);
 
   useFocusEffect(
     useCallback(() => {
