@@ -8,6 +8,7 @@ const DEFAULT_SUPABASE_ANON_KEY =
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
 const anonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
 let client: UnionClient | null = null;
@@ -30,6 +31,10 @@ export function getBrowserSupabase(): UnionClient {
   });
   return client;
 }
+
+/** Public Auth origin used to validate emailed confirmation URLs before the
+ * invitation handoff redirects the browser. */
+export const supabaseUrl = url;
 
 /** True when Supabase credentials are configured for this deployment. */
 export const supabaseConfigured = Boolean(url && anonKey);

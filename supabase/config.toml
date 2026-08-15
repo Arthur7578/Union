@@ -1,14 +1,18 @@
 project_id = "jriyeblycrzpozjuexvr"
 
-# Send a numeric code instead of a magic link for passwordless email
-# sign-in. Supabase picks the flow based on which template variables the
-# `magic_link` email template contains — `{{ .Token }}` alone means the
-# email carries only the code, no clickable link.
+# Regular passwordless sign-in sends a numeric code. Existing users who are
+# invited as co-organisers also go through Supabase's magic-link template
+# (the dedicated invite template only creates new Auth users). Those calls
+# include RedirectTo, so the template renders invitation copy and a button.
 #
 # This block configures local development. For the hosted project, mirror
 # the same subject + template in the Supabase dashboard under
 # Authentication → Email Templates → Magic Link (or via the Management API
 # `mailer_subjects_magic_link` / `mailer_templates_magic_link_content`).
 [auth.email.template.magic_link]
-subject = "{{ .Token }} is your Union sign-in code"
+subject = "{{ if .RedirectTo }}You've been invited to plan a wedding in Union{{ else }}{{ .Token }} is your Union sign-in code{{ end }}"
 content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.invite]
+subject = "You've been invited to plan a wedding in Union"
+content_path = "./supabase/templates/invite.html"

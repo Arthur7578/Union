@@ -5,9 +5,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SUPABASE_URL =
+  process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
   "https://jriyeblycrzpozjuexvr.supabase.co";
 const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "sb_publishable_G0fMYmSyYm4hJWterPh3eg_GLdE92V-";
 
@@ -144,8 +146,8 @@ export async function POST(request: Request) {
     );
   }
 
-  // Client bound to the caller's JWT so RLS enforces "must be the
-  // wedding owner." Anon key stays public; the JWT does the work.
+  // Client bound to the caller's JWT. Wedding/guest RLS authorizes either
+  // the owner or an accepted collaborator; the anon key remains public.
   const supabase = createUnionClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: `Bearer ${token}` } },
@@ -166,10 +168,6 @@ export async function POST(request: Request) {
   if (wErr || !wedding) {
     return NextResponse.json({ error: "Wedding not found." }, { status: 404 });
   }
-  if (wedding.owner_id !== userData.user.id) {
-    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-  }
-
   // Each wedding brings its own Brevo account — SMS credits are a
   // per-organiser expense, not something the platform key should
   // cover. No platform-wide fallback on purpose.
