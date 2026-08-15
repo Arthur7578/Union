@@ -85,6 +85,7 @@ export default function GuestDetailPage() {
   const [editingAge, setEditingAge] = useState(false);
   const [ageDraft, setAgeDraft] = useState<string>("");
   const [ageBusy, setAgeBusy] = useState(false);
+  const [ageError, setAgeError] = useState<string | null>(null);
 
   // Inline drafts for creating a new partner / child / parent via
   // the combobox's "+ Add" option. Each draft is created + linked
@@ -453,6 +454,7 @@ export default function GuestDetailPage() {
 
   const saveAge = async () => {
     setAgeBusy(true);
+    setAgeError(null);
     try {
       const parsed =
         ageDraft.trim() === ""
@@ -463,6 +465,9 @@ export default function GuestDetailPage() {
       setGuest((prev) => (prev ? { ...prev, ...updated } : prev));
       setAge(finalAge != null ? String(finalAge) : "");
       setEditingAge(false);
+    } catch (err) {
+      console.error("Failed to save guest age", err);
+      setAgeError(err instanceof Error ? err.message : "Couldn't save age.");
     } finally {
       setAgeBusy(false);
     }
@@ -617,7 +622,7 @@ export default function GuestDetailPage() {
               min={0}
               max={130}
               value={ageDraft}
-              onChange={(e) => setAgeDraft(e.target.value)}
+              onChange={(e) => { setAgeDraft(e.target.value); setAgeError(null); }}
               onBlur={() => void saveAge()}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -625,12 +630,14 @@ export default function GuestDetailPage() {
                   void saveAge();
                 } else if (e.key === "Escape") {
                   setEditingAge(false);
+                  setAgeError(null);
                 }
               }}
               disabled={ageBusy}
               autoFocus
               style={{ width: 72 }}
             />
+            {ageError && <span style={{ color: "#C0553B" }}>{ageError}</span>}
           </>
         ) : guest.age_years != null ? (
           <>
