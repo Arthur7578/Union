@@ -627,6 +627,7 @@ export type Database = {
           event_date: string | null
           guest_count_target: number | null
           guest_join_auth_mode: Database["public"]["Enums"]["guest_join_auth_mode"]
+          guest_modules: Json
           id: string
           join_code: string
           max_children_per_guest: number | null
@@ -659,6 +660,7 @@ export type Database = {
           event_date?: string | null
           guest_count_target?: number | null
           guest_join_auth_mode?: Database["public"]["Enums"]["guest_join_auth_mode"]
+          guest_modules?: Json
           id?: string
           join_code?: string
           max_children_per_guest?: number | null
@@ -691,6 +693,7 @@ export type Database = {
           event_date?: string | null
           guest_count_target?: number | null
           guest_join_auth_mode?: Database["public"]["Enums"]["guest_join_auth_mode"]
+          guest_modules?: Json
           id?: string
           join_code?: string
           max_children_per_guest?: number | null

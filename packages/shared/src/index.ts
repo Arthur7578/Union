@@ -22,6 +22,18 @@ export type {
   RsvpQuestionOption,
   StoredRsvpQuestion,
 } from "./questions";
+export {
+  GUEST_MODULE_KEYS,
+  enabledGuestModules,
+  isGuestModuleKey,
+  resolveGuestModules,
+  toStoredGuestModules,
+} from "./guestModules";
+export type {
+  GuestModuleKey,
+  GuestModules,
+  StoredGuestModules,
+} from "./guestModules";
 export type {
   Database,
   Json,
@@ -132,6 +144,11 @@ export type Invitation = {
      *  picked a language, the couple hasn't overridden one for them, and
      *  their browser asks for nothing this app ships. */
     default_locale?: string | null;
+    /** Which invitation modules this wedding shows, as stored: only the
+     *  couple's "off" decisions. Absent key means on, so `{}` (and a missing
+     *  field, from a server older than the column) is the full experience.
+     *  Run it through `resolveGuestModules` rather than reading keys directly. */
+    guest_modules?: Partial<Record<string, boolean>> | null;
   };
   guest: {
     id: string;

@@ -207,6 +207,33 @@ export const en = {
       smsTemplateSub: "Sender + invite copy",
       groupLinkLabel: "Group link",
       groupLinkSub: "One link for a WhatsApp group",
+      modulesLabel: "Invitation modules",
+      modulesSub: "What guests see in their invite",
+    },
+    modules: {
+      title: "Invitation modules",
+      subtitle:
+        "Choose which sections your guests see when they open their invitation. Turning one off hides it for every guest — nothing they've already sent you is deleted.",
+      sectionLabel: "Sections of the guest invitation",
+      formsLabel: "My forms",
+      formsSub:
+        "Their RSVP and any form you publish. Turning this off leaves guests no way to reply from their invitation.",
+      travelLabel: "Travel & board",
+      travelSub: "Carpooling and travel companions between guests.",
+      logisticsLabel: "Logistics",
+      logisticsSub: "Venue details and recommended places to stay.",
+      faqLabel: "FAQs",
+      faqSub: "Dress code, children, parking, and the rest.",
+      activated: "Activated",
+      deactivated: "Deactivated",
+      lastOneError:
+        "Keep at least one section on — an invitation with nothing in it is a dead link for your guests.",
+      saveError: "Couldn't save your modules.",
+      save: "Save modules",
+      saving: "Saving…",
+      saved: "Saved",
+      previewNote:
+        "Guests see the sections that are on, in this order. The first one that's on is the tab their invitation opens to.",
     },
     guestList: "Guest list",
     reminderPromptStrong: (n: number) => `${n} still deciding`,

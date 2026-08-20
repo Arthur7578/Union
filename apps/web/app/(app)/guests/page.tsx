@@ -65,6 +65,11 @@ export default function GuestsPage() {
       sub: "Plus-ones and kids defaults",
     },
     {
+      href: "/guests/modules",
+      label: t.guests.tools.modulesLabel,
+      sub: t.guests.tools.modulesSub,
+    },
+    {
       href: "/guests/sms-template",
       label: t.guests.tools.smsTemplateLabel,
       sub: t.guests.tools.smsTemplateSub,
