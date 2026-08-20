@@ -568,6 +568,9 @@ export const fr: Dictionary = {
     addressVisibilityFullError:
       "Renseignez le nom du lieu, la rue, la ville et le code postal avant de partager l'adresse complète.",
     guestTargetLabel: "Nombre d'invités · objectif",
+    defaultLocaleLabel: "Langue de vos invités",
+    defaultLocaleHint:
+      "La langue dans laquelle vous rédigez votre invitation, vos formulaires et vos rappels. C'est un repli, pas une règle : un invité dont le navigateur est dans une autre langue la verra dans la sienne, et vous pouvez fixer la langue d'un invité en particulier depuis sa fiche.",
     styleLabel: "Style et ambiance",
     stylePlaceholder: "Jardin · tons neutres chauds · décontracté",
     manageSection: "Gérer",

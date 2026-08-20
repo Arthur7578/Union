@@ -1,6 +1,7 @@
 import { getSupabase } from "@/lib/supabase";
-import { readLocaleCookie, resolveLocale } from "@/lib/i18n/server";
-import { getDictionary, isLocale, type Locale } from "@/lib/i18n";
+import { detectLocale, readLocaleCookie, resolveLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n";
+import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import Link from "next/link";
 import type {
@@ -61,6 +62,7 @@ export default async function GuestExperiencePage({
   const { token } = await params;
   const locale = await resolveLocale();
   const chosenLocale = await readLocaleCookie();
+  const detectedLocale = await detectLocale();
   const t = getDictionary(locale);
 
   let invitation: DBInvitation | null = null;
@@ -212,15 +214,18 @@ export default async function GuestExperiencePage({
     .filter(Boolean)
     .join(" ");
 
-  // Which language to open the invitation in. A guest who has picked one on
-  // this device always wins — the couple's record is a good guess, not an
-  // instruction, and overriding a deliberate choice would be worse than
-  // guessing wrong in the first place. Failing that, use the language the
-  // couple recorded for this guest, then whatever their browser asks for.
-  const guestLocale = isLocale(invitation.guest.locale)
-    ? invitation.guest.locale
-    : null;
-  const initialLocale: Locale = chosenLocale ?? guestLocale ?? locale;
+  // Which language to open the invitation in. The ranking lives in
+  // resolveGuestLocale: anything the guest said themselves, then the couple's
+  // override for them, then their browser, and only then the language the
+  // couple writes their content in. The wedding default is the floor — a
+  // French-speaking browser is a fact about this reader and outranks it.
+  const { locale: initialLocale } = resolveGuestLocale({
+    deviceChoice: chosenLocale,
+    guestChoice: invitation.guest.chosen_locale,
+    organiserOverride: invitation.guest.locale,
+    detected: detectedLocale,
+    weddingDefault: invitation.wedding.default_locale,
+  });
 
   return (
     <LocaleProvider initialLocale={initialLocale}>

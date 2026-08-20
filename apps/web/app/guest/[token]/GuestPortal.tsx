@@ -212,10 +212,12 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
    * comes back in the right language every time.
    *
    * Only a deliberate switch is recorded — the language this page merely
-   * opened in is a guess from the browser's headers, and writing that back
-   * would overwrite what the couple recorded with something nobody chose.
-   * Best-effort besides: failing to save a preference must never break the
-   * invitation, so the error is swallowed.
+   * opened in is a guess from the browser's headers or the couple's default,
+   * and storing that as a choice would outrank every other signal on every
+   * later visit with something nobody actually chose. It lands in
+   * guests.chosen_locale, alongside rather than over the couple's own
+   * per-guest override. Best-effort besides: failing to save a preference
+   * must never break the invitation, so the error is swallowed.
    */
   const openedIn = React.useRef(locale);
   useEffect(() => {

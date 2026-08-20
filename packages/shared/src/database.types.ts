@@ -272,6 +272,7 @@ export type Database = {
           can_add_partner: boolean | null
           ceremony_row: number | null
           ceremony_side: string | null
+          chosen_locale: string | null
           created_at: string
           email: string | null
           first_name: string
@@ -297,6 +298,7 @@ export type Database = {
           can_add_partner?: boolean | null
           ceremony_row?: number | null
           ceremony_side?: string | null
+          chosen_locale?: string | null
           created_at?: string
           email?: string | null
           first_name: string
@@ -322,6 +324,7 @@ export type Database = {
           can_add_partner?: boolean | null
           ceremony_row?: number | null
           ceremony_side?: string | null
+          chosen_locale?: string | null
           created_at?: string
           email?: string | null
           first_name?: string
@@ -620,6 +623,7 @@ export type Database = {
           ceremony_reserved_rows: number
           ceremony_rows: number
           created_at: string
+          default_locale: string
           event_date: string | null
           guest_count_target: number | null
           guest_join_auth_mode: Database["public"]["Enums"]["guest_join_auth_mode"]
@@ -651,6 +655,7 @@ export type Database = {
           ceremony_reserved_rows?: number
           ceremony_rows?: number
           created_at?: string
+          default_locale?: string
           event_date?: string | null
           guest_count_target?: number | null
           guest_join_auth_mode?: Database["public"]["Enums"]["guest_join_auth_mode"]
@@ -682,6 +687,7 @@ export type Database = {
           ceremony_reserved_rows?: number
           ceremony_rows?: number
           created_at?: string
+          default_locale?: string
           event_date?: string | null
           guest_count_target?: number | null
           guest_join_auth_mode?: Database["public"]["Enums"]["guest_join_auth_mode"]

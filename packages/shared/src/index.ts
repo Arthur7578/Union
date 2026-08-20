@@ -127,6 +127,11 @@ export type Invitation = {
       area: string | null;
       country: string | null;
     } | null;
+    /** The language this wedding's guest-facing content is written for.
+     *  The bottom of the ranking: it only decides when the guest hasn't
+     *  picked a language, the couple hasn't overridden one for them, and
+     *  their browser asks for nothing this app ships. */
+    default_locale?: string | null;
   };
   guest: {
     id: string;
@@ -136,9 +141,13 @@ export type Invitation = {
     rsvp_status: RsvpStatus;
     dietary_notes: string | null;
     message: string | null;
-    /** The language the couple recorded for this guest, if any. Seeds the
-     *  portal's language on first visit; the guest's own pick still wins. */
+    /** The couple's language override for this guest, if they set one.
+     *  Beats browser detection and the wedding default; loses to a language
+     *  the guest picked for themselves. */
     locale: string | null;
+    /** The language this guest picked in their own invitation, if they ever
+     *  did. Top of the ranking — nothing overrides a deliberate choice. */
+    chosen_locale?: string | null;
   };
   companions: Array<{
     id: string;
