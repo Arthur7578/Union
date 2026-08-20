@@ -138,6 +138,11 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     modules[0] ?? "forms",
   );
 
+  // A row of one tab is a button that navigates nowhere: with a single module
+  // on, the guest is already on it and can never leave it. Hide the row and
+  // let the module's own content open the page.
+  const showTabs = modules.length > 1;
+
   // Multi-Form Expose and Modal states
   const [activeFormModal, setActiveFormModal] = useState<"rsvp" | null>(null);
   // Which wording the RSVP modal shows — the primary ask, or the later
@@ -648,6 +653,12 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           padding: 0 20px;
         }
 
+        /* With the tab row hidden, its margins go with it — this keeps the
+           content off the hero instead of letting it ride straight up. */
+        .container-no-tabs {
+          padding-top: 40px;
+        }
+
         .card {
           background: var(--card-bg);
           border-radius: 24px;
@@ -950,6 +961,9 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
             gap: 6px;
             margin: 20px auto 28px;
           }
+          .container-no-tabs {
+            padding-top: 28px;
+          }
           .tab-btn {
             padding: 10px 12px;
             font-size: 13px;
@@ -1071,23 +1085,25 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         )}
       </header>
 
-      {/* Tab Navigation */}
-      <div className="container">
-        <nav className="nav-tabs">
-          {modules.map((key) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`tab-btn ${activeTab === key ? "active" : ""}`}
-            >
-              {MODULE_TABS[key].icon} {MODULE_TABS[key].label(locale)}
-            </button>
-          ))}
-        </nav>
-      </div>
+      {/* Tab Navigation — only when there's somewhere else to go */}
+      {showTabs && (
+        <div className="container">
+          <nav className="nav-tabs">
+            {modules.map((key) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`tab-btn ${activeTab === key ? "active" : ""}`}
+              >
+                {MODULE_TABS[key].icon} {MODULE_TABS[key].label(locale)}
+              </button>
+            ))}
+          </nav>
+        </div>
+      )}
 
       {/* Main Area */}
-      <main className="container">
+      <main className={`container${showTabs ? "" : " container-no-tabs"}`}>
         {/* Tab 1: Separate Forms */}
         {activeTab === "forms" && (
           <div>
