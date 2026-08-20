@@ -144,13 +144,13 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const showTabs = modules.length > 1;
 
   // Multi-Form Expose and Modal states
-  const [activeFormModal, setActiveFormModal] = useState<"rsvp" | "preferences" | "recheck" | null>(null);
+  const [activeFormModal, setActiveFormModal] = useState<"rsvp" | null>(null);
   // Which wording the RSVP modal shows — the primary ask, or the later
   // reconfirmation nudge. Same state, same submit, only the framing differs.
   const [rsvpModalContext, setRsvpModalContext] = useState<"primary" | "reconfirmation">("primary");
 
   // Separate forms submission & state storage
-  // Form 1: RSVP state
+  // RSVP state
   const [primaryRsvp, setPrimaryRsvp] = useState<"pending" | "attending" | "declined">(invitation.guest.rsvp_status);
   const [primaryDietary, setPrimaryDietary] = useState<string>(invitation.guest.dietary_notes || "");
   const [primaryMessage, setPrimaryMessage] = useState<string>(invitation.guest.message || "");
@@ -199,20 +199,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const [customSubmitting, setCustomSubmitting] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
 
-  // Form 2: Preferences state
-  const [prefSong, setPrefSong] = useState<string>("");
-  const [prefMeal, setPrefMeal] = useState<string>("");
-  const [preferencesSaved, setPreferencesSaved] = useState<boolean>(false);
-
-  // Form 3: Re-check state
-  const [recheckArrival, setRecheckArrival] = useState<string>("");
-  const [recheckHotel, setRecheckHotel] = useState<string>("");
-  const [recheckSaved, setRecheckSaved] = useState<boolean>(false);
-
   // Loading/submitting states
   const [submittingRsvp, setSubmittingRsvp] = useState<boolean>(false);
-  const [submittingPrefs, setSubmittingPrefs] = useState<boolean>(false);
-  const [submittingRecheck, setSubmittingRecheck] = useState<boolean>(false);
 
   // Travel matching state
   const [connections, setConnections] = useState(SAMPLE_CONNECTIONS);
@@ -333,24 +321,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     }
   };
 
-  const handleSavePrefs = async () => {
-    setSubmittingPrefs(true);
-    // Simulate remote server saving
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setPreferencesSaved(true);
-    setActiveFormModal(null);
-    setSubmittingPrefs(false);
-  };
-
-  const handleSaveRecheck = async () => {
-    setSubmittingRecheck(true);
-    // Simulate remote server saving
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setRecheckSaved(true);
-    setActiveFormModal(null);
-    setSubmittingRecheck(false);
-  };
-
   const handleContactRequest = (matchId: string) => {
     setConnections(prev =>
       prev.map(item =>
@@ -426,10 +396,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const addressPending = locale === "fr"
     ? "L'adresse complète sera communiquée prochainement."
     : "The full address will be shared closer to the date.";
-
-  // Form Locking Logic helper
-  const isDeclined = primaryRsvp === "declined";
-  const isPending = primaryRsvp === "pending";
 
   // RSVP block wording — the organiser's own copy in this guest's language if
   // they've written one, else Union's default copy in that language. This is
@@ -1153,14 +1119,13 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
             </div>
 
             <div className="form-grid">
-              {/* Form 1: Main RSVP */}
+              {/* Main RSVP */}
               <div className="form-card">
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
                     <span className={`badge-status ${primaryRsvp}`}>
                       {primaryRsvp === "pending" ? (locale === "fr" ? "À Remplir" : "Pending") : (primaryRsvp === "attending" ? labelAttending : labelDeclined)}
                     </span>
-                    <span style={{ fontSize: "12px", color: "var(--muted)", fontWeight: "600" }}>Phase 1</span>
                   </div>
                   <h3 className="u-serif" style={{ fontSize: "20px", fontWeight: "600", margin: "0 0 6px" }}>
                     {rsvpTitle}
@@ -1185,7 +1150,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 </button>
               </div>
 
-              {/* Form 1b: RSVP reconfirmation — same block, later nudge, only when open */}
+              {/* RSVP reconfirmation — same block, later nudge, only when open */}
               {reconfirmationLive && (
                 <div className="form-card">
                   <div>
@@ -1264,72 +1229,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                   </div>
                 );
               })}
-
-              {/* Form 2: Preferences Form */}
-              <div className="form-card" style={{ opacity: isPending ? 0.6 : 1 }}>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-                    <span className={`badge-status ${isPending ? 'locked' : (isDeclined ? 'locked' : (preferencesSaved ? 'completed' : 'pending'))}`}>
-                      {isPending ? (locale === "fr" ? "Verrouillé" : "Locked") : (isDeclined ? (locale === "fr" ? "Non applicable" : "Not attending") : (preferencesSaved ? (locale === "fr" ? "Complété" : "Completed") : (locale === "fr" ? "À Remplir" : "Action Needed")))}
-                    </span>
-                    <span style={{ fontSize: "12px", color: "var(--muted)", fontWeight: "600" }}>Phase 2</span>
-                  </div>
-                  <h3 className="u-serif" style={{ fontSize: "20px", fontWeight: "600", margin: "0 0 6px" }}>
-                    {locale === "fr" ? "2. Menu & Préférences" : "2. Menu & Music Preferences"}
-                  </h3>
-                  <p style={{ color: "var(--muted)", fontSize: "13px", margin: 0, maxWidth: "400px" }}>
-                    {locale === "fr" ? "Choisissez votre repas et proposez vos musiques préférées." : "Share your meal selection and songs you'd love to hear."}
-                  </p>
-                </div>
-                <button
-                  disabled={isPending || isDeclined}
-                  onClick={() => setActiveFormModal("preferences")}
-                  style={{
-                    background: (isPending || isDeclined) ? "#f5f5f5" : (preferencesSaved ? "rgba(67, 53, 58, 0.05)" : "var(--primary)"),
-                    color: (isPending || isDeclined) ? "#999" : (preferencesSaved ? "var(--primary)" : "white"),
-                    border: "none",
-                    padding: "10px 20px",
-                    borderRadius: "10px",
-                    fontWeight: "600",
-                    cursor: (isPending || isDeclined) ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {(isPending || isDeclined) ? "🔒" : (preferencesSaved ? (locale === "fr" ? "Modifier" : "Update") : (locale === "fr" ? "Remplir" : "Start"))}
-                </button>
-              </div>
-
-              {/* Form 3: Timing / Re-check */}
-              <div className="form-card" style={{ opacity: isPending ? 0.6 : 1 }}>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-                    <span className={`badge-status ${isPending ? 'locked' : (isDeclined ? 'locked' : (recheckSaved ? 'completed' : 'pending'))}`}>
-                      {isPending ? (locale === "fr" ? "Verrouillé" : "Locked") : (isDeclined ? (locale === "fr" ? "Non applicable" : "Not attending") : (recheckSaved ? (locale === "fr" ? "Confirmé" : "Confirmed") : (locale === "fr" ? "À Remplir" : "Action Needed")))}
-                    </span>
-                    <span style={{ fontSize: "12px", color: "var(--muted)", fontWeight: "600" }}>Phase 3</span>
-                  </div>
-                  <h3 className="u-serif" style={{ fontSize: "20px", fontWeight: "600", margin: "0 0 6px" }}>
-                    {locale === "fr" ? "3. Re-Check & Hébergement" : "3. Logistics & Stay Re-Check"}
-                  </h3>
-                  <p style={{ color: "var(--muted)", fontSize: "13px", margin: 0, maxWidth: "400px" }}>
-                    {locale === "fr" ? "Indiquez votre horaire d'arrivée et l'hôtel que vous avez réservé." : "Provide your arrival details and hotel reservation info."}
-                  </p>
-                </div>
-                <button
-                  disabled={isPending || isDeclined}
-                  onClick={() => setActiveFormModal("recheck")}
-                  style={{
-                    background: (isPending || isDeclined) ? "#f5f5f5" : (recheckSaved ? "rgba(67, 53, 58, 0.05)" : "var(--primary)"),
-                    color: (isPending || isDeclined) ? "#999" : (recheckSaved ? "var(--primary)" : "white"),
-                    border: "none",
-                    padding: "10px 20px",
-                    borderRadius: "10px",
-                    fontWeight: "600",
-                    cursor: (isPending || isDeclined) ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {(isPending || isDeclined) ? "🔒" : (recheckSaved ? (locale === "fr" ? "Modifier" : "Update") : (locale === "fr" ? "Remplir" : "Start"))}
-                </button>
-              </div>
             </div>
           </div>
         )}
@@ -1615,7 +1514,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
       {/* --- DRAWERS / MODALS FOR STRONGLY SEPARATE FORMS --- */}
 
-      {/* Form 1: RSVP Modal */}
+      {/* RSVP Modal */}
       {activeFormModal === "rsvp" && (
         <div className="drawer-overlay" onClick={() => setActiveFormModal(null)}>
           <div className="drawer-container" onClick={(e) => e.stopPropagation()}>
@@ -1936,108 +1835,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               onClick={handleSubmitCustomForm}
             >
               {customSubmitting ? t.common.saving : (locale === "fr" ? "Envoyer mes réponses" : "Submit answers")}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Form 2: Preferences Modal */}
-      {activeFormModal === "preferences" && (
-        <div className="drawer-overlay" onClick={() => setActiveFormModal(null)}>
-          <div className="drawer-container" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-              <h2 className="u-serif" style={{ fontSize: "28px", fontWeight: "600", margin: 0 }}>
-                {locale === "fr" ? "Menu & Préférences" : "Menu & Preferences"}
-              </h2>
-              <button
-                onClick={() => setActiveFormModal(null)}
-                style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "var(--muted)" }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "20px" }}>
-              {locale === "fr" ? "Données récoltées séparément pour planifier le banquet et la musique du mariage." : "Separate preferences collection event for wedding dining and music."}
-            </p>
-
-            <div className="field">
-              <label>🍽️ {locale === "fr" ? "Plat principal souhaité" : "Main Meal Preference"}</label>
-              <select value={prefMeal} onChange={(e) => setPrefMeal(e.target.value)}>
-                <option value="">{locale === "fr" ? "-- Choisir --" : "-- Select Option --"}</option>
-                <option value="beef">{locale === "fr" ? "Filet de Boeuf grillé & légumes bio" : "Gourmet Beef Tenderloin"}</option>
-                <option value="salmon">{locale === "fr" ? "Pavé de Saumon du Pacifique au four" : "Wild Pacific Salmon"}</option>
-                <option value="vegan">{locale === "fr" ? "Courge rôtie aux herbes & quinoa bio (Vegan)" : "Roasted Organic Squash & Quinoa (Vegan)"}</option>
-              </select>
-            </div>
-
-            <div className="field">
-              <label>🎵 {locale === "fr" ? "Chanson que vous aimeriez entendre" : "Song request"}</label>
-              <input
-                type="text"
-                value={prefSong}
-                onChange={(e) => setPrefSong(e.target.value)}
-                placeholder="e.g. ABBA - Dancing Queen"
-              />
-            </div>
-
-            <button
-              className="btn-submit"
-              disabled={submittingPrefs || !prefMeal}
-              onClick={handleSavePrefs}
-            >
-              {submittingPrefs ? t.common.saving : (locale === "fr" ? "Enregistrer les préférences" : "Save Preferences")}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Form 3: Recheck Modal */}
-      {activeFormModal === "recheck" && (
-        <div className="drawer-overlay" onClick={() => setActiveFormModal(null)}>
-          <div className="drawer-container" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-              <h2 className="u-serif" style={{ fontSize: "28px", fontWeight: "600", margin: 0 }}>
-                {locale === "fr" ? "Logistique & Re-Check" : "Logistics & Re-Check"}
-              </h2>
-              <button
-                onClick={() => setActiveFormModal(null)}
-                style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "var(--muted)" }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "20px" }}>
-              {locale === "fr" ? "Formulaire de dernière minute pour confirmer la présence et coordonner les arrivées." : "Last-minute data collection to confirm attendance and stays."}
-            </p>
-
-            <div className="field">
-              <label>⏰ {locale === "fr" ? "Quand prévoyez-vous d'arriver ?" : "When are you arriving?"}</label>
-              <select value={recheckArrival} onChange={(e) => setRecheckArrival(e.target.value)}>
-                <option value="">{locale === "fr" ? "-- Choisir --" : "-- Select Option --"}</option>
-                <option value="fri_morning">{locale === "fr" ? "Vendredi matin" : "Friday Morning"}</option>
-                <option value="fri_afternoon">{locale === "fr" ? "Vendredi après-midi / soir" : "Friday Afternoon"}</option>
-                <option value="sat_morning">{locale === "fr" ? "Samedi matin (Jour J)" : "Saturday Morning"}</option>
-              </select>
-            </div>
-
-            <div className="field">
-              <label>🏨 {locale === "fr" ? "Où logez-vous pendant le week-end ?" : "Where are you staying?"}</label>
-              <input
-                type="text"
-                value={recheckHotel}
-                onChange={(e) => setRecheckHotel(e.target.value)}
-                placeholder="e.g. Hood River Hotel"
-              />
-            </div>
-
-            <button
-              className="btn-submit"
-              disabled={submittingRecheck || !recheckArrival}
-              onClick={handleSaveRecheck}
-            >
-              {submittingRecheck ? t.common.saving : (locale === "fr" ? "Valider le Re-Check" : "Confirm Arrival Details")}
             </button>
           </div>
         </div>
