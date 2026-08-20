@@ -4,17 +4,34 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { T, alpha } from "@/lib/theme";
-import type { Form, RsvpBlockCopy, RsvpQuestion } from "@union/shared";
+import type {
+  Form,
+  FormGuestCopy,
+  LocalizedText,
+  RsvpBlockCopy,
+  RsvpQuestion,
+} from "@union/shared";
+import { isAutoTranslated, setTextForLocale, textForLocale } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
   deleteForm,
   fetchForm,
+  formGuestCopy,
   formQuestions,
   formStatus,
   rsvpCopy,
   updateForm,
   updateWedding,
 } from "@/lib/data";
+import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { useLocale } from "@/lib/i18n/client";
+import { getDictionary, LOCALES, type Locale } from "@/lib/i18n";
+import { rsvpDefaults } from "@/lib/i18n/text";
+import {
+  applyTranslations,
+  collectTranslatable,
+  requestTranslations,
+} from "@/lib/formTranslation";
 import { BackHeader } from "@/components/BackHeader";
 import { Card, Chip, Button, Loading, Switch, StatusPill } from "@/components/ui";
 
@@ -25,28 +42,24 @@ const KIND_LABEL: Record<RsvpQuestion["kind"], { label: string; bg: string; fg: 
   comment: { label: "Open comment", bg: "#FBEEE2", fg: "#B07C48" },
 };
 
-/** System defaults for the RSVP block's guest-facing copy — what guests see
- *  when the couple hasn't overridden a slot. Kept here (not in GuestPortal)
- *  so the admin preview and the real guest render can never drift apart. */
-const RSVP_COPY_DEFAULTS: Record<"primary" | "reconfirmation", Required<Omit<RsvpBlockCopy, "label_attending" | "label_declined">> & Pick<RsvpBlockCopy, "label_attending" | "label_declined">> = {
-  primary: {
-    title: "Attendance RSVP",
-    subtitle: "Let us know if you and your companions will join us.",
-    label_attending: "Attending",
-    label_declined: "Declined",
-  },
-  reconfirmation: {
-    title: "Still coming?",
-    subtitle: "A quick check-in before the big day — confirm or update your RSVP.",
-    label_attending: "Attending",
-    label_declined: "Declined",
-  },
-};
-
 function newId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `q-${Math.random().toString(36).slice(2)}`;
+}
+
+/** A one-language seed for text the couple is about to write. New questions
+ *  and options start life in whichever language they're authoring in, not in
+ *  the app's default — a French couple shouldn't have to delete an English
+ *  "New question" before writing their own. */
+function seed(locale: Locale, text: string): LocalizedText {
+  return { [locale]: text };
+}
+
+/** The language name as that language writes it ("Français", not "French") —
+ *  a tab label is read by whoever is switching to it. */
+function localeName(locale: Locale): string {
+  return getDictionary(locale).lang[locale];
 }
 
 function toDateInput(iso: string | null): string {
@@ -106,14 +119,113 @@ function SectionBlock({
   );
 }
 
+/**
+ * Which language the couple is writing in, and the one-click way to fill the
+ * others.
+ *
+ * One switcher for the whole form rather than one per field: every
+ * guest-facing string on the page follows it, so "now I'm writing the French
+ * version" is a single decision instead of a per-input mode the couple has to
+ * keep track of.
+ */
+function LanguageBar({
+  editing,
+  onEdit,
+  onTranslate,
+  translating,
+  translateHint,
+}: {
+  editing: Locale;
+  onEdit: (locale: Locale) => void;
+  onTranslate: (target: Locale) => void;
+  translating: boolean;
+  translateHint: string | null;
+}) {
+  const others = LOCALES.filter((l) => l !== editing);
+  return (
+    <div
+      style={{
+        marginTop: 18,
+        padding: "12px 14px",
+        borderRadius: 16,
+        background: T.surface,
+        border: `1px solid ${T.line}`,
+      }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 600, color: T.faint, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        Guest language
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 9 }}>
+        {LOCALES.map((locale) => {
+          const active = locale === editing;
+          return (
+            <button
+              key={locale}
+              type="button"
+              onClick={() => onEdit(locale)}
+              aria-pressed={active}
+              style={{
+                border: `1px solid ${active ? T.accentInk : T.line3}`,
+                background: active ? T.accentInk : "transparent",
+                color: active ? "#fff" : T.muted2,
+                borderRadius: 20,
+                padding: "6px 13px",
+                fontSize: 12.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {localeName(locale)}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 12, color: T.muted, marginTop: 9, lineHeight: 1.45 }}>
+        You&apos;re writing the <b style={{ color: T.ink2 }}>{localeName(editing)}</b>{" "}
+        version. Each guest reads the language you recorded for them, or the
+        one their device asks for — and anything you leave blank falls back to
+        Union&apos;s own wording in that language.
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10, alignItems: "center" }}>
+        {others.map((target) => (
+          <button
+            key={target}
+            type="button"
+            onClick={() => onTranslate(target)}
+            disabled={translating}
+            className="u-link"
+            style={{ fontSize: 12.5, color: translating ? T.faint : T.accentInk }}
+          >
+            {translating
+              ? "Translating…"
+              : `Translate into ${localeName(target)} →`}
+          </button>
+        ))}
+      </div>
+      {translateHint && (
+        <div style={{ fontSize: 11.5, color: T.muted2, marginTop: 8, lineHeight: 1.45 }}>
+          {translateHint}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FormBuilderPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { wedding, refresh } = useWedding();
+  const { locale } = useLocale();
   const [form, setForm] = useState<Form | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [questions, setQuestions] = useState<RsvpQuestion[]>([]);
   const [rsvpCopyState, setRsvpCopyState] = useState<RsvpBlockCopy>({});
+  const [guestCopyState, setGuestCopyState] = useState<FormGuestCopy>({});
+  // Authoring starts in the couple's own app language — the version they're
+  // most likely to write first.
+  const [editingLocale, setEditingLocale] = useState<Locale>(locale);
+  const [translating, setTranslating] = useState(false);
+  const [translateHint, setTranslateHint] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [published, setPublished] = useState(false);
   const [opensAt, setOpensAt] = useState("");
@@ -137,6 +249,7 @@ export default function FormBuilderPage() {
         setForm(f);
         setQuestions(formQuestions(f));
         setRsvpCopyState(rsvpCopy(f));
+        setGuestCopyState(formGuestCopy(f));
         setTitle(f.title);
         setPublished(f.published);
         setOpensAt(toDateInput(f.opens_at));
@@ -185,9 +298,49 @@ export default function FormBuilderPage() {
         return {
           ...q,
           kind,
-          options: needsOptions ? q.options ?? ["Option 1", "Option 2"] : q.options,
+          options: needsOptions
+            ? q.options ?? [
+                { id: newId(), label: seed(editingLocale, "Option 1") },
+                { id: newId(), label: seed(editingLocale, "Option 2") },
+              ]
+            : q.options,
         };
       }),
+    );
+    markDirty();
+  };
+
+  /** Rewrite one question's title in the language being edited. */
+  const patchQuestionTitle = (id: string, text: string) => {
+    setQuestions((qs) =>
+      qs.map((q) =>
+        q.id === id
+          ? { ...q, title: setTextForLocale(q.title, editingLocale, text) }
+          : q,
+      ),
+    );
+    markDirty();
+  };
+
+  /** Rewrite one option's label. The option's id never changes, so answers
+   *  already given keep pointing at this choice however it's reworded. */
+  const patchOptionLabel = (questionId: string, optionId: string, text: string) => {
+    setQuestions((qs) =>
+      qs.map((q) =>
+        q.id === questionId
+          ? {
+              ...q,
+              options: (q.options ?? []).map((option) =>
+                option.id === optionId
+                  ? {
+                      ...option,
+                      label: setTextForLocale(option.label, editingLocale, text),
+                    }
+                  : option,
+              ),
+            }
+          : q,
+      ),
     );
     markDirty();
   };
@@ -216,12 +369,84 @@ export default function FormBuilderPage() {
       {
         id: newId(),
         kind,
-        title: "New question",
+        title: seed(editingLocale, "New question"),
         required: false,
-        options: kind === "single" || kind === "multi" ? ["Option 1", "Option 2"] : undefined,
+        options:
+          kind === "single" || kind === "multi"
+            ? [
+                { id: newId(), label: seed(editingLocale, "Option 1") },
+                { id: newId(), label: seed(editingLocale, "Option 2") },
+              ]
+            : undefined,
       },
     ]);
     markDirty();
+  };
+
+  /**
+   * Fill another language from the one on screen.
+   *
+   * Only touches slots that are empty or hold a previous machine translation
+   * — anything a person typed in the target language is left exactly as they
+   * wrote it. Nothing is saved here: the results land in the form as editable,
+   * badged drafts, and the couple still presses Save.
+   */
+  const translateInto = async (target: Locale) => {
+    if (translating) return;
+    setTranslating(true);
+    setTranslateHint(null);
+    setError(null);
+    const draft = {
+      rsvpCopy: rsvpCopyState,
+      guestCopy: guestCopyState,
+      questions,
+    };
+    try {
+      const slots = collectTranslatable(draft, editingLocale, target);
+      if (slots.length === 0) {
+        setTranslateHint(
+          `Nothing to translate — every ${localeName(target)} field is already written by hand.`,
+        );
+        return;
+      }
+      const supabase = getBrowserSupabase();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) throw new Error("You're signed out.");
+
+      const translations = await requestTranslations(
+        slots,
+        editingLocale,
+        target,
+        accessToken,
+      );
+      const filled = Object.keys(translations).length;
+      if (filled === 0) {
+        setTranslateHint("The translator came back empty — nothing changed.");
+        return;
+      }
+      // Applied through functional updates, each against the live value, so a
+      // keystroke that landed while the request was in flight isn't clobbered
+      // by the snapshot we sent off.
+      const apply = (partial: Partial<typeof draft>) =>
+        applyTranslations({ ...draft, ...partial }, translations, editingLocale, target);
+      setRsvpCopyState((prev) => apply({ rsvpCopy: prev }).rsvpCopy);
+      setGuestCopyState((prev) => apply({ guestCopy: prev }).guestCopy);
+      setQuestions((prev) => apply({ questions: prev }).questions);
+      markDirty();
+      setEditingLocale(target);
+      setTranslateHint(
+        `Filled ${filled} ${localeName(target)} field${filled === 1 ? "" : "s"}. They're marked "Auto" — read them, then save.`,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Couldn't translate this form.",
+      );
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const status = formStatus({ ...form, published, opens_at: fromDateInput(opensAt), closes_at: fromDateInput(closesAt) });
@@ -237,7 +462,9 @@ export default function FormBuilderPage() {
         opens_at: fromDateInput(opensAt),
         closes_at: fromDateInput(closesAt),
         questions,
-        ...(form.kind === "rsvp" ? { rsvp_copy: rsvpCopyState } : {}),
+        ...(form.kind === "rsvp"
+          ? { rsvp_copy: rsvpCopyState }
+          : { guest_copy: guestCopyState }),
       });
       setForm(updated);
       setDirty(false);
@@ -275,10 +502,10 @@ export default function FormBuilderPage() {
 
       {/* ---------------- Organiser-only settings ---------------- */}
       <SectionBlock
-        kicker={form.kind === "custom" ? "Form name · guests see this as the title" : "Organiser only · not shown to guests"}
+        kicker="Organiser only · your own name for this form"
         hint={
           form.kind === "custom"
-            ? "Unlike the RSVP block, custom forms have no separate guest-facing headline — this name and schedule are what guests see."
+            ? "This name is how you find the form. Guests see the headline you write below — or this name, if you leave it blank."
             : "The name and schedule are for you — guests never see them."
         }
         tone={{ bg: T.sandBg, border: "rgba(169,154,144,.35)", fg: T.sand }}
@@ -365,16 +592,62 @@ export default function FormBuilderPage() {
         </Card>
       </SectionBlock>
 
+      {/* ---------------- Which language you're writing ---------------- */}
+      <LanguageBar
+        editing={editingLocale}
+        onEdit={setEditingLocale}
+        onTranslate={translateInto}
+        translating={translating}
+        translateHint={translateHint}
+      />
+
       {/* ---------------- RSVP block wording (guarded) ---------------- */}
       {form.kind === "rsvp" && (
         <RsvpWordingEditor
           purpose={form.purpose === "reconfirmation" ? "reconfirmation" : "primary"}
           copy={rsvpCopyState}
+          locale={editingLocale}
           onChange={(next) => {
             setRsvpCopyState(next);
             markDirty();
           }}
         />
+      )}
+
+      {/* ---------------- Custom form headline (guarded) ---------------- */}
+      {form.kind === "custom" && (
+        <SectionBlock
+          kicker="Form heading · what guests see"
+          hint="The heading guests read above the questions. Leave it blank and they see the form name instead — untranslated, as before."
+          tone={{ bg: T.accentSoft, border: T.accentBorder, fg: T.accentInk }}
+        >
+          <CopyField
+            caption={`Heading guests see · ${localeName(editingLocale)}`}
+            value={textForLocale(guestCopyState.title, editingLocale)}
+            placeholder={title.trim() || form.title}
+            auto={isAutoTranslated(guestCopyState.title, editingLocale)}
+            onChange={(v) => {
+              setGuestCopyState((prev) => ({
+                ...prev,
+                title: setTextForLocale(prev.title, editingLocale, v),
+              }));
+              markDirty();
+            }}
+          />
+          <CopyField
+            caption={`Supporting line · ${localeName(editingLocale)}`}
+            value={textForLocale(guestCopyState.subtitle, editingLocale)}
+            placeholder="Optional — a line of context under the heading"
+            auto={isAutoTranslated(guestCopyState.subtitle, editingLocale)}
+            onChange={(v) => {
+              setGuestCopyState((prev) => ({
+                ...prev,
+                subtitle: setTextForLocale(prev.subtitle, editingLocale, v),
+              }));
+              markDirty();
+            }}
+          />
+        </SectionBlock>
       )}
 
       {!(form.kind === "rsvp" && form.purpose === "reconfirmation") && (
@@ -470,11 +743,16 @@ export default function FormBuilderPage() {
                 </div>
               </div>
 
+              {isAutoTranslated(q.title, editingLocale) && (
+                <div style={{ marginTop: 11, display: "flex" }}>
+                  <AutoBadge />
+                </div>
+              )}
               <input
                 type="text"
-                value={q.title}
-                onChange={(e) => patchQuestion(q.id, { title: e.target.value })}
-                placeholder="Question title"
+                value={textForLocale(q.title, editingLocale)}
+                onChange={(e) => patchQuestionTitle(q.id, e.target.value)}
+                placeholder={`Question title (${localeName(editingLocale)})`}
                 className="u-serif"
                 style={{
                   fontFamily: T.serif,
@@ -492,16 +770,13 @@ export default function FormBuilderPage() {
 
               {(q.kind === "single" || q.kind === "multi") && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 11 }}>
-                  {(q.options ?? []).map((opt, i) => (
-                    <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  {(q.options ?? []).map((opt) => (
+                    <div key={opt.id} style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       <input
                         type="text"
-                        value={opt}
-                        onChange={(e) => {
-                          const next = [...(q.options ?? [])];
-                          next[i] = e.target.value;
-                          patchQuestion(q.id, { options: next });
-                        }}
+                        value={textForLocale(opt.label, editingLocale)}
+                        onChange={(e) => patchOptionLabel(q.id, opt.id, e.target.value)}
+                        placeholder={localeName(editingLocale)}
                         style={{
                           flex: 1,
                           minHeight: 36,
@@ -513,10 +788,15 @@ export default function FormBuilderPage() {
                           background: "#F7F1EC",
                         }}
                       />
+                      {isAutoTranslated(opt.label, editingLocale) && <AutoBadge />}
                       <button
                         onClick={() => {
-                          const next = (q.options ?? []).filter((_, j) => j !== i);
-                          patchQuestion(q.id, { options: next });
+                          // Removing a choice orphans any answer already
+                          // pointing at it — deliberate, and the same
+                          // trade-off as before ids existed.
+                          patchQuestion(q.id, {
+                            options: (q.options ?? []).filter((o) => o.id !== opt.id),
+                          });
                         }}
                         className="u-link"
                         style={{ color: T.muted2, fontSize: 12 }}
@@ -530,7 +810,16 @@ export default function FormBuilderPage() {
                     type="button"
                     onClick={() =>
                       patchQuestion(q.id, {
-                        options: [...(q.options ?? []), `Option ${(q.options?.length ?? 0) + 1}`],
+                        options: [
+                          ...(q.options ?? []),
+                          {
+                            id: newId(),
+                            label: seed(
+                              editingLocale,
+                              `Option ${(q.options?.length ?? 0) + 1}`,
+                            ),
+                          },
+                        ],
                       })
                     }
                     className="u-link"
@@ -741,6 +1030,30 @@ function ExtraGuestsRights({
   );
 }
 
+/** Marks wording the translator wrote, until a person edits it. A machine
+ *  translation of a wedding invitation is a draft, and the couple deserves to
+ *  see which lines are still drafts. */
+function AutoBadge() {
+  return (
+    <span
+      title="Translated automatically — worth a read before you publish."
+      style={{
+        flexShrink: 0,
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: "0.04em",
+        textTransform: "uppercase",
+        color: "#B07C48",
+        background: "#FBEEE2",
+        borderRadius: 6,
+        padding: "3px 6px",
+      }}
+    >
+      Auto
+    </span>
+  );
+}
+
 /** One captioned, anchored input for a single RSVP-copy slot. The caption and
  *  the (optional) fixed color/icon dot never change with what the couple
  *  types — that's the point: there's nothing here to reorder or swap, so a
@@ -750,12 +1063,15 @@ function CopyField({
   dot,
   value,
   placeholder,
+  auto,
   onChange,
 }: {
   caption: string;
   dot?: { bg: string; fg: string; symbol: string };
   value: string;
   placeholder: string;
+  /** This locale's text came from the translator and hasn't been read yet. */
+  auto?: boolean;
   onChange: (v: string) => void;
 }) {
   return (
@@ -781,6 +1097,7 @@ function CopyField({
           </span>
         )}
         <div style={{ fontSize: 11, fontWeight: 600, color: T.faint }}>{caption}</div>
+        {auto && <AutoBadge />}
       </div>
       <input
         type="text"
@@ -811,17 +1128,25 @@ function CopyField({
 function RsvpWordingEditor({
   purpose,
   copy,
+  locale,
   onChange,
 }: {
   purpose: "primary" | "reconfirmation";
   copy: RsvpBlockCopy;
+  /** The language being written and previewed. */
+  locale: Locale;
   onChange: (next: RsvpBlockCopy) => void;
 }) {
-  const defaults = RSVP_COPY_DEFAULTS[purpose];
-  const title = copy.title ?? "";
-  const subtitle = copy.subtitle ?? "";
-  const attending = copy.label_attending ?? "";
-  const declined = copy.label_declined ?? "";
+  const defaults = rsvpDefaults(locale, purpose);
+  const title = textForLocale(copy.title, locale);
+  const subtitle = textForLocale(copy.subtitle, locale);
+  const attending = textForLocale(copy.label_attending, locale);
+  const declined = textForLocale(copy.label_declined, locale);
+
+  /** Every slot writes through here so a hand edit always lands in the
+   *  language on screen — and clears that slot's "auto" flag. */
+  const write = (slot: keyof RsvpBlockCopy, text: string) =>
+    onChange({ ...copy, [slot]: setTextForLocale(copy[slot], locale, text) });
 
   return (
     <SectionBlock
@@ -834,33 +1159,37 @@ function RsvpWordingEditor({
       tone={{ bg: T.accentSoft, border: T.accentBorder, fg: T.accentInk }}
     >
       <CopyField
-        caption="Headline guests see"
+        caption={`Headline guests see · ${localeName(locale)}`}
         value={title}
         placeholder={defaults.title}
-        onChange={(v) => onChange({ ...copy, title: v })}
+        auto={isAutoTranslated(copy.title, locale)}
+        onChange={(v) => write("title", v)}
       />
       <CopyField
-        caption="Supporting line"
+        caption={`Supporting line · ${localeName(locale)}`}
         value={subtitle}
         placeholder={defaults.subtitle}
-        onChange={(v) => onChange({ ...copy, subtitle: v })}
+        auto={isAutoTranslated(copy.subtitle, locale)}
+        onChange={(v) => write("subtitle", v)}
       />
 
       {purpose === "primary" && (
         <>
           <CopyField
-            caption="Label on the button meaning “coming” — locked to that meaning, only this text is yours"
+            caption={`Label on the button meaning “coming” · ${localeName(locale)} — locked to that meaning, only this text is yours`}
             dot={{ bg: T.greenBg, fg: T.greenDeep, symbol: "✓" }}
             value={attending}
-            placeholder={defaults.label_attending ?? "Attending"}
-            onChange={(v) => onChange({ ...copy, label_attending: v })}
+            placeholder={defaults.labelAttending}
+            auto={isAutoTranslated(copy.label_attending, locale)}
+            onChange={(v) => write("label_attending", v)}
           />
           <CopyField
-            caption="Label on the button meaning “not coming” — locked to that meaning, only this text is yours"
+            caption={`Label on the button meaning “not coming” · ${localeName(locale)} — locked to that meaning, only this text is yours`}
             dot={{ bg: T.roseBg, fg: T.rose, symbol: "✕" }}
             value={declined}
-            placeholder={defaults.label_declined ?? "Declined"}
-            onChange={(v) => onChange({ ...copy, label_declined: v })}
+            placeholder={defaults.labelDeclined}
+            auto={isAutoTranslated(copy.label_declined, locale)}
+            onChange={(v) => write("label_declined", v)}
           />
         </>
       )}
@@ -869,7 +1198,7 @@ function RsvpWordingEditor({
           confusing reword is obvious here, not after it's live. */}
       <div>
         <div style={{ fontSize: 11, fontWeight: 600, color: T.faint, marginBottom: 7 }}>
-          Preview
+          Preview · what a {localeName(locale)} guest reads
         </div>
         <Card soft style={{ padding: "14px 15px" }}>
           <div className="u-serif" style={{ fontWeight: 600, fontSize: 16, color: T.ink }}>
@@ -893,7 +1222,7 @@ function RsvpWordingEditor({
                   border: `1px solid ${alpha(T.green, 0.35)}`,
                 }}
               >
-                ✓ {attending.trim() || defaults.label_attending}
+                ✓ {attending.trim() || defaults.labelAttending}
               </span>
               <span
                 style={{
@@ -908,7 +1237,7 @@ function RsvpWordingEditor({
                   border: `1px solid ${T.accentBorder}`,
                 }}
               >
-                ✗ {declined.trim() || defaults.label_declined}
+                ✗ {declined.trim() || defaults.labelDeclined}
               </span>
             </div>
           )}

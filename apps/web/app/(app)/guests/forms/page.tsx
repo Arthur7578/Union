@@ -44,16 +44,61 @@ function newId() {
     : `q-${Math.random().toString(36).slice(2)}`;
 }
 
+/** Template questions ship translated into every language the app supports,
+ *  so a form started from a template reads correctly to every guest before
+ *  the couple has touched the translator. Anything they reword afterwards is
+ *  theirs to translate. */
+function option(en: string, fr: string) {
+  return { id: newId(), label: { en, fr } };
+}
+
 const TEMPLATES: Template[] = [
   {
     key: "details",
     title: "Guest details",
     sub: "Meals, stays, travel & songs — once they know they're coming",
     questions: [
-      { id: newId(), kind: "single", title: "Meal preference", required: true, options: ["Chicken", "Fish", "Vegetarian", "Kids meal"] },
-      { id: newId(), kind: "comment", title: "Any dietary needs or allergies?", required: false },
-      { id: newId(), kind: "single", title: "Where are you staying?", required: false, options: ["Our room block", "Booking my own", "Not sure yet"] },
-      { id: newId(), kind: "short", title: "Song you'd love to hear", required: false },
+      {
+        id: newId(),
+        kind: "single",
+        title: { en: "Meal preference", fr: "Choix du plat" },
+        required: true,
+        options: [
+          option("Chicken", "Volaille"),
+          option("Fish", "Poisson"),
+          option("Vegetarian", "Végétarien"),
+          option("Kids meal", "Menu enfant"),
+        ],
+      },
+      {
+        id: newId(),
+        kind: "comment",
+        title: {
+          en: "Any dietary needs or allergies?",
+          fr: "Des allergies ou un régime particulier ?",
+        },
+        required: false,
+      },
+      {
+        id: newId(),
+        kind: "single",
+        title: { en: "Where are you staying?", fr: "Où logez-vous ?" },
+        required: false,
+        options: [
+          option("Our room block", "Dans les chambres réservées"),
+          option("Booking my own", "Je réserve moi-même"),
+          option("Not sure yet", "Je ne sais pas encore"),
+        ],
+      },
+      {
+        id: newId(),
+        kind: "short",
+        title: {
+          en: "Song you'd love to hear",
+          fr: "Un morceau que vous aimeriez entendre",
+        },
+        required: false,
+      },
     ],
   },
   {

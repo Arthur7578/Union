@@ -1,8 +1,15 @@
 import { getSupabase } from "@/lib/supabase";
-import { resolveLocale } from "@/lib/i18n/server";
-import { getDictionary } from "@/lib/i18n";
+import { readLocaleCookie, resolveLocale } from "@/lib/i18n/server";
+import { getDictionary, isLocale, type Locale } from "@/lib/i18n";
+import { LocaleProvider } from "@/lib/i18n/client";
 import Link from "next/link";
-import type { FormAnswers, Invitation, RsvpQuestion } from "@union/shared";
+import type {
+  FormAnswers,
+  FormGuestCopy,
+  Invitation,
+  LocalizedText,
+  RsvpQuestion,
+} from "@union/shared";
 import { GuestPortal } from "./GuestPortal";
 import { GuestEmailGate } from "./GuestEmailGate";
 import { GuestIdentityGate } from "./GuestIdentityGate";
@@ -11,28 +18,33 @@ import { GuestIdentityGate } from "./GuestIdentityGate";
 export const dynamic = "force-dynamic";
 
 export type DBInvitation = Invitation & {
-  /** Guest-facing wording overrides for the primary RSVP block — null keys
-   *  mean "use the system default", never a blank/empty label. */
+  /** Guest-facing wording overrides for the primary RSVP block, as locale
+   *  maps. Null means "use the system default" for the guest's language,
+   *  never a blank/empty label; a map missing the guest's locale falls back
+   *  through the others before reaching that default. */
   rsvp_form?: {
-    title: string | null;
-    subtitle: string | null;
-    label_attending: string | null;
-    label_declined: string | null;
+    title: LocalizedText | null;
+    subtitle: LocalizedText | null;
+    label_attending: LocalizedText | null;
+    label_declined: LocalizedText | null;
   } | null;
   /** The optional late "still coming?" touchpoint. Only shown when
    *  published and within its opens_at/closes_at window. */
   rsvp_reconfirmation?: {
-    title: string | null;
-    subtitle: string | null;
+    title: LocalizedText | null;
+    subtitle: LocalizedText | null;
     published: boolean;
     opens_at: string | null;
     closes_at: string | null;
   } | null;
   /** Published 'custom' forms for this wedding, with the guest's own answers
-   *  (if they've already submitted). Empty until the couple publishes one. */
+   *  (if they've already submitted). Empty until the couple publishes one.
+   *  `title` is the organiser's own name for the form — `guest_copy.title` is
+   *  the localized heading guests read, and falls back to it. */
   custom_forms?: Array<{
     id: string;
     title: string;
+    guest_copy: FormGuestCopy | null;
     questions: RsvpQuestion[];
     published: boolean;
     opens_at: string | null;
@@ -48,6 +60,7 @@ export default async function GuestExperiencePage({
 }) {
   const { token } = await params;
   const locale = await resolveLocale();
+  const chosenLocale = await readLocaleCookie();
   const t = getDictionary(locale);
 
   let invitation: DBInvitation | null = null;
@@ -79,6 +92,7 @@ export default async function GuestExperiencePage({
         rsvp_status: "pending",
         dietary_notes: "",
         message: "",
+        locale: null,
       },
       companions: [
         {
@@ -198,23 +212,35 @@ export default async function GuestExperiencePage({
     .filter(Boolean)
     .join(" ");
 
+  // Which language to open the invitation in. A guest who has picked one on
+  // this device always wins — the couple's record is a good guess, not an
+  // instruction, and overriding a deliberate choice would be worse than
+  // guessing wrong in the first place. Failing that, use the language the
+  // couple recorded for this guest, then whatever their browser asks for.
+  const guestLocale = isLocale(invitation.guest.locale)
+    ? invitation.guest.locale
+    : null;
+  const initialLocale: Locale = chosenLocale ?? guestLocale ?? locale;
+
   return (
-    <GuestIdentityGate
-      guestId={invitation.guest.id}
-      guestName={guestName}
-    >
-      <GuestEmailGate
-        token={token}
+    <LocaleProvider initialLocale={initialLocale}>
+      <GuestIdentityGate
         guestId={invitation.guest.id}
         guestName={guestName}
-        emailMissing={emailMissing}
       >
-        <GuestPortal
+        <GuestEmailGate
           token={token}
-          invitation={invitation}
-          isDemo={isDemo}
-        />
-      </GuestEmailGate>
-    </GuestIdentityGate>
+          guestId={invitation.guest.id}
+          guestName={guestName}
+          emailMissing={emailMissing}
+        >
+          <GuestPortal
+            token={token}
+            invitation={invitation}
+            isDemo={isDemo}
+          />
+        </GuestEmailGate>
+      </GuestIdentityGate>
+    </LocaleProvider>
   );
 }

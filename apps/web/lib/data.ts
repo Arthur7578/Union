@@ -1,10 +1,17 @@
 "use client";
 
 import { getBrowserSupabase } from "./supabaseClient";
+import {
+  isTextEmpty,
+  normalizeQuestions,
+  toLocalizedText,
+} from "@union/shared";
+import { DEFAULT_LOCALE } from "./i18n";
 import type {
   ActivityLogEntry,
   Collaborator,
   Form,
+  FormGuestCopy,
   FormStatus,
   Guest,
   GuestGroup,
@@ -16,7 +23,9 @@ import type {
   RsvpBlockCopy,
   RsvpQuestion,
   RsvpStatus,
+  LocalizedText,
   SeatingTable,
+  StoredText,
   Wedding,
 } from "@union/shared";
 
@@ -287,6 +296,9 @@ export type NewGuest = {
   seating_table_id?: string | null;
   ceremony_row?: number | null;
   ceremony_side?: "left" | "right" | null;
+  /** Language this guest reads, when the couple knows it. Null means "we
+   *  don't know" — their portal then follows their browser. */
+  locale?: "en" | "fr" | null;
 };
 
 /**
@@ -1064,13 +1076,13 @@ export async function removeGuestRelationship(input: {
 // Forms (RSVP now, and any custom forms the couple schedules later)
 // ============================================================
 
-/** Pull the question list back out of a form row's jsonb column. */
+/** Pull the question list back out of a form row's jsonb column, normalising
+ *  titles and option labels into localized maps. Rows written before the
+ *  localization migration hold bare strings; `normalizeQuestions` folds those
+ *  in under the default locale so the builder never has to know which shape
+ *  it's looking at. */
 export function formQuestions(form: Form): RsvpQuestion[] {
-  const raw = form.questions;
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (q): q is RsvpQuestion => !!q && typeof q === "object" && "id" in q,
-  ) as unknown as RsvpQuestion[];
+  return normalizeQuestions(form.questions, DEFAULT_LOCALE);
 }
 
 /** Draft/scheduled/live/closed is derived from publish + schedule, never stored directly. */
@@ -1081,20 +1093,36 @@ export function formStatus(form: Form, now: Date = new Date()): FormStatus {
   return "live";
 }
 
-/** Pull the RSVP block's wording back out of a form row's jsonb column.
- *  Blank/missing keys are the caller's cue to fall back to the system
- *  default copy — never guess a default here, this is just extraction. */
+/** Read one named slot out of a guest-copy jsonb bag as a locale map.
+ *  Undefined means "nothing written in any language", which is the caller's
+ *  cue to fall back to a system default — the shape of the stored value
+ *  (localized map, or a bare pre-migration string) is not its problem. */
+function copySlot(bag: unknown, key: string): LocalizedText | undefined {
+  if (!bag || typeof bag !== "object" || Array.isArray(bag)) return undefined;
+  const value = (bag as Record<string, unknown>)[key] as StoredText;
+  const localized = toLocalizedText(value, DEFAULT_LOCALE);
+  return isTextEmpty(localized) ? undefined : localized;
+}
+
+/** Pull the RSVP block's wording back out of a form row's jsonb column, as a
+ *  locale map per slot. Empty slots are the caller's cue to fall back to the
+ *  system default copy for the reader's language — never guess a default
+ *  here, this is just extraction. */
 export function rsvpCopy(form: Form): RsvpBlockCopy {
-  const raw = form.rsvp_copy;
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
-  const c = raw as Record<string, unknown>;
-  const pick = (key: string): string | undefined =>
-    typeof c[key] === "string" && c[key].trim() ? (c[key] as string) : undefined;
   return {
-    title: pick("title"),
-    subtitle: pick("subtitle"),
-    label_attending: pick("label_attending"),
-    label_declined: pick("label_declined"),
+    title: copySlot(form.rsvp_copy, "title"),
+    subtitle: copySlot(form.rsvp_copy, "subtitle"),
+    label_attending: copySlot(form.rsvp_copy, "label_attending"),
+    label_declined: copySlot(form.rsvp_copy, "label_declined"),
+  };
+}
+
+/** Same, for a custom form's guest-facing headline (forms.guest_copy). A blank
+ *  title falls back to forms.title at render time — see FormGuestCopy. */
+export function formGuestCopy(form: Form): FormGuestCopy {
+  return {
+    title: copySlot(form.guest_copy, "title"),
+    subtitle: copySlot(form.guest_copy, "subtitle"),
   };
 }
 
@@ -1151,7 +1179,14 @@ export async function updateForm(
   patch: Partial<
     Pick<
       Form,
-      "title" | "published" | "opens_at" | "closes_at" | "questions" | "sort_order" | "rsvp_copy"
+      | "title"
+      | "published"
+      | "opens_at"
+      | "closes_at"
+      | "questions"
+      | "sort_order"
+      | "rsvp_copy"
+      | "guest_copy"
     >
   >,
 ): Promise<Form> {

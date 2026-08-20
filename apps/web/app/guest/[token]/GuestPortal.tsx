@@ -3,11 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/lib/i18n/client";
+import { coupleText, coupleTextOr, rsvpDefaults } from "@/lib/i18n/text";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { clearActiveGuestIdentity } from "@/lib/guestIdentity";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { submitGuestRsvp } from "@/lib/submitRsvp";
+import { normalizeQuestions } from "@union/shared";
 import type { FormAnswers, RsvpQuestion } from "@union/shared";
+import { DEFAULT_LOCALE } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
 
 interface GuestPortalProps {
@@ -139,7 +142,16 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   // Custom forms (organiser-authored, free-form questions) — one guest
   // response per form, kept local so a fresh submit updates the card
   // immediately without a full page reload.
-  const [customForms, setCustomForms] = useState(invitation.custom_forms ?? []);
+  // get_invitation hands back whatever jsonb holds, which for a form written
+  // before the localization migration is bare-string titles and options. Fold
+  // those into the localized shape here, once, so the render path below never
+  // has to care which era a form was authored in.
+  const [customForms, setCustomForms] = useState(() =>
+    (invitation.custom_forms ?? []).map((f) => ({
+      ...f,
+      questions: normalizeQuestions(f.questions, DEFAULT_LOCALE),
+    })),
+  );
   const [activeCustomFormId, setActiveCustomFormId] = useState<string | null>(null);
   const [customDraft, setCustomDraft] = useState<FormAnswers>({});
   const [customSubmitting, setCustomSubmitting] = useState(false);
@@ -190,6 +202,30 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       subscription.unsubscribe();
     };
   }, []);
+
+  /**
+   * Remember a guest's own language choice against their invitation, not just
+   * in this browser's cookie.
+   *
+   * Invitations get opened on a phone, then a laptop, then a phone with
+   * cleared cookies. Storing the pick server-side means the couple's wording
+   * comes back in the right language every time.
+   *
+   * Only a deliberate switch is recorded — the language this page merely
+   * opened in is a guess from the browser's headers, and writing that back
+   * would overwrite what the couple recorded with something nobody chose.
+   * Best-effort besides: failing to save a preference must never break the
+   * invitation, so the error is swallowed.
+   */
+  const openedIn = React.useRef(locale);
+  useEffect(() => {
+    if (isDemo) return;
+    if (locale === openedIn.current) return;
+    const supabase = getBrowserSupabase();
+    void supabase
+      .rpc("set_guest_locale", { p_token: token, p_locale: locale })
+      .then(undefined, () => {});
+  }, [locale, token, isDemo]);
 
   // Update Countdown timer
   useEffect(() => {
@@ -351,17 +387,23 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const isDeclined = primaryRsvp === "declined";
   const isPending = primaryRsvp === "pending";
 
-  // RSVP block wording — an organiser override if they've set one, else the
-  // system default copy. This is the *only* thing an override can change:
-  // which rsvp_status a button submits is fixed in code, never in wording.
-  const rsvpTitle = invitation.rsvp_form?.title
-    || (locale === "fr" ? "RSVP de Présence" : "Attendance RSVP");
-  const rsvpSubtitle = invitation.rsvp_form?.subtitle
-    || (locale === "fr" ? "Confirmez votre venue et celle de vos proches." : "Let us know if you and your companions will join us.");
-  const labelAttending = invitation.rsvp_form?.label_attending
-    || (locale === "fr" ? "Présent" : "Attending");
-  const labelDeclined = invitation.rsvp_form?.label_declined
-    || (locale === "fr" ? "Absent" : "Declined");
+  // RSVP block wording — the organiser's own copy in this guest's language if
+  // they've written one, else Union's default copy in that language. This is
+  // the *only* thing an override can change: which rsvp_status a button
+  // submits is fixed in code, never in wording.
+  const primaryDefaults = rsvpDefaults(locale, "primary");
+  const rsvpTitle = coupleTextOr(invitation.rsvp_form?.title, locale, primaryDefaults.title);
+  const rsvpSubtitle = coupleTextOr(invitation.rsvp_form?.subtitle, locale, primaryDefaults.subtitle);
+  const labelAttending = coupleTextOr(
+    invitation.rsvp_form?.label_attending,
+    locale,
+    primaryDefaults.labelAttending,
+  );
+  const labelDeclined = coupleTextOr(
+    invitation.rsvp_form?.label_declined,
+    locale,
+    primaryDefaults.labelDeclined,
+  );
 
   // The optional late "still coming?" touchpoint — same RSVP block, shown
   // only when the organiser has published it and it's within its window.
@@ -370,10 +412,13 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const reconfirmationLive = !!reconfirmation?.published
     && (!reconfirmation.opens_at || new Date(reconfirmation.opens_at) <= now)
     && (!reconfirmation.closes_at || new Date(reconfirmation.closes_at) >= now);
-  const reconfirmTitle = reconfirmation?.title
-    || (locale === "fr" ? "Tu viens toujours ?" : "Still coming?");
-  const reconfirmSubtitle = reconfirmation?.subtitle
-    || (locale === "fr" ? "Un point rapide avant le grand jour — confirme ou ajuste ta réponse." : "A quick check-in before the big day — confirm or update your RSVP.");
+  const reconfirmDefaults = rsvpDefaults(locale, "reconfirmation");
+  const reconfirmTitle = coupleTextOr(reconfirmation?.title, locale, reconfirmDefaults.title);
+  const reconfirmSubtitle = coupleTextOr(
+    reconfirmation?.subtitle,
+    locale,
+    reconfirmDefaults.subtitle,
+  );
 
   const openRsvpModal = (context: "primary" | "reconfirmation") => {
     setRsvpModalContext(context);
@@ -388,6 +433,14 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     if (f.closes_at && new Date(f.closes_at) < now) return "closed";
     return "live";
   };
+
+  /** A custom form's guest-facing heading in this guest's language. Falls back
+   *  to the organiser's own name for the form — untranslated, which is what
+   *  guests saw before forms had a separate heading, and better than a blank
+   *  card while the couple hasn't filled one in. */
+  const customFormHeading = (
+    f: NonNullable<DBInvitation["custom_forms"]>[number],
+  ): string => coupleTextOr(f.guest_copy?.title, locale, f.title);
 
   const activeCustomForm = customForms.find((f) => f.id === activeCustomFormId) ?? null;
 
@@ -1135,7 +1188,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                         </span>
                       </div>
                       <h3 className="u-serif" style={{ fontSize: "20px", fontWeight: "600", margin: "0 0 6px" }}>
-                        {f.title}
+                        {customFormHeading(f)}
                       </h3>
                       <p style={{ color: "var(--muted)", fontSize: "13px", margin: 0, maxWidth: "400px" }}>
                         {f.questions.length} {locale === "fr" ? "question(s)" : `question${f.questions.length === 1 ? "" : "s"}`}
@@ -1728,13 +1781,23 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       {activeCustomForm && (
         <div className="drawer-overlay" onClick={() => (customSubmitting ? null : setActiveCustomFormId(null))}>
           <div className="drawer-container" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-              <h2 className="u-serif" style={{ fontSize: "28px", fontWeight: "600", margin: 0 }}>
-                {activeCustomForm.title}
-              </h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", gap: "12px" }}>
+              <div>
+                <h2 className="u-serif" style={{ fontSize: "28px", fontWeight: "600", margin: 0 }}>
+                  {customFormHeading(activeCustomForm)}
+                </h2>
+                {/* The couple's own line of context, when they've written one
+                    — omitted entirely rather than defaulted, since there is no
+                    sensible system wording for "whatever this form is about". */}
+                {coupleText(activeCustomForm.guest_copy?.subtitle, locale) && (
+                  <p style={{ color: "var(--muted)", fontSize: "14px", margin: "6px 0 0", lineHeight: 1.5 }}>
+                    {coupleText(activeCustomForm.guest_copy?.subtitle, locale)}
+                  </p>
+                )}
+              </div>
               <button
                 onClick={() => setActiveCustomFormId(null)}
-                style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "var(--muted)" }}
+                style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "var(--muted)", lineHeight: 1 }}
               >
                 ✕
               </button>
@@ -1743,7 +1806,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
             {activeCustomForm.questions.map((q: RsvpQuestion) => (
               <div className="field" key={q.id}>
                 <label>
-                  {q.title}
+                  {coupleText(q.title, locale) ?? ""}
                   {q.required ? " *" : ` (${locale === "fr" ? "optionnel" : "optional"})`}
                 </label>
 
@@ -1751,23 +1814,29 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {(q.options ?? []).map((opt) => {
                       const current = customDraft[q.id];
-                      const selected = q.kind === "single" ? current === opt : Array.isArray(current) && current.includes(opt);
+                      // Answers are stored as option ids, so the same choice
+                      // reads back as chosen whatever language it was picked in.
+                      const selected = q.kind === "single"
+                        ? current === opt.id
+                        : Array.isArray(current) && current.includes(opt.id);
                       return (
                         <button
-                          key={opt}
+                          key={opt.id}
                           type="button"
                           onClick={() => {
                             setCustomDraft((prev) => {
-                              if (q.kind === "single") return { ...prev, [q.id]: opt };
+                              if (q.kind === "single") return { ...prev, [q.id]: opt.id };
                               const list = Array.isArray(prev[q.id]) ? (prev[q.id] as string[]) : [];
-                              const next = list.includes(opt) ? list.filter((o) => o !== opt) : [...list, opt];
+                              const next = list.includes(opt.id)
+                                ? list.filter((o) => o !== opt.id)
+                                : [...list, opt.id];
                               return { ...prev, [q.id]: next };
                             });
                           }}
                           className={`choice-btn ${selected ? "selected-yes" : ""}`}
                           style={{ justifyContent: "flex-start", textAlign: "left" }}
                         >
-                          {selected ? "✓ " : ""}{opt}
+                          {selected ? "✓ " : ""}{coupleText(opt.label, locale) ?? ""}
                         </button>
                       );
                     })}

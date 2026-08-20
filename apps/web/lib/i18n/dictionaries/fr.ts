@@ -1052,4 +1052,19 @@ export const fr: Dictionary = {
     save: "Enregistrer le modèle",
     saved: "Enregistré",
   },
+  formDefaults: {
+    rsvp: {
+      primary: {
+        title: "RSVP de Présence",
+        subtitle: "Confirmez votre venue et celle de vos proches.",
+        labelAttending: "Présent",
+        labelDeclined: "Absent",
+      },
+      reconfirmation: {
+        title: "Tu viens toujours ?",
+        subtitle:
+          "Un point rapide avant le grand jour — confirme ou ajuste ta réponse.",
+      },
+    },
+  },
 };

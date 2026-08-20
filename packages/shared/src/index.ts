@@ -1,5 +1,27 @@
 export { createUnionClient } from "./supabase";
 export type { UnionClient } from "./supabase";
+export {
+  AUTO_TRANSLATED_KEY,
+  isAutoTranslated,
+  isLocaleKey,
+  isTextEmpty,
+  resolveText,
+  setAutoTextForLocale,
+  setTextForLocale,
+  textForLocale,
+  toLocalizedText,
+} from "./localized";
+export type { LocalizedText, StoredText } from "./localized";
+export {
+  legacyOptionId,
+  normalizeQuestion,
+  normalizeQuestions,
+} from "./questions";
+export type {
+  RsvpQuestion,
+  RsvpQuestionOption,
+  StoredRsvpQuestion,
+} from "./questions";
 export type {
   Database,
   Json,
@@ -12,6 +34,7 @@ export { Constants } from "./database.types";
 
 // Convenience row aliases used across apps.
 import type { Tables, Enums } from "./database.types";
+import type { LocalizedText } from "./localized";
 
 export type Profile = Tables<"profiles">;
 export type Wedding = Tables<"weddings">;
@@ -49,15 +72,6 @@ export type FormPurpose = "primary" | "reconfirmation";
 /** Derived at read time from `published` + `opens_at`/`closes_at` vs now — not stored directly. */
 export type FormStatus = "draft" | "scheduled" | "live" | "closed";
 
-/** One question in a form's guest-facing question list (stored on forms.questions). */
-export type RsvpQuestion = {
-  id: string;
-  kind: "single" | "multi" | "short" | "comment";
-  title: string;
-  required: boolean;
-  options?: string[];
-};
-
 /** Guest-facing wording for the RSVP system block (stored on forms.rsvp_copy).
  *
  *  Deliberately a fixed set of named slots, not a free-form list: each key is
@@ -68,17 +82,32 @@ export type RsvpQuestion = {
  *  which is where the actual attending/declined semantics live. */
 export type RsvpBlockCopy = {
   /** Guest-facing headline. Not forms.title — that stays organiser-only. */
-  title?: string;
-  subtitle?: string;
+  title?: LocalizedText;
+  subtitle?: LocalizedText;
   /** Label for the button that sets rsvp status to 'attending'. Fixed slot — never reorderable. */
-  label_attending?: string;
+  label_attending?: LocalizedText;
   /** Label for the button that sets rsvp status to 'declined'. Fixed slot — never reorderable. */
-  label_declined?: string;
+  label_declined?: LocalizedText;
+};
+
+/** Guest-facing wording for a 'custom' form (stored on forms.guest_copy).
+ *
+ *  A custom form's `title` column stays organiser-only like every other
+ *  form's, and this is the headline guests actually read. Blank falls back to
+ *  the organiser name, which is what guests saw before this existed — so
+ *  forms built earlier read exactly as they did, and the couple can translate
+ *  them whenever they get to it. */
+export type FormGuestCopy = {
+  title?: LocalizedText;
+  subtitle?: LocalizedText;
 };
 
 /** A guest's answers to a 'custom' form (stored on form_responses.answers),
- *  keyed by RsvpQuestion.id. single/short/comment answers are a string;
- *  multi answers are the list of chosen options. */
+ *  keyed by RsvpQuestion.id. A single-choice answer is one
+ *  RsvpQuestionOption.id, a multi answer the list of chosen option ids, and
+ *  short/comment answers are the guest's own typed text. Choices are stored
+ *  as ids so the same answer counts the same whatever language the guest
+ *  replied in. */
 export type FormAnswers = Record<string, string | string[]>;
 export type FormResponse = Tables<"form_responses">;
 
@@ -107,6 +136,9 @@ export type Invitation = {
     rsvp_status: RsvpStatus;
     dietary_notes: string | null;
     message: string | null;
+    /** The language the couple recorded for this guest, if any. Seeds the
+     *  portal's language on first visit; the guest's own pick still wins. */
+    locale: string | null;
   };
   companions: Array<{
     id: string;
