@@ -7,13 +7,13 @@ import { useAuth } from "../../lib/auth";
 import { useWedding } from "../../lib/wedding";
 import { createWedding } from "../../lib/data";
 import { isValidISODate } from "../../lib/format";
-import { useT } from "../../lib/i18n";
+import { useLocale } from "../../lib/i18n";
 import { colors, fontSize, fontWeight, spacing } from "../../theme/theme";
 
 export default function Onboarding() {
   const { session } = useAuth();
   const { refresh } = useWedding();
-  const t = useT();
+  const { t, locale } = useLocale();
   const [partnerOne, setPartnerOne] = useState("");
   const [partnerTwo, setPartnerTwo] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -44,6 +44,11 @@ export default function Onboarding() {
         event_date: eventDate.trim() || null,
         venue_name: venueName.trim() || null,
         venue_address: null,
+        // Same first guess as the web app: the language they're planning in
+        // is the language they'll most likely write to their guests in. It's
+        // only the floor — a guest's browser and any per-guest override both
+        // outrank it — and it's editable from wedding settings on web.
+        default_locale: locale,
       });
       await refresh();
     } catch (e) {

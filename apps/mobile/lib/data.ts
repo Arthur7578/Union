@@ -52,6 +52,7 @@ export async function createWedding(
     | "address_area"
     | "address_country"
     | "address_visibility"
+    | "default_locale"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
@@ -71,6 +72,9 @@ export async function createWedding(
     address_area?: string | null;
     address_country?: string | null;
     address_visibility?: Wedding["address_visibility"];
+    /** The language this couple's guest-facing content is written for. Left
+     *  out, the column's own default ('en') applies. */
+    default_locale?: Wedding["default_locale"];
   },
 ): Promise<Wedding> {
   const { data, error } = await supabase
