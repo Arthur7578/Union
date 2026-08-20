@@ -44,6 +44,10 @@ export type DBInvitation = Invitation & {
     published: boolean;
     opens_at: string | null;
     closes_at: string | null;
+    /** This touchpoint's own optional fields, as stored — not the primary
+     *  form's. Absent key means asked, so an untouched reconfirmation asks
+     *  what it always asked. */
+    fields?: StoredRsvpFields;
   } | null;
   /** Published 'custom' forms for this wedding, with the guest's own answers
    *  (if they've already submitted). Empty until the couple publishes one.

@@ -28,10 +28,12 @@
  * whatever this says: it governs what *guests are asked*, not what the couple
  * is allowed to know.
  *
- * Only the primary RSVP form carries these. A reconfirmation form reuses the
- * primary's block wholesale — same buttons, same extras — so it reads the
- * primary's map rather than keeping one of its own, exactly as it already
- * does for the two button labels.
+ * Every rsvp-kind form carries its own map — the primary RSVP and the later
+ * reconfirmation each ask what their own row says. The two reply *labels* are
+ * still shared, because a button's meaning must not drift between touchpoints
+ * ("coming" has to mean coming in both), but which questions get asked is the
+ * whole reason a second touchpoint exists: meals are unanswerable at
+ * save-the-date time and worth asking three weeks out.
  *
  * The database enforces the same shape (`_rsvp_fields_valid`). Readers here
  * are permissive anyway — an unknown key, a non-boolean, or a null column

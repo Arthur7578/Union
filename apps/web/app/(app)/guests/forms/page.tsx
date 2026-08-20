@@ -358,7 +358,11 @@ export default function FormsHubPage() {
                   </>
                 ) : f.kind === "rsvp" && f.purpose === "reconfirmation" ? (
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 10 }}>
-                    Reuses the RSVP block — same replies, a later nudge.
+                    Same replies as your RSVP, a later nudge
+                    {" · "}
+                    {asked.length === 0
+                      ? "reply only"
+                      : `also asks: ${asked.map((k) => ASK_LABEL[k]).join(" · ")}`}
                   </div>
                 ) : (
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 10 }}>

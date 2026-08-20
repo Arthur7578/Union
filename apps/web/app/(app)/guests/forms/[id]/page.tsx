@@ -486,10 +486,11 @@ export default function FormBuilderPage() {
         ...(form.kind === "rsvp"
           ? { rsvp_copy: rsvpCopyState }
           : { guest_copy: guestCopyState }),
-        // Only the primary form carries the ask list — a reconfirmation
-        // reuses the primary block, so writing a second map here would only
-        // create one that can drift from the block guests actually see.
-        ...(form.kind === "rsvp" && form.purpose === "primary"
+        // Both RSVP touchpoints carry their own ask list: the reply buttons
+        // are shared so a button's meaning can't drift, but asking about
+        // meals later than the RSVP — or not at all, because another form
+        // covers it — is the reason a second touchpoint exists.
+        ...(form.kind === "rsvp"
           ? { rsvp_fields: toStoredRsvpFields(asksState) }
           : {}),
         // The RSVP block is per person by construction, so this only ever
@@ -644,34 +645,16 @@ export default function FormBuilderPage() {
         />
       )}
 
-      {/* ---------------- What the RSVP asks for ---------------- */}
+      {/* ---------------- What this block asks for ---------------- */}
       {form.kind === "rsvp" && (
-        form.purpose === "primary" ? (
-          <RsvpAsksEditor
-            asks={asksState}
-            onChange={(next) => {
-              setAsksState(next);
-              markDirty();
-            }}
-          />
-        ) : (
-          <SectionBlock
-            kicker="What this block asks · what guests see"
-            hint="A reconfirmation is your RSVP block shown again, later — so it asks whatever the RSVP asks."
-            tone={{ bg: T.accentSoft, border: T.accentBorder, fg: T.accentInk }}
-          >
-            <Card style={{ padding: "13px 15px" }}>
-              <div style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.45 }}>
-                Same reply buttons, same extra questions. Change what&apos;s
-                asked on the{" "}
-                <Link href="/guests/forms" className="u-link" style={{ color: T.accentInk }}>
-                  RSVP form
-                </Link>{" "}
-                and this follows.
-              </div>
-            </Card>
-          </SectionBlock>
-        )
+        <RsvpAsksEditor
+          purpose={form.purpose === "reconfirmation" ? "reconfirmation" : "primary"}
+          asks={asksState}
+          onChange={(next) => {
+            setAsksState(next);
+            markDirty();
+          }}
+        />
       )}
 
       {/* ---------------- Custom form headline (guarded) ---------------- */}
@@ -1213,14 +1196,21 @@ function CopyField({
  *  was asking the same question twice, landing two answers in two tables with
  *  nothing to say which the caterer should believe.
  *
+ *  Each touchpoint keeps its own list: the primary RSVP and the later
+ *  reconfirmation share their two reply labels — a button's meaning must not
+ *  drift between asks — but not their questions, since asking about meals
+ *  only in the late check-in is the reason to have one.
+ *
  *  Turning one off is presentation only. Nothing already answered is deleted,
  *  it comes straight back if the field is switched on again, and the couple
  *  can still record a guest's allergies by hand from that guest's page — this
  *  governs what guests are *asked*, not what the couple may know. */
 function RsvpAsksEditor({
+  purpose,
   asks,
   onChange,
 }: {
+  purpose: "primary" | "reconfirmation";
   asks: RsvpFields;
   onChange: (next: RsvpFields) => void;
 }) {
@@ -1246,8 +1236,16 @@ function RsvpAsksEditor({
 
   return (
     <SectionBlock
-      kicker="What the RSVP asks · besides the reply"
-      hint="Coming or not coming is always asked — these are the extras. Turn one off when you collect it in another form, so nobody answers the same question twice."
+      kicker={
+        purpose === "primary"
+          ? "What the RSVP asks · besides the reply"
+          : "What this check-in asks · besides the reply"
+      }
+      hint={
+        purpose === "primary"
+          ? "Coming or not coming is always asked — these are the extras. Turn one off when you collect it in another form, so nobody answers the same question twice."
+          : "This later check-in asks its own extras, independently of your main RSVP — ask about meals here, where guests actually know, or turn them off because another form covers it. The two reply buttons stay the ones your RSVP uses."
+      }
       tone={{ bg: T.accentSoft, border: T.accentBorder, fg: T.accentInk }}
     >
       {RSVP_FIELD_KEYS.map((key) => (
@@ -1272,7 +1270,9 @@ function RsvpAsksEditor({
 
       <div style={{ fontSize: 12, color: T.faint, padding: "0 4px", lineHeight: 1.45 }}>
         {askedCount === 0
-          ? "Your RSVP asks for the reply and nothing else. Whatever else you need, ask it in another form — answers land on each guest's page either way."
+          ? purpose === "primary"
+            ? "Your RSVP asks for the reply and nothing else. Whatever else you need, ask it in another form — answers land on each guest's page either way."
+            : "This check-in asks for the reply and nothing else. Whatever else you need, ask it in another form — answers land on each guest's page either way."
           : "Answers show up on each guest's page, next to whatever they've told you in your other forms."}
       </div>
     </SectionBlock>

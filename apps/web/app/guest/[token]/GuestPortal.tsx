@@ -433,18 +433,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     primaryDefaults.labelDeclined,
   );
 
-  // Which extras this RSVP asks for beyond the reply itself. The couple turns
-  // them off in the form builder — typically because they collect the same
-  // thing in a later form, and asking twice leaves two answers and no way to
-  // tell which one the caterer should believe. A field they've turned off is
-  // never rendered here; anything a guest already answered stays stored and
-  // comes back the moment it's turned on again.
-  //
-  // The reconfirmation block reads the primary form's map rather than one of
-  // its own: it *is* the primary block, shown later with different framing —
-  // the same reason its two reply buttons come from the primary's labels.
-  const asks = resolveRsvpFields(invitation.rsvp_form?.fields);
-
   // The optional late "still coming?" touchpoint — same RSVP block, shown
   // only when the organiser has published it and it's within its window.
   const reconfirmation = invitation.rsvp_reconfirmation ?? null;
@@ -458,6 +446,23 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     reconfirmation?.subtitle,
     locale,
     reconfirmDefaults.subtitle,
+  );
+
+  // Which extras the block on screen asks for beyond the reply itself. The
+  // couple turns them off in the form builder — typically because they
+  // collect the same thing in another form, and asking twice leaves two
+  // answers and no way to tell which one the caterer should believe. A field
+  // they've turned off is never rendered here; anything a guest already
+  // answered stays stored and comes back the moment it's turned on again.
+  //
+  // Read per touchpoint, not shared: the reply buttons are the primary's
+  // (a button's meaning can't drift between asks), but the questions around
+  // them are the whole point of asking again later — meals nobody could
+  // answer at save-the-date time are worth asking three weeks out.
+  const asks = resolveRsvpFields(
+    rsvpModalContext === "reconfirmation"
+      ? reconfirmation?.fields
+      : invitation.rsvp_form?.fields,
   );
 
   const openRsvpModal = (context: "primary" | "reconfirmation") => {
