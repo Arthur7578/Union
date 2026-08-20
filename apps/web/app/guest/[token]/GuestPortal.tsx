@@ -8,10 +8,35 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { clearActiveGuestIdentity } from "@/lib/guestIdentity";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { submitGuestRsvp } from "@/lib/submitRsvp";
-import { normalizeQuestions } from "@union/shared";
-import type { FormAnswers, RsvpQuestion } from "@union/shared";
+import { enabledGuestModules, normalizeQuestions } from "@union/shared";
+import type { FormAnswers, GuestModuleKey, RsvpQuestion } from "@union/shared";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
+
+/** Tab label and icon per module, in the order guests see them. Keyed by the
+ *  same module keys the couple toggles in /guests/modules, so a module can
+ *  never be enabled without a tab to reach it. */
+const MODULE_TABS: Record<
+  GuestModuleKey,
+  { icon: string; label: (locale: string) => string }
+> = {
+  forms: {
+    icon: "📋",
+    label: (locale) => (locale === "fr" ? "Mes Formulaires" : "My Forms"),
+  },
+  travel: {
+    icon: "🚗",
+    label: (locale) => (locale === "fr" ? "Voyage & Covoit" : "Travel & Board"),
+  },
+  logistics: {
+    icon: "📍",
+    label: (locale) => (locale === "fr" ? "Infos & Lieux" : "Logistics"),
+  },
+  faq: {
+    icon: "❓",
+    label: (locale) => (locale === "fr" ? "FAQ" : "FAQs"),
+  },
+};
 
 interface GuestPortalProps {
   token: string;
@@ -99,7 +124,19 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const [hasAuthSession, setHasAuthSession] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<"forms" | "travel" | "logistics" | "faq">("forms");
+  // Which modules this wedding shows. The couple turns them off in
+  // /guests/modules; a module they've turned off is never rendered here — not
+  // as an empty tab, not as a tab that opens nothing.
+  const modules = enabledGuestModules(invitation.wedding.guest_modules);
+  const moduleOn = (key: GuestModuleKey) => modules.includes(key);
+
+  // Opens on the first module that's on. "forms" is only the default because
+  // it's normally first — with forms off, a guest lands on whatever their
+  // invitation actually has. modules is never empty (the database won't store
+  // all-off), but fall back to "forms" rather than to undefined if it ever is.
+  const [activeTab, setActiveTab] = useState<GuestModuleKey>(
+    modules[0] ?? "forms",
+  );
 
   // Multi-Form Expose and Modal states
   const [activeFormModal, setActiveFormModal] = useState<"rsvp" | "preferences" | "recheck" | null>(null);
@@ -1071,18 +1108,15 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       {/* Tab Navigation */}
       <div className="container">
         <nav className="nav-tabs">
-          <button onClick={() => setActiveTab("forms")} className={`tab-btn ${activeTab === "forms" ? "active" : ""}`}>
-            📋 {locale === "fr" ? "Mes Formulaires" : "My Forms"}
-          </button>
-          <button onClick={() => setActiveTab("travel")} className={`tab-btn ${activeTab === "travel" ? "active" : ""}`}>
-            🚗 {locale === "fr" ? "Voyage & Covoit" : "Travel & Board"}
-          </button>
-          <button onClick={() => setActiveTab("logistics")} className={`tab-btn ${activeTab === "logistics" ? "active" : ""}`}>
-            📍 {locale === "fr" ? "Infos & Lieux" : "Logistics"}
-          </button>
-          <button onClick={() => setActiveTab("faq")} className={`tab-btn ${activeTab === "faq" ? "active" : ""}`}>
-            ❓ {locale === "fr" ? "FAQ" : "FAQs"}
-          </button>
+          {modules.map((key) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`tab-btn ${activeTab === key ? "active" : ""}`}
+            >
+              {MODULE_TABS[key].icon} {MODULE_TABS[key].label(locale)}
+            </button>
+          ))}
         </nav>
       </div>
 
@@ -1531,18 +1565,31 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               <div className="faq-item">
                 <h4 style={{ fontWeight: "600", fontSize: "15px", margin: "0 0 6px" }}>👶 {locale === "fr" ? "Les enfants sont-ils invités ?" : "Are children welcome?"}</h4>
                 <p style={{ color: "var(--muted)", fontSize: "14px", margin: 0, lineHeight: "1.5" }}>
-                  {locale === "fr"
-                    ? "Regardez votre invitation personnalisée pour connaître la taille totale de votre groupe d'invités."
-                    : "Please check your personalised forms in the first tab to see if your invitation extends to children / families."}
+                  {/* Names the forms module rather than "the first tab": with
+                      some modules off, forms isn't necessarily first — and with
+                      forms off there's no tab to send anyone to at all. */}
+                  {moduleOn("forms")
+                    ? locale === "fr"
+                      ? `Regardez « ${MODULE_TABS.forms.label(locale)} » pour savoir si votre invitation s'étend aux enfants et à la famille.`
+                      : `Check “${MODULE_TABS.forms.label(locale)}” to see if your invitation extends to children / families.`
+                    : locale === "fr"
+                      ? "Les organisateurs vous confirmeront directement si votre invitation s'étend aux enfants et à la famille."
+                      : "The couple will confirm directly whether your invitation extends to children / families."}
                 </p>
               </div>
 
               <div className="faq-item">
                 <h4 style={{ fontWeight: "600", fontSize: "15px", margin: "0 0 6px" }}>🚗 {locale === "fr" ? "Le stationnement est-il disponible sur place ?" : "Is parking available at the venue?"}</h4>
                 <p style={{ color: "var(--muted)", fontSize: "14px", margin: 0, lineHeight: "1.5" }}>
+                  {/* The carpooling sentence only stands while that module is
+                      on — otherwise it points at a board guests can't open. */}
                   {locale === "fr"
-                    ? "Oui, un parking privé gratuit est disponible sur place. Le covoiturage reste conseillé."
-                    : "Yes, ample free parking is available on-site. You can also match with other drivers using our Travel Board."}
+                    ? moduleOn("travel")
+                      ? `Oui, un parking privé gratuit est disponible sur place. Le covoiturage reste conseillé : retrouvez les trajets partagés dans « ${MODULE_TABS.travel.label(locale)} ».`
+                      : "Oui, un parking privé gratuit est disponible sur place. Le covoiturage reste conseillé."
+                    : moduleOn("travel")
+                      ? "Yes, ample free parking is available on-site. You can also match with other drivers using our Travel Board."
+                      : "Yes, ample free parking is available on-site. Carpooling is still encouraged."}
                 </p>
               </div>
             </div>

@@ -203,6 +203,33 @@ export const fr: Dictionary = {
       smsTemplateSub: "Expéditeur + texte d'invitation",
       groupLinkLabel: "Lien de groupe",
       groupLinkSub: "Un seul lien pour un groupe WhatsApp",
+      modulesLabel: "Modules de l'invitation",
+      modulesSub: "Ce que vos invités voient",
+    },
+    modules: {
+      title: "Modules de l'invitation",
+      subtitle:
+        "Choisissez les sections que vos invités voient en ouvrant leur invitation. En désactiver une la masque pour tous les invités — rien de ce qu'ils vous ont déjà envoyé n'est supprimé.",
+      sectionLabel: "Sections de l'invitation",
+      formsLabel: "Mes formulaires",
+      formsSub:
+        "Leur RSVP et les formulaires que vous publiez. Sans cette section, vos invités n'ont plus aucun moyen de répondre depuis leur invitation.",
+      travelLabel: "Voyage & covoit",
+      travelSub: "Covoiturage et compagnons de voyage entre invités.",
+      logisticsLabel: "Infos & lieux",
+      logisticsSub: "Détails du lieu et hébergements recommandés.",
+      faqLabel: "FAQ",
+      faqSub: "Dress code, enfants, stationnement, et le reste.",
+      activated: "Activé",
+      deactivated: "Désactivé",
+      lastOneError:
+        "Gardez au moins une section active — une invitation vide est un lien mort pour vos invités.",
+      saveError: "Impossible d'enregistrer vos modules.",
+      save: "Enregistrer les modules",
+      saving: "Enregistrement…",
+      saved: "Enregistré",
+      previewNote:
+        "Vos invités voient les sections activées, dans cet ordre. La première activée est l'onglet sur lequel leur invitation s'ouvre.",
     },
     guestList: "Liste des invités",
     reminderPromptStrong: (n: number) =>
