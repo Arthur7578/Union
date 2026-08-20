@@ -71,6 +71,7 @@ export default function GuestDetailPage() {
   const [canAddPartner, setCanAddPartner] = useState<"inherit" | "yes" | "no">("inherit");
   const [canAddKids, setCanAddKids] = useState<"inherit" | "yes" | "no">("inherit");
   const [role, setRole] = useState("");
+  const [guestLocale, setGuestLocale] = useState<"" | "en" | "fr">("");
   const [notes, setNotes] = useState("");
   const [roomBlockId, setRoomBlockId] = useState<string>("");
   const [seatingTableId, setSeatingTableId] = useState<string>("");
@@ -150,6 +151,7 @@ export default function GuestDetailPage() {
           setCanAddPartner(g.can_add_partner == null ? "inherit" : g.can_add_partner ? "yes" : "no");
           setCanAddKids(g.can_add_kids == null ? "inherit" : g.can_add_kids ? "yes" : "no");
           setRole(g.role ?? "");
+          setGuestLocale(g.locale === "en" || g.locale === "fr" ? g.locale : "");
           setNotes(g.notes ?? "");
           setRoomBlockId(g.room_block_id ?? "");
           setSeatingTableId(g.seating_table_id ?? "");
@@ -242,6 +244,7 @@ export default function GuestDetailPage() {
         can_add_kids:
           canAddKids === "inherit" ? null : canAddKids === "yes",
         role: role.trim() || null,
+        locale: guestLocale || null,
         notes: notes.trim() || null,
         room_block_id: roomBlockId || null,
         seating_table_id: seatingTableId || null,
@@ -1178,6 +1181,22 @@ export default function GuestDetailPage() {
               <option key={r} value={r} />
             ))}
           </datalist>
+        </div>
+        <div className="field">
+          <label htmlFor="lg">Language</label>
+          <select
+            id="lg"
+            value={guestLocale}
+            onChange={(e) => setGuestLocale(e.target.value as "" | "en" | "fr")}
+          >
+            <option value="">— Let their device decide —</option>
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+          </select>
+          <div style={{ fontSize: 12, color: T.faint, marginTop: 5, lineHeight: 1.45 }}>
+            The language their invitation opens in. Left unset, it follows
+            their browser. If they pick a language themselves, that wins.
+          </div>
         </div>
         {rooms.length > 0 && (
           <div className="field">

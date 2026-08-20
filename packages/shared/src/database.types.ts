@@ -98,6 +98,7 @@ export type Database = {
         Row: {
           closes_at: string | null
           created_at: string
+          guest_copy: Json
           id: string
           kind: string
           opens_at: string | null
@@ -112,6 +113,7 @@ export type Database = {
         Insert: {
           closes_at?: string | null
           created_at?: string
+          guest_copy?: Json
           id?: string
           kind?: string
           opens_at?: string | null
@@ -126,6 +128,7 @@ export type Database = {
         Update: {
           closes_at?: string | null
           created_at?: string
+          guest_copy?: Json
           id?: string
           kind?: string
           opens_at?: string | null
@@ -276,6 +279,7 @@ export type Database = {
           id: string
           invite_token: string
           last_name: string | null
+          locale: string | null
           notes: string | null
           phone: string | null
           phone_e164: string | null
@@ -300,6 +304,7 @@ export type Database = {
           id?: string
           invite_token?: string
           last_name?: string | null
+          locale?: string | null
           notes?: string | null
           phone?: string | null
           phone_e164?: never
@@ -324,6 +329,7 @@ export type Database = {
           id?: string
           invite_token?: string
           last_name?: string | null
+          locale?: string | null
           notes?: string | null
           phone?: string | null
           phone_e164?: never
@@ -853,6 +859,10 @@ export type Database = {
           p_status: string
           p_token: string
         }
+        Returns: Json
+      }
+      set_guest_locale: {
+        Args: { p_locale: string | null; p_token: string }
         Returns: Json
       }
       submit_form_response: {

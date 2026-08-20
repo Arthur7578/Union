@@ -1082,6 +1082,25 @@ export const en = {
     save: "Save template",
     saved: "Saved",
   },
+  // System defaults for the RSVP block's guest-facing wording — what a guest
+  // reads when the couple hasn't written their own. Lives here rather than in
+  // a component so the form builder's placeholders and preview show exactly
+  // what the guest portal will render, in whichever language the guest reads.
+  formDefaults: {
+    rsvp: {
+      primary: {
+        title: "Attendance RSVP",
+        subtitle: "Let us know if you and your companions will join us.",
+        labelAttending: "Attending",
+        labelDeclined: "Declined",
+      },
+      reconfirmation: {
+        title: "Still coming?",
+        subtitle:
+          "A quick check-in before the big day — confirm or update your RSVP.",
+      },
+    },
+  },
 };
 
 // Widening `typeof en` to a Dictionary type keeps every key + function

@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
     "@contentsquare/tag-sdk": "^1.1.0",
     "@supabase/supabase-js": "^2.45.0",
     "@union/shared": "*",
