@@ -9,6 +9,7 @@ import { useWedding } from "@/lib/wedding";
 import { updateWedding, deleteWedding } from "@/lib/data";
 import { formatLongDate, initial } from "@/lib/format";
 import { useLocale } from "@/lib/i18n/client";
+import { LOCALES, getDictionary, isLocale, type Locale } from "@/lib/i18n";
 import { BackHeader } from "@/components/BackHeader";
 import { Avatar, Button, SectionLabel, UnionNote } from "@/components/ui";
 
@@ -56,6 +57,9 @@ function WeddingSettingsForm({
     wedding.guest_count_target != null ? String(wedding.guest_count_target) : "",
   );
   const [styleVibe, setStyleVibe] = useState(wedding.style_vibe ?? "");
+  const [defaultLocale, setDefaultLocale] = useState<Locale>(
+    isLocale(wedding.default_locale) ? wedding.default_locale : "en",
+  );
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +119,7 @@ function WeddingSettingsForm({
         address_country: addressCountry.trim() || null,
         address_visibility: addressVisibility,
         guest_count_target: guestTarget.trim() ? parseInt(guestTarget, 10) : null,
+        default_locale: defaultLocale,
         style_vibe: styleVibe.trim() || null,
       });
       setWedding(updated);
@@ -328,6 +333,23 @@ function WeddingSettingsForm({
             onChange={(e) => setGuestTarget(e.target.value)}
             placeholder="120"
           />
+        </div>
+        <div className="field">
+          <label htmlFor="dl">{t.account.defaultLocaleLabel}</label>
+          <select
+            id="dl"
+            value={defaultLocale}
+            onChange={(e) => setDefaultLocale(e.target.value as Locale)}
+          >
+            {LOCALES.map((code) => (
+              <option key={code} value={code}>
+                {getDictionary(code).lang[code]}
+              </option>
+            ))}
+          </select>
+          <div style={{ fontSize: 12, color: T.faint, marginTop: 6 }}>
+            {t.account.defaultLocaleHint}
+          </div>
         </div>
         <div className="field">
           <label htmlFor="sv">{t.account.styleLabel}</label>

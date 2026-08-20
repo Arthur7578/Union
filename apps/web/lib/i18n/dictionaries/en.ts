@@ -589,6 +589,9 @@ export const en = {
     addressVisibilityFullError:
       "Enter the venue name, street address, city, and zip / postal code before sharing the full address.",
     guestTargetLabel: "Guest count · target",
+    defaultLocaleLabel: "Language your guests read",
+    defaultLocaleHint:
+      "The language your invitation, forms and reminders are written for. It's the fallback, not the rule: a guest whose browser is set to another language gets that one, and you can pin a language for any one guest from their page.",
     styleLabel: "Style & vibe",
     stylePlaceholder: "Garden · warm neutrals · relaxed",
     manageSection: "Manage",

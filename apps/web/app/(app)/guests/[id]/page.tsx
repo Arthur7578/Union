@@ -34,6 +34,7 @@ import { NewRelativeForm } from "@/components/NewRelativeForm";
 import { RelationshipCombobox } from "@/components/RelationshipCombobox";
 import { SmsInviteModal } from "@/components/SmsInviteModal";
 import { DEFAULT_SMS_TEMPLATE, resolveSmsTemplate } from "@/lib/sms";
+import { DEFAULT_LOCALE, getDictionary, isLocale, type Locale } from "@/lib/i18n";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 
 const STATUS_LABEL: Record<
@@ -44,6 +45,12 @@ const STATUS_LABEL: Record<
   declined: { text: "Can't make it", tone: "sand" },
   pending: { text: "Awaiting reply", tone: "amber" },
 };
+
+/** "English" / "Français" — each language named in itself, the way the
+ *  switcher a guest sees names it. */
+function languageName(locale: Locale): string {
+  return getDictionary(locale).lang[locale];
+}
 
 const SUGGESTED_ROLES = [
   "Maid of honor",
@@ -223,6 +230,17 @@ export default function GuestDetailPage() {
 
   const status = guest.rsvps?.status ?? "pending";
   const sl = STATUS_LABEL[status];
+
+  // The language this guest lands in when nobody has said otherwise, and the
+  // one they picked for themselves if they ever did — both shown next to the
+  // override field so it's clear what leaving it blank actually means.
+  const weddingDefault = wedding?.default_locale;
+  const weddingLocale: Locale = isLocale(weddingDefault)
+    ? weddingDefault
+    : DEFAULT_LOCALE;
+  const guestChoice: Locale | null = isLocale(guest.chosen_locale)
+    ? guest.chosen_locale
+    : null;
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1183,20 +1201,32 @@ export default function GuestDetailPage() {
           </datalist>
         </div>
         <div className="field">
-          <label htmlFor="lg">Language</label>
+          <label htmlFor="lg">Language override</label>
           <select
             id="lg"
             value={guestLocale}
             onChange={(e) => setGuestLocale(e.target.value as "" | "en" | "fr")}
           >
-            <option value="">— Let their device decide —</option>
+            <option value="">
+              {`— None · their browser, then ${languageName(weddingLocale)} —`}
+            </option>
             <option value="en">English</option>
             <option value="fr">Français</option>
           </select>
           <div style={{ fontSize: 12, color: T.faint, marginTop: 5, lineHeight: 1.45 }}>
-            The language their invitation opens in. Left unset, it follows
-            their browser. If they pick a language themselves, that wins.
+            Only for a guest whose language you know better than their device
+            does. Left as None, their invitation opens in whatever their
+            browser asks for, and falls back to{" "}
+            {languageName(weddingLocale)} — your wedding&apos;s language,
+            changed in Your wedding.
           </div>
+          {guestChoice ? (
+            <div style={{ fontSize: 12, color: T.ink2, marginTop: 6, lineHeight: 1.45 }}>
+              {guest.first_name} switched to {languageName(guestChoice)} in
+              their invitation. That&apos;s what they see, whatever you set
+              here.
+            </div>
+          ) : null}
         </div>
         {rooms.length > 0 && (
           <div className="field">

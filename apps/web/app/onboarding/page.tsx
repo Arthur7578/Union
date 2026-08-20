@@ -8,10 +8,10 @@ import { Button, Loading } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { useWedding } from "@/lib/wedding";
 import { createWedding } from "@/lib/data";
-import { useT } from "@/lib/i18n/client";
+import { useLocale } from "@/lib/i18n/client";
 
 export default function OnboardingPage() {
-  const t = useT();
+  const { t, locale } = useLocale();
   const { session, loading: authLoading } = useAuth();
   const { wedding, loading: wLoading, setWedding } = useWedding();
   const router = useRouter();
@@ -50,6 +50,11 @@ export default function OnboardingPage() {
         event_date: eventDate || null,
         venue_name: venueName.trim() || null,
         venue_address: null,
+        // The language they're planning in is the best first guess at the
+        // language they'll write to their guests in. Changed any time from
+        // Your wedding, and never the last word — a guest's browser and any
+        // per-guest override both outrank it.
+        default_locale: locale,
       });
       setWedding(w);
       router.replace("/today");

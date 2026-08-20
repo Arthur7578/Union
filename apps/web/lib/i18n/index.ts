@@ -11,12 +11,19 @@ export const dictionaries: Record<Locale, Dictionary> = { en, fr };
  * server by the root layout so the first render matches their choice. */
 export const LOCALE_COOKIE = "union.locale";
 
-/** Pick the best-matching locale for an `Accept-Language` header value.
- * We only match on the primary language subtag ("fr-CA" → "fr"). */
-export function pickLocaleFromAcceptLanguage(
+/** The best-matching locale for an `Accept-Language` header value, or null
+ * when the browser asked for nothing this app ships. We only match on the
+ * primary language subtag ("fr-CA" → "fr").
+ *
+ * Returning null rather than the default is the point: "this reader's browser
+ * asks for French" and "we know nothing about this reader" are different
+ * facts, and guest-language ranking has to tell them apart — a real signal
+ * about the guest outranks a wedding-wide fallback, and a non-answer doesn't.
+ */
+export function detectLocaleFromAcceptLanguage(
   header: string | null | undefined,
-): Locale {
-  if (!header) return DEFAULT_LOCALE;
+): Locale | null {
+  if (!header) return null;
   const candidates = header
     .split(",")
     .map((part) => {
@@ -30,7 +37,16 @@ export function pickLocaleFromAcceptLanguage(
     const primary = tag.split("-")[0] as Locale;
     if (LOCALES.includes(primary)) return primary;
   }
-  return DEFAULT_LOCALE;
+  return null;
+}
+
+/** Same, but answering "which language do we render in" — for screens with no
+ * wedding behind them (sign-in, the marketing page), where the app default is
+ * the only fallback there is. */
+export function pickLocaleFromAcceptLanguage(
+  header: string | null | undefined,
+): Locale {
+  return detectLocaleFromAcceptLanguage(header) ?? DEFAULT_LOCALE;
 }
 
 export function isLocale(value: unknown): value is Locale {
