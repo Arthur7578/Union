@@ -4,7 +4,15 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
-import type { GuestGroup, RoomBlock, RsvpStatus, SeatingTable } from "@union/shared";
+import type {
+  Form,
+  FormAnswers,
+  GuestGroup,
+  RoomBlock,
+  RsvpStatus,
+  SeatingTable,
+} from "@union/shared";
+import { resolveRsvpFields } from "@union/shared";
 import {
   addGuestGroup,
   addGuestRelationship,
@@ -12,20 +20,26 @@ import {
   clearRsvp,
   createGuestWithLinks,
   deleteGuest,
+  fetchForms,
   fetchGuest,
+  fetchGuestFormAnswers,
   fetchGuestGroups,
   fetchGuestLinks,
   fetchGuests,
   fetchRoomBlocks,
   fetchSeatingTables,
+  formQuestions,
+  formStatus,
   removeGuestFromGroup,
   removeGuestRelationship,
   updateGuest,
   upsertRsvp,
+  type GuestFormAnswers,
   type GuestLink,
   type GuestWithRsvp,
   type NewRelatedGuest,
 } from "@/lib/data";
+import { answeredCount, readableAnswers } from "@/lib/formAnswers";
 import { useWedding } from "@/lib/wedding";
 import { Button, Card, SectionLabel, Loading, StatusPill } from "@/components/ui";
 import { BackHeader } from "@/components/BackHeader";
@@ -35,6 +49,7 @@ import { RelationshipCombobox } from "@/components/RelationshipCombobox";
 import { SmsInviteModal } from "@/components/SmsInviteModal";
 import { DEFAULT_SMS_TEMPLATE, resolveSmsTemplate } from "@/lib/sms";
 import { DEFAULT_LOCALE, getDictionary, isLocale, type Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 
 const STATUS_LABEL: Record<
@@ -68,6 +83,7 @@ export default function GuestDetailPage() {
   const id = params?.id;
   const router = useRouter();
   const { wedding } = useWedding();
+  const { locale: appLocale } = useLocale();
   const [guest, setGuest] = useState<GuestWithRsvp | null | undefined>(undefined);
 
   const [firstNameV, setFirstNameV] = useState("");
@@ -144,6 +160,14 @@ export default function GuestDetailPage() {
   const [rooms, setRooms] = useState<RoomBlock[]>([]);
   const [tables, setTables] = useState<SeatingTable[]>([]);
 
+  // What this guest has told the couple in the forms beyond the RSVP, and
+  // what the RSVP itself still asks. Both belong on this page: with dietary
+  // needs collected in a details form, the RSVP card alone stops being the
+  // whole answer to "what does this person eat".
+  const [formAnswers, setFormAnswers] = useState<GuestFormAnswers[] | null>(null);
+  const [formAnswersError, setFormAnswersError] = useState<string | null>(null);
+  const [rsvpForm, setRsvpForm] = useState<Form | null>(null);
+
   useEffect(() => {
     if (!id) return;
     fetchGuest(id)
@@ -179,6 +203,44 @@ export default function GuestDetailPage() {
         setLinksError(e instanceof Error ? e.message : "Couldn't load links.");
       });
   }, [id]);
+
+  // Relatives this guest answers *for* — an outgoing link is the same
+  // direction the RSVP and per-person forms let them reply in.
+  const dependents = links.filter((l) => l.direction === "outgoing");
+  const dependentIds = dependents.map((l) => l.guest.id).join(",");
+
+  useEffect(() => {
+    if (!wedding || !id) return;
+    let ok = true;
+    const relativeIds = dependentIds ? dependentIds.split(",") : [];
+    fetchGuestFormAnswers(wedding.id, id, relativeIds)
+      .then((rows) => {
+        if (!ok) return;
+        setFormAnswers(rows);
+        setFormAnswersError(null);
+      })
+      .catch((e) => {
+        if (!ok) return;
+        setFormAnswers([]);
+        setFormAnswersError(
+          e instanceof Error ? e.message : "Couldn't load form answers.",
+        );
+      });
+    fetchForms(wedding.id)
+      .then((forms) => {
+        if (!ok) return;
+        setRsvpForm(
+          forms.find((f) => f.kind === "rsvp" && f.purpose === "primary") ?? null,
+        );
+      })
+      .catch(() => {});
+    return () => {
+      ok = false;
+    };
+    // Keyed on the joined ids rather than the links array: the array is a new
+    // reference on every links reload, and refetching answers for an
+    // unchanged household is a query nobody asked for.
+  }, [wedding, id, dependentIds]);
 
   useEffect(() => {
     if (!wedding) return;
@@ -891,6 +953,22 @@ export default function GuestDetailPage() {
                 onChange={(e) => setRsvpDiet(e.target.value)}
                 placeholder="Vegetarian, gluten-free…"
               />
+              {/* Recording it here always works. Saying so matters when the
+                  RSVP doesn't ask: otherwise an empty field reads as "they
+                  didn't tell us" rather than "we didn't ask them here". */}
+              {rsvpForm && !resolveRsvpFields(rsvpForm.rsvp_fields).dietary && (
+                <div style={{ fontSize: 12, color: T.faint, marginTop: 5, lineHeight: 1.45 }}>
+                  Your RSVP doesn&apos;t ask guests this — whatever you record
+                  here is yours, not theirs.{" "}
+                  <Link
+                    href={`/guests/forms/${rsvpForm.id}`}
+                    className="u-link"
+                    style={{ color: T.accentInk }}
+                  >
+                    Change what the RSVP asks
+                  </Link>
+                </div>
+              )}
             </div>
             <div className="field">
               <label htmlFor="rm">A note from them</label>
@@ -929,6 +1007,183 @@ export default function GuestDetailPage() {
           </div>
         )}
       </Card>
+
+      <SectionLabel>Form answers</SectionLabel>
+      {formAnswers === null ? (
+        <Card>
+          <div style={{ fontSize: 13, color: T.muted }}>Loading answers…</div>
+        </Card>
+      ) : formAnswers.length === 0 ? (
+        <Card>
+          <div style={{ fontSize: 13, color: T.muted, lineHeight: 1.5 }}>
+            {formAnswersError ??
+              "The RSVP is your only form so far. Anything else you ask — meals, allergies, travel — shows up here per guest."}{" "}
+            <Link href="/guests/forms" className="u-link" style={{ color: T.accentInk }}>
+              Your forms
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        formAnswers.map(({ form, response, relatives }) => {
+          const questions = formQuestions(form);
+          const rows = readableAnswers(
+            questions,
+            (response?.answers ?? null) as FormAnswers | null,
+            appLocale,
+          );
+          const answered = answeredCount(rows);
+          const status = formStatus(form);
+          const submitted = response
+            ? new Date(response.submitted_at).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+              })
+            : null;
+          return (
+            <Card key={form.id} style={{ marginBottom: 10 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  marginBottom: 8,
+                }}
+              >
+                <Link
+                  href={`/guests/forms/${form.id}`}
+                  className="u-link"
+                  style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}
+                >
+                  {form.title}
+                </Link>
+                {/* Same tones the forms hub uses, so a form's state reads
+                    the same wherever the couple meets it. */}
+                <StatusPill
+                  tone={
+                    status === "live"
+                      ? "green"
+                      : status === "scheduled"
+                        ? "blue"
+                        : status === "closed"
+                          ? "accent"
+                          : "sand"
+                  }
+                >
+                  {status === "live"
+                    ? "Live"
+                    : status === "scheduled"
+                      ? "Scheduled"
+                      : status === "closed"
+                        ? "Closed"
+                        : "Draft"}
+                </StatusPill>
+                <span style={{ fontSize: 12, color: T.faint }}>
+                  {response
+                    ? `${answered} of ${questions.length} answered${submitted ? ` · ${submitted}` : ""}`
+                    : status === "draft" || status === "scheduled"
+                      ? "Not sent yet"
+                      : "No answer yet"}
+                  {form.per_person && " · asked per person"}
+                </span>
+              </div>
+
+              {response ? (
+                rows.length === 0 ? (
+                  <div style={{ fontSize: 13, color: T.muted }}>
+                    They replied, but this form has no questions.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {rows.map((row) => (
+                      <div key={row.key}>
+                        <div style={{ fontSize: 11.5, color: T.faint }}>
+                          {row.question}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 14,
+                            color: row.answer ? T.ink2 : T.faint,
+                            fontStyle: row.answer ? "normal" : "italic",
+                          }}
+                        >
+                          {row.answer ?? "Left blank"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : (
+                <div style={{ fontSize: 13, color: T.muted, lineHeight: 1.5 }}>
+                  {status === "live"
+                    ? `${guest.first_name} hasn't answered this one yet.`
+                    : status === "closed"
+                      ? "This form closed without an answer from them."
+                      : "Guests can't see this form yet."}
+                </div>
+              )}
+
+              {/* What they answered for the people they're bringing. Each of
+                  these also lives on that person's own page — it's here
+                  because a caterer reading one page shouldn't have to click
+                  through a household to count the plates. */}
+              {relatives.length > 0 && (
+                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                  {relatives.map(({ guestId, response: theirs }) => {
+                    const theirRows = readableAnswers(
+                      questions,
+                      (theirs.answers ?? null) as FormAnswers | null,
+                      appLocale,
+                    );
+                    const name =
+                      dependents.find((l) => l.guest.id === guestId)?.guest ?? null;
+                    return (
+                      <div
+                        key={guestId}
+                        style={{
+                          borderTop: `1px solid ${T.line}`,
+                          paddingTop: 10,
+                        }}
+                      >
+                        <div style={{ fontSize: 12, color: T.faint, marginBottom: 6 }}>
+                          Answered for{" "}
+                          <Link
+                            href={`/guests/${guestId}`}
+                            className="u-link"
+                            style={{ color: T.accentInk }}
+                          >
+                            {name
+                              ? `${name.first_name} ${name.last_name ?? ""}`.trim()
+                              : "a relative"}
+                          </Link>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {theirRows.map((row) => (
+                            <div key={row.key}>
+                              <div style={{ fontSize: 11.5, color: T.faint }}>
+                                {row.question}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 14,
+                                  color: row.answer ? T.ink2 : T.faint,
+                                  fontStyle: row.answer ? "normal" : "italic",
+                                }}
+                              >
+                                {row.answer ?? "Left blank"}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          );
+        })
+      )}
 
       <SectionLabel>Relationships</SectionLabel>
       <Card>

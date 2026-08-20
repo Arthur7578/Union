@@ -9,9 +9,18 @@ import type {
   FormGuestCopy,
   LocalizedText,
   RsvpBlockCopy,
+  RsvpFieldKey,
+  RsvpFields,
   RsvpQuestion,
 } from "@union/shared";
-import { isAutoTranslated, setTextForLocale, textForLocale } from "@union/shared";
+import {
+  RSVP_FIELD_KEYS,
+  isAutoTranslated,
+  resolveRsvpFields,
+  setTextForLocale,
+  textForLocale,
+  toStoredRsvpFields,
+} from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
   deleteForm,
@@ -220,6 +229,12 @@ export default function FormBuilderPage() {
   const [notFound, setNotFound] = useState(false);
   const [questions, setQuestions] = useState<RsvpQuestion[]>([]);
   const [rsvpCopyState, setRsvpCopyState] = useState<RsvpBlockCopy>({});
+  // Which extras the RSVP block asks for. Held fully resolved (one boolean
+  // per field) and narrowed back down to the "off" decisions on save, so a
+  // field added to the block later starts out asked-for here too.
+  const [asksState, setAsksState] = useState<RsvpFields>(() =>
+    resolveRsvpFields(null),
+  );
   const [guestCopyState, setGuestCopyState] = useState<FormGuestCopy>({});
   // Authoring starts in the couple's own app language — the version they're
   // most likely to write first.
@@ -228,6 +243,10 @@ export default function FormBuilderPage() {
   const [translateHint, setTranslateHint] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [published, setPublished] = useState(false);
+  // Whether this custom form is asked once per person or once per invitation.
+  // A meal choice is per person; a song request isn't — so it's the
+  // organiser's call, not a default worth guessing at.
+  const [perPerson, setPerPerson] = useState(false);
   const [opensAt, setOpensAt] = useState("");
   const [closesAt, setClosesAt] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -249,9 +268,11 @@ export default function FormBuilderPage() {
         setForm(f);
         setQuestions(formQuestions(f));
         setRsvpCopyState(rsvpCopy(f));
+        setAsksState(resolveRsvpFields(f.rsvp_fields));
         setGuestCopyState(formGuestCopy(f));
         setTitle(f.title);
         setPublished(f.published);
+        setPerPerson(f.per_person);
         setOpensAt(toDateInput(f.opens_at));
         setClosesAt(toDateInput(f.closes_at));
       })
@@ -465,6 +486,15 @@ export default function FormBuilderPage() {
         ...(form.kind === "rsvp"
           ? { rsvp_copy: rsvpCopyState }
           : { guest_copy: guestCopyState }),
+        // Only the primary form carries the ask list — a reconfirmation
+        // reuses the primary block, so writing a second map here would only
+        // create one that can drift from the block guests actually see.
+        ...(form.kind === "rsvp" && form.purpose === "primary"
+          ? { rsvp_fields: toStoredRsvpFields(asksState) }
+          : {}),
+        // The RSVP block is per person by construction, so this only ever
+        // applies to a custom form.
+        ...(form.kind === "custom" ? { per_person: perPerson } : {}),
       });
       setForm(updated);
       setDirty(false);
@@ -612,6 +642,36 @@ export default function FormBuilderPage() {
             markDirty();
           }}
         />
+      )}
+
+      {/* ---------------- What the RSVP asks for ---------------- */}
+      {form.kind === "rsvp" && (
+        form.purpose === "primary" ? (
+          <RsvpAsksEditor
+            asks={asksState}
+            onChange={(next) => {
+              setAsksState(next);
+              markDirty();
+            }}
+          />
+        ) : (
+          <SectionBlock
+            kicker="What this block asks · what guests see"
+            hint="A reconfirmation is your RSVP block shown again, later — so it asks whatever the RSVP asks."
+            tone={{ bg: T.accentSoft, border: T.accentBorder, fg: T.accentInk }}
+          >
+            <Card style={{ padding: "13px 15px" }}>
+              <div style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.45 }}>
+                Same reply buttons, same extra questions. Change what&apos;s
+                asked on the{" "}
+                <Link href="/guests/forms" className="u-link" style={{ color: T.accentInk }}>
+                  RSVP form
+                </Link>{" "}
+                and this follows.
+              </div>
+            </Card>
+          </SectionBlock>
+        )
       )}
 
       {/* ---------------- Custom form headline (guarded) ---------------- */}
@@ -922,6 +982,31 @@ export default function FormBuilderPage() {
           </div>
         </Card>
 
+        {form.kind === "custom" && (
+          <Card style={{ padding: "13px 15px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Switch
+                on={perPerson}
+                onChange={() => {
+                  setPerPerson((v) => !v);
+                  markDirty();
+                }}
+                label="Ask once per person"
+              />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink }}>
+                  {perPerson ? "Asked for each person" : "One answer per invitation"}
+                </div>
+                <div style={{ fontSize: 12, color: T.faint, marginTop: 1, lineHeight: 1.45 }}>
+                  {perPerson
+                    ? "Guests answer for themselves and for each partner or child they're bringing — the way the RSVP already works. Every answer lands on that person's own page."
+                    : "One set of answers for the whole invitation. Right for a song request; not for a meal choice, where you need one answer per plate."}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {form.kind === "rsvp" && form.purpose === "primary" && wedding && (
           <ExtraGuestsRights wedding={wedding} refresh={refresh} />
         )}
@@ -1115,6 +1200,82 @@ function CopyField({
         }}
       />
     </Card>
+  );
+}
+
+/** What the RSVP block asks for besides the reply itself.
+ *
+ *  The reply is a system block — its two buttons are wired to real
+ *  rsvp_status values and aren't the couple's to remove. Everything around it
+ *  is a choice, and until now it wasn't: a dietary field for the guest, one
+ *  per companion and a message box were hardcoded into every RSVP of every
+ *  wedding. A couple collecting meals and allergies in a later details form
+ *  was asking the same question twice, landing two answers in two tables with
+ *  nothing to say which the caterer should believe.
+ *
+ *  Turning one off is presentation only. Nothing already answered is deleted,
+ *  it comes straight back if the field is switched on again, and the couple
+ *  can still record a guest's allergies by hand from that guest's page — this
+ *  governs what guests are *asked*, not what the couple may know. */
+function RsvpAsksEditor({
+  asks,
+  onChange,
+}: {
+  asks: RsvpFields;
+  onChange: (next: RsvpFields) => void;
+}) {
+  const COPY: Record<RsvpFieldKey, { label: string; sub: string; off: string }> = {
+    dietary: {
+      label: "Dietary needs & allergies",
+      sub: "One line from the guest, saved on their RSVP.",
+      off: "Guests aren't asked. Notes already given are kept, and you can still record them on a guest's page.",
+    },
+    companion_dietary: {
+      label: "Dietary needs for each companion",
+      sub: "Asked once per partner or child they're bringing.",
+      off: "Companions aren't asked. What they've already given is kept.",
+    },
+    note: {
+      label: "A message for you",
+      sub: "A free line for whatever they want to tell you.",
+      off: "No message box in the RSVP. Messages already sent are kept.",
+    },
+  };
+
+  const askedCount = RSVP_FIELD_KEYS.filter((k) => asks[k]).length;
+
+  return (
+    <SectionBlock
+      kicker="What the RSVP asks · besides the reply"
+      hint="Coming or not coming is always asked — these are the extras. Turn one off when you collect it in another form, so nobody answers the same question twice."
+      tone={{ bg: T.accentSoft, border: T.accentBorder, fg: T.accentInk }}
+    >
+      {RSVP_FIELD_KEYS.map((key) => (
+        <Card key={key} style={{ padding: "13px 15px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink }}>
+                {COPY[key].label}
+              </div>
+              <div style={{ fontSize: 12, color: T.faint, marginTop: 2, lineHeight: 1.45 }}>
+                {asks[key] ? COPY[key].sub : COPY[key].off}
+              </div>
+            </div>
+            <Switch
+              on={asks[key]}
+              onChange={() => onChange({ ...asks, [key]: !asks[key] })}
+              label={COPY[key].label}
+            />
+          </div>
+        </Card>
+      ))}
+
+      <div style={{ fontSize: 12, color: T.faint, padding: "0 4px", lineHeight: 1.45 }}>
+        {askedCount === 0
+          ? "Your RSVP asks for the reply and nothing else. Whatever else you need, ask it in another form — answers land on each guest's page either way."
+          : "Answers show up on each guest's page, next to whatever they've told you in your other forms."}
+      </div>
+    </SectionBlock>
   );
 }
 

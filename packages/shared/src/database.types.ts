@@ -102,10 +102,12 @@ export type Database = {
           id: string
           kind: string
           opens_at: string | null
+          per_person: boolean
           published: boolean
           purpose: string
           questions: Json
           rsvp_copy: Json
+          rsvp_fields: Json
           sort_order: number
           title: string
           wedding_id: string
@@ -117,10 +119,12 @@ export type Database = {
           id?: string
           kind?: string
           opens_at?: string | null
+          per_person?: boolean
           published?: boolean
           purpose?: string
           questions?: Json
           rsvp_copy?: Json
+          rsvp_fields?: Json
           sort_order?: number
           title: string
           wedding_id: string
@@ -132,10 +136,12 @@ export type Database = {
           id?: string
           kind?: string
           opens_at?: string | null
+          per_person?: boolean
           published?: boolean
           purpose?: string
           questions?: Json
           rsvp_copy?: Json
+          rsvp_fields?: Json
           sort_order?: number
           title?: string
           wedding_id?: string

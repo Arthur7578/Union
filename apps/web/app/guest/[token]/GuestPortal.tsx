@@ -8,7 +8,8 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { clearActiveGuestIdentity } from "@/lib/guestIdentity";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { submitGuestRsvp } from "@/lib/submitRsvp";
-import { enabledGuestModules, normalizeQuestions } from "@union/shared";
+import { hasAnyAnswer, missingRequired } from "@/lib/formAnswers";
+import { enabledGuestModules, normalizeQuestions, resolveRsvpFields } from "@union/shared";
 import type { FormAnswers, GuestModuleKey, RsvpQuestion } from "@union/shared";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
@@ -195,7 +196,14 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     })),
   );
   const [activeCustomFormId, setActiveCustomFormId] = useState<string | null>(null);
-  const [customDraft, setCustomDraft] = useState<FormAnswers>({});
+  // One draft per person, keyed by guest id — the invited guest, plus each
+  // relative they're bringing when the couple asks this form per person. A
+  // form asked once per invitation only ever has the one key, so the same
+  // state covers both shapes.
+  const [customDrafts, setCustomDrafts] = useState<Record<string, FormAnswers>>({});
+  // Whose answers are on screen. Switching person keeps every draft, so a
+  // guest can fill three children's meals and save once.
+  const [customPersonId, setCustomPersonId] = useState<string>(invitation.guest.id);
   const [customSubmitting, setCustomSubmitting] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
 
@@ -353,6 +361,16 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   };
 
   const coupleNames = `${invitation.wedding.partner_one} & ${invitation.wedding.partner_two}`;
+  // The couple by name where we have both, and "the couple" where we don't —
+  // a label reading "a message for null & null" is worse than a generic one.
+  const bothPartners = [invitation.wedding.partner_one, invitation.wedding.partner_two]
+    .map((name) => (name ?? "").trim())
+    .every(Boolean);
+  const coupleLabel = bothPartners
+    ? coupleNames
+    : locale === "fr"
+      ? "les mariés"
+      : "the couple";
 
   const handleGuestSignOut = async () => {
     setSigningOut(true);
@@ -415,6 +433,18 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     primaryDefaults.labelDeclined,
   );
 
+  // Which extras this RSVP asks for beyond the reply itself. The couple turns
+  // them off in the form builder — typically because they collect the same
+  // thing in a later form, and asking twice leaves two answers and no way to
+  // tell which one the caterer should believe. A field they've turned off is
+  // never rendered here; anything a guest already answered stays stored and
+  // comes back the moment it's turned on again.
+  //
+  // The reconfirmation block reads the primary form's map rather than one of
+  // its own: it *is* the primary block, shown later with different framing —
+  // the same reason its two reply buttons come from the primary's labels.
+  const asks = resolveRsvpFields(invitation.rsvp_form?.fields);
+
   // The optional late "still coming?" touchpoint — same RSVP block, shown
   // only when the organiser has published it and it's within its window.
   const reconfirmation = invitation.rsvp_reconfirmation ?? null;
@@ -454,9 +484,67 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
   const activeCustomForm = customForms.find((f) => f.id === activeCustomFormId) ?? null;
 
+  const guestFullName = `${invitation.guest.first_name} ${invitation.guest.last_name || ""}`.trim();
+
+  /** Everyone a given form is answered for: just the invited guest, or them
+   *  plus the relatives they're bringing when the couple asks it per person.
+   *  Same household the RSVP block already answers for, same order. */
+  const respondentsFor = (
+    form: NonNullable<DBInvitation["custom_forms"]>[number] | null,
+  ): Array<{ id: string; name: string }> => {
+    const self = { id: invitation.guest.id, name: guestFullName };
+    if (!form?.per_person) return [self];
+    return [
+      self,
+      ...companions.map((c) => ({
+        id: c.id,
+        name: `${c.first_name} ${c.last_name || ""}`.trim(),
+      })),
+    ];
+  };
+
+  const activeRespondents = respondentsFor(activeCustomForm);
+  const activeDraft = customDrafts[customPersonId] ?? {};
+
+  /** How many people already have answers on record for a per-person form —
+   *  the "2 of 4" on its card, so a half-filled household is visible without
+   *  opening the form.
+   *
+   *  Counts submitted replies, not filled-in fields: a form of optional
+   *  questions someone sent back empty is a considered "nothing to declare"
+   *  and has to stop nagging them. Whether a person has been *started* is a
+   *  different question, and that's the one the chips in the modal ask. */
+  const customFormAnsweredCount = (
+    f: NonNullable<DBInvitation["custom_forms"]>[number],
+  ): number =>
+    respondentsFor(f).filter((r) =>
+      r.id === invitation.guest.id
+        ? f.answers != null
+        : f.companion_answers?.[r.id] != null,
+    ).length;
+
+  const patchActiveDraft = (
+    update: (prev: FormAnswers) => FormAnswers,
+  ) =>
+    setCustomDrafts((prev) => ({
+      ...prev,
+      [customPersonId]: update(prev[customPersonId] ?? {}),
+    }));
+
   const openCustomForm = (formId: string) => {
     const f = customForms.find((cf) => cf.id === formId);
-    setCustomDraft(f?.answers ?? {});
+    // Every person this form is answered for opens on what they already
+    // said — a blank form that silently overwrites an answer on save is the
+    // one thing a second visit must not do.
+    const drafts: Record<string, FormAnswers> = {};
+    for (const person of respondentsFor(f ?? null)) {
+      drafts[person.id] =
+        person.id === invitation.guest.id
+          ? (f?.answers ?? {})
+          : (f?.companion_answers?.[person.id] ?? {});
+    }
+    setCustomDrafts(drafts);
+    setCustomPersonId(invitation.guest.id);
     setCustomError(null);
     setActiveCustomFormId(formId);
   };
@@ -464,26 +552,68 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const handleSubmitCustomForm = async () => {
     if (!activeCustomForm) return;
     const questions = activeCustomForm.questions;
-    const missing = questions.some((q) => {
-      if (!q.required) return false;
-      const v = customDraft[q.id];
-      return Array.isArray(v) ? v.length === 0 : !v || !v.trim();
-    });
-    if (missing) {
-      setCustomError(locale === "fr" ? "Merci de répondre aux questions obligatoires." : "Please answer the required questions.");
+    const people = respondentsFor(activeCustomForm);
+
+    // The guest themself always submits; a relative only if there is
+    // something to submit for them. Leaving a child untouched means "not
+    // answering for them yet", not "no preferences" — sending blanks would
+    // record the second and read to the couple as a considered reply.
+    const toSubmit = people.filter(
+      (person) =>
+        person.id === invitation.guest.id ||
+        hasAnyAnswer(customDrafts[person.id]),
+    );
+
+    for (const person of toSubmit) {
+      const missing = missingRequired(questions, customDrafts[person.id]);
+      if (missing.length === 0) continue;
+      // Named, because on a per-person form "you missed a required question"
+      // without saying whose sends the guest hunting through four tabs.
+      setCustomPersonId(person.id);
+      setCustomError(
+        people.length > 1
+          ? locale === "fr"
+            ? `Merci de répondre aux questions obligatoires pour ${person.name}.`
+            : `Please answer the required questions for ${person.name}.`
+          : locale === "fr"
+            ? "Merci de répondre aux questions obligatoires."
+            : "Please answer the required questions.",
+      );
       return;
     }
+
     setCustomSubmitting(true);
     setCustomError(null);
     try {
       const supabase = getBrowserSupabase();
-      const { error } = await supabase.rpc("submit_form_response", {
-        p_token: token,
-        p_form_id: activeCustomForm.id,
-        p_answers: customDraft,
-      });
-      if (error) throw error;
-      setCustomForms((prev) => prev.map((f) => (f.id === activeCustomForm.id ? { ...f, answers: customDraft } : f)));
+      for (const person of toSubmit) {
+        const { error } = await supabase.rpc("submit_form_response", {
+          p_token: token,
+          p_form_id: activeCustomForm.id,
+          p_answers: customDrafts[person.id] ?? {},
+          // Omitted for the guest themself, so a form answered once per
+          // invitation goes through exactly the call it always did.
+          ...(person.id === invitation.guest.id
+            ? {}
+            : { p_for_guest_id: person.id }),
+        });
+        if (error) throw error;
+      }
+      setCustomForms((prev) =>
+        prev.map((f) => {
+          if (f.id !== activeCustomForm.id) return f;
+          const companionAnswers = { ...(f.companion_answers ?? {}) };
+          for (const person of toSubmit) {
+            if (person.id === invitation.guest.id) continue;
+            companionAnswers[person.id] = customDrafts[person.id] ?? {};
+          }
+          return {
+            ...f,
+            answers: customDrafts[invitation.guest.id] ?? {},
+            companion_answers: companionAnswers,
+          };
+        }),
+      );
       setActiveCustomFormId(null);
     } catch (e) {
       setCustomError(e instanceof Error ? e.message : (locale === "fr" ? "Erreur lors de l'enregistrement." : "Couldn't save your answers."));
@@ -1189,7 +1319,14 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               {/* Custom forms — organiser-authored, shown once published */}
               {customForms.map((f) => {
                 const state = customFormState(f);
-                const answered = !!f.answers;
+                const people = respondentsFor(f).length;
+                const answeredPeople = customFormAnsweredCount(f);
+                // A per-person form is only "completed" once everyone it asks
+                // about has replied — otherwise a household with three
+                // children answered for one would look finished.
+                const answered = f.per_person
+                  ? answeredPeople === people
+                  : f.answers != null;
                 return (
                   <div key={f.id} className="form-card" style={{ opacity: state === "scheduled" ? 0.6 : 1 }}>
                     <div>
@@ -1209,6 +1346,14 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                       </h3>
                       <p style={{ color: "var(--muted)", fontSize: "13px", margin: 0, maxWidth: "400px" }}>
                         {f.questions.length} {locale === "fr" ? "question(s)" : `question${f.questions.length === 1 ? "" : "s"}`}
+                        {f.per_person && people > 1 && (
+                          <>
+                            {" · "}
+                            {locale === "fr"
+                              ? `${answeredPeople} sur ${people} personnes`
+                              : `${answeredPeople} of ${people} people`}
+                          </>
+                        )}
                       </p>
                     </div>
                     <button
@@ -1553,7 +1698,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 </button>
               </div>
 
-              {primaryRsvp === "attending" && (
+              {primaryRsvp === "attending" && asks.dietary && (
                 <div className="field" style={{ marginTop: "16px" }}>
                   <label>🍏 {locale === "fr" ? "Vos restrictions alimentaires / allergies" : "Your Dietary Restrictions"}</label>
                   <input
@@ -1600,7 +1745,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                         </button>
                       </div>
 
-                      {state.rsvp_status === "attending" && (
+                      {state.rsvp_status === "attending" && asks.companion_dietary && (
                         <input
                           type="text"
                           value={state.dietary_notes}
@@ -1720,15 +1865,17 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
             )}
 
             {/* Message to Couple */}
-            <div className="field">
-              <label>✍️ {locale === "fr" ? "Un mot pour Maya & Daniel ?" : "A message for the couple"}</label>
-              <textarea
-                value={primaryMessage}
-                onChange={(e) => setPrimaryMessage(e.target.value)}
-                placeholder={locale === "fr" ? "Hâte de fêter avec vous !" : "Can't wait to see you!"}
-                rows={3}
-              />
-            </div>
+            {asks.note && (
+              <div className="field">
+                <label>✍️ {locale === "fr" ? `Un mot pour ${coupleLabel} ?` : `A message for ${coupleLabel}`}</label>
+                <textarea
+                  value={primaryMessage}
+                  onChange={(e) => setPrimaryMessage(e.target.value)}
+                  placeholder={locale === "fr" ? "Hâte de fêter avec vous !" : "Can't wait to see you!"}
+                  rows={3}
+                />
+              </div>
+            )}
 
             <button
               className="btn-submit"
@@ -1767,6 +1914,52 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               </button>
             </div>
 
+            {/* Who this form is being answered for. Only shown when there is
+                more than one person to answer for — a single-person form must
+                not grow a tab strip it has no use for. */}
+            {activeRespondents.length > 1 && (
+              <div style={{ marginBottom: "20px" }}>
+                <p style={{ fontSize: "13px", color: "var(--muted)", margin: "0 0 8px" }}>
+                  {locale === "fr"
+                    ? "Répondez pour chaque personne que vous amenez — passez de l'une à l'autre ici, puis envoyez une seule fois."
+                    : "Answer for each person you're bringing — switch between them here, then submit once."}
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {activeRespondents.map((person) => {
+                    const on = person.id === customPersonId;
+                    const started = hasAnyAnswer(customDrafts[person.id]);
+                    return (
+                      <button
+                        key={person.id}
+                        type="button"
+                        onClick={() => {
+                          setCustomPersonId(person.id);
+                          setCustomError(null);
+                        }}
+                        style={{
+                          border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`,
+                          background: on ? "var(--accent-light)" : "#fff",
+                          color: on ? "var(--primary)" : "var(--muted)",
+                          borderRadius: "100px",
+                          padding: "7px 14px",
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {started ? "✓ " : ""}
+                        {person.id === invitation.guest.id
+                          ? locale === "fr"
+                            ? "Vous"
+                            : "You"
+                          : person.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {activeCustomForm.questions.map((q: RsvpQuestion) => (
               <div className="field" key={q.id}>
                 <label>
@@ -1777,7 +1970,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 {(q.kind === "single" || q.kind === "multi") && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {(q.options ?? []).map((opt) => {
-                      const current = customDraft[q.id];
+                      const current = activeDraft[q.id];
                       // Answers are stored as option ids, so the same choice
                       // reads back as chosen whatever language it was picked in.
                       const selected = q.kind === "single"
@@ -1788,7 +1981,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                           key={opt.id}
                           type="button"
                           onClick={() => {
-                            setCustomDraft((prev) => {
+                            patchActiveDraft((prev) => {
                               if (q.kind === "single") return { ...prev, [q.id]: opt.id };
                               const list = Array.isArray(prev[q.id]) ? (prev[q.id] as string[]) : [];
                               const next = list.includes(opt.id)
@@ -1810,15 +2003,15 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 {q.kind === "short" && (
                   <input
                     type="text"
-                    value={typeof customDraft[q.id] === "string" ? (customDraft[q.id] as string) : ""}
-                    onChange={(e) => setCustomDraft((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                    value={typeof activeDraft[q.id] === "string" ? (activeDraft[q.id] as string) : ""}
+                    onChange={(e) => patchActiveDraft((prev) => ({ ...prev, [q.id]: e.target.value }))}
                   />
                 )}
 
                 {q.kind === "comment" && (
                   <textarea
-                    value={typeof customDraft[q.id] === "string" ? (customDraft[q.id] as string) : ""}
-                    onChange={(e) => setCustomDraft((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                    value={typeof activeDraft[q.id] === "string" ? (activeDraft[q.id] as string) : ""}
+                    onChange={(e) => patchActiveDraft((prev) => ({ ...prev, [q.id]: e.target.value }))}
                     rows={3}
                   />
                 )}

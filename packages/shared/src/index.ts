@@ -34,6 +34,18 @@ export type {
   GuestModules,
   StoredGuestModules,
 } from "./guestModules";
+export {
+  RSVP_FIELD_KEYS,
+  askedRsvpFields,
+  isRsvpFieldKey,
+  resolveRsvpFields,
+  toStoredRsvpFields,
+} from "./rsvpFields";
+export type {
+  RsvpFieldKey,
+  RsvpFields,
+  StoredRsvpFields,
+} from "./rsvpFields";
 export type {
   Database,
   Json,

@@ -10,6 +10,7 @@ import type {
   Invitation,
   LocalizedText,
   RsvpQuestion,
+  StoredRsvpFields,
 } from "@union/shared";
 import { GuestPortal } from "./GuestPortal";
 import { GuestEmailGate } from "./GuestEmailGate";
@@ -28,6 +29,12 @@ export type DBInvitation = Invitation & {
     subtitle: LocalizedText | null;
     label_attending: LocalizedText | null;
     label_declined: LocalizedText | null;
+    /** Which of the block's optional fields this wedding asks for, as
+     *  stored: only the couple's "off" decisions. Absent key means asked,
+     *  so `{}` (and a missing field, from a server older than the column)
+     *  is the full set of questions. Run it through `resolveRsvpFields`
+     *  rather than reading keys directly. */
+    fields?: StoredRsvpFields;
   } | null;
   /** The optional late "still coming?" touchpoint. Only shown when
    *  published and within its opens_at/closes_at window. */
@@ -50,7 +57,15 @@ export type DBInvitation = Invitation & {
     published: boolean;
     opens_at: string | null;
     closes_at: string | null;
+    /** True when the couple asks this form once per person — the guest
+     *  answers for themselves and for each relative they're bringing, the
+     *  way the RSVP block already works. False means one answer for the
+     *  whole invitation, which is how every form behaved before this. */
+    per_person?: boolean;
     answers: FormAnswers | null;
+    /** Answers already on record for this guest's own relatives, keyed by
+     *  their guest id. Only ever their own household. */
+    companion_answers?: Record<string, FormAnswers> | null;
   }>;
 };
 
