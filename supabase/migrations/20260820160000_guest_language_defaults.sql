@@ -25,11 +25,18 @@
 --     everything: a guest who reached for the switcher has told
 --     us more than any guess could.
 --
--- Values already in guests.locale stay put and read as the
--- couple's override. A handful may be guests' own picks written
--- by the old set_guest_locale — indistinguishable now, and it
--- changes nothing they see: both outrank browser detection, and
--- neither is reached when a guest picks a language again.
+-- Every value currently in guests.locale is cleared. No couple
+-- ever stated a language for one guest on purpose: the column
+-- was a day old, the field offered no way to mean it, and
+-- guest-side writes landed there too. Keeping those rows would
+-- leave an override nobody set outranking the browser of the
+-- person actually reading — exactly the bug this migration
+-- exists to remove. They aren't moved to chosen_locale either:
+-- the column carries no record of who wrote what, and a guess
+-- promoted to "the guest chose this" would outrank every other
+-- signal forever. A guest who wants a language picks it again in
+-- one tap; on the device they already use, their cookie still
+-- has it.
 --
 -- Browser detection sits between the override and the default —
 -- it says something real about the reader, so it must not be
@@ -56,6 +63,11 @@ alter table public.guests
 
 comment on column public.guests.chosen_locale is
   'The language this guest picked themselves in their invitation, or null if they never did. Written only by set_guest_locale, and only on a deliberate switch — never a guess from browser headers. Outranks every other language signal.';
+
+-- Drop every pre-existing value: see the header. Guarded on
+-- "is not null" only to keep this off every row of a table where
+-- almost nothing has one.
+update public.guests set locale = null where locale is not null;
 
 comment on column public.guests.locale is
   'The couple''s language override for this one guest. Null means "no override" — the guest''s browser decides, then weddings.default_locale. Organiser-side only: a guest''s own pick lands in guests.chosen_locale so it can never overwrite what the couple recorded.';
