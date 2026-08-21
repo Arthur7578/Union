@@ -3,8 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
-import type { Form, FormStatus, RsvpFieldKey, RsvpQuestion } from "@union/shared";
-import { askedRsvpFields } from "@union/shared";
+import type { Form, FormStatus, RsvpQuestion } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
   addForm,
@@ -31,14 +30,6 @@ const STATUS_LABEL: Record<FormStatus, string> = {
   scheduled: "Scheduled",
   draft: "Draft",
   closed: "Closed",
-};
-
-/** How each optional RSVP field reads in the "also asks" line — short, since
- *  it's a summary of a decision made inside the form, not the decision. */
-const ASK_LABEL: Record<RsvpFieldKey, string> = {
-  dietary: "dietary needs",
-  companion_dietary: "companions' dietary needs",
-  note: "a message",
 };
 
 type Template = {
@@ -296,7 +287,6 @@ export default function FormsHubPage() {
             const status = formStatus(f);
             const questionCount = formQuestions(f).length;
             const answers = responseCounts[f.id] ?? 0;
-            const asked = askedRsvpFields(f.rsvp_fields);
             return (
               <Card
                 key={f.id}
@@ -347,22 +337,19 @@ export default function FormsHubPage() {
                         <MiniStat value={stats.waiting} label="Waiting" bg={T.amberBg} fg={T.amberInk} />
                       </div>
                     )}
-                    {/* What this RSVP asks beyond the reply, so a duplicated
-                        question is visible from the list rather than only
-                        from inside the form. */}
                     <div style={{ fontSize: 12, color: T.faint, marginTop: 10 }}>
-                      {asked.length === 0
-                        ? "Asks for the reply only"
-                        : `Also asks: ${asked.map((k) => ASK_LABEL[k]).join(" · ")}`}
+                      {questionCount === 0
+                        ? "Reply only"
+                        : `${questionCount} follow-up question${questionCount === 1 ? "" : "s"} · answered for each attendee`}
                     </div>
                   </>
                 ) : f.kind === "rsvp" && f.purpose === "reconfirmation" ? (
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 10 }}>
                     Same replies as your RSVP, a later nudge
                     {" · "}
-                    {asked.length === 0
+                    {questionCount === 0
                       ? "reply only"
-                      : `also asks: ${asked.map((k) => ASK_LABEL[k]).join(" · ")}`}
+                      : `${questionCount} follow-up question${questionCount === 1 ? "" : "s"}`}
                   </div>
                 ) : (
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 10 }}>

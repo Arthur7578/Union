@@ -14,10 +14,9 @@ import {
   canAddPartner as mayAddPartner,
   enabledGuestModules,
   normalizeQuestions,
-  resolveRsvpFields,
 } from "@union/shared";
 import type { FormAnswers, GuestModuleKey, RsvpQuestion } from "@union/shared";
-import { DEFAULT_LOCALE } from "@/lib/i18n";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
 
 /** Tab label and icon per module, in the order guests see them. Keyed by the
@@ -49,6 +48,77 @@ interface GuestPortalProps {
   token: string;
   invitation: DBInvitation;
   isDemo: boolean;
+}
+
+function FormQuestionFields({
+  questions,
+  answers,
+  locale,
+  onChange,
+}: {
+  questions: RsvpQuestion[];
+  answers: FormAnswers;
+  locale: Locale;
+  onChange: (next: FormAnswers) => void;
+}) {
+  return questions.map((question) => (
+    <div className="field" key={question.id}>
+      <label>
+        {coupleText(question.title, locale) ?? ""}
+        {question.required ? " *" : ` (${locale === "fr" ? "optionnel" : "optional"})`}
+      </label>
+
+      {(question.kind === "single" || question.kind === "multi") && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {(question.options ?? []).map((option) => {
+            const current = answers[question.id];
+            const selected = question.kind === "single"
+              ? current === option.id
+              : Array.isArray(current) && current.includes(option.id);
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  if (question.kind === "single") {
+                    onChange({ ...answers, [question.id]: option.id });
+                    return;
+                  }
+                  const list = Array.isArray(current) ? current : [];
+                  onChange({
+                    ...answers,
+                    [question.id]: list.includes(option.id)
+                      ? list.filter((id) => id !== option.id)
+                      : [...list, option.id],
+                  });
+                }}
+                className={`choice-btn ${selected ? "selected-yes" : ""}`}
+                style={{ justifyContent: "flex-start", textAlign: "left" }}
+              >
+                {selected ? "✓ " : ""}{coupleText(option.label, locale) ?? ""}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {question.kind === "short" && (
+        <input
+          type="text"
+          value={typeof answers[question.id] === "string" ? answers[question.id] as string : ""}
+          onChange={(event) => onChange({ ...answers, [question.id]: event.target.value })}
+        />
+      )}
+
+      {question.kind === "comment" && (
+        <textarea
+          value={typeof answers[question.id] === "string" ? answers[question.id] as string : ""}
+          onChange={(event) => onChange({ ...answers, [question.id]: event.target.value })}
+          rows={3}
+        />
+      )}
+    </div>
+  ));
 }
 
 // Beautiful simulated database for guest connections (carsharing/travel buddy matches)
@@ -159,8 +229,26 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   // Separate forms submission & state storage
   // RSVP state
   const [primaryRsvp, setPrimaryRsvp] = useState<"pending" | "attending" | "declined">(invitation.guest.rsvp_status);
-  const [primaryDietary, setPrimaryDietary] = useState<string>(invitation.guest.dietary_notes || "");
-  const [primaryMessage, setPrimaryMessage] = useState<string>(invitation.guest.message || "");
+  const [primaryDietary] = useState<string>(invitation.guest.dietary_notes || "");
+  const [primaryMessage] = useState<string>(invitation.guest.message || "");
+
+  // RSVP follow-up questions use the same response model as every other
+  // form. Keep saved answers separate from the open modal's drafts so a
+  // second visit reopens on what was just submitted without a page reload.
+  const [rsvpSavedAnswers, setRsvpSavedAnswers] = useState<Record<string, Record<string, FormAnswers>>>(() => {
+    const byForm: Record<string, Record<string, FormAnswers>> = {};
+    for (const form of [invitation.rsvp_form, invitation.rsvp_reconfirmation]) {
+      if (!form) continue;
+      byForm[form.id] = {
+        [invitation.guest.id]: form.answers ?? {},
+        ...(form.companion_answers ?? {}),
+      };
+    }
+    return byForm;
+  });
+  const [rsvpDrafts, setRsvpDrafts] = useState<Record<string, FormAnswers>>({});
+  const [rsvpPersonId, setRsvpPersonId] = useState(invitation.guest.id);
+  const [rsvpError, setRsvpError] = useState<string | null>(null);
 
   // Companions — local state (not just the invitation prop) so a guest who
   // adds a partner/child mid-RSVP sees them appear immediately.
@@ -302,7 +390,41 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const handleSaveRsvp = async () => {
     if (primaryRsvp === "pending") return;
 
+    const form = rsvpModalContext === "reconfirmation"
+      ? invitation.rsvp_reconfirmation
+      : invitation.rsvp_form;
+    const questions = normalizeQuestions(form?.questions, DEFAULT_LOCALE);
+    const people = [
+      ...(primaryRsvp === "attending"
+        ? [{ id: invitation.guest.id, name: guestFullName }]
+        : []),
+      ...(primaryRsvp === "attending"
+        ? companions
+            .filter((companion) => companionsRsvp[companion.id]?.rsvp_status === "attending")
+            .map((companion) => ({
+              id: companion.id,
+              name: `${companion.first_name} ${companion.last_name || ""}`.trim(),
+            }))
+        : []),
+    ];
+
+    for (const person of people) {
+      if (missingRequired(questions, rsvpDrafts[person.id]).length === 0) continue;
+      setRsvpPersonId(person.id);
+      setRsvpError(
+        people.length > 1
+          ? locale === "fr"
+            ? `Merci de répondre aux questions obligatoires pour ${person.name}.`
+            : `Please answer the required questions for ${person.name}.`
+          : locale === "fr"
+            ? "Merci de répondre aux questions obligatoires."
+            : "Please answer the required questions.",
+      );
+      return;
+    }
+
     setSubmittingRsvp(true);
+    setRsvpError(null);
     try {
       if (!isDemo) {
         const supabase = getBrowserSupabase();
@@ -320,12 +442,34 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
             companionsRsvp,
           },
         );
+        if (form && questions.length > 0) {
+          for (const person of people) {
+            const { error } = await supabase.rpc("submit_form_response", {
+              p_token: token,
+              p_form_id: form.id,
+              p_answers: rsvpDrafts[person.id] ?? {},
+              ...(person.id === invitation.guest.id
+                ? {}
+                : { p_for_guest_id: person.id }),
+            });
+            if (error) throw error;
+          }
+        }
       }
 
       // companionsRsvp is the source of truth for what the guest picked, and the
       // rows above are already persisted, so there is nothing to sync back onto
       // the invitation prop.
 
+      if (form) {
+        setRsvpSavedAnswers((prev) => ({
+          ...prev,
+          [form.id]: {
+            ...(prev[form.id] ?? {}),
+            ...Object.fromEntries(people.map((person) => [person.id, rsvpDrafts[person.id] ?? {}])),
+          },
+        }));
+      }
       setActiveFormModal(null);
     } catch (e) {
       console.error("Failed to submit RSVP:", e);
@@ -367,17 +511,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   };
 
   const coupleNames = `${invitation.wedding.partner_one} & ${invitation.wedding.partner_two}`;
-  // The couple by name where we have both, and "the couple" where we don't —
-  // a label reading "a message for null & null" is worse than a generic one.
-  const bothPartners = [invitation.wedding.partner_one, invitation.wedding.partner_two]
-    .map((name) => (name ?? "").trim())
-    .every(Boolean);
-  const coupleLabel = bothPartners
-    ? coupleNames
-    : locale === "fr"
-      ? "les mariés"
-      : "the couple";
-
   const handleGuestSignOut = async () => {
     setSigningOut(true);
     try {
@@ -454,24 +587,13 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     reconfirmDefaults.subtitle,
   );
 
-  // Which extras the block on screen asks for beyond the reply itself. The
-  // couple turns them off in the form builder — typically because they
-  // collect the same thing in another form, and asking twice leaves two
-  // answers and no way to tell which one the caterer should believe. A field
-  // they've turned off is never rendered here; anything a guest already
-  // answered stays stored and comes back the moment it's turned on again.
-  //
-  // Read per touchpoint, not shared: the reply buttons are the primary's
-  // (a button's meaning can't drift between asks), but the questions around
-  // them are the whole point of asking again later — meals nobody could
-  // answer at save-the-date time are worth asking three weeks out.
-  const asks = resolveRsvpFields(
-    rsvpModalContext === "reconfirmation"
-      ? reconfirmation?.fields
-      : invitation.rsvp_form?.fields,
-  );
-
   const openRsvpModal = (context: "primary" | "reconfirmation") => {
+    const form = context === "reconfirmation"
+      ? invitation.rsvp_reconfirmation
+      : invitation.rsvp_form;
+    setRsvpDrafts(form ? { ...(rsvpSavedAnswers[form.id] ?? {}) } : {});
+    setRsvpPersonId(invitation.guest.id);
+    setRsvpError(null);
     setRsvpModalContext(context);
     setActiveFormModal("rsvp");
   };
@@ -496,6 +618,32 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const activeCustomForm = customForms.find((f) => f.id === activeCustomFormId) ?? null;
 
   const guestFullName = `${invitation.guest.first_name} ${invitation.guest.last_name || ""}`.trim();
+  const activeRsvpForm = rsvpModalContext === "reconfirmation"
+    ? reconfirmation
+    : invitation.rsvp_form;
+  const activeRsvpQuestions = normalizeQuestions(
+    activeRsvpForm?.questions,
+    DEFAULT_LOCALE,
+  );
+  const rsvpRespondents = [
+    ...(primaryRsvp === "attending"
+      ? [{ id: invitation.guest.id, name: guestFullName }]
+      : []),
+    ...(primaryRsvp === "attending"
+      ? companions
+          .filter((companion) => companionsRsvp[companion.id]?.rsvp_status === "attending")
+          .map((companion) => ({
+            id: companion.id,
+            name: `${companion.first_name} ${companion.last_name || ""}`.trim(),
+          }))
+      : []),
+  ];
+  const activeRsvpDraft = rsvpDrafts[rsvpPersonId] ?? {};
+
+  const patchRsvpDraft = (next: FormAnswers) => {
+    setRsvpDrafts((prev) => ({ ...prev, [rsvpPersonId]: next }));
+    setRsvpError(null);
+  };
 
   /** Everyone a given form is answered for: just the invited guest, or them
    *  plus the relatives they're bringing when the couple asks it per person.
@@ -1702,30 +1850,27 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               </p>
               <div className="choice-row">
                 <button
-                  onClick={() => setPrimaryRsvp("attending")}
+                  onClick={() => {
+                    setPrimaryRsvp("attending");
+                    setRsvpPersonId(invitation.guest.id);
+                    setRsvpError(null);
+                  }}
                   className={`choice-btn ${primaryRsvp === "attending" ? "selected-yes" : ""}`}
                 >
                   ✓ {labelAttending}
                 </button>
                 <button
-                  onClick={() => setPrimaryRsvp("declined")}
+                  onClick={() => {
+                    setPrimaryRsvp("declined");
+                    setRsvpPersonId(invitation.guest.id);
+                    setRsvpError(null);
+                  }}
                   className={`choice-btn ${primaryRsvp === "declined" ? "selected-no" : ""}`}
                 >
                   ✗ {labelDeclined}
                 </button>
               </div>
 
-              {primaryRsvp === "attending" && asks.dietary && (
-                <div className="field" style={{ marginTop: "16px" }}>
-                  <label>🍏 {locale === "fr" ? "Vos restrictions alimentaires / allergies" : "Your Dietary Restrictions"}</label>
-                  <input
-                    type="text"
-                    value={primaryDietary}
-                    onChange={(e) => setPrimaryDietary(e.target.value)}
-                    placeholder={locale === "fr" ? "Ex: sans gluten, végétarien..." : "e.g. vegetarian, nut allergies"}
-                  />
-                </div>
-              )}
             </div>
 
             {/* Companion RSVPs */}
@@ -1743,39 +1888,35 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                       </p>
                       <div className="choice-row" style={{ marginBottom: "10px" }}>
                         <button
-                          onClick={() => setCompanionsRsvp({
-                            ...companionsRsvp,
-                            [companion.id]: { ...state, rsvp_status: "attending" }
-                          })}
+                          onClick={() => {
+                            setCompanionsRsvp({
+                              ...companionsRsvp,
+                              [companion.id]: { ...state, rsvp_status: "attending" },
+                            });
+                            setRsvpPersonId(companion.id);
+                            setRsvpError(null);
+                          }}
                           className={`choice-btn ${state.rsvp_status === "attending" ? "selected-yes" : ""}`}
                         >
                           {labelAttending}
                         </button>
                         <button
-                          onClick={() => setCompanionsRsvp({
-                            ...companionsRsvp,
-                            [companion.id]: { ...state, rsvp_status: "declined" }
-                          })}
+                          onClick={() => {
+                            setCompanionsRsvp({
+                              ...companionsRsvp,
+                              [companion.id]: { ...state, rsvp_status: "declined" },
+                            });
+                            if (rsvpPersonId === companion.id) {
+                              setRsvpPersonId(invitation.guest.id);
+                            }
+                            setRsvpError(null);
+                          }}
                           className={`choice-btn ${state.rsvp_status === "declined" ? "selected-no" : ""}`}
                         >
                           {labelDeclined}
                         </button>
                       </div>
 
-                      {state.rsvp_status === "attending" && asks.companion_dietary && (
-                        <input
-                          type="text"
-                          value={state.dietary_notes}
-                          onChange={(e) => setCompanionsRsvp({
-                            ...companionsRsvp,
-                            [companion.id]: { ...state, dietary_notes: e.target.value }
-                          })}
-                          placeholder={locale === "fr" ? "Restrictions alimentaires..." : "Dietary restrictions..."}
-                          style={{
-                            width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e1dec3", fontSize: "13px"
-                          }}
-                        />
-                      )}
                     </div>
                   );
                 })}
@@ -1881,17 +2022,61 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               </div>
             )}
 
-            {/* Message to Couple */}
-            {asks.note && (
-              <div className="field">
-                <label>✍️ {locale === "fr" ? `Un mot pour ${coupleLabel} ?` : `A message for ${coupleLabel}`}</label>
-                <textarea
-                  value={primaryMessage}
-                  onChange={(e) => setPrimaryMessage(e.target.value)}
-                  placeholder={locale === "fr" ? "Hâte de fêter avec vous !" : "Can't wait to see you!"}
-                  rows={3}
+            {activeRsvpQuestions.length > 0 && rsvpRespondents.length > 0 && (
+              <div style={{ borderTop: "1px solid #e1dec3", paddingTop: 18, marginTop: 4 }}>
+                {rsvpRespondents.length > 1 && (
+                  <div style={{ marginBottom: 18 }}>
+                    <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 8px" }}>
+                      {locale === "fr"
+                        ? "Répondez pour chaque personne qui vient."
+                        : "Answer for each person who is coming."}
+                    </p>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {rsvpRespondents.map((person) => {
+                        const on = person.id === rsvpPersonId;
+                        const complete = missingRequired(activeRsvpQuestions, rsvpDrafts[person.id]).length === 0
+                          && hasAnyAnswer(rsvpDrafts[person.id]);
+                        return (
+                          <button
+                            key={person.id}
+                            type="button"
+                            onClick={() => {
+                              setRsvpPersonId(person.id);
+                              setRsvpError(null);
+                            }}
+                            style={{
+                              border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`,
+                              background: on ? "var(--accent-light)" : "#fff",
+                              color: on ? "var(--primary)" : "var(--muted)",
+                              borderRadius: 100,
+                              padding: "7px 14px",
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                            }}
+                          >
+                            {complete ? "✓ " : ""}
+                            {person.id === invitation.guest.id
+                              ? locale === "fr" ? "Vous" : "You"
+                              : person.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <FormQuestionFields
+                  questions={activeRsvpQuestions}
+                  answers={activeRsvpDraft}
+                  locale={locale}
+                  onChange={patchRsvpDraft}
                 />
               </div>
+            )}
+
+            {rsvpError && (
+              <div style={{ color: "#C0553B", fontSize: 13, marginBottom: 16 }}>{rsvpError}</div>
             )}
 
             <button
@@ -1977,63 +2162,12 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               </div>
             )}
 
-            {activeCustomForm.questions.map((q: RsvpQuestion) => (
-              <div className="field" key={q.id}>
-                <label>
-                  {coupleText(q.title, locale) ?? ""}
-                  {q.required ? " *" : ` (${locale === "fr" ? "optionnel" : "optional"})`}
-                </label>
-
-                {(q.kind === "single" || q.kind === "multi") && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {(q.options ?? []).map((opt) => {
-                      const current = activeDraft[q.id];
-                      // Answers are stored as option ids, so the same choice
-                      // reads back as chosen whatever language it was picked in.
-                      const selected = q.kind === "single"
-                        ? current === opt.id
-                        : Array.isArray(current) && current.includes(opt.id);
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => {
-                            patchActiveDraft((prev) => {
-                              if (q.kind === "single") return { ...prev, [q.id]: opt.id };
-                              const list = Array.isArray(prev[q.id]) ? (prev[q.id] as string[]) : [];
-                              const next = list.includes(opt.id)
-                                ? list.filter((o) => o !== opt.id)
-                                : [...list, opt.id];
-                              return { ...prev, [q.id]: next };
-                            });
-                          }}
-                          className={`choice-btn ${selected ? "selected-yes" : ""}`}
-                          style={{ justifyContent: "flex-start", textAlign: "left" }}
-                        >
-                          {selected ? "✓ " : ""}{coupleText(opt.label, locale) ?? ""}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {q.kind === "short" && (
-                  <input
-                    type="text"
-                    value={typeof activeDraft[q.id] === "string" ? (activeDraft[q.id] as string) : ""}
-                    onChange={(e) => patchActiveDraft((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                  />
-                )}
-
-                {q.kind === "comment" && (
-                  <textarea
-                    value={typeof activeDraft[q.id] === "string" ? (activeDraft[q.id] as string) : ""}
-                    onChange={(e) => patchActiveDraft((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                    rows={3}
-                  />
-                )}
-              </div>
-            ))}
+            <FormQuestionFields
+              questions={activeCustomForm.questions}
+              answers={activeDraft}
+              locale={locale}
+              onChange={(next) => patchActiveDraft(() => next)}
+            />
 
             {customError && (
               <div style={{ color: "#C0553B", fontSize: 13, marginBottom: 16 }}>{customError}</div>

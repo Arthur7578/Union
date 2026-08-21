@@ -836,6 +836,7 @@ export type Database = {
       }
       get_guest_email_status: { Args: { p_token: string }; Returns: Json }
       get_invitation: { Args: { p_token: string }; Returns: Json }
+      get_invitation_rsvp_forms: { Args: { p_token: string }; Returns: Json }
       get_wedding_by_join_code: { Args: { p_join_code: string }; Returns: Json }
       hide_duplicate_cluster: {
         Args: { p_guest_ids: string[]; p_wedding_id: string }

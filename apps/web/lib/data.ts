@@ -1254,7 +1254,7 @@ export type GuestFormAnswers = {
 };
 
 /**
- * Every custom form this wedding runs, paired with one guest's answers.
+ * Every form this wedding runs, paired with one guest's answers.
  *
  * Two queries rather than an embed: form_responses' RLS is written against
  * the parent form, so a `forms(...)` embed from the response side returns the
@@ -1262,8 +1262,9 @@ export type GuestFormAnswers = {
  * guest — the shape that reads more naturally is the one that needs the
  * client-side join to stay correct as forms come and go.
  *
- * RSVP-kind forms are left out: the reply and its dietary note live on
- * guests/rsvps and are already shown in the RSVP card on the same page.
+ * RSVP-kind forms are included because their editable follow-up questions use
+ * the same form_responses model as custom forms. The caller places those
+ * answers beside the RSVP status and custom answers in their own section.
  */
 export async function fetchGuestFormAnswers(
   weddingId: string,
@@ -1275,7 +1276,6 @@ export async function fetchGuestFormAnswers(
     .from("forms")
     .select("*")
     .eq("wedding_id", weddingId)
-    .eq("kind", "custom")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
   if (formsError) throw formsError;

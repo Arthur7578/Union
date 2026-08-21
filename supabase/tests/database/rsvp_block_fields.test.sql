@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(19);
+select plan(24);
 
 -- One wedding, one household: a guest with a partner and a child they may
 -- answer for, plus an unrelated guest of the same wedding to prove one
@@ -110,6 +110,10 @@ values
     '[]'::jsonb
   );
 
+update public.forms
+set questions = '[{"id": "q-allergy", "kind": "comment", "title": {"en": "Allergies"}, "required": false}]'::jsonb
+where id = '50000000-0000-0000-0000-000000000010';
+
 -- ---------- what each touchpoint asks ----------
 
 select is(
@@ -183,6 +187,53 @@ select throws_ok(
   '23514',
   null,
   'an RSVP form cannot be marked per-person — its block always is'
+);
+
+-- ---------- RSVP questions use the same per-attendee response model ----------
+
+select lives_ok(
+  $$select public.submit_form_response(
+      '40000000-0000-0000-0000-000000000010',
+      '50000000-0000-0000-0000-000000000010',
+      '{"q-allergy": "none"}'::jsonb
+    )$$,
+  'the invited guest can answer the RSVP follow-up questions'
+);
+
+select lives_ok(
+  $$select public.submit_form_response(
+      '40000000-0000-0000-0000-000000000010',
+      '50000000-0000-0000-0000-000000000010',
+      '{"q-allergy": "peanuts"}'::jsonb,
+      '30000000-0000-0000-0000-000000000012'
+    )$$,
+  'the invitation holder can answer the whole RSVP form for their child'
+);
+
+select is(
+  public.get_invitation_rsvp_forms('40000000-0000-0000-0000-000000000010')
+    #> '{primary,questions,0,title,en}',
+  '"Allergies"'::jsonb,
+  'the invitation receives the configured RSVP question'
+);
+
+select is(
+  public.get_invitation_rsvp_forms('40000000-0000-0000-0000-000000000010')
+    #> '{primary,companion_answers,30000000-0000-0000-0000-000000000012}',
+  '{"q-allergy": "peanuts"}'::jsonb,
+  'the invitation reopens on the child''s RSVP answers'
+);
+
+select throws_ok(
+  $$select public.submit_form_response(
+      '40000000-0000-0000-0000-000000000010',
+      '50000000-0000-0000-0000-000000000010',
+      '{}'::jsonb,
+      '30000000-0000-0000-0000-000000000013'
+    )$$,
+  'P0001',
+  'Not authorised to answer for this guest',
+  'RSVP delegation is limited to the invitation holder''s relatives'
 );
 
 -- ---------- answering a form for yourself and your relatives ----------

@@ -47,6 +47,12 @@ vi.mock("@/lib/supabase", () => ({
       if (fn === "get_invitation") {
         return Promise.resolve({ data: request.invitation, error: null });
       }
+      if (fn === "get_invitation_rsvp_forms") {
+        return Promise.resolve({
+          data: { primary: null, reconfirmation: null },
+          error: null,
+        });
+      }
       if (fn === "get_guest_email_status") {
         return Promise.resolve({ data: { email_missing: false }, error: null });
       }

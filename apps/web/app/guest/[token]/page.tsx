@@ -10,7 +10,6 @@ import type {
   Invitation,
   LocalizedText,
   RsvpQuestion,
-  StoredRsvpFields,
 } from "@union/shared";
 import { GuestPortal } from "./GuestPortal";
 import { GuestEmailGate } from "./GuestEmailGate";
@@ -25,29 +24,27 @@ export type DBInvitation = Invitation & {
    *  never a blank/empty label; a map missing the guest's locale falls back
    *  through the others before reaching that default. */
   rsvp_form?: {
+    id: string;
     title: LocalizedText | null;
     subtitle: LocalizedText | null;
     label_attending: LocalizedText | null;
     label_declined: LocalizedText | null;
-    /** Which of the block's optional fields this wedding asks for, as
-     *  stored: only the couple's "off" decisions. Absent key means asked,
-     *  so `{}` (and a missing field, from a server older than the column)
-     *  is the full set of questions. Run it through `resolveRsvpFields`
-     *  rather than reading keys directly. */
-    fields?: StoredRsvpFields;
+    questions: RsvpQuestion[];
+    answers: FormAnswers | null;
+    companion_answers: Record<string, FormAnswers> | null;
   } | null;
   /** The optional late "still coming?" touchpoint. Only shown when
    *  published and within its opens_at/closes_at window. */
   rsvp_reconfirmation?: {
+    id: string;
     title: LocalizedText | null;
     subtitle: LocalizedText | null;
     published: boolean;
     opens_at: string | null;
     closes_at: string | null;
-    /** This touchpoint's own optional fields, as stored — not the primary
-     *  form's. Absent key means asked, so an untouched reconfirmation asks
-     *  what it always asked. */
-    fields?: StoredRsvpFields;
+    questions: RsvpQuestion[];
+    answers: FormAnswers | null;
+    companion_answers: Record<string, FormAnswers> | null;
   } | null;
   /** Published 'custom' forms for this wedding, with the guest's own answers
    *  (if they've already submitted). Empty until the couple publishes one.
@@ -137,19 +134,36 @@ export default async function GuestExperiencePage({
     // Attempt to load from Supabase for all other tokens
     try {
       const supabase = getSupabase();
-      const [invitationResult, emailStatusResult] = await Promise.all([
+      const [invitationResult, rsvpFormsResult, emailStatusResult] = await Promise.all([
         supabase.rpc("get_invitation", { p_token: token }),
+        supabase.rpc("get_invitation_rsvp_forms", { p_token: token }),
         supabase.rpc("get_guest_email_status", { p_token: token }),
       ]);
 
       if (
         !invitationResult.error &&
         invitationResult.data &&
+        !rsvpFormsResult.error &&
+        rsvpFormsResult.data &&
         !emailStatusResult.error &&
         emailStatusResult.data
       ) {
-        // Since get_invitation returns a JSONB object, cast it directly to DBInvitation
-        invitation = invitationResult.data as unknown as DBInvitation;
+        const base = invitationResult.data as unknown as DBInvitation;
+        const rsvpForms = rsvpFormsResult.data as unknown as {
+          primary: Pick<NonNullable<DBInvitation["rsvp_form"]>, "id" | "questions" | "answers" | "companion_answers"> | null;
+          reconfirmation: Pick<NonNullable<DBInvitation["rsvp_reconfirmation"]>, "id" | "questions" | "answers" | "companion_answers"> | null;
+        };
+        invitation = {
+          ...base,
+          rsvp_form:
+            base.rsvp_form && rsvpForms.primary
+              ? { ...base.rsvp_form, ...rsvpForms.primary }
+              : base.rsvp_form,
+          rsvp_reconfirmation:
+            base.rsvp_reconfirmation && rsvpForms.reconfirmation
+              ? { ...base.rsvp_reconfirmation, ...rsvpForms.reconfirmation }
+              : base.rsvp_reconfirmation,
+        };
         emailMissing = Boolean(
           (emailStatusResult.data as { email_missing?: boolean }).email_missing,
         );

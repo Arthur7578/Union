@@ -7,10 +7,8 @@ import { T } from "@/lib/theme";
 import {
   choiceToOverride,
   overrideToChoice,
-  resolveRsvpFields,
 } from "@union/shared";
 import type {
-  Form,
   FormAnswers,
   GuestGroup,
   PermissionChoice,
@@ -25,7 +23,6 @@ import {
   clearRsvp,
   createGuestWithLinks,
   deleteGuest,
-  fetchForms,
   fetchGuest,
   fetchGuestFormAnswers,
   fetchGuestGroups,
@@ -144,8 +141,6 @@ export default function GuestDetailPage() {
 
   // RSVP recording form (owner side).
   const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus | "">("");
-  const [rsvpDiet, setRsvpDiet] = useState("");
-  const [rsvpMessage, setRsvpMessage] = useState("");
   const [rsvpBusy, setRsvpBusy] = useState(false);
   const [rsvpNote, setRsvpNote] = useState<string | null>(null);
 
@@ -165,13 +160,11 @@ export default function GuestDetailPage() {
   const [rooms, setRooms] = useState<RoomBlock[]>([]);
   const [tables, setTables] = useState<SeatingTable[]>([]);
 
-  // What this guest has told the couple in the forms beyond the RSVP, and
-  // what the RSVP itself still asks. Both belong on this page: with dietary
-  // needs collected in a details form, the RSVP card alone stops being the
-  // whole answer to "what does this person eat".
+  // What this guest has told the couple in RSVP follow-up questions and
+  // custom forms. Both use the same response model; they are separated only
+  // when rendered so RSVP answers sit beside the reply itself.
   const [formAnswers, setFormAnswers] = useState<GuestFormAnswers[] | null>(null);
   const [formAnswersError, setFormAnswersError] = useState<string | null>(null);
-  const [rsvpForm, setRsvpForm] = useState<Form | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -193,8 +186,6 @@ export default function GuestDetailPage() {
           setSeatingTableId(g.seating_table_id ?? "");
           if (g.rsvps) {
             setRsvpStatus(g.rsvps.status);
-            setRsvpDiet(g.rsvps.dietary_notes ?? "");
-            setRsvpMessage(g.rsvps.message ?? "");
           }
         }
       })
@@ -231,14 +222,6 @@ export default function GuestDetailPage() {
           e instanceof Error ? e.message : "Couldn't load form answers.",
         );
       });
-    fetchForms(wedding.id)
-      .then((forms) => {
-        if (!ok) return;
-        setRsvpForm(
-          forms.find((f) => f.kind === "rsvp" && f.purpose === "primary") ?? null,
-        );
-      })
-      .catch(() => {});
     return () => {
       ok = false;
     };
@@ -446,8 +429,11 @@ export default function GuestDetailPage() {
       const saved = await upsertRsvp({
         guest_id: guest.id,
         status: rsvpStatus as RsvpStatus,
-        dietary_notes: rsvpDiet.trim() || null,
-        message: rsvpMessage.trim() || null,
+        // These legacy columns are no longer edited here, but preserving them
+        // avoids erasing data before the migration has copied it into the
+        // RSVP form's ordinary question answers.
+        dietary_notes: guest.rsvps?.dietary_notes ?? null,
+        message: guest.rsvps?.message ?? null,
       });
       setGuest((prev) => (prev ? { ...prev, rsvps: saved } : prev));
       setRsvpNote("RSVP recorded.");
@@ -465,8 +451,6 @@ export default function GuestDetailPage() {
       await clearRsvp(guest.id);
       setGuest((prev) => (prev ? { ...prev, rsvps: null } : prev));
       setRsvpStatus("");
-      setRsvpDiet("");
-      setRsvpMessage("");
       setRsvpNote("RSVP cleared.");
     } catch (err) {
       setRsvpNote(err instanceof Error ? err.message : "Couldn't clear RSVP.");
@@ -680,6 +664,13 @@ export default function GuestDetailPage() {
     }
   };
 
+  const primaryRsvpAnswers =
+    formAnswers?.find(
+      ({ form }) => form.kind === "rsvp" && form.purpose === "primary",
+    ) ?? null;
+  const customFormAnswers =
+    formAnswers?.filter(({ form }) => form.kind === "custom") ?? null;
+
   return (
     <main className="u-main">
       <BackHeader
@@ -754,27 +745,6 @@ export default function GuestDetailPage() {
           </button>
         )}
       </div>
-
-      {guest.rsvps && (guest.rsvps.dietary_notes || guest.rsvps.message) && (
-        <Card style={{ marginBottom: 16 }}>
-          {guest.rsvps.dietary_notes && (
-            <div style={{ fontSize: 14, color: T.ink2 }}>
-              <b>Dietary:</b> {guest.rsvps.dietary_notes}
-            </div>
-          )}
-          {guest.rsvps.message && (
-            <div
-              style={{
-                fontSize: 14,
-                color: T.ink2,
-                marginTop: guest.rsvps.dietary_notes ? 8 : 0,
-              }}
-            >
-              <b>Note:</b> {guest.rsvps.message}
-            </div>
-          )}
-        </Card>
-      )}
 
       <SectionLabel style={{ marginTop: 0 }}>Invitation link</SectionLabel>
       <Card>
@@ -945,45 +915,56 @@ export default function GuestDetailPage() {
             );
           })}
         </div>
-        {(rsvpStatus === "attending" || rsvpStatus === "declined") && (
-          <>
-            <div className="field" style={{ marginTop: 14 }}>
-              <label htmlFor="rd">Dietary or access notes</label>
-              <input
-                id="rd"
-                type="text"
-                value={rsvpDiet}
-                onChange={(e) => setRsvpDiet(e.target.value)}
-                placeholder="Vegetarian, gluten-free…"
-              />
-              {/* Recording it here always works. Saying so matters when the
-                  RSVP doesn't ask: otherwise an empty field reads as "they
-                  didn't tell us" rather than "we didn't ask them here". */}
-              {rsvpForm && !resolveRsvpFields(rsvpForm.rsvp_fields).dietary && (
-                <div style={{ fontSize: 12, color: T.faint, marginTop: 5, lineHeight: 1.45 }}>
-                  Your RSVP doesn&apos;t ask guests this — whatever you record
-                  here is yours, not theirs.{" "}
-                  <Link
-                    href={`/guests/forms/${rsvpForm.id}`}
-                    className="u-link"
-                    style={{ color: T.accentInk }}
-                  >
-                    Change what the RSVP asks
-                  </Link>
+        {primaryRsvpAnswers && formQuestions(primaryRsvpAnswers.form).length > 0 && (
+          <div
+            style={{
+              borderTop: `1px solid ${T.line}`,
+              marginTop: 16,
+              paddingTop: 14,
+            }}
+          >
+            {readableAnswers(
+              formQuestions(primaryRsvpAnswers.form),
+              (primaryRsvpAnswers.response?.answers ?? null) as FormAnswers | null,
+              appLocale,
+            ).map((row) => (
+              <div key={row.key} style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 11.5, color: T.faint }}>{row.question}</div>
+                <div
+                  style={{
+                    fontSize: 14,
+                    color: row.answer ? T.ink2 : T.faint,
+                    fontStyle: row.answer ? "normal" : "italic",
+                  }}
+                >
+                  {row.answer ?? "No answer"}
                 </div>
-              )}
-            </div>
-            <div className="field">
-              <label htmlFor="rm">A note from them</label>
-              <input
-                id="rm"
-                type="text"
-                value={rsvpMessage}
-                onChange={(e) => setRsvpMessage(e.target.value)}
-                placeholder="Can't wait!"
-              />
-            </div>
-          </>
+              </div>
+            ))}
+
+            {primaryRsvpAnswers.relatives.map(({ guestId, response }) => {
+              const relative = dependents.find((link) => link.guest.id === guestId)?.guest;
+              return (
+                <div key={guestId} style={{ borderTop: `1px solid ${T.line}`, paddingTop: 10, marginTop: 4 }}>
+                  <div style={{ fontSize: 12, color: T.faint, marginBottom: 7 }}>
+                    Answered for {relative ? `${relative.first_name} ${relative.last_name ?? ""}`.trim() : "a relative"}
+                  </div>
+                  {readableAnswers(
+                    formQuestions(primaryRsvpAnswers.form),
+                    response.answers as FormAnswers,
+                    appLocale,
+                  ).map((row) => (
+                    <div key={row.key} style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 11.5, color: T.faint }}>{row.question}</div>
+                      <div style={{ fontSize: 14, color: row.answer ? T.ink2 : T.faint, fontStyle: row.answer ? "normal" : "italic" }}>
+                        {row.answer ?? "No answer"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
         )}
         <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
           <Button
@@ -1012,22 +993,21 @@ export default function GuestDetailPage() {
       </Card>
 
       <SectionLabel>Form answers</SectionLabel>
-      {formAnswers === null ? (
+      {customFormAnswers === null ? (
         <Card>
           <div style={{ fontSize: 13, color: T.muted }}>Loading answers…</div>
         </Card>
-      ) : formAnswers.length === 0 ? (
+      ) : customFormAnswers.length === 0 ? (
         <Card>
           <div style={{ fontSize: 13, color: T.muted, lineHeight: 1.5 }}>
-            {formAnswersError ??
-              "The RSVP is your only form so far. Anything else you ask — meals, allergies, travel — shows up here per guest."}{" "}
+            {formAnswersError ?? "No additional forms yet."}{" "}
             <Link href="/guests/forms" className="u-link" style={{ color: T.accentInk }}>
               Your forms
             </Link>
           </div>
         </Card>
       ) : (
-        formAnswers.map(({ form, response, relatives }) => {
+        customFormAnswers.map(({ form, response, relatives }) => {
           const questions = formQuestions(form);
           const rows = readableAnswers(
             questions,
