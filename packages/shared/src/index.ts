@@ -46,6 +46,27 @@ export type {
   RsvpFields,
   StoredRsvpFields,
 } from "./rsvpFields";
+export {
+  MAX_CHILDREN_CAP,
+  buildGuestPermissionsPatch,
+  canAddChildren,
+  canAddPartner,
+  childrenCapFormState,
+  choiceToOverride,
+  overrideToChoice,
+  resolveChildrenCap,
+  resolveChildrenRemaining,
+  resolveGuestPermission,
+} from "./guestPermissions";
+export type {
+  ChildrenCapMode,
+  ChildrenCapProblem,
+  ChildrenCapResult,
+  GuestPermissionsPatch,
+  GuestPermissionsPatchResult,
+  PermissionChoice,
+  StoredPermissionOverride,
+} from "./guestPermissions";
 export type {
   Database,
   Json,

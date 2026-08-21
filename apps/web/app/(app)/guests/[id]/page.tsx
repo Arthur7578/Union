@@ -4,15 +4,20 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
+import {
+  choiceToOverride,
+  overrideToChoice,
+  resolveRsvpFields,
+} from "@union/shared";
 import type {
   Form,
   FormAnswers,
   GuestGroup,
+  PermissionChoice,
   RoomBlock,
   RsvpStatus,
   SeatingTable,
 } from "@union/shared";
-import { resolveRsvpFields } from "@union/shared";
 import {
   addGuestGroup,
   addGuestRelationship,
@@ -91,8 +96,8 @@ export default function GuestDetailPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [age, setAge] = useState<string>("");
-  const [canAddPartner, setCanAddPartner] = useState<"inherit" | "yes" | "no">("inherit");
-  const [canAddKids, setCanAddKids] = useState<"inherit" | "yes" | "no">("inherit");
+  const [canAddPartner, setCanAddPartner] = useState<PermissionChoice>("inherit");
+  const [canAddKids, setCanAddKids] = useState<PermissionChoice>("inherit");
   const [role, setRole] = useState("");
   const [guestLocale, setGuestLocale] = useState<"" | "en" | "fr">("");
   const [notes, setNotes] = useState("");
@@ -179,8 +184,8 @@ export default function GuestDetailPage() {
           setEmail(g.email ?? "");
           setPhone(g.phone ?? "");
           setAge(g.age_years != null ? String(g.age_years) : "");
-          setCanAddPartner(g.can_add_partner == null ? "inherit" : g.can_add_partner ? "yes" : "no");
-          setCanAddKids(g.can_add_kids == null ? "inherit" : g.can_add_kids ? "yes" : "no");
+          setCanAddPartner(overrideToChoice(g.can_add_partner));
+          setCanAddKids(overrideToChoice(g.can_add_kids));
           setRole(g.role ?? "");
           setGuestLocale(g.locale === "en" || g.locale === "fr" ? g.locale : "");
           setNotes(g.notes ?? "");
@@ -319,10 +324,8 @@ export default function GuestDetailPage() {
         email: email.trim() || null,
         phone: phone.trim() || null,
         age_years: Number.isFinite(parsedAge as number) ? parsedAge : null,
-        can_add_partner:
-          canAddPartner === "inherit" ? null : canAddPartner === "yes",
-        can_add_kids:
-          canAddKids === "inherit" ? null : canAddKids === "yes",
+        can_add_partner: choiceToOverride(canAddPartner),
+        can_add_kids: choiceToOverride(canAddKids),
         role: role.trim() || null,
         locale: guestLocale || null,
         notes: notes.trim() || null,
@@ -1400,7 +1403,7 @@ export default function GuestDetailPage() {
           <select
             value={canAddPartner}
             onChange={(e) =>
-              setCanAddPartner(e.target.value as "inherit" | "yes" | "no")
+              setCanAddPartner(e.target.value as PermissionChoice)
             }
           >
             <option value="inherit">Inherit wedding default</option>
@@ -1413,7 +1416,7 @@ export default function GuestDetailPage() {
           <select
             value={canAddKids}
             onChange={(e) =>
-              setCanAddKids(e.target.value as "inherit" | "yes" | "no")
+              setCanAddKids(e.target.value as PermissionChoice)
             }
           >
             <option value="inherit">Inherit wedding default</option>
