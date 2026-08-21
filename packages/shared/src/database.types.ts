@@ -881,7 +881,12 @@ export type Database = {
         Returns: Json
       }
       submit_form_response: {
-        Args: { p_answers: Json; p_form_id: string; p_token: string }
+        Args: {
+          p_answers: Json
+          p_for_guest_id?: string
+          p_form_id: string
+          p_token: string
+        }
         Returns: Json
       }
       submit_rsvp: {
