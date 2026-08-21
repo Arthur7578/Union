@@ -8,7 +8,12 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { clearActiveGuestIdentity } from "@/lib/guestIdentity";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { submitGuestRsvp } from "@/lib/submitRsvp";
-import { enabledGuestModules, normalizeQuestions } from "@union/shared";
+import {
+  canAddChildren,
+  canAddPartner as mayAddPartner,
+  enabledGuestModules,
+  normalizeQuestions,
+} from "@union/shared";
 import type { FormAnswers, GuestModuleKey, RsvpQuestion } from "@union/shared";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
@@ -494,8 +499,14 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
   // A guest may add at most one partner (hide the option once they have
   // one); children have no such cap here, only the wedding's kids budget.
-  const canAddPartner = invitation.permissions.can_add_partner && !companions.some((c) => c.relationship === "partner_of");
-  const canAddKids = invitation.permissions.can_add_kids && (kidsRemaining === null || kidsRemaining > 0);
+  const canAddPartner = mayAddPartner({
+    allowed: invitation.permissions.can_add_partner,
+    hasPartner: companions.some((c) => c.relationship === "partner_of"),
+  });
+  const canAddKids = canAddChildren({
+    allowed: invitation.permissions.can_add_kids,
+    remaining: kidsRemaining,
+  });
 
   const cancelAddCompanion = () => {
     setAddCompanionKind(null);

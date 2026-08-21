@@ -35,3 +35,18 @@ jobs:
       - run: npm test
 
       - run: npm run build --workspace apps/web
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      - run: supabase start
+
+      - run: supabase test db

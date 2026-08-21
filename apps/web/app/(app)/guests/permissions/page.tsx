@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import type { Wedding } from "@union/shared";
+import {
+  MAX_CHILDREN_CAP,
+  buildGuestPermissionsPatch,
+  childrenCapFormState,
+} from "@union/shared";
+import type { ChildrenCapMode, Wedding } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import { updateWedding } from "@/lib/data";
@@ -48,14 +53,11 @@ function GuestPermissionsForm({
   const [allowKids, setAllowKids] = useState<ToggleValue>(
     wedding.allow_guests_add_children,
   );
-  const [maxKidsMode, setMaxKidsMode] = useState<"unlimited" | "capped">(
-    wedding.max_children_per_guest == null ? "unlimited" : "capped",
+  const initialCap = childrenCapFormState(wedding.max_children_per_guest);
+  const [maxKidsMode, setMaxKidsMode] = useState<ChildrenCapMode>(
+    initialCap.mode,
   );
-  const [maxKidsCap, setMaxKidsCap] = useState<string>(
-    wedding.max_children_per_guest == null
-      ? ""
-      : String(wedding.max_children_per_guest),
-  );
+  const [maxKidsCap, setMaxKidsCap] = useState<string>(initialCap.input);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -66,21 +68,18 @@ function GuestPermissionsForm({
     setError(null);
     setSaved(false);
     try {
-      let cap: number | null = null;
-      if (allowKids && maxKidsMode === "capped") {
-        const parsed = parseInt(maxKidsCap, 10);
-        if (!Number.isFinite(parsed) || parsed < 0) {
-          setError("Enter a whole number of children (0 or more), or pick “No cap”.");
-          setBusy(false);
-          return;
-        }
-        cap = Math.min(50, parsed);
-      }
-      await updateWedding(wedding.id, {
-        allow_guests_add_partner: allowPartner,
-        allow_guests_add_children: allowKids,
-        max_children_per_guest: cap,
+      const resolved = buildGuestPermissionsPatch({
+        allowPartner,
+        allowChildren: allowKids,
+        capMode: maxKidsMode,
+        capInput: maxKidsCap,
       });
+      if (!resolved.ok) {
+        setError("Enter a whole number of children (0 or more), or pick “No cap”.");
+        setBusy(false);
+        return;
+      }
+      await updateWedding(wedding.id, resolved.patch);
       await refresh();
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
@@ -143,7 +142,7 @@ function GuestPermissionsForm({
                 <input
                   type="number"
                   min={0}
-                  max={50}
+                  max={MAX_CHILDREN_CAP}
                   value={maxKidsCap}
                   onChange={(e) => {
                     setMaxKidsCap(e.target.value);
