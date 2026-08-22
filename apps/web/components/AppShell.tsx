@@ -64,7 +64,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   const displayName = profile?.full_name || wedding?.partner_one || dict.account.title;
-  const accountActive = path.startsWith("/account");
+  const feedbackActive = path.startsWith("/account/feedback");
+  const accountActive = path.startsWith("/account") && !feedbackActive;
 
   return (
     <div className="u-app">
@@ -157,6 +158,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <div style={{ fontSize: 11, color: T.faint }}>{dict.account.title}</div>
             </div>
+          </Link>
+          {/* Feedback lives in the account area now that the floating widget
+              is gone — this keeps it one click away on desktop. */}
+          <Link
+            href="/account/feedback"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "9px 12px",
+              borderRadius: 13,
+              background: feedbackActive ? T.accentSoft : "transparent",
+              color: feedbackActive ? T.ink : T.muted2,
+              fontWeight: 600,
+              fontSize: 14,
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ width: 22, display: "flex", justifyContent: "center" }}>
+              <Spark size={17} color={feedbackActive ? T.accent : OFF} />
+            </span>
+            {dict.feedback.navLabel}
           </Link>
           <div style={{ padding: "0 6px" }}>
             <div

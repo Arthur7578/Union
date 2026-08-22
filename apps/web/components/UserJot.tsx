@@ -2,11 +2,20 @@
 
 import Script from "next/script";
 import { useEffect } from "react";
-import { USERJOT_LOADER_SNIPPET, USERJOT_PROJECT_ID } from "@/lib/userjot";
+import {
+  SHOW_FLOATING_LAUNCHER,
+  USERJOT_LOADER_SNIPPET,
+  USERJOT_PROJECT_ID,
+} from "@/lib/userjot";
 
 /**
- * Loads the UserJot SDK and initializes the feedback widget app-wide.
- * Rendered from the root layout so the widget is available on every page.
+ * Loads the UserJot SDK from the root layout so the feedback panel is
+ * available on every page.
+ *
+ * The SDK's own floating launcher is off (`SHOW_FLOATING_LAUNCHER`) — it
+ * covered the mobile tab bar and the bottom-anchored actions across the app.
+ * The way in is the Help & feedback section of the account area, which calls
+ * `ujShowWidget()`.
  */
 export function UserJot() {
   useLiftWidgetAboveTabbar();
@@ -16,13 +25,15 @@ export function UserJot() {
         {USERJOT_LOADER_SNIPPET}
       </Script>
       <Script id="userjot-init" strategy="afterInteractive">
-        {`window.uj.init('${USERJOT_PROJECT_ID}', { widget: true, position: 'right', theme: 'auto' });`}
+        {`window.uj.init('${USERJOT_PROJECT_ID}', { widget: ${SHOW_FLOATING_LAUNCHER}, position: 'right', theme: 'auto' });`}
       </Script>
     </>
   );
 }
 
 /**
+ * Only relevant when the floating launcher is switched back on.
+ *
  * The UserJot SDK mounts its widget inside `#userjot-widget-container`, whose
  * launcher lives in an open shadow root as a Tailwind-styled div
  * (`.fixed.bottom-5.right-5`). External CSS can't reach into the shadow root,
@@ -31,6 +42,8 @@ export function UserJot() {
  */
 function useLiftWidgetAboveTabbar() {
   useEffect(() => {
+    if (!SHOW_FLOATING_LAUNCHER) return;
+
     const STYLE_ID = "uj-lift-above-tabbar";
     const CSS = `
       @media (max-width: 959px) {
