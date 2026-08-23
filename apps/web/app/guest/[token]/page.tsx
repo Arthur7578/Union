@@ -24,19 +24,30 @@ export type DBInvitation = Invitation & {
    *  never a blank/empty label; a map missing the guest's locale falls back
    *  through the others before reaching that default. */
   rsvp_form?: {
+    id: string;
     title: LocalizedText | null;
     subtitle: LocalizedText | null;
     label_attending: LocalizedText | null;
     label_declined: LocalizedText | null;
+    published: boolean;
+    opens_at: string | null;
+    closes_at: string | null;
+    questions: RsvpQuestion[];
+    answers: FormAnswers | null;
+    companion_answers: Record<string, FormAnswers> | null;
   } | null;
   /** The optional late "still coming?" touchpoint. Only shown when
    *  published and within its opens_at/closes_at window. */
   rsvp_reconfirmation?: {
+    id: string;
     title: LocalizedText | null;
     subtitle: LocalizedText | null;
     published: boolean;
     opens_at: string | null;
     closes_at: string | null;
+    questions: RsvpQuestion[];
+    answers: FormAnswers | null;
+    companion_answers: Record<string, FormAnswers> | null;
   } | null;
   /** Published 'custom' forms for this wedding, with the guest's own answers
    *  (if they've already submitted). Empty until the couple publishes one.
@@ -50,7 +61,15 @@ export type DBInvitation = Invitation & {
     published: boolean;
     opens_at: string | null;
     closes_at: string | null;
+    /** True when the couple asks this form once per person — the guest
+     *  answers for themselves and for each relative they're bringing, the
+     *  way the RSVP block already works. False means one answer for the
+     *  whole invitation, which is how every form behaved before this. */
+    per_person?: boolean;
     answers: FormAnswers | null;
+    /** Answers already on record for this guest's own relatives, keyed by
+     *  their guest id. Only ever their own household. */
+    companion_answers?: Record<string, FormAnswers> | null;
   }>;
 };
 
@@ -118,22 +137,60 @@ export default async function GuestExperiencePage({
     // Attempt to load from Supabase for all other tokens
     try {
       const supabase = getSupabase();
-      const [invitationResult, emailStatusResult] = await Promise.all([
+      const [invitationResult, rsvpFormsResult, emailStatusResult] = await Promise.all([
         supabase.rpc("get_invitation", { p_token: token }),
+        supabase.rpc("get_invitation_rsvp_forms", { p_token: token }),
         supabase.rpc("get_guest_email_status", { p_token: token }),
       ]);
 
-      if (
-        !invitationResult.error &&
-        invitationResult.data &&
-        !emailStatusResult.error &&
-        emailStatusResult.data
-      ) {
-        // Since get_invitation returns a JSONB object, cast it directly to DBInvitation
-        invitation = invitationResult.data as unknown as DBInvitation;
-        emailMissing = Boolean(
-          (emailStatusResult.data as { email_missing?: boolean }).email_missing,
-        );
+      if (!invitationResult.error && invitationResult.data) {
+        const base = invitationResult.data as unknown as DBInvitation;
+        const rsvpForms = !rsvpFormsResult.error && rsvpFormsResult.data
+          ? rsvpFormsResult.data as unknown as {
+              primary: Pick<NonNullable<DBInvitation["rsvp_form"]>, "id" | "published" | "opens_at" | "closes_at" | "questions" | "answers" | "companion_answers"> | null;
+              reconfirmation: Pick<NonNullable<DBInvitation["rsvp_reconfirmation"]>, "id" | "questions" | "answers" | "companion_answers"> | null;
+            }
+          : null;
+        if (rsvpFormsResult.error) {
+          console.error("Failed to load RSVP follow-up questions:", rsvpFormsResult.error);
+        }
+        invitation = {
+          ...base,
+          rsvp_form:
+            base.rsvp_form && rsvpForms?.primary
+              ? { ...base.rsvp_form, ...rsvpForms.primary }
+              : base.rsvp_form
+                ? {
+                    ...base.rsvp_form,
+                    id: "",
+                    published: true,
+                    opens_at: null,
+                    closes_at: null,
+                    questions: [],
+                    answers: null,
+                    companion_answers: {},
+                  }
+                : null,
+          rsvp_reconfirmation:
+            base.rsvp_reconfirmation && rsvpForms?.reconfirmation
+              ? { ...base.rsvp_reconfirmation, ...rsvpForms.reconfirmation }
+              : base.rsvp_reconfirmation
+                ? {
+                    ...base.rsvp_reconfirmation,
+                    id: "",
+                    questions: [],
+                    answers: null,
+                    companion_answers: {},
+                  }
+                : null,
+        };
+        if (!emailStatusResult.error && emailStatusResult.data) {
+          emailMissing = Boolean(
+            (emailStatusResult.data as { email_missing?: boolean }).email_missing,
+          );
+        } else if (emailStatusResult.error) {
+          console.error("Failed to load guest email status:", emailStatusResult.error);
+        }
       }
     } catch (e) {
       console.error("Failed to load invitation from Supabase:", e);

@@ -11,7 +11,11 @@ import type {
   RsvpBlockCopy,
   RsvpQuestion,
 } from "@union/shared";
-import { isAutoTranslated, setTextForLocale, textForLocale } from "@union/shared";
+import {
+  isAutoTranslated,
+  setTextForLocale,
+  textForLocale,
+} from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
   deleteForm,
@@ -228,6 +232,10 @@ export default function FormBuilderPage() {
   const [translateHint, setTranslateHint] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [published, setPublished] = useState(false);
+  // Whether this custom form is asked once per person or once per invitation.
+  // A meal choice is per person; a song request isn't — so it's the
+  // organiser's call, not a default worth guessing at.
+  const [perPerson, setPerPerson] = useState(false);
   const [opensAt, setOpensAt] = useState("");
   const [closesAt, setClosesAt] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -252,6 +260,7 @@ export default function FormBuilderPage() {
         setGuestCopyState(formGuestCopy(f));
         setTitle(f.title);
         setPublished(f.published);
+        setPerPerson(f.per_person);
         setOpensAt(toDateInput(f.opens_at));
         setClosesAt(toDateInput(f.closes_at));
       })
@@ -465,6 +474,9 @@ export default function FormBuilderPage() {
         ...(form.kind === "rsvp"
           ? { rsvp_copy: rsvpCopyState }
           : { guest_copy: guestCopyState }),
+        // The RSVP block is per person by construction, so this only ever
+        // applies to a custom form.
+        ...(form.kind === "custom" ? { per_person: perPerson } : {}),
       });
       setForm(updated);
       setDirty(false);
@@ -650,12 +662,14 @@ export default function FormBuilderPage() {
         </SectionBlock>
       )}
 
-      {!(form.kind === "rsvp" && form.purpose === "reconfirmation") && (
-        <>
       {/* ---------------- Guest-facing questions ---------------- */}
       <SectionBlock
-        kicker="What guests see"
-        hint="Every question is yours to shape — title, type, required or not, and its choices."
+        kicker={form.kind === "rsvp" ? "Questions after the reply" : "What guests see"}
+        hint={
+          form.kind === "rsvp"
+            ? "Add only what you need. Guests answer these questions for themselves and for each partner or child who is coming."
+            : "Every question is yours to shape — title, type, required or not, and its choices."
+        }
         tone={{ bg: T.accentSoft, border: T.accentBorder, fg: T.accentInk }}
       >
         {questions.map((q, idx) => {
@@ -884,16 +898,7 @@ export default function FormBuilderPage() {
           </div>
         </Card>
 
-        {form.kind === "rsvp" && (
-          <div style={{ fontSize: 12, color: T.muted2, lineHeight: 1.5, padding: "0 2px" }}>
-            These are extra planning notes for you — the attend/decline reply,
-            dietary notes and its wording are handled by the RSVP block above,
-            wired straight to the real guest flow.
-          </div>
-        )}
       </SectionBlock>
-      </>
-      )}
 
       {/* ---------------- Access & rights ---------------- */}
       <SectionBlock
@@ -921,6 +926,31 @@ export default function FormBuilderPage() {
             </div>
           </div>
         </Card>
+
+        {form.kind === "custom" && (
+          <Card style={{ padding: "13px 15px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Switch
+                on={perPerson}
+                onChange={() => {
+                  setPerPerson((v) => !v);
+                  markDirty();
+                }}
+                label="Guests answer for relatives"
+              />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink }}>
+                  {perPerson ? "One response per person" : "One response per invitation"}
+                </div>
+                <div style={{ fontSize: 12, color: T.faint, marginTop: 1, lineHeight: 1.45 }}>
+                  {perPerson
+                    ? "The invitation holder completes this form for themselves and for each partner or child they're bringing."
+                    : "The invitation holder submits one set of answers for the whole group."}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {form.kind === "rsvp" && form.purpose === "primary" && wedding && (
           <ExtraGuestsRights wedding={wedding} refresh={refresh} />

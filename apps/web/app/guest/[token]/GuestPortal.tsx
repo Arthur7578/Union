@@ -8,6 +8,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { clearActiveGuestIdentity } from "@/lib/guestIdentity";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { submitGuestRsvp } from "@/lib/submitRsvp";
+import { hasAnyAnswer, missingRequired } from "@/lib/formAnswers";
 import {
   canAddChildren,
   canAddPartner as mayAddPartner,
@@ -15,7 +16,7 @@ import {
   normalizeQuestions,
 } from "@union/shared";
 import type { FormAnswers, GuestModuleKey, RsvpQuestion } from "@union/shared";
-import { DEFAULT_LOCALE } from "@/lib/i18n";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
 
 /** Tab label and icon per module, in the order guests see them. Keyed by the
@@ -47,6 +48,77 @@ interface GuestPortalProps {
   token: string;
   invitation: DBInvitation;
   isDemo: boolean;
+}
+
+function FormQuestionFields({
+  questions,
+  answers,
+  locale,
+  onChange,
+}: {
+  questions: RsvpQuestion[];
+  answers: FormAnswers;
+  locale: Locale;
+  onChange: (next: FormAnswers) => void;
+}) {
+  return questions.map((question) => (
+    <div className="field" key={question.id}>
+      <label>
+        {coupleText(question.title, locale) ?? ""}
+        {question.required ? " *" : ` (${locale === "fr" ? "optionnel" : "optional"})`}
+      </label>
+
+      {(question.kind === "single" || question.kind === "multi") && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {(question.options ?? []).map((option) => {
+            const current = answers[question.id];
+            const selected = question.kind === "single"
+              ? current === option.id
+              : Array.isArray(current) && current.includes(option.id);
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  if (question.kind === "single") {
+                    onChange({ ...answers, [question.id]: option.id });
+                    return;
+                  }
+                  const list = Array.isArray(current) ? current : [];
+                  onChange({
+                    ...answers,
+                    [question.id]: list.includes(option.id)
+                      ? list.filter((id) => id !== option.id)
+                      : [...list, option.id],
+                  });
+                }}
+                className={`choice-btn ${selected ? "selected-yes" : ""}`}
+                style={{ justifyContent: "flex-start", textAlign: "left" }}
+              >
+                {selected ? "✓ " : ""}{coupleText(option.label, locale) ?? ""}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {question.kind === "short" && (
+        <input
+          type="text"
+          value={typeof answers[question.id] === "string" ? answers[question.id] as string : ""}
+          onChange={(event) => onChange({ ...answers, [question.id]: event.target.value })}
+        />
+      )}
+
+      {question.kind === "comment" && (
+        <textarea
+          value={typeof answers[question.id] === "string" ? answers[question.id] as string : ""}
+          onChange={(event) => onChange({ ...answers, [question.id]: event.target.value })}
+          rows={3}
+        />
+      )}
+    </div>
+  ));
 }
 
 // Beautiful simulated database for guest connections (carsharing/travel buddy matches)
@@ -157,8 +229,24 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   // Separate forms submission & state storage
   // RSVP state
   const [primaryRsvp, setPrimaryRsvp] = useState<"pending" | "attending" | "declined">(invitation.guest.rsvp_status);
-  const [primaryDietary, setPrimaryDietary] = useState<string>(invitation.guest.dietary_notes || "");
-  const [primaryMessage, setPrimaryMessage] = useState<string>(invitation.guest.message || "");
+
+  // RSVP follow-up questions use the same response model as every other
+  // form. Keep saved answers separate from the open modal's drafts so a
+  // second visit reopens on what was just submitted without a page reload.
+  const [rsvpSavedAnswers, setRsvpSavedAnswers] = useState<Record<string, Record<string, FormAnswers>>>(() => {
+    const byForm: Record<string, Record<string, FormAnswers>> = {};
+    for (const form of [invitation.rsvp_form, invitation.rsvp_reconfirmation]) {
+      if (!form) continue;
+      byForm[form.id] = {
+        [invitation.guest.id]: form.answers ?? {},
+        ...(form.companion_answers ?? {}),
+      };
+    }
+    return byForm;
+  });
+  const [rsvpDrafts, setRsvpDrafts] = useState<Record<string, FormAnswers>>({});
+  const [rsvpPersonId, setRsvpPersonId] = useState(invitation.guest.id);
+  const [rsvpError, setRsvpError] = useState<string | null>(null);
 
   // Companions — local state (not just the invitation prop) so a guest who
   // adds a partner/child mid-RSVP sees them appear immediately.
@@ -200,7 +288,14 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     })),
   );
   const [activeCustomFormId, setActiveCustomFormId] = useState<string | null>(null);
-  const [customDraft, setCustomDraft] = useState<FormAnswers>({});
+  // One draft per person, keyed by guest id — the invited guest, plus each
+  // relative they're bringing when the couple asks this form per person. A
+  // form asked once per invitation only ever has the one key, so the same
+  // state covers both shapes.
+  const [customDrafts, setCustomDrafts] = useState<Record<string, FormAnswers>>({});
+  // Whose answers are on screen. Switching person keeps every draft, so a
+  // guest can fill three children's meals and save once.
+  const [customPersonId, setCustomPersonId] = useState<string>(invitation.guest.id);
   const [customSubmitting, setCustomSubmitting] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
 
@@ -293,22 +388,60 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const handleSaveRsvp = async () => {
     if (primaryRsvp === "pending") return;
 
+    const form = rsvpModalContext === "reconfirmation"
+      ? invitation.rsvp_reconfirmation
+      : invitation.rsvp_form;
+    const questions = normalizeQuestions(form?.questions, DEFAULT_LOCALE);
+    const people = [
+      ...(primaryRsvp === "attending"
+        ? [{ id: invitation.guest.id, name: guestFullName }]
+        : []),
+      ...(primaryRsvp === "attending"
+        ? companions
+            .filter((companion) => companionsRsvp[companion.id]?.rsvp_status === "attending")
+            .map((companion) => ({
+              id: companion.id,
+              name: `${companion.first_name} ${companion.last_name || ""}`.trim(),
+            }))
+        : []),
+    ];
+
+    for (const person of people) {
+      if (missingRequired(questions, rsvpDrafts[person.id]).length === 0) continue;
+      setRsvpPersonId(person.id);
+      setRsvpError(
+        people.length > 1
+          ? locale === "fr"
+            ? `Merci de répondre aux questions obligatoires pour ${person.name}.`
+            : `Please answer the required questions for ${person.name}.`
+          : locale === "fr"
+            ? "Merci de répondre aux questions obligatoires."
+            : "Please answer the required questions.",
+      );
+      return;
+    }
+
     setSubmittingRsvp(true);
+    setRsvpError(null);
     try {
       if (!isDemo) {
         const supabase = getBrowserSupabase();
         await submitGuestRsvp(
           {
-            submitPrimary: (args) => supabase.rpc("submit_rsvp", args),
-            submitCompanion: (args) => supabase.rpc("submit_companion_rsvp", args),
+            submitResponse: (args) => supabase.rpc("submit_rsvp_response", args),
           },
           {
             token,
+            formId: form?.id || null,
             primaryStatus: primaryRsvp,
-            primaryDietary,
-            primaryMessage,
             companions,
             companionsRsvp,
+            responses: questions.length > 0
+              ? people.map((person) => ({
+                  guestId: person.id,
+                  answers: rsvpDrafts[person.id] ?? {},
+                }))
+              : [],
           },
         );
       }
@@ -317,6 +450,15 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       // rows above are already persisted, so there is nothing to sync back onto
       // the invitation prop.
 
+      if (form) {
+        setRsvpSavedAnswers((prev) => ({
+          ...prev,
+          [form.id]: {
+            ...(prev[form.id] ?? {}),
+            ...Object.fromEntries(people.map((person) => [person.id, rsvpDrafts[person.id] ?? {}])),
+          },
+        }));
+      }
       setActiveFormModal(null);
     } catch (e) {
       console.error("Failed to submit RSVP:", e);
@@ -358,7 +500,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   };
 
   const coupleNames = `${invitation.wedding.partner_one} & ${invitation.wedding.partner_two}`;
-
   const handleGuestSignOut = async () => {
     setSigningOut(true);
     try {
@@ -420,10 +561,15 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     primaryDefaults.labelDeclined,
   );
 
+  const now = new Date();
+  const primaryForm = invitation.rsvp_form ?? null;
+  const primaryRsvpLive = primaryForm?.published !== false
+    && (!primaryForm?.opens_at || new Date(primaryForm.opens_at) <= now)
+    && (!primaryForm?.closes_at || new Date(primaryForm.closes_at) >= now);
+
   // The optional late "still coming?" touchpoint — same RSVP block, shown
   // only when the organiser has published it and it's within its window.
   const reconfirmation = invitation.rsvp_reconfirmation ?? null;
-  const now = new Date();
   const reconfirmationLive = !!reconfirmation?.published
     && (!reconfirmation.opens_at || new Date(reconfirmation.opens_at) <= now)
     && (!reconfirmation.closes_at || new Date(reconfirmation.closes_at) >= now);
@@ -436,6 +582,12 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   );
 
   const openRsvpModal = (context: "primary" | "reconfirmation") => {
+    const form = context === "reconfirmation"
+      ? invitation.rsvp_reconfirmation
+      : invitation.rsvp_form;
+    setRsvpDrafts(form ? { ...(rsvpSavedAnswers[form.id] ?? {}) } : {});
+    setRsvpPersonId(invitation.guest.id);
+    setRsvpError(null);
     setRsvpModalContext(context);
     setActiveFormModal("rsvp");
   };
@@ -459,9 +611,95 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
   const activeCustomForm = customForms.find((f) => f.id === activeCustomFormId) ?? null;
 
+  const guestFullName = `${invitation.guest.first_name} ${invitation.guest.last_name || ""}`.trim();
+  const activeRsvpForm = rsvpModalContext === "reconfirmation"
+    ? reconfirmation
+    : invitation.rsvp_form;
+  const activeRsvpQuestions = normalizeQuestions(
+    activeRsvpForm?.questions,
+    DEFAULT_LOCALE,
+  );
+  const rsvpRespondents = [
+    ...(primaryRsvp === "attending"
+      ? [{ id: invitation.guest.id, name: guestFullName }]
+      : []),
+    ...(primaryRsvp === "attending"
+      ? companions
+          .filter((companion) => companionsRsvp[companion.id]?.rsvp_status === "attending")
+          .map((companion) => ({
+            id: companion.id,
+            name: `${companion.first_name} ${companion.last_name || ""}`.trim(),
+          }))
+      : []),
+  ];
+  const activeRsvpDraft = rsvpDrafts[rsvpPersonId] ?? {};
+
+  const patchRsvpDraft = (next: FormAnswers) => {
+    setRsvpDrafts((prev) => ({ ...prev, [rsvpPersonId]: next }));
+    setRsvpError(null);
+  };
+
+  /** Everyone a given form is answered for: just the invited guest, or them
+   *  plus the relatives they're bringing when the couple asks it per person.
+   *  Same household the RSVP block already answers for, same order. */
+  const respondentsFor = (
+    form: NonNullable<DBInvitation["custom_forms"]>[number] | null,
+  ): Array<{ id: string; name: string }> => {
+    const self = { id: invitation.guest.id, name: guestFullName };
+    if (!form?.per_person) return [self];
+    return [
+      self,
+      ...companions
+        .filter((c) => companionsRsvp[c.id]?.rsvp_status === "attending")
+        .map((c) => ({
+          id: c.id,
+          name: `${c.first_name} ${c.last_name || ""}`.trim(),
+        })),
+    ];
+  };
+
+  const activeRespondents = respondentsFor(activeCustomForm);
+  const activeDraft = customDrafts[customPersonId] ?? {};
+
+  /** How many people already have answers on record for a per-person form —
+   *  the "2 of 4" on its card, so a half-filled household is visible without
+   *  opening the form.
+   *
+   *  Counts submitted replies, not filled-in fields: a form of optional
+   *  questions someone sent back empty is a considered "nothing to declare"
+   *  and has to stop nagging them. Whether a person has been *started* is a
+   *  different question, and that's the one the chips in the modal ask. */
+  const customFormAnsweredCount = (
+    f: NonNullable<DBInvitation["custom_forms"]>[number],
+  ): number =>
+    respondentsFor(f).filter((r) =>
+      r.id === invitation.guest.id
+        ? f.answers != null
+        : f.companion_answers?.[r.id] != null,
+    ).length;
+
+  const patchActiveDraft = (
+    update: (prev: FormAnswers) => FormAnswers,
+  ) =>
+    setCustomDrafts((prev) => ({
+      ...prev,
+      [customPersonId]: update(prev[customPersonId] ?? {}),
+    }));
+
   const openCustomForm = (formId: string) => {
     const f = customForms.find((cf) => cf.id === formId);
-    setCustomDraft(f?.answers ?? {});
+    // Every person this form is answered for opens on what they already
+    // said — a blank form that silently overwrites an answer on save is the
+    // one thing a second visit must not do.
+    const drafts: Record<string, FormAnswers> = {};
+    for (const person of respondentsFor(f ?? null)) {
+      drafts[person.id] =
+        person.id === invitation.guest.id
+          ? (f?.answers ?? {})
+          : (f?.companion_answers?.[person.id] ?? {});
+    }
+    setCustomDrafts(drafts);
+    setCustomPersonId(invitation.guest.id);
     setCustomError(null);
     setActiveCustomFormId(formId);
   };
@@ -469,26 +707,64 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const handleSubmitCustomForm = async () => {
     if (!activeCustomForm) return;
     const questions = activeCustomForm.questions;
-    const missing = questions.some((q) => {
-      if (!q.required) return false;
-      const v = customDraft[q.id];
-      return Array.isArray(v) ? v.length === 0 : !v || !v.trim();
-    });
-    if (missing) {
-      setCustomError(locale === "fr" ? "Merci de répondre aux questions obligatoires." : "Please answer the required questions.");
+    const people = respondentsFor(activeCustomForm);
+
+    // Pressing submit confirms one response for every attendee this form
+    // covers. An empty row on an all-optional form is an explicit "nothing to
+    // declare" and lets the household reach Completed instead of nagging
+    // forever for a child with no preferences.
+    const toSubmit = people;
+
+    for (const person of toSubmit) {
+      const missing = missingRequired(questions, customDrafts[person.id]);
+      if (missing.length === 0) continue;
+      // Named, because on a per-person form "you missed a required question"
+      // without saying whose sends the guest hunting through four tabs.
+      setCustomPersonId(person.id);
+      setCustomError(
+        people.length > 1
+          ? locale === "fr"
+            ? `Merci de répondre aux questions obligatoires pour ${person.name}.`
+            : `Please answer the required questions for ${person.name}.`
+          : locale === "fr"
+            ? "Merci de répondre aux questions obligatoires."
+            : "Please answer the required questions.",
+      );
       return;
     }
+
     setCustomSubmitting(true);
     setCustomError(null);
     try {
       const supabase = getBrowserSupabase();
-      const { error } = await supabase.rpc("submit_form_response", {
-        p_token: token,
-        p_form_id: activeCustomForm.id,
-        p_answers: customDraft,
-      });
-      if (error) throw error;
-      setCustomForms((prev) => prev.map((f) => (f.id === activeCustomForm.id ? { ...f, answers: customDraft } : f)));
+      for (const person of toSubmit) {
+        const { error } = await supabase.rpc("submit_form_response", {
+          p_token: token,
+          p_form_id: activeCustomForm.id,
+          p_answers: customDrafts[person.id] ?? {},
+          // Omitted for the guest themself, so a form answered once per
+          // invitation goes through exactly the call it always did.
+          ...(person.id === invitation.guest.id
+            ? {}
+            : { p_for_guest_id: person.id }),
+        });
+        if (error) throw error;
+      }
+      setCustomForms((prev) =>
+        prev.map((f) => {
+          if (f.id !== activeCustomForm.id) return f;
+          const companionAnswers = { ...(f.companion_answers ?? {}) };
+          for (const person of toSubmit) {
+            if (person.id === invitation.guest.id) continue;
+            companionAnswers[person.id] = customDrafts[person.id] ?? {};
+          }
+          return {
+            ...f,
+            answers: customDrafts[invitation.guest.id] ?? {},
+            companion_answers: companionAnswers,
+          };
+        }),
+      );
       setActiveCustomFormId(null);
     } catch (e) {
       setCustomError(e instanceof Error ? e.message : (locale === "fr" ? "Erreur lors de l'enregistrement." : "Couldn't save your answers."));
@@ -1131,7 +1407,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
             <div className="form-grid">
               {/* Main RSVP */}
-              <div className="form-card">
+              {primaryRsvpLive && <div className="form-card">
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
                     <span className={`badge-status ${primaryRsvp}`}>
@@ -1159,7 +1435,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 >
                   {primaryRsvp === "pending" ? (locale === "fr" ? "Répondre" : "Start") : (locale === "fr" ? "Modifier" : "Update")}
                 </button>
-              </div>
+              </div>}
 
               {/* RSVP reconfirmation — same block, later nudge, only when open */}
               {reconfirmationLive && (
@@ -1200,7 +1476,14 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               {/* Custom forms — organiser-authored, shown once published */}
               {customForms.map((f) => {
                 const state = customFormState(f);
-                const answered = !!f.answers;
+                const people = respondentsFor(f).length;
+                const answeredPeople = customFormAnsweredCount(f);
+                // A per-person form is only "completed" once everyone it asks
+                // about has replied — otherwise a household with three
+                // children answered for one would look finished.
+                const answered = f.per_person
+                  ? answeredPeople === people
+                  : f.answers != null;
                 return (
                   <div key={f.id} className="form-card" style={{ opacity: state === "scheduled" ? 0.6 : 1 }}>
                     <div>
@@ -1220,6 +1503,14 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                       </h3>
                       <p style={{ color: "var(--muted)", fontSize: "13px", margin: 0, maxWidth: "400px" }}>
                         {f.questions.length} {locale === "fr" ? "question(s)" : `question${f.questions.length === 1 ? "" : "s"}`}
+                        {f.per_person && people > 1 && (
+                          <>
+                            {" · "}
+                            {locale === "fr"
+                              ? `${answeredPeople} sur ${people} personnes`
+                              : `${answeredPeople} of ${people} people`}
+                          </>
+                        )}
                       </p>
                     </div>
                     <button
@@ -1551,30 +1842,27 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               </p>
               <div className="choice-row">
                 <button
-                  onClick={() => setPrimaryRsvp("attending")}
+                  onClick={() => {
+                    setPrimaryRsvp("attending");
+                    setRsvpPersonId(invitation.guest.id);
+                    setRsvpError(null);
+                  }}
                   className={`choice-btn ${primaryRsvp === "attending" ? "selected-yes" : ""}`}
                 >
                   ✓ {labelAttending}
                 </button>
                 <button
-                  onClick={() => setPrimaryRsvp("declined")}
+                  onClick={() => {
+                    setPrimaryRsvp("declined");
+                    setRsvpPersonId(invitation.guest.id);
+                    setRsvpError(null);
+                  }}
                   className={`choice-btn ${primaryRsvp === "declined" ? "selected-no" : ""}`}
                 >
                   ✗ {labelDeclined}
                 </button>
               </div>
 
-              {primaryRsvp === "attending" && (
-                <div className="field" style={{ marginTop: "16px" }}>
-                  <label>🍏 {locale === "fr" ? "Vos restrictions alimentaires / allergies" : "Your Dietary Restrictions"}</label>
-                  <input
-                    type="text"
-                    value={primaryDietary}
-                    onChange={(e) => setPrimaryDietary(e.target.value)}
-                    placeholder={locale === "fr" ? "Ex: sans gluten, végétarien..." : "e.g. vegetarian, nut allergies"}
-                  />
-                </div>
-              )}
             </div>
 
             {/* Companion RSVPs */}
@@ -1592,39 +1880,35 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                       </p>
                       <div className="choice-row" style={{ marginBottom: "10px" }}>
                         <button
-                          onClick={() => setCompanionsRsvp({
-                            ...companionsRsvp,
-                            [companion.id]: { ...state, rsvp_status: "attending" }
-                          })}
+                          onClick={() => {
+                            setCompanionsRsvp({
+                              ...companionsRsvp,
+                              [companion.id]: { ...state, rsvp_status: "attending" },
+                            });
+                            setRsvpPersonId(companion.id);
+                            setRsvpError(null);
+                          }}
                           className={`choice-btn ${state.rsvp_status === "attending" ? "selected-yes" : ""}`}
                         >
                           {labelAttending}
                         </button>
                         <button
-                          onClick={() => setCompanionsRsvp({
-                            ...companionsRsvp,
-                            [companion.id]: { ...state, rsvp_status: "declined" }
-                          })}
+                          onClick={() => {
+                            setCompanionsRsvp({
+                              ...companionsRsvp,
+                              [companion.id]: { ...state, rsvp_status: "declined" },
+                            });
+                            if (rsvpPersonId === companion.id) {
+                              setRsvpPersonId(invitation.guest.id);
+                            }
+                            setRsvpError(null);
+                          }}
                           className={`choice-btn ${state.rsvp_status === "declined" ? "selected-no" : ""}`}
                         >
                           {labelDeclined}
                         </button>
                       </div>
 
-                      {state.rsvp_status === "attending" && (
-                        <input
-                          type="text"
-                          value={state.dietary_notes}
-                          onChange={(e) => setCompanionsRsvp({
-                            ...companionsRsvp,
-                            [companion.id]: { ...state, dietary_notes: e.target.value }
-                          })}
-                          placeholder={locale === "fr" ? "Restrictions alimentaires..." : "Dietary restrictions..."}
-                          style={{
-                            width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e1dec3", fontSize: "13px"
-                          }}
-                        />
-                      )}
                     </div>
                   );
                 })}
@@ -1730,16 +2014,62 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               </div>
             )}
 
-            {/* Message to Couple */}
-            <div className="field">
-              <label>✍️ {locale === "fr" ? "Un mot pour Maya & Daniel ?" : "A message for the couple"}</label>
-              <textarea
-                value={primaryMessage}
-                onChange={(e) => setPrimaryMessage(e.target.value)}
-                placeholder={locale === "fr" ? "Hâte de fêter avec vous !" : "Can't wait to see you!"}
-                rows={3}
-              />
-            </div>
+            {activeRsvpQuestions.length > 0 && rsvpRespondents.length > 0 && (
+              <div style={{ borderTop: "1px solid #e1dec3", paddingTop: 18, marginTop: 4 }}>
+                {rsvpRespondents.length > 1 && (
+                  <div style={{ marginBottom: 18 }}>
+                    <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 8px" }}>
+                      {locale === "fr"
+                        ? "Répondez pour chaque personne qui vient."
+                        : "Answer for each person who is coming."}
+                    </p>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {rsvpRespondents.map((person) => {
+                        const on = person.id === rsvpPersonId;
+                        const complete = missingRequired(activeRsvpQuestions, rsvpDrafts[person.id]).length === 0
+                          && hasAnyAnswer(rsvpDrafts[person.id]);
+                        return (
+                          <button
+                            key={person.id}
+                            type="button"
+                            onClick={() => {
+                              setRsvpPersonId(person.id);
+                              setRsvpError(null);
+                            }}
+                            style={{
+                              border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`,
+                              background: on ? "var(--accent-light)" : "#fff",
+                              color: on ? "var(--primary)" : "var(--muted)",
+                              borderRadius: 100,
+                              padding: "7px 14px",
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                            }}
+                          >
+                            {complete ? "✓ " : ""}
+                            {person.id === invitation.guest.id
+                              ? locale === "fr" ? "Vous" : "You"
+                              : person.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <FormQuestionFields
+                  questions={activeRsvpQuestions}
+                  answers={activeRsvpDraft}
+                  locale={locale}
+                  onChange={patchRsvpDraft}
+                />
+              </div>
+            )}
+
+            {rsvpError && (
+              <div style={{ color: "#C0553B", fontSize: 13, marginBottom: 16 }}>{rsvpError}</div>
+            )}
 
             <button
               className="btn-submit"
@@ -1778,63 +2108,58 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               </button>
             </div>
 
-            {activeCustomForm.questions.map((q: RsvpQuestion) => (
-              <div className="field" key={q.id}>
-                <label>
-                  {coupleText(q.title, locale) ?? ""}
-                  {q.required ? " *" : ` (${locale === "fr" ? "optionnel" : "optional"})`}
-                </label>
-
-                {(q.kind === "single" || q.kind === "multi") && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {(q.options ?? []).map((opt) => {
-                      const current = customDraft[q.id];
-                      // Answers are stored as option ids, so the same choice
-                      // reads back as chosen whatever language it was picked in.
-                      const selected = q.kind === "single"
-                        ? current === opt.id
-                        : Array.isArray(current) && current.includes(opt.id);
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => {
-                            setCustomDraft((prev) => {
-                              if (q.kind === "single") return { ...prev, [q.id]: opt.id };
-                              const list = Array.isArray(prev[q.id]) ? (prev[q.id] as string[]) : [];
-                              const next = list.includes(opt.id)
-                                ? list.filter((o) => o !== opt.id)
-                                : [...list, opt.id];
-                              return { ...prev, [q.id]: next };
-                            });
-                          }}
-                          className={`choice-btn ${selected ? "selected-yes" : ""}`}
-                          style={{ justifyContent: "flex-start", textAlign: "left" }}
-                        >
-                          {selected ? "✓ " : ""}{coupleText(opt.label, locale) ?? ""}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {q.kind === "short" && (
-                  <input
-                    type="text"
-                    value={typeof customDraft[q.id] === "string" ? (customDraft[q.id] as string) : ""}
-                    onChange={(e) => setCustomDraft((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                  />
-                )}
-
-                {q.kind === "comment" && (
-                  <textarea
-                    value={typeof customDraft[q.id] === "string" ? (customDraft[q.id] as string) : ""}
-                    onChange={(e) => setCustomDraft((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                    rows={3}
-                  />
-                )}
+            {/* Who this form is being answered for. Only shown when there is
+                more than one person to answer for — a single-person form must
+                not grow a tab strip it has no use for. */}
+            {activeRespondents.length > 1 && (
+              <div style={{ marginBottom: "20px" }}>
+                <p style={{ fontSize: "13px", color: "var(--muted)", margin: "0 0 8px" }}>
+                  {locale === "fr"
+                    ? "Répondez pour chaque personne que vous amenez — passez de l'une à l'autre ici, puis envoyez une seule fois."
+                    : "Answer for each person you're bringing — switch between them here, then submit once."}
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {activeRespondents.map((person) => {
+                    const on = person.id === customPersonId;
+                    const started = hasAnyAnswer(customDrafts[person.id]);
+                    return (
+                      <button
+                        key={person.id}
+                        type="button"
+                        onClick={() => {
+                          setCustomPersonId(person.id);
+                          setCustomError(null);
+                        }}
+                        style={{
+                          border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`,
+                          background: on ? "var(--accent-light)" : "#fff",
+                          color: on ? "var(--primary)" : "var(--muted)",
+                          borderRadius: "100px",
+                          padding: "7px 14px",
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {started ? "✓ " : ""}
+                        {person.id === invitation.guest.id
+                          ? locale === "fr"
+                            ? "Vous"
+                            : "You"
+                          : person.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            ))}
+            )}
+
+            <FormQuestionFields
+              questions={activeCustomForm.questions}
+              answers={activeDraft}
+              locale={locale}
+              onChange={(next) => patchActiveDraft(() => next)}
+            />
 
             {customError && (
               <div style={{ color: "#C0553B", fontSize: 13, marginBottom: 16 }}>{customError}</div>
