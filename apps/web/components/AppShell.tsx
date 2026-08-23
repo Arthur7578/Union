@@ -9,6 +9,7 @@ import { useProfile } from "@/lib/profile";
 import { useWedding } from "@/lib/wedding";
 import { useT } from "@/lib/i18n/client";
 import { initial } from "@/lib/format";
+import { activeNavKey, type NavKey } from "@/lib/nav";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Avatar } from "./ui";
 import {
@@ -18,8 +19,6 @@ import {
   PlanIcon,
   Spark,
 } from "./icons";
-
-type NavKey = "today" | "vendors" | "union" | "guests" | "plan";
 
 const ON = "#43353A";
 const OFF = "#C1B4AD";
@@ -40,13 +39,8 @@ const TABS: Tab[] = [
   { key: "plan", href: "/plan", match: ["/plan"], Icon: PlanIcon },
 ];
 
-function useActive(): NavKey {
-  const path = usePathname() ?? "";
-  if (path.startsWith("/vendors/search")) return "union";
-  if (path.startsWith("/vendors")) return "vendors";
-  if (path.startsWith("/guests")) return "guests";
-  if (path.startsWith("/plan")) return "plan";
-  return "today";
+function useActive(): NavKey | null {
+  return activeNavKey(usePathname() ?? "");
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
