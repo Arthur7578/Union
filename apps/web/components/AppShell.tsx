@@ -9,6 +9,7 @@ import { useProfile } from "@/lib/profile";
 import { useWedding } from "@/lib/wedding";
 import { useT } from "@/lib/i18n/client";
 import { initial } from "@/lib/format";
+import { activeNavKey, type NavKey } from "@/lib/nav";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Avatar } from "./ui";
 import {
@@ -18,8 +19,6 @@ import {
   PlanIcon,
   Spark,
 } from "./icons";
-
-type NavKey = "today" | "vendors" | "union" | "guests" | "plan";
 
 const ON = "#43353A";
 const OFF = "#C1B4AD";
@@ -40,13 +39,8 @@ const TABS: Tab[] = [
   { key: "plan", href: "/plan", match: ["/plan"], Icon: PlanIcon },
 ];
 
-function useActive(): NavKey {
-  const path = usePathname() ?? "";
-  if (path.startsWith("/vendors/search")) return "union";
-  if (path.startsWith("/vendors")) return "vendors";
-  if (path.startsWith("/guests")) return "guests";
-  if (path.startsWith("/plan")) return "plan";
-  return "today";
+function useActive(): NavKey | null {
+  return activeNavKey(usePathname() ?? "");
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -64,7 +58,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   const displayName = profile?.full_name || wedding?.partner_one || dict.account.title;
-  const accountActive = path.startsWith("/account");
+  const feedbackActive = path.startsWith("/account/feedback");
+  const accountActive = path.startsWith("/account") && !feedbackActive;
 
   return (
     <div className="u-app">
@@ -157,6 +152,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <div style={{ fontSize: 11, color: T.faint }}>{dict.account.title}</div>
             </div>
+          </Link>
+          {/* Feedback lives in the account area now that the floating widget
+              is gone — this keeps it one click away on desktop. */}
+          <Link
+            href="/account/feedback"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "9px 12px",
+              borderRadius: 13,
+              background: feedbackActive ? T.accentSoft : "transparent",
+              color: feedbackActive ? T.ink : T.muted2,
+              fontWeight: 600,
+              fontSize: 14,
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ width: 22, display: "flex", justifyContent: "center" }}>
+              <Spark size={17} color={feedbackActive ? T.accent : OFF} />
+            </span>
+            {dict.feedback.navLabel}
           </Link>
           <div style={{ padding: "0 6px" }}>
             <div
