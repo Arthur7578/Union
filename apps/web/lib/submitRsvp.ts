@@ -1,5 +1,6 @@
-export type AnsweredRsvpStatus = "attending" | "declined";
-export type RsvpStatus = AnsweredRsvpStatus | "pending";
+import type { AnsweredRsvpStatus, RsvpStatus } from "@union/shared";
+
+export type { AnsweredRsvpStatus, RsvpStatus };
 
 export interface PrimaryRsvpArgs {
   p_token: string;

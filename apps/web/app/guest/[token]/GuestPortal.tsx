@@ -12,9 +12,18 @@ import {
   canAddChildren,
   canAddPartner as mayAddPartner,
   enabledGuestModules,
+  isRsvpAnswerAllowed,
+  mayAttend,
   normalizeQuestions,
+  rsvpAnswers,
 } from "@union/shared";
-import type { FormAnswers, GuestModuleKey, RsvpQuestion } from "@union/shared";
+import type {
+  AnsweredRsvpStatus,
+  FormAnswers,
+  GuestModuleKey,
+  RsvpQuestion,
+  RsvpStatus,
+} from "@union/shared";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
 
@@ -156,7 +165,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
   // Separate forms submission & state storage
   // RSVP state
-  const [primaryRsvp, setPrimaryRsvp] = useState<"pending" | "attending" | "declined">(invitation.guest.rsvp_status);
+  const [primaryRsvp, setPrimaryRsvp] = useState<RsvpStatus>(invitation.guest.rsvp_status);
   const [primaryDietary, setPrimaryDietary] = useState<string>(invitation.guest.dietary_notes || "");
   const [primaryMessage, setPrimaryMessage] = useState<string>(invitation.guest.message || "");
 
@@ -165,14 +174,14 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const [companions, setCompanions] = useState(invitation.companions);
 
   // Companions RSVP state
-  const [companionsRsvp, setCompanionsRsvp] = useState<Record<string, { rsvp_status: "pending" | "attending" | "declined"; dietary_notes: string }>>(
+  const [companionsRsvp, setCompanionsRsvp] = useState<Record<string, { rsvp_status: RsvpStatus; dietary_notes: string }>>(
     companions.reduce((acc, companion) => {
       acc[companion.id] = {
         rsvp_status: companion.rsvp_status,
         dietary_notes: companion.dietary_notes || "",
       };
       return acc;
-    }, {} as Record<string, { rsvp_status: "pending" | "attending" | "declined"; dietary_notes: string }>)
+    }, {} as Record<string, { rsvp_status: RsvpStatus; dietary_notes: string }>)
   );
 
   // Add-a-relative flow (partner/child), backed by the existing
@@ -289,9 +298,14 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     return () => clearInterval(interval);
   }, [invitation.wedding.event_date]);
 
+  // Which replies this wedding accepts. "Maybe" is the couple's decision, and
+  // an older server that doesn't send the flag reads as off — the two-answer
+  // RSVP guests saw before this existed.
+  const allowMaybe = invitation.wedding.allow_rsvp_maybe === true;
+
   // Submissions
   const handleSaveRsvp = async () => {
-    if (primaryRsvp === "pending") return;
+    if (!isRsvpAnswerAllowed(primaryRsvp, allowMaybe)) return;
 
     setSubmittingRsvp(true);
     try {
@@ -414,11 +428,39 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     locale,
     primaryDefaults.labelAttending,
   );
+  const labelMaybe = coupleTextOr(
+    invitation.rsvp_form?.label_maybe,
+    locale,
+    primaryDefaults.labelMaybe,
+  );
   const labelDeclined = coupleTextOr(
     invitation.rsvp_form?.label_declined,
     locale,
     primaryDefaults.labelDeclined,
   );
+
+  const answers = rsvpAnswers(allowMaybe);
+
+  /** The label and the selected-state class for one reply button. Both come
+   *  from the same lookup so a button's wording can never end up on the
+   *  styling — or the meaning — of a different answer. */
+  const ANSWER_UI: Record<AnsweredRsvpStatus, { label: string; icon: string; selected: string }> = {
+    attending: { label: labelAttending, icon: "✓", selected: "selected-yes" },
+    maybe: { label: labelMaybe, icon: "~", selected: "selected-maybe" },
+    declined: { label: labelDeclined, icon: "✗", selected: "selected-no" },
+  };
+
+  /** Whether what's currently picked is something this wedding will accept.
+   *  Not the same as "something is picked": a guest whose stored reply is
+   *  'maybe' still shows as maybe after the couple turns the option off, and
+   *  saving that unchanged would be refused server-side. */
+  const answerable = answers.some((a) => a === primaryRsvp);
+
+  /** What a reply reads as on the RSVP card's status badge. */
+  const answerBadge = (status: RsvpStatus): string =>
+    status === "pending"
+      ? locale === "fr" ? "À Remplir" : "Pending"
+      : ANSWER_UI[status].label;
 
   // The optional late "still coming?" touchpoint — same RSVP block, shown
   // only when the organiser has published it and it's within its window.
@@ -581,6 +623,11 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           --text: #2b2724;
           --muted: #8a817c;
           --success: #6e8a72;
+          /* The third reply. Blue rather than another warm tone: "maybe" is a
+             held answer, not a warning, and it has to stay distinguishable
+             from both the yes and the no at a glance. */
+          --hold: #5c648a;
+          --hold-light: #e9ecf3;
           --border: #e3dec3;
           --font-serif: 'Cormorant Garamond', serif;
           --font-sans: 'Instrument Sans', sans-serif;
@@ -724,6 +771,21 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           color: var(--success);
         }
 
+        .badge-status.attending {
+          background: #eaf5ec;
+          color: var(--success);
+        }
+
+        .badge-status.maybe {
+          background: var(--hold-light);
+          color: var(--hold);
+        }
+
+        .badge-status.declined {
+          background: #fdf2f4;
+          color: var(--accent);
+        }
+
         .badge-status.locked {
           background: #f2f2f2;
           color: #999999;
@@ -822,10 +884,28 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           color: var(--success);
         }
 
+        .choice-btn.selected-maybe {
+          border-color: var(--hold);
+          background: var(--hold-light);
+          color: var(--hold);
+        }
+
         .choice-btn.selected-no {
           border-color: var(--accent);
           background: #fdf2f4;
           color: var(--accent);
+        }
+
+        /* Three buttons don't fit a phone's width the way two do. They wrap
+           to a stack rather than shrinking into unreadable slivers, which is
+           what breaks a reply the guest can't read. */
+        @media (max-width: 420px) {
+          .choice-row.choice-row-three {
+            flex-wrap: wrap;
+          }
+          .choice-row.choice-row-three .choice-btn {
+            flex: 1 1 100%;
+          }
         }
 
         .btn-submit {
@@ -1135,7 +1215,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
                     <span className={`badge-status ${primaryRsvp}`}>
-                      {primaryRsvp === "pending" ? (locale === "fr" ? "À Remplir" : "Pending") : (primaryRsvp === "attending" ? labelAttending : labelDeclined)}
+                      {answerBadge(primaryRsvp)}
                     </span>
                   </div>
                   <h3 className="u-serif" style={{ fontSize: "20px", fontWeight: "600", margin: "0 0 6px" }}>
@@ -1167,7 +1247,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
                       <span className={`badge-status ${primaryRsvp}`}>
-                        {primaryRsvp === "pending" ? (locale === "fr" ? "À Remplir" : "Pending") : (primaryRsvp === "attending" ? labelAttending : labelDeclined)}
+                        {answerBadge(primaryRsvp)}
                       </span>
                       <span style={{ fontSize: "12px", color: "var(--muted)", fontWeight: "600" }}>
                         {locale === "fr" ? "Dernier point" : "Final check-in"}
@@ -1549,22 +1629,24 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               <p style={{ fontWeight: "bold", color: "var(--accent)", margin: "0 0 10px" }}>
                 👤 {invitation.guest.first_name} {invitation.guest.last_name || ""}
               </p>
-              <div className="choice-row">
-                <button
-                  onClick={() => setPrimaryRsvp("attending")}
-                  className={`choice-btn ${primaryRsvp === "attending" ? "selected-yes" : ""}`}
-                >
-                  ✓ {labelAttending}
-                </button>
-                <button
-                  onClick={() => setPrimaryRsvp("declined")}
-                  className={`choice-btn ${primaryRsvp === "declined" ? "selected-no" : ""}`}
-                >
-                  ✗ {labelDeclined}
-                </button>
+              <div className={`choice-row${answers.length > 2 ? " choice-row-three" : ""}`}>
+                {answers.map((answer) => {
+                  const ui = ANSWER_UI[answer];
+                  return (
+                    <button
+                      key={answer}
+                      onClick={() => setPrimaryRsvp(answer)}
+                      className={`choice-btn ${primaryRsvp === answer ? ui.selected : ""}`}
+                    >
+                      {ui.icon} {ui.label}
+                    </button>
+                  );
+                })}
               </div>
 
-              {primaryRsvp === "attending" && (
+              {/* A guest who might come is still worth asking: collecting this
+                  now beats a second round of questions once they firm up. */}
+              {mayAttend(primaryRsvp) && (
                 <div className="field" style={{ marginTop: "16px" }}>
                   <label>🍏 {locale === "fr" ? "Vos restrictions alimentaires / allergies" : "Your Dietary Restrictions"}</label>
                   <input
@@ -1578,7 +1660,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
             </div>
 
             {/* Companion RSVPs */}
-            {primaryRsvp === "attending" && (companions.length > 0 || canAddPartner || canAddKids) && (
+            {mayAttend(primaryRsvp) && (companions.length > 0 || canAddPartner || canAddKids) && (
               <div style={{ marginBottom: "24px" }}>
                 <h4 style={{ fontWeight: "bold", fontSize: "14px", margin: "0 0 12px", borderTop: "1px solid #e1dec3", paddingTop: "16px" }}>
                   👥 {locale === "fr" ? "Proches de votre foyer :" : "Companions in your group :"}
@@ -1590,28 +1672,28 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                       <p style={{ fontWeight: "bold", fontSize: "14px", margin: "0 0 8px" }}>
                         {companion.first_name} {companion.last_name || ""} <span style={{ fontWeight: "normal", fontSize: "12px", color: "var(--muted)", fontStyle: "italic" }}>({locale === "fr" ? "optionnel" : "optional"})</span>
                       </p>
-                      <div className="choice-row" style={{ marginBottom: "10px" }}>
-                        <button
-                          onClick={() => setCompanionsRsvp({
-                            ...companionsRsvp,
-                            [companion.id]: { ...state, rsvp_status: "attending" }
-                          })}
-                          className={`choice-btn ${state.rsvp_status === "attending" ? "selected-yes" : ""}`}
-                        >
-                          {labelAttending}
-                        </button>
-                        <button
-                          onClick={() => setCompanionsRsvp({
-                            ...companionsRsvp,
-                            [companion.id]: { ...state, rsvp_status: "declined" }
-                          })}
-                          className={`choice-btn ${state.rsvp_status === "declined" ? "selected-no" : ""}`}
-                        >
-                          {labelDeclined}
-                        </button>
+                      {/* A party where one person is sure and another isn't is
+                          the ordinary case, so companions get the same answers
+                          the token holder does. */}
+                      <div
+                        className={`choice-row${answers.length > 2 ? " choice-row-three" : ""}`}
+                        style={{ marginBottom: "10px" }}
+                      >
+                        {answers.map((answer) => (
+                          <button
+                            key={answer}
+                            onClick={() => setCompanionsRsvp({
+                              ...companionsRsvp,
+                              [companion.id]: { ...state, rsvp_status: answer }
+                            })}
+                            className={`choice-btn ${state.rsvp_status === answer ? ANSWER_UI[answer].selected : ""}`}
+                          >
+                            {ANSWER_UI[answer].label}
+                          </button>
+                        ))}
                       </div>
 
-                      {state.rsvp_status === "attending" && (
+                      {mayAttend(state.rsvp_status) && (
                         <input
                           type="text"
                           value={state.dietary_notes}
@@ -1741,9 +1823,20 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               />
             </div>
 
+            {/* A guest who answered "maybe" before the couple turned the
+                option off keeps that status on their card, but can only save a
+                firm answer now — so the button waits for one rather than
+                letting them submit a reply the server would refuse. */}
+            {!answerable && primaryRsvp !== "pending" && (
+              <p style={{ color: "var(--muted)", fontSize: "13px", margin: "0 0 12px" }}>
+                {locale === "fr"
+                  ? "Les organisateurs ont besoin d'une réponse ferme — choisissez ci-dessus."
+                  : "The couple needs a firm answer now — pick one above."}
+              </p>
+            )}
             <button
               className="btn-submit"
-              disabled={submittingRsvp || primaryRsvp === "pending"}
+              disabled={submittingRsvp || !answerable}
               onClick={handleSaveRsvp}
             >
               {submittingRsvp ? t.common.saving : (locale === "fr" ? "Soumettre le RSVP" : "Submit RSVP")}

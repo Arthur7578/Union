@@ -311,6 +311,9 @@ export default function FormsHubPage() {
                 {f.kind === "rsvp" && f.purpose === "primary" && stats ? (
                   <div style={{ display: "flex", gap: 8, marginTop: 13 }}>
                     <MiniStat value={stats.coming} label="Coming" bg={T.greenBg} fg={T.greenDeep} />
+                    {stats.maybe > 0 && (
+                      <MiniStat value={stats.maybe} label="Maybe" bg={T.blueBg} fg={T.blueInk} />
+                    )}
                     <MiniStat value={stats.declined} label="Can't" bg={T.roseBg} fg={T.rose} />
                     <MiniStat value={stats.waiting} label="Waiting" bg={T.amberBg} fg={T.amberInk} />
                   </div>

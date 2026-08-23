@@ -7,6 +7,7 @@ import { useWedding } from "../../lib/wedding";
 import { fetchGuests, type GuestWithRsvp } from "../../lib/data";
 import { daysUntil, formatLongDate } from "../../lib/format";
 import { useLocale } from "../../lib/i18n";
+import { rollUpRsvps } from "@union/shared";
 import { colors, fontSize, fontWeight, spacing } from "../../theme/theme";
 
 export default function Dashboard() {
@@ -37,12 +38,7 @@ export default function Dashboard() {
     }
   }, [load]);
 
-  const attending = guests.filter((g) => g.rsvps?.status === "attending");
-  const declined = guests.filter((g) => g.rsvps?.status === "declined");
-  const pending = guests.filter(
-    (g) => !g.rsvps || g.rsvps.status === "pending",
-  );
-  const headcount = attending.length;
+  const rsvps = rollUpRsvps(guests.map((g) => g.rsvps?.status ?? "pending"));
 
   const countdown = daysUntil(wedding?.event_date ?? null);
 
@@ -76,20 +72,31 @@ export default function Dashboard() {
 
         <Text style={styles.sectionTitle}>{t.home.rsvpOverview}</Text>
         <View style={styles.statRow}>
-          <StatCard value={attending.length} label={t.home.attending} color={colors.success} />
-          <StatCard value={pending.length} label={t.home.awaiting} color={colors.textMuted} />
-          <StatCard value={declined.length} label={t.home.declined} color={colors.danger} />
+          <StatCard value={rsvps.coming} label={t.home.attending} color={colors.success} />
+          {/* A fourth card only when there's something in it, so a couple not
+              using the option keeps the three-up row. */}
+          {rsvps.maybe > 0 ? (
+            <StatCard value={rsvps.maybe} label={t.home.maybe} color={colors.warning} />
+          ) : null}
+          <StatCard value={rsvps.waiting} label={t.home.awaiting} color={colors.textMuted} />
+          <StatCard value={rsvps.declined} label={t.home.declined} color={colors.danger} />
         </View>
 
         <Card>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>{t.home.invitedParties}</Text>
-            <Text style={styles.summaryValue}>{guests.length}</Text>
+            <Text style={styles.summaryValue}>{rsvps.invited}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>{t.home.confirmedHeadcount}</Text>
-            <Text style={styles.summaryValue}>{headcount}</Text>
+            <Text style={styles.summaryLabel}>
+              {rsvps.maybe > 0 ? t.home.expectedHeadcount : t.home.confirmedHeadcount}
+            </Text>
+            <Text style={styles.summaryValue}>
+              {rsvps.maybe > 0
+                ? `${rsvps.headcount}–${rsvps.headcountMax}`
+                : rsvps.headcount}
+            </Text>
           </View>
         </Card>
       </ScrollView>

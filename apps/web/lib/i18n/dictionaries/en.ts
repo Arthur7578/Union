@@ -154,10 +154,13 @@ export const en = {
     review: "Review",
     yourGuests: "Your guests",
     guestStatsComing: "Coming",
+    guestStatsMaybe: "Maybe",
     guestStatsWaiting: "Waiting",
     guestStatsCant: "Can't",
     guestStatsSummary: (parties: number, invited: number) =>
       `${parties} parties · ${invited} invited`,
+    guestStatsSummaryRange: (parties: number, firm: number, ceiling: number) =>
+      `${parties} parties · ${firm}–${ceiling} expected`,
     openGuests: "Open guests →",
     unionHandling: "Union is handling",
     justClosed: "Just closed",
@@ -190,8 +193,11 @@ export const en = {
     searchPlaceholder: "Search by name, email, group…",
     filterAll: "All",
     filterComing: "Coming",
+    filterMaybe: "Maybe",
     filterWaiting: "Waiting",
     filterCant: "Can't",
+    headcountRange: (firm: number, ceiling: number) =>
+      `Plan for ${firm}–${ceiling}: ${firm} confirmed, up to ${ceiling} if every maybe comes.`,
     loadingList: "Loading your guests…",
     planningTools: "Planning tools",
     tools: {
@@ -490,6 +496,7 @@ export const en = {
     activityEmpty: "Nothing yet — what you and Union do together will show up here.",
     activityGuestAdded: (name: string) => `added ${name} as a guest`,
     activityRsvpAttending: "RSVP'd yes",
+    activityRsvpMaybe: "RSVP'd maybe",
     activityRsvpDeclined: "RSVP'd no",
     activityCollaboratorInvited: (email: string) =>
       `invited ${email} to plan together`,
@@ -1143,6 +1150,7 @@ export const en = {
         title: "Attendance RSVP",
         subtitle: "Let us know if you and your companions will join us.",
         labelAttending: "Attending",
+        labelMaybe: "Not sure yet",
         labelDeclined: "Declined",
       },
       reconfirmation: {
