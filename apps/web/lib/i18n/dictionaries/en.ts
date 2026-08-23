@@ -562,7 +562,6 @@ export const en = {
     notificationsRow: "Notifications",
     notificationsSub: "What Union tells you about, and when",
     privacyRow: "Privacy & your data",
-    helpRow: "Help & support",
 
     // Edit profile
     profileTitle: "Your profile",
@@ -683,6 +682,28 @@ export const en = {
     privacyDeleteTitle: "Delete everything",
     privacyDeleteBody:
       "Deleting your wedding permanently removes it and everything under it — guests, RSVPs, seating, all of it.",
+  },
+
+  // Help & feedback — the in-app home for UserJot, which used to live in a
+  // floating bubble that sat on top of the tab bar and the bottom actions.
+  feedback: {
+    kicker: "Help & feedback",
+    title: "Tell us what you think",
+    navLabel: "Feedback",
+
+    // Entry point on the account hub
+    hubTitle: "Help & feedback",
+    hubBody: "Ideas, bugs, and what's coming next — we read every word.",
+
+    intro:
+      "Union is built with the people planning on it. Tell us what's missing, what got in your way, or what would make next week easier — it goes straight to the team.",
+
+    shareTitle: "Share an idea or a problem",
+    shareSub: "Feature requests, bugs, anything that felt wrong",
+    roadmapTitle: "See what we're building",
+    roadmapSub: "The roadmap, and what's already in progress",
+    updatesTitle: "What's new",
+    updatesSub: "Everything we've shipped lately",
   },
 
   // Public RSVP flow

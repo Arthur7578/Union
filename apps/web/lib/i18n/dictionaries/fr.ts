@@ -540,7 +540,6 @@ export const fr: Dictionary = {
     notificationsRow: "Notifications",
     notificationsSub: "Ce dont Union vous parle, et quand",
     privacyRow: "Confidentialité et vos données",
-    helpRow: "Aide et support",
 
     // Edit profile
     profileTitle: "Votre profil",
@@ -662,6 +661,25 @@ export const fr: Dictionary = {
     privacyDeleteTitle: "Tout supprimer",
     privacyDeleteBody:
       "Supprimer votre mariage le retire définitivement, ainsi que tout ce qu'il contient — invités, RSVP, plan de table, absolument tout.",
+  },
+
+  feedback: {
+    kicker: "Aide et avis",
+    title: "Dites-nous tout",
+    navLabel: "Votre avis",
+
+    hubTitle: "Aide et avis",
+    hubBody: "Vos idées, les bugs, et la suite — on lit tout.",
+
+    intro:
+      "Union se construit avec celles et ceux qui planifient dessus. Dites-nous ce qui manque, ce qui vous a bloqué, ou ce qui vous simplifierait la semaine — cela arrive directement à l'équipe.",
+
+    shareTitle: "Partager une idée ou un problème",
+    shareSub: "Demandes de fonctionnalités, bugs, tout ce qui a coincé",
+    roadmapTitle: "Voir ce qu'on prépare",
+    roadmapSub: "La feuille de route, et ce qui est déjà en cours",
+    updatesTitle: "Nouveautés",
+    updatesSub: "Tout ce qu'on a livré récemment",
   },
 
   rsvp: {

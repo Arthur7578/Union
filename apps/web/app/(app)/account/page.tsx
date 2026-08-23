@@ -10,7 +10,6 @@ import { useWedding } from "@/lib/wedding";
 import { useLocale } from "@/lib/i18n/client";
 import { fetchCollaborators } from "@/lib/data";
 import { initial, formatShortDate } from "@/lib/format";
-import { ujOpenWidget } from "@/lib/userjot";
 import { PageHeader, Card, SectionLabel, Avatar, Button } from "@/components/ui";
 import { SampleBadge } from "@/components/SampleBadge";
 import { ChevronRight, Spark } from "@/components/icons";
@@ -190,19 +189,53 @@ export default function AccountPage() {
           </div>
           <ChevronRight size={16} stroke="#CBBCB6" />
         </Link>
-        <Link href="/account/privacy" style={{ ...rowStyle, borderBottom: `1px solid ${T.line}` }}>
+        <Link href="/account/privacy" style={rowStyle}>
           <span style={{ fontWeight: 600, fontSize: 14.5, color: T.ink, flex: 1 }}>
             {t.account.privacyRow}
           </span>
           <ChevronRight size={16} stroke="#CBBCB6" />
         </Link>
-        <button onClick={ujOpenWidget} style={rowStyle}>
-          <span style={{ fontWeight: 600, fontSize: 14.5, color: T.ink, flex: 1 }}>
-            {t.account.helpRow}
-          </span>
-          <ChevronRight size={16} stroke="#CBBCB6" />
-        </button>
       </div>
+
+      {/* Help & feedback — deliberately a card rather than a row in the list
+          above: the floating widget is gone, so this is the way in. */}
+      <Link href="/account/feedback" style={{ textDecoration: "none" }}>
+        <Card
+          onClick={() => {}}
+          style={{
+            marginTop: 14,
+            display: "flex",
+            alignItems: "center",
+            gap: 13,
+            padding: "16px 16px",
+            border: `1px solid ${T.accentBorder}`,
+          }}
+        >
+          <span
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              background: T.accentSoft,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Spark size={18} color={T.accent} />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600, fontSize: 15, color: T.ink }}>
+              {t.feedback.hubTitle}
+            </div>
+            <div style={{ fontSize: 12.5, color: T.faint, marginTop: 1 }}>
+              {t.feedback.hubBody}
+            </div>
+          </div>
+          <ChevronRight size={16} stroke="#CBBCB6" />
+        </Card>
+      </Link>
 
       <Button
         variant="secondary"
