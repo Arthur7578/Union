@@ -44,9 +44,10 @@ export function rsvpDefaults(locale: Locale, purpose: RsvpPurpose) {
     return {
       title: t.reconfirmation.title,
       subtitle: t.reconfirmation.subtitle,
-      // A reconfirmation reuses the primary block's two reply buttons, so it
-      // has no labels of its own to default.
+      // A reconfirmation reuses the primary block's reply buttons, so it has
+      // no labels of its own to default.
       labelAttending: primary.labelAttending,
+      labelMaybe: primary.labelMaybe,
       labelDeclined: primary.labelDeclined,
     };
   }

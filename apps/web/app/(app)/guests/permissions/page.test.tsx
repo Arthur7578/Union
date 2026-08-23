@@ -35,6 +35,7 @@ const wedding = (patch: Partial<Wedding> = {}): Wedding => ({
   allow_guests_add_children: true,
   allow_guests_add_partner: false,
   allow_name_fallback: false,
+  allow_rsvp_maybe: false,
   autonomy: "ask",
   ceremony_reserved_rows: 0,
   ceremony_rows: 10,

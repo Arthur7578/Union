@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
-import { choiceToOverride, overrideToChoice } from "@union/shared";
+import { choiceToOverride, overrideToChoice, rsvpAnswers } from "@union/shared";
 import type {
   GuestGroup,
   PermissionChoice,
@@ -46,9 +46,10 @@ import { getBrowserSupabase } from "@/lib/supabaseClient";
 
 const STATUS_LABEL: Record<
   string,
-  { text: string; tone: "green" | "amber" | "sand" }
+  { text: string; tone: "green" | "amber" | "sand" | "blue" }
 > = {
   attending: { text: "Attending", tone: "green" },
+  maybe: { text: "Not sure yet", tone: "blue" },
   declined: { text: "Can't make it", tone: "sand" },
   pending: { text: "Awaiting reply", tone: "amber" },
 };
@@ -857,12 +858,15 @@ export default function GuestDetailPage() {
           headcount immediately.
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {(
-            [
-              ["attending", "Attending"],
-              ["declined", "Can't make it"],
-            ] as const
-          ).map(([k, label]) => {
+          {/* Same answers a guest gets, for the same reason: a co-organiser
+              taking this down from a phone call shouldn't have to round
+              "probably, I'll know in March" up to a yes. Recording a maybe the
+              couple has switched off is still offered while this guest sits at
+              one, so the reply on file can be read back and corrected. */}
+          {rsvpAnswers(
+            wedding?.allow_rsvp_maybe === true || rsvpStatus === "maybe",
+          ).map((k) => {
+            const label = STATUS_LABEL[k].text;
             const on = rsvpStatus === k;
             return (
               <button
@@ -885,7 +889,7 @@ export default function GuestDetailPage() {
             );
           })}
         </div>
-        {(rsvpStatus === "attending" || rsvpStatus === "declined") && (
+        {rsvpStatus !== "" && rsvpStatus !== "pending" && (
           <>
             <div className="field" style={{ marginTop: 14 }}>
               <label htmlFor="rd">Dietary or access notes</label>

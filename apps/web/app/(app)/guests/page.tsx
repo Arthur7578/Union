@@ -23,10 +23,11 @@ import {
 } from "@/components/ui";
 import { useT } from "@/lib/i18n/client";
 
-type Filter = "all" | "coming" | "waiting" | "declined";
+type Filter = "all" | "coming" | "maybe" | "waiting" | "declined";
 
 const STATUS_DOT: Record<string, string> = {
   attending: T.green,
+  maybe: T.blueInk,
   declined: "#C7A9A2",
   pending: "#DDB27C",
 };
@@ -101,12 +102,30 @@ export default function GuestsPage() {
 
   const stats = guests ? guestStats(guests) : null;
 
+  // Show the maybe column when the couple has the option on, or when replies
+  // already sitting at maybe would otherwise be invisible after they turned
+  // it off.
+  const showMaybe = wedding?.allow_rsvp_maybe === true || (stats?.maybe ?? 0) > 0;
+
+  const filterChips: Array<[Filter, string, number | undefined]> = [
+    ["all", t.guests.filterAll, stats?.invited],
+    ["coming", t.guests.filterComing, stats?.coming],
+    ...(showMaybe
+      ? ([["maybe", t.guests.filterMaybe, stats?.maybe]] as Array<
+          [Filter, string, number | undefined]
+        >)
+      : []),
+    ["waiting", t.guests.filterWaiting, stats?.waiting],
+    ["declined", t.guests.filterCant, stats?.declined],
+  ];
+
   const filtered = useMemo(() => {
     if (!guests) return [];
     const q = query.trim().toLowerCase();
     return guests.filter((g) => {
       const status = g.rsvps?.status ?? "pending";
       if (filter === "coming" && status !== "attending") return false;
+      if (filter === "maybe" && status !== "maybe") return false;
       if (filter === "waiting" && status !== "pending") return false;
       if (filter === "declined" && status !== "declined") return false;
       if (!q) return true;
@@ -172,7 +191,9 @@ export default function GuestsPage() {
         }
       />
 
-      {/* Real stat tiles */}
+      {/* Real stat tiles. The maybe tile appears when the option is on or when
+          replies already sitting at maybe would otherwise go uncounted — a
+          couple not using it keeps the three-tile row they had. */}
       <div style={{ display: "flex", gap: 9, marginTop: 16 }}>
         <StatTile
           value={stats?.coming}
@@ -180,6 +201,14 @@ export default function GuestsPage() {
           bg={T.greenBg}
           fg={T.greenDeep}
         />
+        {showMaybe && (
+          <StatTile
+            value={stats?.maybe}
+            label={t.today.guestStatsMaybe}
+            bg={T.blueBg}
+            fg={T.blueInk}
+          />
+        )}
         <StatTile
           value={stats?.declined}
           label={t.today.guestStatsCant}
@@ -193,6 +222,14 @@ export default function GuestsPage() {
           fg={T.amberInk}
         />
       </div>
+
+      {/* The point of the option: a number the couple can actually plan
+          against. Only worth saying once there's a spread to report. */}
+      {stats && stats.maybe > 0 && (
+        <div style={{ fontSize: 12.5, color: T.muted, marginTop: 10, padding: "0 4px" }}>
+          {t.guests.headcountRange(stats.headcount, stats.headcountMax)}
+        </div>
+      )}
 
       {stats && stats.waiting > 0 && (
         <div style={{ marginTop: 14 }}>
@@ -263,14 +300,7 @@ export default function GuestsPage() {
       {guests !== null && guests.length > 0 && (
         <>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-            {(
-              [
-                ["all", t.guests.filterAll, stats?.invited],
-                ["coming", t.guests.filterComing, stats?.coming],
-                ["waiting", t.guests.filterWaiting, stats?.waiting],
-                ["declined", t.guests.filterCant, stats?.declined],
-              ] as const
-            ).map(([key, label, n]) => (
+            {filterChips.map(([key, label, n]) => (
               <button
                 key={key}
                 onClick={() => setFilter(key)}

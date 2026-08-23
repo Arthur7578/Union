@@ -4,6 +4,7 @@ import { getBrowserSupabase } from "./supabaseClient";
 import {
   isTextEmpty,
   normalizeQuestions,
+  rollUpRsvps,
   toLocalizedText,
 } from "@union/shared";
 import { DEFAULT_LOCALE } from "./i18n";
@@ -79,6 +80,7 @@ export async function createWedding(
     | "ceremony_reserved_rows"
     | "allow_guests_add_partner"
     | "allow_guests_add_children"
+    | "allow_rsvp_maybe"
     | "max_children_per_guest"
     | "guest_count_target"
     | "style_vibe"
@@ -1118,6 +1120,7 @@ export function rsvpCopy(form: Form): RsvpBlockCopy {
     title: copySlot(form.rsvp_copy, "title"),
     subtitle: copySlot(form.rsvp_copy, "subtitle"),
     label_attending: copySlot(form.rsvp_copy, "label_attending"),
+    label_maybe: copySlot(form.rsvp_copy, "label_maybe"),
     label_declined: copySlot(form.rsvp_copy, "label_declined"),
   };
 }
@@ -1357,23 +1360,15 @@ export async function fetchActivity(
   return data ?? [];
 }
 
-/** Roll up a guest list into the headline counts shown on Today / Guests. */
+/** Roll up a guest list into the headline counts shown on Today / Guests.
+ *
+ *  `headcount` is still firm yeses only, so every screen that read it before
+ *  "maybe" existed keeps meaning what it said; `headcountMax` is the ceiling
+ *  if every maybe turns up, which is the number worth booking against. With
+ *  the option off the two are equal and the range collapses to one figure. */
 export function guestStats(guests: GuestWithRsvp[]) {
-  let coming = 0;
-  let declined = 0;
-  let waiting = 0;
-  for (const g of guests) {
-    const status = g.rsvps?.status ?? "pending";
-    if (status === "attending") coming += 1;
-    else if (status === "declined") declined += 1;
-    else waiting += 1;
-  }
   return {
-    invited: guests.length,
-    coming,
-    declined,
-    waiting,
-    headcount: coming,
+    ...rollUpRsvps(guests.map((g) => g.rsvps?.status ?? "pending")),
     parties: guests.length,
   };
 }

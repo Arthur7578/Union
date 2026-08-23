@@ -77,10 +77,12 @@ export const en = {
     countdownDays: "days to go",
     rsvpOverview: "RSVP overview",
     attending: "Attending",
+    maybe: "Maybe",
     awaiting: "Awaiting",
     declined: "Declined",
     invitedParties: "Invited parties",
     confirmedHeadcount: "Confirmed headcount",
+    expectedHeadcount: "Expected headcount",
   },
 
   guests: {
@@ -89,6 +91,7 @@ export const en = {
     addGuest: "Add guest",
     status: {
       attending: "Attending",
+      maybe: "Not sure yet",
       declined: "Declined",
       pending: "Awaiting reply",
     },

@@ -35,6 +35,14 @@ export type {
   StoredGuestModules,
 } from "./guestModules";
 export {
+  RSVP_ANSWERS,
+  isRsvpAnswerAllowed,
+  mayAttend,
+  rollUpRsvps,
+  rsvpAnswers,
+} from "./rsvpAnswers";
+export type { AnsweredRsvpStatus, RsvpRollup } from "./rsvpAnswers";
+export {
   MAX_CHILDREN_CAP,
   buildGuestPermissionsPatch,
   canAddChildren,
@@ -86,6 +94,7 @@ export type ActivityLogEntry = Tables<"activity_log">;
 export type ActivityActionKey =
   | "guest_added"
   | "rsvp_attending"
+  | "rsvp_maybe"
   | "rsvp_declined"
   | "collaborator_invited"
   | "collaborator_joined"
@@ -119,6 +128,11 @@ export type RsvpBlockCopy = {
   subtitle?: LocalizedText;
   /** Label for the button that sets rsvp status to 'attending'. Fixed slot — never reorderable. */
   label_attending?: LocalizedText;
+  /** Label for the button that sets rsvp status to 'maybe'. Fixed slot — never
+   *  reorderable. Only read when the wedding has `allow_rsvp_maybe` on;
+   *  wording written here while the option is off is kept, not discarded, so
+   *  turning it back on doesn't lose the couple's phrasing. */
+  label_maybe?: LocalizedText;
   /** Label for the button that sets rsvp status to 'declined'. Fixed slot — never reorderable. */
   label_declined?: LocalizedText;
 };
@@ -170,6 +184,12 @@ export type Invitation = {
      *  field, from a server older than the column) is the full experience.
      *  Run it through `resolveGuestModules` rather than reading keys directly. */
     guest_modules?: Partial<Record<string, boolean>> | null;
+    /** Whether this wedding offers "maybe" alongside attending/declined.
+     *  Absent (from a server older than the column) reads as off, which is
+     *  the pre-feature behaviour: two answers only. It lives on the wedding
+     *  rather than on the RSVP form because a wedding may have no forms row
+     *  yet, and "no custom wording" must not come out as "no maybe option". */
+    allow_rsvp_maybe?: boolean | null;
   };
   guest: {
     id: string;

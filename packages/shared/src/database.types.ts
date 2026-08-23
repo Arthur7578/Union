@@ -619,6 +619,7 @@ export type Database = {
           allow_guests_add_children: boolean
           allow_guests_add_partner: boolean
           allow_name_fallback: boolean
+          allow_rsvp_maybe: boolean
           autonomy: string
           ceremony_reserved_rows: number
           ceremony_rows: number
@@ -652,6 +653,7 @@ export type Database = {
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
           allow_name_fallback?: boolean
+          allow_rsvp_maybe?: boolean
           autonomy?: string
           ceremony_reserved_rows?: number
           ceremony_rows?: number
@@ -685,6 +687,7 @@ export type Database = {
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
           allow_name_fallback?: boolean
+          allow_rsvp_maybe?: boolean
           autonomy?: string
           ceremony_reserved_rows?: number
           ceremony_rows?: number
@@ -896,7 +899,7 @@ export type Database = {
       address_visibility: "hidden" | "area" | "partial" | "full"
       guest_join_auth_mode: "contact" | "otp"
       guest_relationship_kind: "parent_of" | "partner_of"
-      rsvp_status: "pending" | "attending" | "declined"
+      rsvp_status: "pending" | "attending" | "maybe" | "declined"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1027,7 +1030,7 @@ export const Constants = {
       address_visibility: ["hidden", "area", "partial", "full"],
       guest_join_auth_mode: ["contact", "otp"],
       guest_relationship_kind: ["parent_of", "partner_of"],
-      rsvp_status: ["pending", "attending", "declined"],
+      rsvp_status: ["pending", "attending", "maybe", "declined"],
     },
   },
 } as const
