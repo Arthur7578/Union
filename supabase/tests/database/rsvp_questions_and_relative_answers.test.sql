@@ -1,5 +1,8 @@
 begin;
 
+-- Editable RSVP questions, delegated household answers, and atomic status +
+-- answer submission share one response model.
+
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
@@ -64,10 +67,7 @@ values
     'parent_of'
   );
 
--- The RSVP asks nothing beyond the reply; the later check-in asks for meals.
--- That split is the point of the column: the same question can belong to one
--- touchpoint and not the other.
-insert into public.forms (id, wedding_id, kind, purpose, title, published, rsvp_fields)
+insert into public.forms (id, wedding_id, kind, purpose, title, published)
 values
   (
     '50000000-0000-0000-0000-000000000010',
@@ -75,8 +75,7 @@ values
     'rsvp',
     'primary',
     'RSVP',
-    true,
-    '{"dietary": false, "companion_dietary": false}'::jsonb
+    true
   ),
   (
     '50000000-0000-0000-0000-000000000011',
@@ -84,8 +83,7 @@ values
     'rsvp',
     'reconfirmation',
     'Final check',
-    true,
-    '{}'::jsonb
+    true
   );
 
 insert into public.forms (id, wedding_id, kind, title, published, per_person, questions)
@@ -113,72 +111,6 @@ values
 update public.forms
 set questions = '[{"id": "q-allergy", "kind": "comment", "title": {"en": "Allergies"}, "required": false}]'::jsonb
 where id = '50000000-0000-0000-0000-000000000010';
-
--- ---------- what each touchpoint asks ----------
-
-select is(
-  public.get_invitation('40000000-0000-0000-0000-000000000010') #> '{rsvp_form,fields}',
-  '{"dietary": false, "companion_dietary": false}'::jsonb,
-  'the invitation reports the RSVP block''s own off decisions'
-);
-
-select is(
-  public.get_invitation('40000000-0000-0000-0000-000000000010') #> '{rsvp_reconfirmation,fields}',
-  '{}'::jsonb,
-  'the reconfirmation reports its own asks, not the RSVP''s'
-);
-
-update public.forms
-set rsvp_fields = '{"note": false}'::jsonb
-where id = '50000000-0000-0000-0000-000000000011';
-
-select is(
-  public.get_invitation('40000000-0000-0000-0000-000000000010') #> '{rsvp_form,fields}',
-  '{"dietary": false, "companion_dietary": false}'::jsonb,
-  'changing the reconfirmation leaves the RSVP block untouched'
-);
-
-select is(
-  public.get_invitation('40000000-0000-0000-0000-000000000010') #> '{rsvp_reconfirmation,fields}',
-  '{"note": false}'::jsonb,
-  'the two touchpoints hold independent ask lists'
-);
-
--- ---------- the shape guard ----------
-
-select lives_ok(
-  $$update public.forms
-      set rsvp_fields = '{"dietary": false, "companion_dietary": false, "note": false}'::jsonb
-      where id = '50000000-0000-0000-0000-000000000010'$$,
-  'an RSVP asking for nothing but the reply is a legitimate choice'
-);
-
-select throws_ok(
-  $$update public.forms
-      set rsvp_fields = '{"diettary": false}'::jsonb
-      where id = '50000000-0000-0000-0000-000000000010'$$,
-  '23514',
-  null,
-  'a misspelled field key is rejected rather than sitting there doing nothing'
-);
-
-select throws_ok(
-  $$update public.forms
-      set rsvp_fields = '{"dietary": "no"}'::jsonb
-      where id = '50000000-0000-0000-0000-000000000010'$$,
-  '23514',
-  null,
-  'a non-boolean ask value is rejected'
-);
-
-select throws_ok(
-  $$update public.forms
-      set rsvp_fields = '{"dietary": false}'::jsonb
-      where id = '50000000-0000-0000-0000-000000000013'$$,
-  '23514',
-  null,
-  'a custom form cannot carry RSVP-block asks'
-);
 
 select throws_ok(
   $$update public.forms
@@ -338,6 +270,87 @@ select throws_ok(
   'P0001',
   'Not authorised to answer for this guest',
   'a guest cannot RSVP for an unrelated guest of the same wedding'
+);
+
+-- ---------- atomic household RSVP + form answers ----------
+
+select lives_ok(
+  $$select public.submit_rsvp_response(
+      '40000000-0000-0000-0000-000000000010',
+      '50000000-0000-0000-0000-000000000010',
+      'attending',
+      '[
+        {"guest_id": "30000000-0000-0000-0000-000000000011", "status": "attending"},
+        {"guest_id": "30000000-0000-0000-0000-000000000012", "status": "declined"}
+      ]'::jsonb,
+      '[
+        {"guest_id": "30000000-0000-0000-0000-000000000010", "answers": {"q-allergy": "shellfish"}},
+        {"guest_id": "30000000-0000-0000-0000-000000000012", "answers": {}}
+      ]'::jsonb
+    )$$,
+  'one RPC saves the household statuses and RSVP answers'
+);
+
+select is(
+  (select status::text from public.rsvps
+    where guest_id = '30000000-0000-0000-0000-000000000010'),
+  'attending',
+  'the primary status was saved'
+);
+
+select is(
+  (select status::text from public.rsvps
+    where guest_id = '30000000-0000-0000-0000-000000000012'),
+  'declined',
+  'the companion status was saved in the same transaction'
+);
+
+select is(
+  (select answers ->> 'q-allergy' from public.form_responses
+    where form_id = '50000000-0000-0000-0000-000000000010'
+      and guest_id = '30000000-0000-0000-0000-000000000010'),
+  'shellfish',
+  'the primary RSVP answer was saved'
+);
+
+select is(
+  (select answers from public.form_responses
+    where form_id = '50000000-0000-0000-0000-000000000010'
+      and guest_id = '30000000-0000-0000-0000-000000000012'),
+  '{}'::jsonb,
+  'an explicit blank optional response is stored for completion tracking'
+);
+
+update public.forms
+set closes_at = now() - interval '1 minute'
+where id = '50000000-0000-0000-0000-000000000010';
+
+select throws_ok(
+  $$select public.submit_rsvp_response(
+      '40000000-0000-0000-0000-000000000010',
+      '50000000-0000-0000-0000-000000000010',
+      'declined',
+      '[]'::jsonb,
+      '[]'::jsonb
+    )$$,
+  'P0001',
+  'This form is closed',
+  'a closed RSVP form rejects the whole submission'
+);
+
+select is(
+  (select status::text from public.rsvps
+    where guest_id = '30000000-0000-0000-0000-000000000010'),
+  'attending',
+  'a rejected form leaves the previously saved status unchanged'
+);
+
+select is(
+  public.get_invitation_rsvp_forms('40000000-0000-0000-0000-000000000010')
+    #> '{primary,closes_at}',
+  to_jsonb((select closes_at from public.forms
+    where id = '50000000-0000-0000-0000-000000000010')),
+  'the guest payload exposes the primary form availability window'
 );
 
 select * from finish();

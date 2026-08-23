@@ -163,8 +163,20 @@ export default function GuestDetailPage() {
   // What this guest has told the couple in RSVP follow-up questions and
   // custom forms. Both use the same response model; they are separated only
   // when rendered so RSVP answers sit beside the reply itself.
-  const [formAnswers, setFormAnswers] = useState<GuestFormAnswers[] | null>(null);
-  const [formAnswersError, setFormAnswersError] = useState<string | null>(null);
+  const [formAnswersState, setFormAnswersState] = useState<{
+    guestId: string;
+    answers: GuestFormAnswers[];
+    error: string | null;
+  } | null>(null);
+  // Route changes can reuse this component. Treat answers belonging to the
+  // previous id as unavailable immediately, without a synchronous state
+  // reset inside the fetching effect.
+  const formAnswers = formAnswersState?.guestId === id
+    ? formAnswersState.answers
+    : null;
+  const formAnswersError = formAnswersState?.guestId === id
+    ? formAnswersState.error
+    : null;
 
   useEffect(() => {
     if (!id) return;
@@ -203,6 +215,7 @@ export default function GuestDetailPage() {
   // Relatives this guest answers *for* — an outgoing link is the same
   // direction the RSVP and per-person forms let them reply in.
   const dependents = links.filter((l) => l.direction === "outgoing");
+  const hasPartnerLink = links.some((l) => l.kind === "partner_of");
   const dependentIds = dependents.map((l) => l.guest.id).join(",");
 
   useEffect(() => {
@@ -212,15 +225,15 @@ export default function GuestDetailPage() {
     fetchGuestFormAnswers(wedding.id, id, relativeIds)
       .then((rows) => {
         if (!ok) return;
-        setFormAnswers(rows);
-        setFormAnswersError(null);
+        setFormAnswersState({ guestId: id, answers: rows, error: null });
       })
       .catch((e) => {
         if (!ok) return;
-        setFormAnswers([]);
-        setFormAnswersError(
-          e instanceof Error ? e.message : "Couldn't load form answers.",
-        );
+        setFormAnswersState({
+          guestId: id,
+          answers: [],
+          error: e instanceof Error ? e.message : "Couldn't load form answers.",
+        });
       });
     return () => {
       ok = false;
@@ -664,12 +677,17 @@ export default function GuestDetailPage() {
     }
   };
 
-  const primaryRsvpAnswers =
-    formAnswers?.find(
-      ({ form }) => form.kind === "rsvp" && form.purpose === "primary",
-    ) ?? null;
+  const rsvpFormAnswers =
+    formAnswers?.filter(({ form }) => form.kind === "rsvp") ?? null;
   const customFormAnswers =
     formAnswers?.filter(({ form }) => form.kind === "custom") ?? null;
+  const primaryStoredAnswers = rsvpFormAnswers?.find(
+    ({ form }) => form.purpose === "primary",
+  )?.response?.answers as FormAnswers | null | undefined;
+  const legacyDietaryNote = guest.rsvps?.dietary_notes?.trim() ?? "";
+  const showLegacyDietaryNote =
+    legacyDietaryNote.length > 0 &&
+    !primaryStoredAnswers?.["union-rsvp-dietary"];
 
   return (
     <main className="u-main">
@@ -915,55 +933,71 @@ export default function GuestDetailPage() {
             );
           })}
         </div>
-        {primaryRsvpAnswers && formQuestions(primaryRsvpAnswers.form).length > 0 && (
-          <div
-            style={{
-              borderTop: `1px solid ${T.line}`,
-              marginTop: 16,
-              paddingTop: 14,
-            }}
-          >
-            {readableAnswers(
-              formQuestions(primaryRsvpAnswers.form),
-              (primaryRsvpAnswers.response?.answers ?? null) as FormAnswers | null,
-              appLocale,
-            ).map((row) => (
-              <div key={row.key} style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 11.5, color: T.faint }}>{row.question}</div>
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: row.answer ? T.ink2 : T.faint,
-                    fontStyle: row.answer ? "normal" : "italic",
-                  }}
-                >
-                  {row.answer ?? "No answer"}
+        {rsvpFormAnswers?.map(({ form, response, relatives }) => {
+          const questions = formQuestions(form);
+          if (questions.length === 0) return null;
+          return (
+            <div
+              key={form.id}
+              style={{
+                borderTop: `1px solid ${T.line}`,
+                marginTop: 16,
+                paddingTop: 14,
+              }}
+            >
+              {form.purpose === "reconfirmation" && (
+                <div style={{ fontSize: 12, fontWeight: 700, color: T.ink2, marginBottom: 10 }}>
+                  Reconfirmation answers
                 </div>
-              </div>
-            ))}
-
-            {primaryRsvpAnswers.relatives.map(({ guestId, response }) => {
-              const relative = dependents.find((link) => link.guest.id === guestId)?.guest;
-              return (
-                <div key={guestId} style={{ borderTop: `1px solid ${T.line}`, paddingTop: 10, marginTop: 4 }}>
-                  <div style={{ fontSize: 12, color: T.faint, marginBottom: 7 }}>
-                    Answered for {relative ? `${relative.first_name} ${relative.last_name ?? ""}`.trim() : "a relative"}
+              )}
+              {readableAnswers(
+                questions,
+                (response?.answers ?? null) as FormAnswers | null,
+                appLocale,
+              ).map((row) => (
+                <div key={row.key} style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 11.5, color: T.faint }}>{row.question}</div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      color: row.answer ? T.ink2 : T.faint,
+                      fontStyle: row.answer ? "normal" : "italic",
+                    }}
+                  >
+                    {row.answer ?? "No answer"}
                   </div>
-                  {readableAnswers(
-                    formQuestions(primaryRsvpAnswers.form),
-                    response.answers as FormAnswers,
-                    appLocale,
-                  ).map((row) => (
-                    <div key={row.key} style={{ marginBottom: 8 }}>
-                      <div style={{ fontSize: 11.5, color: T.faint }}>{row.question}</div>
-                      <div style={{ fontSize: 14, color: row.answer ? T.ink2 : T.faint, fontStyle: row.answer ? "normal" : "italic" }}>
-                        {row.answer ?? "No answer"}
-                      </div>
-                    </div>
-                  ))}
                 </div>
-              );
-            })}
+              ))}
+
+              {relatives.map(({ guestId, response: relativeResponse }) => {
+                const relative = dependents.find((link) => link.guest.id === guestId)?.guest;
+                return (
+                  <div key={guestId} style={{ borderTop: `1px solid ${T.line}`, paddingTop: 10, marginTop: 4 }}>
+                    <div style={{ fontSize: 12, color: T.faint, marginBottom: 7 }}>
+                      Answered for {relative ? `${relative.first_name} ${relative.last_name ?? ""}`.trim() : "a relative"}
+                    </div>
+                    {readableAnswers(
+                      questions,
+                      relativeResponse.answers as FormAnswers,
+                      appLocale,
+                    ).map((row) => (
+                      <div key={row.key} style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 11.5, color: T.faint }}>{row.question}</div>
+                        <div style={{ fontSize: 14, color: row.answer ? T.ink2 : T.faint, fontStyle: row.answer ? "normal" : "italic" }}>
+                          {row.answer ?? "No answer"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+        {showLegacyDietaryNote && (
+          <div style={{ borderTop: `1px solid ${T.line}`, marginTop: 16, paddingTop: 14 }}>
+            <div style={{ fontSize: 11.5, color: T.faint }}>Dietary restrictions or allergies</div>
+            <div style={{ fontSize: 14, color: T.ink2 }}>{legacyDietaryNote}</div>
           </div>
         )}
         <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
@@ -1239,38 +1273,42 @@ export default function GuestDetailPage() {
             fire the appropriate link RPC right away; new opens an
             inline full-detail form. */}
         <div style={{ display: "grid", gap: 12 }}>
-          <RelationshipRow
-            title="Add a partner"
-            combo={
-              addPartnerDraft ? null : (
-                <RelationshipCombobox
-                  label=""
-                  placeholder="Type a name to search or add a partner…"
-                  guests={otherGuests}
-                  excludeIds={links
-                    .filter((l) => l.kind === "partner_of")
-                    .map((l) => l.guest.id)}
-                  onPickExisting={(g) => void addPartnerLink(g.id)}
-                  onStartCreate={(name) => setAddPartnerDraft(emptyRelative(name))}
-                />
-              )
-            }
-            draft={addPartnerDraft}
-            error={addPartnerError}
-            busy={addPartnerBusy}
-            onChange={(patch) =>
-              setAddPartnerDraft((prev) => (prev ? { ...prev, ...patch } : prev))
-            }
-            onSave={() => void addPartnerGuest()}
-            onCancel={() => {
-              setAddPartnerDraft(null);
-              setAddPartnerError(null);
-            }}
-            saveLabel="Add partner"
-            allGroups={allGroups}
-            onCreateGroup={createGroupHere}
-            suggestedRoles={SUGGESTED_ROLES}
-          />
+          {hasPartnerLink ? (
+            <div style={{ fontSize: 12.5, color: T.muted }}>
+              This guest already has a partner. Remove that link before adding another.
+            </div>
+          ) : (
+            <RelationshipRow
+              title="Add a partner"
+              combo={
+                addPartnerDraft ? null : (
+                  <RelationshipCombobox
+                    label=""
+                    placeholder="Type a name to search or add a partner…"
+                    guests={otherGuests}
+                    excludeIds={[]}
+                    onPickExisting={(g) => void addPartnerLink(g.id)}
+                    onStartCreate={(name) => setAddPartnerDraft(emptyRelative(name))}
+                  />
+                )
+              }
+              draft={addPartnerDraft}
+              error={addPartnerError}
+              busy={addPartnerBusy}
+              onChange={(patch) =>
+                setAddPartnerDraft((prev) => (prev ? { ...prev, ...patch } : prev))
+              }
+              onSave={() => void addPartnerGuest()}
+              onCancel={() => {
+                setAddPartnerDraft(null);
+                setAddPartnerError(null);
+              }}
+              saveLabel="Add partner"
+              allGroups={allGroups}
+              onCreateGroup={createGroupHere}
+              suggestedRoles={SUGGESTED_ROLES}
+            />
+          )}
           <RelationshipRow
             title="Add a child"
             combo={

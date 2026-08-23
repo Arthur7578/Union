@@ -229,8 +229,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   // Separate forms submission & state storage
   // RSVP state
   const [primaryRsvp, setPrimaryRsvp] = useState<"pending" | "attending" | "declined">(invitation.guest.rsvp_status);
-  const [primaryDietary] = useState<string>(invitation.guest.dietary_notes || "");
-  const [primaryMessage] = useState<string>(invitation.guest.message || "");
 
   // RSVP follow-up questions use the same response model as every other
   // form. Keep saved answers separate from the open modal's drafts so a
@@ -430,31 +428,22 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         const supabase = getBrowserSupabase();
         await submitGuestRsvp(
           {
-            submitPrimary: (args) => supabase.rpc("submit_rsvp", args),
-            submitCompanion: (args) => supabase.rpc("submit_companion_rsvp", args),
+            submitResponse: (args) => supabase.rpc("submit_rsvp_response", args),
           },
           {
             token,
+            formId: form?.id || null,
             primaryStatus: primaryRsvp,
-            primaryDietary,
-            primaryMessage,
             companions,
             companionsRsvp,
+            responses: questions.length > 0
+              ? people.map((person) => ({
+                  guestId: person.id,
+                  answers: rsvpDrafts[person.id] ?? {},
+                }))
+              : [],
           },
         );
-        if (form && questions.length > 0) {
-          for (const person of people) {
-            const { error } = await supabase.rpc("submit_form_response", {
-              p_token: token,
-              p_form_id: form.id,
-              p_answers: rsvpDrafts[person.id] ?? {},
-              ...(person.id === invitation.guest.id
-                ? {}
-                : { p_for_guest_id: person.id }),
-            });
-            if (error) throw error;
-          }
-        }
       }
 
       // companionsRsvp is the source of truth for what the guest picked, and the
@@ -572,10 +561,15 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     primaryDefaults.labelDeclined,
   );
 
+  const now = new Date();
+  const primaryForm = invitation.rsvp_form ?? null;
+  const primaryRsvpLive = primaryForm?.published !== false
+    && (!primaryForm?.opens_at || new Date(primaryForm.opens_at) <= now)
+    && (!primaryForm?.closes_at || new Date(primaryForm.closes_at) >= now);
+
   // The optional late "still coming?" touchpoint — same RSVP block, shown
   // only when the organiser has published it and it's within its window.
   const reconfirmation = invitation.rsvp_reconfirmation ?? null;
-  const now = new Date();
   const reconfirmationLive = !!reconfirmation?.published
     && (!reconfirmation.opens_at || new Date(reconfirmation.opens_at) <= now)
     && (!reconfirmation.closes_at || new Date(reconfirmation.closes_at) >= now);
@@ -655,10 +649,12 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     if (!form?.per_person) return [self];
     return [
       self,
-      ...companions.map((c) => ({
-        id: c.id,
-        name: `${c.first_name} ${c.last_name || ""}`.trim(),
-      })),
+      ...companions
+        .filter((c) => companionsRsvp[c.id]?.rsvp_status === "attending")
+        .map((c) => ({
+          id: c.id,
+          name: `${c.first_name} ${c.last_name || ""}`.trim(),
+        })),
     ];
   };
 
@@ -713,15 +709,11 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     const questions = activeCustomForm.questions;
     const people = respondentsFor(activeCustomForm);
 
-    // The guest themself always submits; a relative only if there is
-    // something to submit for them. Leaving a child untouched means "not
-    // answering for them yet", not "no preferences" — sending blanks would
-    // record the second and read to the couple as a considered reply.
-    const toSubmit = people.filter(
-      (person) =>
-        person.id === invitation.guest.id ||
-        hasAnyAnswer(customDrafts[person.id]),
-    );
+    // Pressing submit confirms one response for every attendee this form
+    // covers. An empty row on an all-optional form is an explicit "nothing to
+    // declare" and lets the household reach Completed instead of nagging
+    // forever for a child with no preferences.
+    const toSubmit = people;
 
     for (const person of toSubmit) {
       const missing = missingRequired(questions, customDrafts[person.id]);
@@ -1415,7 +1407,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
             <div className="form-grid">
               {/* Main RSVP */}
-              <div className="form-card">
+              {primaryRsvpLive && <div className="form-card">
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
                     <span className={`badge-status ${primaryRsvp}`}>
@@ -1443,7 +1435,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 >
                   {primaryRsvp === "pending" ? (locale === "fr" ? "Répondre" : "Start") : (locale === "fr" ? "Modifier" : "Update")}
                 </button>
-              </div>
+              </div>}
 
               {/* RSVP reconfirmation — same block, later nudge, only when open */}
               {reconfirmationLive && (

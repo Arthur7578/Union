@@ -157,6 +157,8 @@ export default function FormsHubPage() {
         const custom = f.filter((x) => x.kind === "custom").map((x) => x.id);
         return fetchFormResponseCounts(custom).then((counts) => {
           if (ok) setResponseCounts(counts);
+        }).catch(() => {
+          if (ok) setResponseCounts({});
         });
       })
       .catch(() => ok && setForms([]));

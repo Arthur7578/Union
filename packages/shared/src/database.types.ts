@@ -899,6 +899,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      submit_rsvp_response: {
+        Args: {
+          p_answers?: Json
+          p_companions?: Json
+          p_form_id: string | null
+          p_status: string
+          p_token: string
+        }
+        Returns: Json
+      }
       unhide_duplicate_cluster: {
         Args: { p_guest_ids: string[]; p_wedding_id: string }
         Returns: undefined

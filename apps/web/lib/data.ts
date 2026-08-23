@@ -7,6 +7,7 @@ import {
   toLocalizedText,
 } from "@union/shared";
 import { DEFAULT_LOCALE } from "./i18n";
+import { defaultPrimaryRsvpQuestions } from "./rsvpQuestions";
 import type {
   ActivityLogEntry,
   Collaborator,
@@ -133,7 +134,7 @@ export async function createWedding(
     kind: "rsvp",
     title: "RSVP",
     published: true,
-    questions: [],
+    questions: defaultPrimaryRsvpQuestions(),
   });
   if (formError) throw formError;
   return data;
@@ -932,7 +933,17 @@ export async function addGuestRelationship(input: {
   const { error } = await supabase
     .from("guest_relationships")
     .upsert(rows, { onConflict: "from_guest,to_guest,kind" });
-  if (error) throw error;
+  if (error) {
+    if (
+      input.kind === "partner_of" &&
+      (error as { code?: string }).code === "23505"
+    ) {
+      throw new Error(
+        "Each guest can only have one partner. Remove the existing partner link first.",
+      );
+    }
+    throw error;
+  }
 }
 
 /**
