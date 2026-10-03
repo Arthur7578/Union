@@ -160,7 +160,7 @@ export default async function GuestExperiencePage({
           style={{
             maxWidth: "460px",
             width: "100%",
-            background: "white",
+            background: T.white,
             padding: "40px 32px",
             borderRadius: "24px",
             boxShadow: `0 15px 45px ${alpha(G.ink, 0.05)}`,
@@ -196,7 +196,7 @@ export default async function GuestExperiencePage({
               width: "100%",
               padding: "16px",
               background: T.ink,
-              color: "white",
+              color: T.white,
               borderRadius: "14px",
               fontWeight: "600",
               textDecoration: "none",

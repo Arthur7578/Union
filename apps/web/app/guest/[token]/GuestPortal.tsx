@@ -692,7 +692,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          background: white;
+          background: ${T.white};
           padding: 24px;
           border-radius: 20px;
           border: 1px solid ${alpha(T.ink, 0.08)};
@@ -747,7 +747,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         .drawer-container {
           width: 100%;
           max-width: 520px;
-          background: white;
+          background: ${T.white};
           height: 100%;
           padding: 40px 32px;
           display: flex;
@@ -794,7 +794,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         .field input:focus, .field textarea:focus {
           border-color: var(--accent);
           outline: none;
-          background: white;
+          background: ${T.white};
         }
 
         .choice-row {
@@ -831,7 +831,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
         .btn-submit {
           background: var(--primary);
-          color: white;
+          color: ${T.white};
           border: none;
           padding: 16px;
           border-radius: 14px;
@@ -889,7 +889,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           padding: 16px;
           border-radius: 16px;
           margin-bottom: 16px;
-          background: white;
+          background: ${T.white};
           transition: all 0.2s ease;
         }
 
@@ -904,7 +904,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           padding: 20px;
           border-radius: 16px;
           margin-bottom: 16px;
-          background: white;
+          background: ${T.white};
           transition: all 0.2s ease;
         }
 
@@ -1040,7 +1040,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       {isDemo && (
         <div style={{
           background: "var(--accent)",
-          color: "white",
+          color: T.white,
           padding: "8px 16px",
           textAlign: "center",
           fontSize: "13px",
@@ -1150,7 +1150,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                   onClick={() => openRsvpModal("primary")}
                   style={{
                     background: primaryRsvp === "pending" ? "var(--primary)" : alpha(T.ink, 0.05),
-                    color: primaryRsvp === "pending" ? "white" : "var(--primary)",
+                    color: primaryRsvp === "pending" ? T.white : "var(--primary)",
                     border: "none",
                     padding: "10px 20px",
                     borderRadius: "10px",
@@ -1185,7 +1185,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                     onClick={() => openRsvpModal("reconfirmation")}
                     style={{
                       background: "var(--primary)",
-                      color: "white",
+                      color: T.white,
                       border: "none",
                       padding: "10px 20px",
                       borderRadius: "10px",
@@ -1228,7 +1228,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                       onClick={() => openCustomForm(f.id)}
                       style={{
                         background: state !== "live" ? G.disabledBg : (answered ? alpha(T.ink, 0.05) : "var(--primary)"),
-                        color: state !== "live" ? G.disabledInk : (answered ? "var(--primary)" : "white"),
+                        color: state !== "live" ? G.disabledInk : (answered ? "var(--primary)" : T.white),
                         border: "none",
                         padding: "10px 20px",
                         borderRadius: "10px",
@@ -1285,7 +1285,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                         width: "100%",
                         marginTop: "12px",
                         background: match.requested ? alpha(T.greenInk, 0.1) : "var(--primary)",
-                        color: match.requested ? "var(--success)" : "white",
+                        color: match.requested ? "var(--success)" : T.white,
                         border: "none",
                         padding: "8px",
                         borderRadius: "8px",
@@ -1354,7 +1354,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                   disabled={!guestFrom.trim()}
                   style={{
                     background: guestFrom.trim() ? "var(--accent)" : T.accentBorder,
-                    color: "white",
+                    color: T.white,
                     border: "none",
                     padding: "14px 24px",
                     borderRadius: "12px",
@@ -1424,7 +1424,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                         style={{
                           display: "inline-block",
                           padding: "10px 16px",
-                          background: "white",
+                          background: T.white,
                           border: `1px solid ${G.border}`,
                           borderRadius: "10px",
                           color: "var(--primary)",
@@ -1855,7 +1855,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       {/* Success Modals for requests */}
       {activeModal && (
         <div className="drawer-overlay" onClick={() => setActiveModal(null)} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "white", padding: "32px", borderRadius: "20px", maxWidth: "400px", width: "100%", textAlign: "center", position: "relative" }}>
+          <div style={{ background: T.white, padding: "32px", borderRadius: "20px", maxWidth: "400px", width: "100%", textAlign: "center", position: "relative" }}>
             <span style={{ fontSize: "40px" }}>💌</span>
             <h4 className="u-serif" style={{ fontSize: "22px", fontWeight: "600", margin: "12px 0 8px" }}>
               {locale === "fr" ? "Demande Envoyée" : "Request Sent"}
@@ -1867,7 +1867,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
             </p>
             <button
               onClick={() => setActiveModal(null)}
-              style={{ background: "var(--primary)", color: "white", border: "none", padding: "12px 24px", borderRadius: "10px", fontWeight: "600", width: "100%", cursor: "pointer" }}
+              style={{ background: "var(--primary)", color: T.white, border: "none", padding: "12px 24px", borderRadius: "10px", fontWeight: "600", width: "100%", cursor: "pointer" }}
             >
               {locale === "fr" ? "Fermer" : "Close"}
             </button>
