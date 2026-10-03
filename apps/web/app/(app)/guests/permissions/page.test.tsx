@@ -50,6 +50,7 @@ const wedding = (patch: Partial<Wedding> = {}): Wedding => ({
   owner_id: "owner-1",
   partner_one: "Maya",
   partner_two: "Daniel",
+  phone_region: "FR",
   rsvp_form_questions: null,
   sms_brevo_api_key: null,
   sms_sender: null,

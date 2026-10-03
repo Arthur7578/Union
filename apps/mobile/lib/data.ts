@@ -54,6 +54,7 @@ export async function createWedding(
     | "address_visibility"
     | "default_locale"
     | "guest_modules"
+    | "phone_region"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;
