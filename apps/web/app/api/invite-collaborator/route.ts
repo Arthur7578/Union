@@ -53,13 +53,18 @@ type Body = {
  *
  * Logged server-side only (names, never values) so the answer is in the
  * Vercel function logs rather than in a response body the inviter can see.
+ * The inviter gets the localised "saved, but we couldn't email them" copy;
+ * the fix itself is an operator task and lives here.
  */
 function logMissingAdminKey(): void {
   const visible = Object.keys(process.env)
     .filter((k) => /SUPABASE/i.test(k))
     .sort();
   console.error(
-    "[invite-collaborator] no Supabase admin key; " +
+    "[invite-collaborator] invite saved but not emailed: the recipient has no " +
+      "Union account and this deployment has no SUPABASE_SECRET_KEY with which " +
+      "to create one. Set SUPABASE_SECRET_KEY for this environment (or connect " +
+      "the Supabase integration to it) and redeploy. " +
       [
         `VERCEL_ENV=${process.env.VERCEL_ENV ?? "unset"}`,
         `VERCEL_TARGET_ENV=${process.env.VERCEL_TARGET_ENV ?? "unset"}`,
@@ -244,12 +249,9 @@ export async function POST(request: Request) {
 
   if (!SUPABASE_ADMIN_KEY) {
     logMissingAdminKey();
-    return NextResponse.json({
-      collaborator,
-      delivered: false,
-      reason:
-        "The invite is saved, but this address does not have a Union account yet and this deployment has no SUPABASE_SECRET_KEY with which to create one. Connect the Supabase integration to this Vercel environment (or add the server-only key) and redeploy.",
-    });
+    // No `reason`: the client falls back to its localised "saved, but we
+    // couldn't email them" copy, which is all the inviter can act on.
+    return NextResponse.json({ collaborator, delivered: false });
   }
 
   const admin = createUnionClient(SUPABASE_URL, SUPABASE_ADMIN_KEY, {
