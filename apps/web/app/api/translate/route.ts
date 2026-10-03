@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { jsonSchemaOutputFormat } from "@anthropic-ai/sdk/helpers/json-schema";
 import { createUnionClient } from "@union/shared";
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseConfig";
+import {
+  forgetTranslationModel,
+  resolveTranslationModel,
+} from "@/lib/translationModel";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,15 +40,6 @@ export const dynamic = "force-dynamic";
  * echo them back. Everything above runs before any model call and fails
  * closed.
  */
-
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://jriyeblycrzpozjuexvr.supabase.co";
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "sb_publishable_G0fMYmSyYm4hJWterPh3eg_GLdE92V-";
 
 const LANGUAGE_NAMES: Record<string, string> = {
   en: "English",
@@ -106,7 +102,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
-  const supabase = createUnionClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createUnionClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
@@ -230,10 +226,13 @@ export async function POST(request: Request) {
   }
 
   const anthropic = new Anthropic({ apiKey });
+  // The newest Opus the key can use, unless a deployment pins one. See
+  // lib/translationModel.ts.
+  const model = await resolveTranslationModel(anthropic);
 
   try {
     const response = await anthropic.messages.parse({
-      model: "claude-opus-5",
+      model,
       max_tokens: outputTokenBudget(totalChars),
       // Short UI labels — low effort keeps the button feeling like a button.
       output_config: {
@@ -295,6 +294,21 @@ export async function POST(request: Request) {
     if (err instanceof Anthropic.AuthenticationError) {
       return NextResponse.json(
         { error: "The translation API key was rejected." },
+        { status: 502 },
+      );
+    }
+    if (err instanceof Anthropic.NotFoundError) {
+      // A 404 from this endpoint most likely means the model ID is unknown or
+      // retired. Say that, since "Translation failed (404)" gives nobody a
+      // next step — and forget the remembered lookup, so an auto-picked model
+      // that has just been retired is re-resolved on the next request instead
+      // of failing for the rest of its cache window.
+      forgetTranslationModel();
+      return NextResponse.json(
+        {
+          error:
+            "The translation model isn't available. Set ANTHROPIC_TRANSLATE_MODEL to a current model, or write the other language by hand.",
+        },
         { status: 502 },
       );
     }

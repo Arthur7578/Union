@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   maybeSingle: vi.fn(),
   rpc: vi.fn(),
   parse: vi.fn(),
+  resolveModel: vi.fn(),
 }));
 
 vi.mock("@union/shared", () => ({
@@ -17,15 +18,24 @@ vi.mock("@union/shared", () => ({
   }),
 }));
 
+// Which model to use is lib/translationModel's business and has its own
+// tests; here it is a fixed answer so these tests are about the gates.
+vi.mock("@/lib/translationModel", () => ({
+  resolveTranslationModel: mocks.resolveModel,
+  forgetTranslationModel: vi.fn(),
+}));
+
 vi.mock("@anthropic-ai/sdk", () => {
   class APIError extends Error {
     status = 500;
   }
   class AuthenticationError extends APIError {}
+  class NotFoundError extends APIError {}
   class RateLimitError extends APIError {}
   class Anthropic {
     static APIError = APIError;
     static AuthenticationError = AuthenticationError;
+    static NotFoundError = NotFoundError;
     static RateLimitError = RateLimitError;
     messages = { parse: mocks.parse };
   }
@@ -85,6 +95,7 @@ beforeEach(() => {
   mocks.eq.mockReturnValue({ maybeSingle: mocks.maybeSingle });
   mocks.maybeSingle.mockResolvedValue({ data: { id: FORM_ID }, error: null });
   mocks.rpc.mockResolvedValue({ data: "ok", error: null });
+  mocks.resolveModel.mockResolvedValue("test-model");
   mocks.parse.mockResolvedValue({
     parsed_output: {
       translations: [{ id: "rsvp.title", text: "Voulez-vous nous rejoindre ?" }],
@@ -107,6 +118,17 @@ describe("POST /api/translate", () => {
       p_form_id: FORM_ID,
     });
     expect(mocks.parse).toHaveBeenCalledOnce();
+    expect(mocks.parse.mock.calls[0][0].model).toBe("test-model");
+  });
+
+  it("looks up the model only after the allowance is granted", async () => {
+    // Resolving the model talks to the API, so it shouldn't happen for a
+    // request that is about to be refused.
+    mocks.rpc.mockResolvedValue({ data: "user_limit", error: null });
+
+    await post(validBody);
+
+    expect(mocks.resolveModel).not.toHaveBeenCalled();
   });
 
   it("rejects an unauthenticated request before doing anything else", async () => {
