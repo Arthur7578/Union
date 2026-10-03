@@ -663,7 +663,7 @@ export default function GuestDetailPage() {
               autoFocus
               style={{ width: 72 }}
             />
-            {ageError && <span style={{ color: "#C0553B" }}>{ageError}</span>}
+            {ageError && <span style={{ color: T.danger }}>{ageError}</span>}
           </>
         ) : guest.age_years != null ? (
           <>
@@ -1290,7 +1290,7 @@ export default function GuestDetailPage() {
             type="button"
             onClick={remove}
             className="u-link"
-            style={{ color: "#C0553B" }}
+            style={{ color: T.danger }}
           >
             Remove guest
           </button>

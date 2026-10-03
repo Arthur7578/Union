@@ -8,6 +8,7 @@ import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import type { JoinWeddingPreview } from "./page";
+import { G } from "@/lib/theme";
 
 type View =
   | "checking"
@@ -302,7 +303,7 @@ export function JoinExperience({
   const renderContent = () => {
     if (view === "checking" || view === "redirecting") {
       return (
-        <div style={{ textAlign: "center", color: "#756b65", padding: "28px 0" }}>
+        <div style={{ textAlign: "center", color: G.muted2, padding: "28px 0" }}>
           {view === "checking"
             ? t.guestJoin.checkingSession
             : t.guestJoin.redirecting}
@@ -467,7 +468,7 @@ function FieldLabel({
 }) {
   return (
     <label style={{ display: "grid", gap: 7, textAlign: "left" }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: "#4f4742" }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: G.ink2 }}>
         {label}
       </span>
       {children}
@@ -480,9 +481,9 @@ const pageStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "#f4f1ea",
+  background: G.bg,
   padding: "80px 20px 32px",
-  color: "#2b2724",
+  color: G.ink,
 };
 
 const cardStyle: React.CSSProperties = {
@@ -496,7 +497,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const kickerStyle: React.CSSProperties = {
-  color: "#9a7d66",
+  color: G.gold,
   fontSize: 11,
   fontWeight: 700,
   letterSpacing: "0.14em",
@@ -522,7 +523,7 @@ const titleStyle: React.CSSProperties = {
 };
 
 const bodyStyle: React.CSSProperties = {
-  color: "#756b65",
+  color: G.muted2,
   fontSize: 15,
   lineHeight: 1.55,
   textAlign: "center",
@@ -550,9 +551,9 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   minHeight: 50,
   borderRadius: 12,
-  border: "1px solid #d8d0c8",
+  border: `1px solid ${G.borderInput}`,
   background: "#fff",
-  color: "#2b2724",
+  color: G.ink,
   fontSize: 16,
   padding: "0 14px",
   outline: "none",
@@ -564,7 +565,7 @@ const primaryButtonStyle: React.CSSProperties = {
   minHeight: 50,
   border: 0,
   borderRadius: 999,
-  background: "#2b2724",
+  background: G.ink,
   color: "#fff",
   fontSize: 15,
   fontWeight: 600,
@@ -575,7 +576,7 @@ const primaryButtonStyle: React.CSSProperties = {
 const textButtonStyle: React.CSSProperties = {
   border: 0,
   background: "transparent",
-  color: "#6f655f",
+  color: G.muted3,
   fontSize: 14,
   textDecoration: "underline",
   cursor: "pointer",
@@ -583,9 +584,9 @@ const textButtonStyle: React.CSSProperties = {
 };
 
 const errorStyle: React.CSSProperties = {
-  background: "#fff1ed",
-  border: "1px solid #f0c6b9",
-  color: "#8c3f2f",
+  background: G.errBg,
+  border: `1px solid ${G.errBorder}`,
+  color: G.errInk,
   padding: "11px 13px",
   borderRadius: 10,
   fontSize: 13,

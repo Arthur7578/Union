@@ -8,6 +8,7 @@ import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { resolveLocale } from "@/lib/i18n/server";
 import { Contentsquare } from "@/components/Contentsquare";
+import { T } from "@/lib/theme";
 
 // Self-hosted fonts — no render-blocking <link>, zero layout shift.
 const serif = Cormorant_Garamond({
@@ -67,7 +68,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F2ECE5",
+  themeColor: T.bgTop,
   colorScheme: "light",
   width: "device-width",
   initialScale: 1,

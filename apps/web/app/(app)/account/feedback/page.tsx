@@ -69,7 +69,7 @@ export default function FeedbackPage() {
                 {row.sub}
               </div>
             </div>
-            <ChevronRight size={16} stroke="#CBBCB6" />
+            <ChevronRight size={16} stroke={T.chevron} />
           </button>
         ))}
       </div>

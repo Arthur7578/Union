@@ -266,7 +266,7 @@ export function GroupPicker({
       )}
 
       {err && (
-        <div style={{ fontSize: 12, color: "#C0553B", marginTop: 6 }}>
+        <div style={{ fontSize: 12, color: T.danger, marginTop: 6 }}>
           {err}
         </div>
       )}

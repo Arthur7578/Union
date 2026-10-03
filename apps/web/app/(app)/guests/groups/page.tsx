@@ -29,12 +29,12 @@ import {
 } from "@/components/ui";
 
 const PALETTE = [
-  { bg: "#F2E1E0", ring: "#C79BA0", name: "Rosewood" },
-  { bg: "#E7EFE6", ring: "#A9C0AC", name: "Sage" },
-  { bg: "#FBEEE2", ring: "#DDB27C", name: "Amber" },
-  { bg: "#E4E7EE", ring: "#A6ACC0", name: "Slate" },
-  { bg: "#EEDCDF", ring: "#C79BA0", name: "Blush" },
-  { bg: "#EFE7DF", ring: "#C1B4AD", name: "Sand" },
+  { bg: T.accentPink, ring: T.ringRose, name: "Rosewood" },
+  { bg: T.greenBg, ring: T.ringSage, name: "Sage" },
+  { bg: T.amberBg, ring: T.ringAmber, name: "Amber" },
+  { bg: T.blueBg, ring: T.ringSlate, name: "Slate" },
+  { bg: T.blushBg, ring: T.ringRose, name: "Blush" },
+  { bg: T.sandBg, ring: T.stone, name: "Sand" },
 ] as const;
 
 const STARTERS = ["Family", "Friends", "Colleagues", "Plus ones"] as const;
@@ -650,8 +650,8 @@ export default function GroupsPage() {
                         marginTop: 10,
                         padding: 10,
                         borderRadius: 10,
-                        background: "#F7E6E1",
-                        color: "#C0553B",
+                        background: T.dangerBg,
+                        color: T.danger,
                         fontSize: 12,
                         lineHeight: 1.4,
                       }}
@@ -665,7 +665,7 @@ export default function GroupsPage() {
                           type="button"
                           onClick={() => removeGroup(g)}
                           style={{
-                            background: "#C0553B",
+                            background: T.danger,
                             color: "#fff",
                             fontWeight: 600,
                             fontSize: 12,
@@ -709,7 +709,7 @@ export default function GroupsPage() {
                       <button
                         onClick={() => setConfirmDeleteId(g.id)}
                         className="u-link"
-                        style={{ color: "#C0553B", fontSize: 12 }}
+                        style={{ color: T.danger, fontSize: 12 }}
                         type="button"
                       >
                         Delete

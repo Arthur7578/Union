@@ -31,10 +31,10 @@ const TONE_STYLE: Record<
   ToneKey,
   { bg: string; ring: string; fg: string; label: string }
 > = {
-  accent: { bg: "#F2E1E0", ring: "#C79BA0", fg: T.accentInk, label: "Family" },
-  green: { bg: "#E7EFE6", ring: "#A9C0AC", fg: T.greenInk, label: "Friends" },
-  amber: { bg: "#FBEEE2", ring: "#DDB27C", fg: T.amberInk, label: "Work & neighbors" },
-  sand: { bg: "#F4EFE9", ring: "#C1B4AD", fg: T.sand, label: "Other" },
+  accent: { bg: T.accentPink, ring: T.ringRose, fg: T.accentInk, label: "Family" },
+  green: { bg: T.greenBg, ring: T.ringSage, fg: T.greenInk, label: "Friends" },
+  amber: { bg: T.amberBg, ring: T.ringAmber, fg: T.amberInk, label: "Work & neighbors" },
+  sand: { bg: "#F4EFE9", ring: T.stone, fg: T.sand, label: "Other" },
 };
 
 const TONE_KEYS = Object.keys(TONE_STYLE) as ToneKey[];
@@ -476,7 +476,7 @@ export default function SeatingPage() {
         style={{
           display: "flex",
           gap: 6,
-          background: "#EFE7DF",
+          background: T.sandBg,
           borderRadius: 14,
           padding: 4,
         }}
@@ -538,7 +538,7 @@ export default function SeatingPage() {
                 fontSize: 9.5,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "#C1B4AD",
+                color: T.stone,
                 maxWidth: "70%",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
@@ -653,14 +653,14 @@ export default function SeatingPage() {
                     height: isRect ? 30 : 48,
                     borderRadius: isRect ? 8 : "50%",
                     background: style.bg,
-                    border: `${over ? 2 : 1.5}px ${empty ? "dashed" : "solid"} ${over ? "#C0553B" : style.ring}`,
+                    border: `${over ? 2 : 1.5}px ${empty ? "dashed" : "solid"} ${over ? T.danger : style.ring}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontFamily: T.serif,
                     fontWeight: 700,
                     fontSize: isRect ? 11 : 14.5,
-                    color: over ? "#C0553B" : style.fg,
+                    color: over ? T.danger : style.fg,
                     cursor: "grab",
                     outline: on ? `2px solid ${T.ink}` : "none",
                     outlineOffset: 2,
@@ -689,9 +689,9 @@ export default function SeatingPage() {
                         position: "absolute",
                         bottom: -6,
                         right: -6,
-                        background: over ? "#C0553B" : "#fff",
+                        background: over ? T.danger : "#fff",
                         color: over ? "#fff" : T.muted,
-                        border: `1px solid ${over ? "#C0553B" : T.line3}`,
+                        border: `1px solid ${over ? T.danger : T.line3}`,
                         borderRadius: 999,
                         padding: "1px 6px",
                         fontFamily: T.sans,
@@ -811,7 +811,7 @@ export default function SeatingPage() {
                     <div
                       style={{
                         fontSize: 12,
-                        color: selectedOverCap ? "#C0553B" : T.faint,
+                        color: selectedOverCap ? T.danger : T.faint,
                         marginTop: 2,
                         fontWeight: selectedOverCap ? 600 : 400,
                       }}
@@ -1001,7 +1001,7 @@ export default function SeatingPage() {
                       <button
                         onClick={() => removeTable(selectedTable)}
                         className="u-link"
-                        style={{ color: "#C0553B", fontSize: 12 }}
+                        style={{ color: T.danger, fontSize: 12 }}
                       >
                         Delete
                       </button>
@@ -1028,7 +1028,7 @@ export default function SeatingPage() {
                                 gap: 10,
                                 padding: "6px 8px",
                                 borderRadius: 10,
-                                background: "#FFFCFA",
+                                background: T.surface,
                                 border: `1px solid ${T.line}`,
                               }}
                             >
@@ -1335,7 +1335,7 @@ export default function SeatingPage() {
                             gap: 10,
                             padding: "7px 8px",
                             borderRadius: 10,
-                            background: "#FFFCFA",
+                            background: T.surface,
                             border: `1px solid ${T.line}`,
                           }}
                         >
@@ -1680,7 +1680,7 @@ export default function SeatingPage() {
                             gap: 10,
                             padding: "6px 8px",
                             borderRadius: 10,
-                            background: "#FFFCFA",
+                            background: T.surface,
                             border: `1px solid ${T.line}`,
                           }}
                         >

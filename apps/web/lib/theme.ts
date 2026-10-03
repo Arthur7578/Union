@@ -4,7 +4,13 @@
  * ink #43353A on cream, with a rosewood accent.
  *
  * Used for inline styles across the web app so the whole look can be
- * re-skinned from one place, mirroring the mobile theme.
+ * re-skinned from one place. `T` is the signed-in planning app; `G` is the
+ * separate, cooler palette of the public guest-facing pages (RSVP, guest
+ * portal, join flow).
+ *
+ * Convention: a colour used more than once belongs here, not inline. Values
+ * are never merged silently — near-duplicates stay distinct tokens (or stay
+ * raw) until a design decision collapses them.
  */
 export const T = {
   // Ink + text
@@ -22,6 +28,7 @@ export const T = {
   bgBottom: "#E7DDD3",
   surface: "#FFFCFA",
   surfaceAlt: "#FBFAF8",
+  heroGradient: "linear-gradient(158deg,#F8EDEA 0%,#F2E1E0 100%)",
 
   // Hairlines
   line: "rgba(67,53,58,.07)",
@@ -49,12 +56,48 @@ export const T = {
   sandBg: "#EFE7DF",
   blueInk: "#5C648A",
   blueBg: "#E4E7EE",
+  danger: "#C0553B",
+  dangerBg: "#F7E6E1",
+
+  // Glyphs
+  chevron: "#CBBCB6",
+  stone: "#C1B4AD",
+
+  // Swatch rings — pair with the *Bg tones above (guest groups, seating)
+  blushBg: "#EEDCDF",
+  ringRose: "#C79BA0",
+  ringSage: "#A9C0AC",
+  ringAmber: "#DDB27C",
+  ringSlate: "#A6ACC0",
 
   // Type — resolves to the self-hosted next/font families (see app/layout.tsx),
   // with graceful system fallbacks.
   serif:
     "var(--font-serif), 'Cormorant Garamond', Georgia, 'Times New Roman', serif",
   sans: "var(--font-sans), 'Instrument Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+} as const;
+
+/**
+ * Guest-facing palette — the public RSVP page, guest portal and join flow.
+ * Cream paper and espresso ink, deliberately separate from the app's `T`.
+ */
+export const G = {
+  bg: "#F4F1EA",
+  card: "#FCFBFA",
+  field: "#FBFBF8",
+  ink: "#2B2724",
+  ink2: "#4F4742",
+  muted: "#8A817C",
+  muted2: "#756B65",
+  muted3: "#6F655F",
+  gold: "#9A7D66",
+  border: "#E1DEC3",
+  borderInput: "#D8D0C8",
+  rosePale: "#FDF2F4",
+  okBg: "#EAF5EC",
+  errBg: "#FFF1ED",
+  errBorder: "#F0C6B9",
+  errInk: "#8C3F2F",
 } as const;
 
 /** hex + alpha -> rgba() string (for accent tints computed at runtime). */

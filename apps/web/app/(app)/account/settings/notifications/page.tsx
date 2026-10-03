@@ -95,12 +95,12 @@ export default function NotificationsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 15px", borderBottom: `1px solid ${T.line}` }}>
           <span style={{ fontWeight: 600, fontSize: 14.5, color: T.ink, flex: 1 }}>{t.account.channelPush}</span>
           <span style={{ fontWeight: 600, fontSize: 12.5, color: T.greenInk }}>{t.account.channelOn}</span>
-          <ChevronRight size={16} stroke="#CBBCB6" />
+          <ChevronRight size={16} stroke={T.chevron} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 15px" }}>
           <span style={{ fontWeight: 600, fontSize: 14.5, color: T.ink, flex: 1 }}>{t.account.channelEmail}</span>
           <span style={{ fontWeight: 600, fontSize: 12.5, color: T.label }}>{t.account.channelDigestOnly}</span>
-          <ChevronRight size={16} stroke="#CBBCB6" />
+          <ChevronRight size={16} stroke={T.chevron} />
         </div>
       </div>
     </main>

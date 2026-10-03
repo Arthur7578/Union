@@ -49,7 +49,7 @@ export default function SettingsPage() {
             <span style={{ fontWeight: 600, fontSize: 12.5, color: c.on ? T.greenInk : T.label }}>
               {c.status}
             </span>
-            <ChevronRight size={16} stroke="#CBBCB6" />
+            <ChevronRight size={16} stroke={T.chevron} />
           </div>
         ))}
       </div>

@@ -28,7 +28,7 @@ type Filter = "all" | "coming" | "waiting" | "declined";
 const STATUS_DOT: Record<string, string> = {
   attending: T.green,
   declined: "#C7A9A2",
-  pending: "#DDB27C",
+  pending: T.ringAmber,
 };
 
 export default function GuestsPage() {

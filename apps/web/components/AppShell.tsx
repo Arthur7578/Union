@@ -20,8 +20,8 @@ import {
   Spark,
 } from "./icons";
 
-const ON = "#43353A";
-const OFF = "#C1B4AD";
+const ON = T.ink;
+const OFF = T.stone;
 
 type Tab = {
   key: NavKey;
@@ -250,7 +250,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   style={{
                     fontWeight: 600,
                     fontSize: 10,
-                    color: isActive ? ON : "#BBACA5",
+                    color: isActive ? ON : T.label,
                   }}
                 >
                   {dict.nav[tab.key]}

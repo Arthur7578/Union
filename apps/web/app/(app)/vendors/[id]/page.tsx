@@ -129,7 +129,7 @@ export default function VendorDetailPage() {
         style={{
           marginTop: 22,
           borderRadius: 22,
-          background: "linear-gradient(158deg,#F8EDEA 0%,#F2E1E0 100%)",
+          background: T.heroGradient,
           padding: 18,
           boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
         }}

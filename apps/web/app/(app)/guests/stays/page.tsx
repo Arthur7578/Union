@@ -265,7 +265,7 @@ export default function StaysPage() {
                     <button
                       onClick={() => removeRoom(b)}
                       className="u-link"
-                      style={{ color: "#C0553B", fontSize: 12 }}
+                      style={{ color: T.danger, fontSize: 12 }}
                     >
                       Delete
                     </button>

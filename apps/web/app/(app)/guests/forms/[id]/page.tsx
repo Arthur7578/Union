@@ -37,9 +37,9 @@ import { Card, Chip, Button, Loading, Switch, StatusPill } from "@/components/ui
 
 const KIND_LABEL: Record<RsvpQuestion["kind"], { label: string; bg: string; fg: string }> = {
   single: { label: "Single choice", bg: "#EEE7F0", fg: "#7A6690" },
-  multi: { label: "Multiple choice", bg: "#E7EFE6", fg: "#5E7A63" },
-  short: { label: "Short text", bg: "#FBEEE2", fg: "#B07C48" },
-  comment: { label: "Open comment", bg: "#FBEEE2", fg: "#B07C48" },
+  multi: { label: "Multiple choice", bg: T.greenBg, fg: T.greenDeep },
+  short: { label: "Short text", bg: T.amberBg, fg: T.amberInk },
+  comment: { label: "Open comment", bg: T.amberBg, fg: T.amberInk },
 };
 
 function newId() {
@@ -850,7 +850,7 @@ export default function FormBuilderPage() {
               <button
                 onClick={() => removeQuestion(q.id)}
                 className="u-link"
-                style={{ color: "#C0553B", fontSize: 12, marginTop: 10 }}
+                style={{ color: T.danger, fontSize: 12, marginTop: 10 }}
                 type="button"
               >
                 Remove question
@@ -946,7 +946,7 @@ export default function FormBuilderPage() {
             onClick={remove}
             disabled={deleting}
             className="u-link"
-            style={{ color: "#C0553B", fontSize: 13 }}
+            style={{ color: T.danger, fontSize: 13 }}
             type="button"
           >
             {deleting ? "Deleting…" : "Delete this form"}
@@ -1025,7 +1025,7 @@ function ExtraGuestsRights({
         </Link>
       </div>
 
-      {err && <div style={{ color: "#C0553B", fontSize: 12, marginTop: 8 }}>{err}</div>}
+      {err && <div style={{ color: T.danger, fontSize: 12, marginTop: 8 }}>{err}</div>}
     </Card>
   );
 }
@@ -1043,8 +1043,8 @@ function AutoBadge() {
         fontWeight: 700,
         letterSpacing: "0.04em",
         textTransform: "uppercase",
-        color: "#B07C48",
-        background: "#FBEEE2",
+        color: T.amberInk,
+        background: T.amberBg,
         borderRadius: 6,
         padding: "3px 6px",
       }}

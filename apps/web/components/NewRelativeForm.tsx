@@ -148,7 +148,7 @@ export function NewRelativeForm({
             type="button"
             onClick={onRemove}
             className="u-link"
-            style={{ fontSize: 12.5, color: "#C0553B" }}
+            style={{ fontSize: 12.5, color: T.danger }}
           >
             {removeLabel}
           </button>

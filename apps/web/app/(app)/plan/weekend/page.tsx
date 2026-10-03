@@ -85,8 +85,8 @@ export default function WeekendPage() {
                 width: m.accent ? 12 : 10,
                 height: m.accent ? 12 : 10,
                 borderRadius: "50%",
-                background: m.accent ? T.accent : "#EFE7DF",
-                border: m.accent ? "2px solid #fff" : "2px solid #A99A90",
+                background: m.accent ? T.accent : T.sandBg,
+                border: m.accent ? "2px solid #fff" : `2px solid ${T.sand}`,
                 boxShadow: m.accent ? `0 0 0 2px ${T.accentBorder}` : "none",
               }}
             />

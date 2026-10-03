@@ -4,6 +4,7 @@ import { getDictionary } from "@/lib/i18n";
 import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { JoinExperience } from "./JoinExperience";
+import { G } from "@/lib/theme";
 
 // Always fetch fresh — never cache a generic link's guest matching.
 export const dynamic = "force-dynamic";
@@ -52,10 +53,10 @@ export default async function JoinPage({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f4f1ea",
+          background: G.bg,
           fontFamily: "'Instrument Sans', sans-serif",
           padding: "24px",
-          color: "#2b2724",
+          color: G.ink,
         }}
       >
         <div
@@ -76,14 +77,14 @@ export default async function JoinPage({
               fontSize: "32px",
               fontWeight: "600",
               marginBottom: "12px",
-              color: "#2b2724",
+              color: G.ink,
             }}
           >
             {t.join.invalidTitle}
           </h1>
           <p
             style={{
-              color: "#8a817c",
+              color: G.muted,
               fontSize: "16px",
               lineHeight: "1.6",
               marginBottom: 0,

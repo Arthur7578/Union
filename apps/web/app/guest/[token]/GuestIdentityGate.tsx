@@ -10,6 +10,7 @@ import {
 } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { G } from "@/lib/theme";
 
 type GateState = "checking" | "confirm" | "allowed";
 
@@ -133,9 +134,9 @@ const pageStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "#f4f1ea",
+  background: G.bg,
   padding: "80px 20px 32px",
-  color: "#2b2724",
+  color: G.ink,
 };
 
 const cardStyle: React.CSSProperties = {
@@ -150,7 +151,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const kickerStyle: React.CSSProperties = {
-  color: "#9a7d66",
+  color: G.gold,
   fontSize: 11,
   fontWeight: 700,
   letterSpacing: "0.14em",
@@ -167,7 +168,7 @@ const titleStyle: React.CSSProperties = {
 };
 
 const bodyStyle: React.CSSProperties = {
-  color: "#756b65",
+  color: G.muted2,
   fontSize: 15,
   lineHeight: 1.55,
   margin: "0 0 22px",
@@ -178,7 +179,7 @@ const primaryButtonStyle: React.CSSProperties = {
   minHeight: 50,
   border: 0,
   borderRadius: 999,
-  background: "#2b2724",
+  background: G.ink,
   color: "#fff",
   fontSize: 15,
   fontWeight: 600,
@@ -189,7 +190,7 @@ const primaryButtonStyle: React.CSSProperties = {
 const textButtonStyle: React.CSSProperties = {
   border: 0,
   background: "transparent",
-  color: "#6f655f",
+  color: G.muted3,
   fontSize: 14,
   textDecoration: "underline",
   cursor: "pointer",
