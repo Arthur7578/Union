@@ -34,6 +34,7 @@ export type {
   GuestModules,
   StoredGuestModules,
 } from "./guestModules";
+export { guestLinkPath, guestLinkUrl } from "./guestLink";
 export {
   MAX_CHILDREN_CAP,
   buildGuestPermissionsPatch,

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { guestLinkPath } from "@union/shared";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
@@ -95,7 +96,7 @@ export function JoinExperience({
   const redirectToGuest = useCallback(
     (token: string) => {
       setView("redirecting");
-      router.push(`/guest/${token}`);
+      router.push(guestLinkPath(token));
     },
     [router],
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { guestLinkUrl } from "@union/shared";
 import type { Wedding } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
@@ -54,7 +55,7 @@ function SmsTemplateForm({
     () =>
       resolveSmsTemplate(template, {
         guest_first_name: "Priya",
-        guest_access_link: `${previewOrigin}/guest/sample-token`,
+        guest_access_link: guestLinkUrl(previewOrigin, "sample-token"),
         partner_1_first_name: wedding.partner_one || "Maya",
         partner_2_first_name: wedding.partner_two || "Daniel",
       }),

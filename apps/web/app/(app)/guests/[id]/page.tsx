@@ -4,7 +4,12 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { T } from "@/lib/theme";
-import { choiceToOverride, overrideToChoice } from "@union/shared";
+import {
+  choiceToOverride,
+  guestLinkPath,
+  guestLinkUrl,
+  overrideToChoice,
+} from "@union/shared";
 import type {
   GuestGroup,
   PermissionChoice,
@@ -298,7 +303,7 @@ export default function GuestDetailPage() {
   const copyLink = async () => {
     const url =
       typeof window !== "undefined"
-        ? `${window.location.origin}/guest/${guest.invite_token}`
+        ? guestLinkUrl(window.location.origin, guest.invite_token)
         : "";
     try {
       await navigator.clipboard.writeText(url);
@@ -314,7 +319,7 @@ export default function GuestDetailPage() {
     const template = wedding?.sms_template || DEFAULT_SMS_TEMPLATE;
     return resolveSmsTemplate(template, {
       guest_first_name: guest.first_name ?? "",
-      guest_access_link: `${origin}/guest/${guest.invite_token}`,
+      guest_access_link: guestLinkUrl(origin, guest.invite_token),
       partner_1_first_name: wedding?.partner_one ?? "",
       partner_2_first_name: wedding?.partner_two ?? "",
     });
@@ -370,7 +375,7 @@ export default function GuestDetailPage() {
     const partners = [wedding?.partner_one, wedding?.partner_two]
       .filter(Boolean)
       .join(" & ") || "us";
-    const url = `${origin}/guest/${guest.invite_token}`;
+    const url = guestLinkUrl(origin, guest.invite_token);
     const subject = `You're invited — RSVP for ${partners}`;
     const body = `Hi ${guest.first_name},\n\nWe'd love for you to celebrate with us. Your RSVP link:\n${url}\n\nWith love,\n${partners}`;
     window.location.href = `mailto:${encodeURIComponent(guest.email)}?subject=${encodeURIComponent(
@@ -730,7 +735,7 @@ export default function GuestDetailPage() {
               whiteSpace: "nowrap",
             }}
           >
-            /guest/{guest.invite_token}
+            {guestLinkPath(guest.invite_token)}
           </div>
           <Button
             variant="secondary"
