@@ -94,7 +94,13 @@ export default function TeamPage() {
       setInviteNotice(
         result.delivered
           ? { tone: "ok", text: t.plan.inviteSent(clean) }
-          : { tone: "warn", text: t.plan.inviteSavedNotSent(result.reason ?? "") },
+          : {
+              tone: "warn",
+              text:
+                result.failure === "rate_limited"
+                  ? t.plan.inviteSavedRateLimited
+                  : t.plan.inviteSavedNotSent,
+            },
       );
       refreshActivity();
     } catch (err) {
