@@ -29,3 +29,14 @@ export const SUPABASE_PUBLISHABLE_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   DEFAULT_SUPABASE_PUBLISHABLE_KEY;
+
+/**
+ * True when both values are present. Server layouts guard on this to show the
+ * "not configured" notice. Keep it here rather than in `supabaseClient`, which
+ * is `"use client"`: exported from there, the guard did not fire in the server
+ * layouts — with no env set, `/sign-in` still served the normal page and the
+ * browser then failed with "Missing Supabase credentials".
+ */
+export const supabaseConfigured = Boolean(
+  SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY,
+);

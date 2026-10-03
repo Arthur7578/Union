@@ -27,8 +27,3 @@ export function getBrowserSupabase(): UnionClient {
 /** Public Auth origin used to validate emailed confirmation URLs before the
  * invitation handoff redirects the browser. */
 export const supabaseUrl = SUPABASE_URL;
-
-/** True when Supabase credentials are configured for this deployment. */
-export const supabaseConfigured = Boolean(
-  SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY,
-);
