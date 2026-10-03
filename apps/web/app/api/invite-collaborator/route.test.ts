@@ -101,9 +101,14 @@ afterEach(() => {
 
 /** The inviter's response must stay free of upstream/operator text; the
  *  detail belongs in the server log. */
-function expectQuietResponse(body: { json: Record<string, unknown>; text: string }) {
+function expectQuietResponse(
+  body: { json: Record<string, unknown>; text: string },
+  failure?: "rate_limited",
+) {
   expect(body.json.delivered).toBe(false);
   expect(body.json).not.toHaveProperty("reason");
+  if (failure) expect(body.json.failure).toBe(failure);
+  else expect(body.json).not.toHaveProperty("failure");
   expect(body.json.collaborator).toMatchObject({ id: "c1" });
 }
 
@@ -140,17 +145,13 @@ describe("invite-collaborator: delivery failures after the invite is saved", () 
 
   it("sign-in email to an existing account fails: keeps the Auth error out", async () => {
     upstream.recipientExists = true;
-    upstream.otpErr = {
-      message: "email rate limit exceeded",
-      code: "over_email_send_rate_limit",
-      status: 429,
-    };
+    upstream.otpErr = { message: "smtp unavailable", code: "unexpected_failure", status: 500 };
     const body = await post({ adminKey: true });
 
     expectQuietResponse(body);
-    expect(body.text).not.toContain("rate limit");
-    expect(loggedText()).toContain("email rate limit exceeded");
-    expect(loggedText()).toContain("429");
+    expect(body.text).not.toContain("smtp unavailable");
+    expect(loggedText()).toContain("smtp unavailable");
+    expect(loggedText()).toContain("500");
   });
 
   it("admin invite fails: keeps the Auth error out", async () => {
@@ -160,6 +161,36 @@ describe("invite-collaborator: delivery failures after the invite is saved", () 
     expectQuietResponse(body);
     expect(body.text).not.toContain("Error sending invite email");
     expect(loggedText()).toContain("Error sending invite email");
+  });
+
+  it("rate limit on the sign-in email: passes a code, not Supabase's wording", async () => {
+    upstream.recipientExists = true;
+    upstream.otpErr = {
+      message: "email rate limit exceeded",
+      code: "over_email_send_rate_limit",
+      status: 429,
+    };
+    const body = await post({ adminKey: true });
+
+    expectQuietResponse(body, "rate_limited");
+    expect(body.text).not.toContain("exceeded");
+    expect(loggedText()).toContain("email rate limit exceeded");
+  });
+
+  it("rate limit on the admin invite, signalled by status alone", async () => {
+    upstream.inviteErr = { message: "Too many requests", status: 429 };
+    const body = await post({ adminKey: true });
+
+    expectQuietResponse(body, "rate_limited");
+    expect(body.text).not.toContain("Too many");
+  });
+
+  it("request rate limit code is treated the same way", async () => {
+    upstream.recipientExists = true;
+    upstream.otpErr = { message: "slow down", code: "over_request_rate_limit" };
+    const body = await post({ adminKey: true });
+
+    expectQuietResponse(body, "rate_limited");
   });
 
   it("account appears mid-invite and the retry fails: same quiet response", async () => {

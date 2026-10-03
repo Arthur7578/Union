@@ -74,11 +74,25 @@ function logMissingAdminKey(): void {
   );
 }
 
+/** Supabase's "slow down" signals: the Auth error codes, or a bare 429 from the
+ *  mailer. */
+function isRateLimited(err: { code?: string; status?: number }): boolean {
+  return (
+    err.code === "over_email_send_rate_limit" ||
+    err.code === "over_request_rate_limit" ||
+    err.status === 429
+  );
+}
+
 /**
- * The invite row is saved but the email didn't go out. The inviter gets the
- * client's localised "saved, but we couldn't email them" copy, so the response
- * carries no `reason`: the upstream error is English, often technical, and not
- * theirs to act on, so it goes to the server log instead.
+ * The invite row is saved but the email didn't go out. The upstream error is
+ * English, often technical, and mostly not the inviter's to act on, so it goes
+ * to the server log and the response carries no free text; the client shows its
+ * own localised copy.
+ *
+ * The exception is a rate limit — the one failure that has a useful next step
+ * (wait, then invite again) — which is passed on as a code the client
+ * translates, rather than as Supabase's wording.
  */
 function notDelivered(
   collaborator: object,
@@ -89,7 +103,11 @@ function notDelivered(
     `[invite-collaborator] invite saved but not emailed (${stage}): ${err.message}`,
     { code: err.code, status: err.status },
   );
-  return NextResponse.json({ collaborator, delivered: false });
+  return NextResponse.json({
+    collaborator,
+    delivered: false,
+    ...(isRateLimited(err) ? { failure: "rate_limited" } : {}),
+  });
 }
 
 /** Prefer the canonical production URL when configured. Supabase only honors

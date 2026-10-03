@@ -460,8 +460,10 @@ export const fr: Dictionary = {
     inviteDuplicate: "Déjà invité·e.",
     inviteSelf: "C'est votre propre adresse — vous faites déjà partie de l'équipe.",
     inviteSent: (email: string) => `Invitation envoyée à ${email}.`,
-    inviteSavedNotSent: (reason: string) =>
-      `Enregistré, mais l'e-mail n'a pas pu partir${reason ? ` — ${reason}` : "."} La personne rejoindra l'équipe automatiquement dès sa première connexion avec cette adresse.`,
+    inviteSavedNotSent:
+      "Enregistré, mais l'e-mail n'a pas pu partir. La personne rejoindra l'équipe automatiquement dès sa première connexion avec cette adresse.",
+    inviteSavedRateLimited:
+      "Enregistré, mais l'envoi d'e-mails est momentanément limité : celui-ci n'est pas parti. Invitez à nouveau cette personne dans quelques minutes, ou elle rejoindra l'équipe automatiquement dès sa première connexion avec cette adresse.",
     inviteError: "Impossible d'envoyer cette invitation — réessayez.",
     cancelInvite: "Annuler l'invitation",
     removeCoOrganiser: "Retirer",
