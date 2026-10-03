@@ -284,6 +284,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           phone_e164: string | null
+          phone_e164_legacy_fr: string | null
           profile_id: string | null
           role: string | null
           room_block_id: string | null
@@ -309,7 +310,8 @@ export type Database = {
           locale?: string | null
           notes?: string | null
           phone?: string | null
-          phone_e164?: string | null
+          phone_e164?: never
+          phone_e164_legacy_fr?: never
           profile_id?: string | null
           role?: string | null
           room_block_id?: string | null
@@ -335,7 +337,8 @@ export type Database = {
           locale?: string | null
           notes?: string | null
           phone?: string | null
-          phone_e164?: string | null
+          phone_e164?: never
+          phone_e164_legacy_fr?: never
           profile_id?: string | null
           role?: string | null
           room_block_id?: string | null
@@ -634,7 +637,6 @@ export type Database = {
           owner_id: string
           partner_one: string | null
           partner_two: string | null
-          phone_region: string | null
           rsvp_form_questions: Json | null
           sms_brevo_api_key: string | null
           sms_sender: string | null
@@ -668,7 +670,6 @@ export type Database = {
           owner_id: string
           partner_one?: string | null
           partner_two?: string | null
-          phone_region?: string | null
           rsvp_form_questions?: Json | null
           sms_brevo_api_key?: string | null
           sms_sender?: string | null
@@ -702,7 +703,6 @@ export type Database = {
           owner_id?: string
           partner_one?: string | null
           partner_two?: string | null
-          phone_region?: string | null
           rsvp_form_questions?: Json | null
           sms_brevo_api_key?: string | null
           sms_sender?: string | null
