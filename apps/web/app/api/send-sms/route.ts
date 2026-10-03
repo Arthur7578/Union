@@ -26,12 +26,6 @@ function sanitizeSender(input: string): string | null {
   return alnum || null;
 }
 
-function sanitizeRecipient(input: string): string | null {
-  const trimmed = input.replace(/[\s()\-.]/g, "");
-  if (!/^\+?\d{6,15}$/.test(trimmed)) return null;
-  return trimmed.startsWith("+") ? trimmed : `+${trimmed}`;
-}
-
 function resolveTemplate(
   template: string,
   vars: Record<string, string>,
@@ -189,14 +183,18 @@ export async function POST(request: Request) {
 
   const { data: guest, error: gErr } = await supabase
     .from("guests")
-    .select("id, wedding_id, first_name, phone, invite_token")
+    .select("id, wedding_id, first_name, phone_e164, invite_token")
     .eq("id", guestId)
     .maybeSingle();
   if (gErr || !guest || guest.wedding_id !== weddingId) {
     return NextResponse.json({ error: "Guest not found." }, { status: 404 });
   }
 
-  const recipient = sanitizeRecipient(guest.phone ?? "");
+  // `phone_e164` is the database's own normalisation of what the organiser
+  // typed (local French 06… → +33 6…, 00… → +…), the same value guest
+  // matching and dedup use. It is null when the number can't be resolved
+  // to an international one, which is exactly when we must not send.
+  const recipient = guest.phone_e164;
   if (!recipient) {
     return NextResponse.json(
       { error: "This guest doesn't have a valid phone number." },
