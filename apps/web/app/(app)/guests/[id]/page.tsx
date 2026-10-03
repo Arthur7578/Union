@@ -40,7 +40,7 @@ import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
 import { NewRelativeForm } from "@/components/NewRelativeForm";
 import { RelationshipCombobox } from "@/components/RelationshipCombobox";
 import { SmsInviteModal } from "@/components/SmsInviteModal";
-import { DEFAULT_SMS_TEMPLATE, resolveSmsTemplate } from "@/lib/sms";
+import { DEFAULT_SMS_TEMPLATE, resolveSmsTemplate, smsBlockers } from "@/lib/sms";
 import { DEFAULT_LOCALE, getDictionary, isLocale, type Locale } from "@/lib/i18n";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { PhoneField } from "@/components/PhoneField";
@@ -749,9 +749,12 @@ export default function GuestDetailPage() {
             </Button>
           )}
           {(() => {
-            const hasPhone = Boolean((guest.phone ?? "").trim());
-            const hasSender = Boolean((wedding?.sms_sender ?? "").trim());
-            const smsDisabled = !hasPhone || !hasSender;
+            const smsDisabled =
+              smsBlockers({
+                phone: guest.phone,
+                phoneE164: guest.phone_e164,
+                sender: wedding?.sms_sender,
+              }).length > 0;
             return (
               <Button
                 onClick={() => {
@@ -767,15 +770,22 @@ export default function GuestDetailPage() {
           })()}
         </div>
         {(() => {
-          const hasPhone = Boolean((guest.phone ?? "").trim());
-          const hasSender = Boolean((wedding?.sms_sender ?? "").trim());
-          if (hasPhone && hasSender) return null;
+          const blockers = smsBlockers({
+            phone: guest.phone,
+            phoneE164: guest.phone_e164,
+            sender: wedding?.sms_sender,
+          });
+          if (blockers.length === 0) return null;
           const hints: string[] = [];
-          if (!hasPhone)
+          if (blockers.includes("no-phone"))
             hints.push(
               "To send an SMS invite, add a phone number for this guest in the details section below.",
             );
-          if (!hasSender)
+          if (blockers.includes("no-country"))
+            hints.push(
+              "This guest's phone number doesn't say which country it's in, so the SMS can't be sent. Re-save it with its country in the details section below.",
+            );
+          if (blockers.includes("no-sender"))
             hints.push(
               "To send an SMS invite, set up your SMS sender number in the SMS Template settings first.",
             );
@@ -796,7 +806,7 @@ export default function GuestDetailPage() {
               {hints.map((h, i) => (
                 <div key={i}>
                   {h}
-                  {i === hints.length - 1 && !hasSender && (
+                  {i === hints.length - 1 && blockers.includes("no-sender") && (
                     <>
                       {" "}
                       <Link
@@ -827,7 +837,7 @@ export default function GuestDetailPage() {
       {smsOpen && wedding && (
         <SmsInviteModal
           initialMessage={buildSmsPreview()}
-          recipient={guest.phone ?? ""}
+          recipient={guest.phone_e164 ?? ""}
           sender={wedding.sms_sender ?? ""}
           busy={smsBusy}
           error={smsError}
