@@ -31,6 +31,14 @@ const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "sb_publishable_G0fMYmSyYm4hJWterPh3eg_GLdE92V-";
 
+/**
+ * The model that does the translating. Overridable with
+ * ANTHROPIC_TRANSLATE_MODEL so that when this one is superseded or retired the
+ * fix is a config change and a redeploy, not a code change. The default is
+ * only what a deployment gets when the variable is unset.
+ */
+const DEFAULT_MODEL = "claude-opus-5";
+
 const LANGUAGE_NAMES: Record<string, string> = {
   en: "English",
   fr: "French",
@@ -114,10 +122,11 @@ export async function POST(request: Request) {
   }
 
   const anthropic = new Anthropic({ apiKey });
+  const model = (process.env.ANTHROPIC_TRANSLATE_MODEL ?? "").trim() || DEFAULT_MODEL;
 
   try {
     const response = await anthropic.messages.parse({
-      model: "claude-opus-5",
+      model,
       max_tokens: 8000,
       // Short UI labels — low effort keeps the button feeling like a button.
       output_config: {
@@ -179,6 +188,18 @@ export async function POST(request: Request) {
     if (err instanceof Anthropic.AuthenticationError) {
       return NextResponse.json(
         { error: "The translation API key was rejected." },
+        { status: 502 },
+      );
+    }
+    if (err instanceof Anthropic.NotFoundError) {
+      // A 404 from this endpoint most likely means the model ID is unknown or
+      // retired. Say that, since "Translation failed (404)" gives nobody a
+      // next step.
+      return NextResponse.json(
+        {
+          error:
+            "The translation model isn't available. Set ANTHROPIC_TRANSLATE_MODEL to a current model, or write the other language by hand.",
+        },
         { status: 502 },
       );
     }

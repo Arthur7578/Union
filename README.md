@@ -117,7 +117,7 @@ All three are `POST` and take the caller's Supabase access token as
 | --- | --- | --- |
 | `/api/invite-collaborator` | Saves a co-organiser invite (wedding owner only) and emails it through Supabase Auth. People with an existing account get the ordinary sign-in email; creating a brand-new Auth user needs the server-only secret key. If the email can't be sent, the invite row is still kept and the response says so. | `SUPABASE_SECRET_KEY` for new users; optionally `NEXT_PUBLIC_SITE_URL` |
 | `/api/send-sms` | Sends a guest their invitation SMS through Brevo, using the wedding's own Brevo key and sender (stored on the wedding, not in env). | none |
-| `/api/translate` | Translates form copy between English and French for the form builder. Writes nothing — the couple reviews and saves the result. Returns `503` with a readable message if no key is configured. | `ANTHROPIC_API_KEY` |
+| `/api/translate` | Translates form copy between English and French for the form builder. Writes nothing — the couple reviews and saves the result. Returns `503` with a readable message if no key is configured. | `ANTHROPIC_API_KEY`; optionally `ANTHROPIC_TRANSLATE_MODEL` |
 
 > **Keeping this list honest.** Route counts drift quickly. To re-check:
 > `find apps/web/app -name page.tsx | wc -l` (pages) and
@@ -223,6 +223,7 @@ point it somewhere else.
 | `SUPABASE_URL` | server | Optional server-side override of the URL, used by the API routes. Falls back to `NEXT_PUBLIC_SUPABASE_URL`. |
 | `SUPABASE_SECRET_KEY` | **server-only** | `/api/invite-collaborator`, to email an invite to someone with no Union account yet (it creates the Auth user). Bypasses RLS — never expose it to the browser. Legacy `SUPABASE_SERVICE_ROLE_KEY` also works. Without it, invites to people who already have an account still send. |
 | `ANTHROPIC_API_KEY` | **server-only** | `/api/translate`, the form builder's auto-translate. Optional: without it that route returns `503` and the builder asks the couple to write the other language by hand. Nothing else depends on it. |
+| `ANTHROPIC_TRANSLATE_MODEL` | **server-only** | Optional. The model `/api/translate` uses; unset falls back to the default in `apps/web/app/api/translate/route.ts`. Set it to move to a newer model, or if the default is retired — then redeploy. If the model isn't found, the route answers `502` with a message saying so. |
 | `NEXT_PUBLIC_SITE_URL` | server | Optional. Canonical origin used for the redirect link in invite emails. Supabase only honours allow-listed redirect targets, so set it where the request's own host isn't one. |
 | `NEXT_PUBLIC_CONTENTSQUARE_CLIENT_ID` | browser | Optional Contentsquare analytics. Loads only in a production build when `NEXT_PUBLIC_VERCEL_ENV` is `production`. |
 | `NEXT_PUBLIC_VERCEL_ENV` | browser | Gate for the analytics above. Provided by Vercel when system environment variables are exposed to the build; if it's unset, analytics stay off. |
