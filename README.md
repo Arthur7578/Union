@@ -112,11 +112,14 @@ npm run web          # or: npm run dev --workspace apps/web
 Open `http://localhost:3000` for the planning app (sign in with an 8-digit
 email code), or `http://localhost:3000/rsvp/<invite-token>` for a guest's
 RSVP page. Config is read from `apps/web/.env.local`
-(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). Deploy to
-Vercel with root directory `apps/web`; Supabase's Vercel integration provides
-those variables plus the server-only `SUPABASE_SECRET_KEY` used to send team
-invitations. Then update `EXPO_PUBLIC_RSVP_WEB_URL` in the mobile app to the
-deployed URL.
+(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). There is no
+built-in default project: `npm run build` fails, naming what is missing, when
+they are unset. Deploy to Vercel with root directory `apps/web` and set both for
+every environment you build (Production and Preview) — Supabase's Vercel
+integration can provide the key and the server-only `SUPABASE_SECRET_KEY` used
+to send team invitations, but check that `NEXT_PUBLIC_SUPABASE_URL` is present
+for each environment. Then update `EXPO_PUBLIC_RSVP_WEB_URL` in the mobile app
+to the deployed URL.
 
 ### Typecheck everything
 
