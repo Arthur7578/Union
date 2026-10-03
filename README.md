@@ -70,7 +70,7 @@ account area (`/account/*`) sits outside them.
 | `/accept-invite` | Hop in front of Supabase's one-time auth link. The auth email templates link here with `#confirmation_url=…`; the page checks the link points at this project's `/auth/v1/verify`, remembers the invited wedding, then follows it. | Live |
 | `/guest/[token]` | **The guest page.** A guest's invitation portal, opened from their personal invite link (`token` = the guest's invite token). Handles RSVP, companions, the wedding's custom forms, and the travel / logistics / FAQ tabs (each can be switched off per wedding). Opens in the guest's language. `/guest/demo` renders a demo invitation with no database. | Live |
 | `/join/[code]` | The wedding's generic group link (`code` = `weddings.join_code`). The guest identifies themselves — by contact details (default) or an emailed code — and lands on their own `/guest/[token]`. | Live |
-| `/rsvp/[token]` | Legacy alias. A ~15-line redirect to `/guest/[token]`. Kept because the mobile app (`apps/mobile/app/(tabs)/guests/[id].tsx`) and previously sent links still use `/rsvp/<token>`. Don't build on it. | Redirect |
+| `/rsvp/[token]` | Legacy alias. A ~15-line redirect to `/guest/[token]`. Kept because links sent before the move still use `/rsvp/<token>`; nothing emits it any more (links are built with `guestLinkPath` / `guestLinkUrl` from `@union/shared`). Don't build on it. | Redirect |
 | `/offline` | Offline fallback page, precached by the service worker. | Static |
 
 ### App routes (`/today`, `/guests`, `/vendors`, `/plan`, `/account`)
@@ -207,7 +207,7 @@ Then scan the QR code with **Expo Go** on your iPhone/Android device.
 Config is read from `apps/mobile/.env` (see `apps/mobile/.env.example`):
 `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, and
 `EXPO_PUBLIC_RSVP_WEB_URL` — the web app's origin, used to build the invite links
-the mobile app shares (`<EXPO_PUBLIC_RSVP_WEB_URL>/rsvp/<token>`).
+the mobile app shares (`<EXPO_PUBLIC_RSVP_WEB_URL>/guest/<token>`).
 
 ### Web app
 

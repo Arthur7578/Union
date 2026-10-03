@@ -48,20 +48,63 @@ const MAX_CAPTCHA_TOKEN_LENGTH = 4096;
  * deployment is saying it, and whether the name is present under a different
  * spelling or scoped to an environment this deployment isn't in.
  *
- * Reports the deployment's own identity plus the *names* of every
- * Supabase-ish variable the function can actually see. Names only, never
- * values — a secret key in an error string is a secret key in a screenshot.
+ * Logged server-side only (names, never values) so the answer is in the
+ * Vercel function logs rather than in a response body the inviter can see.
+ * The inviter gets the localised "saved, but we couldn't email them" copy;
+ * the fix itself is an operator task and lives here.
  */
-function describeEnv(): string {
+function logMissingAdminKey(): void {
   const visible = Object.keys(process.env)
     .filter((k) => /SUPABASE/i.test(k))
     .sort();
-  return [
-    `VERCEL_ENV=${process.env.VERCEL_ENV ?? "unset"}`,
-    `VERCEL_TARGET_ENV=${process.env.VERCEL_TARGET_ENV ?? "unset"}`,
-    `deployment=${process.env.VERCEL_URL ?? "unset"}`,
-    `Supabase vars visible here: ${visible.length ? visible.join(", ") : "none"}`,
-  ].join(" · ");
+  console.error(
+    "[invite-collaborator] invite saved but not emailed: the recipient has no " +
+      "Union account and this deployment has no SUPABASE_SECRET_KEY with which " +
+      "to create one. Set SUPABASE_SECRET_KEY for this environment (or connect " +
+      "the Supabase integration to it) and redeploy. " +
+      [
+        `VERCEL_ENV=${process.env.VERCEL_ENV ?? "unset"}`,
+        `VERCEL_TARGET_ENV=${process.env.VERCEL_TARGET_ENV ?? "unset"}`,
+        `deployment=${process.env.VERCEL_URL ?? "unset"}`,
+        `Supabase vars visible here: ${visible.length ? visible.join(", ") : "none"}`,
+      ].join(" · "),
+  );
+}
+
+/** Supabase's "slow down" signals: the Auth error codes, or a bare 429 from the
+ *  mailer. */
+function isRateLimited(err: { code?: string; status?: number }): boolean {
+  return (
+    err.code === "over_email_send_rate_limit" ||
+    err.code === "over_request_rate_limit" ||
+    err.status === 429
+  );
+}
+
+/**
+ * The invite row is saved but the email didn't go out. The upstream error is
+ * English, often technical, and mostly not the inviter's to act on, so it goes
+ * to the server log and the response carries no free text; the client shows its
+ * own localised copy.
+ *
+ * The exception is a rate limit — the one failure that has a useful next step
+ * (wait, then invite again) — which is passed on as a code the client
+ * translates, rather than as Supabase's wording.
+ */
+function notDelivered(
+  collaborator: object,
+  stage: string,
+  err: { message: string; code?: string; status?: number },
+) {
+  console.error(
+    `[invite-collaborator] invite saved but not emailed (${stage}): ${err.message}`,
+    { code: err.code, status: err.status },
+  );
+  return NextResponse.json({
+    collaborator,
+    delivered: false,
+    ...(isRateLimited(err) ? { failure: "rate_limited" } : {}),
+  });
 }
 
 /** Prefer the canonical production URL when configured. Supabase only honors
@@ -212,11 +255,7 @@ export async function POST(request: Request) {
     { p_wedding_id: weddingId, p_email: email },
   );
   if (recipientLookupErr) {
-    return NextResponse.json({
-      collaborator,
-      delivered: false,
-      reason: `The invite is saved, but we couldn't determine how to email them: ${recipientLookupErr.message}`,
-    });
+    return notDelivered(collaborator, "recipient lookup", recipientLookupErr);
   }
 
   if (recipientExists) {
@@ -241,21 +280,14 @@ export async function POST(request: Request) {
         kind: "existing",
       });
     }
-    return NextResponse.json({
-      collaborator,
-      delivered: false,
-      reason: otpErr.message,
-    });
+    return notDelivered(collaborator, "sign-in email to existing account", otpErr);
   }
 
   if (!SUPABASE_ADMIN_KEY) {
-    return NextResponse.json({
-      collaborator,
-      delivered: false,
-      reason:
-        "The invite is saved, but this address does not have a Union account yet and this deployment has no SUPABASE_SECRET_KEY with which to create one. Connect the Supabase integration to this Vercel environment (or add the server-only key) and redeploy. " +
-        `[${describeEnv()}]`,
-    });
+    logMissingAdminKey();
+    // No `reason`: the client falls back to its localised "saved, but we
+    // couldn't email them" copy, which is all the inviter can act on.
+    return NextResponse.json({ collaborator, delivered: false });
   }
 
   const admin = createUnionClient(SUPABASE_URL, SUPABASE_ADMIN_KEY, {
@@ -307,16 +339,12 @@ export async function POST(request: Request) {
         kind: "existing",
       });
     }
-    return NextResponse.json({
+    return notDelivered(
       collaborator,
-      delivered: false,
-      reason: otpErr.message,
-    });
+      "sign-in email after account appeared mid-invite",
+      otpErr,
+    );
   }
 
-  return NextResponse.json({
-    collaborator,
-    delivered: false,
-    reason: inviteErr.message,
-  });
+  return notDelivered(collaborator, "admin invite", inviteErr);
 }

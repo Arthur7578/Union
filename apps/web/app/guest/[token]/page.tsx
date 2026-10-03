@@ -4,6 +4,7 @@ import { getDictionary } from "@/lib/i18n";
 import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import Link from "next/link";
+import { guestLinkPath } from "@union/shared";
 import type {
   FormAnswers,
   FormGuestCopy,
@@ -190,7 +191,7 @@ export default async function GuestExperiencePage({
             {t.rsvp.invalidBody}
           </p>
           <Link
-            href="/guest/demo"
+            href={guestLinkPath("demo")}
             style={{
               display: "inline-block",
               width: "100%",
