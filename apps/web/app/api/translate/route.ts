@@ -17,9 +17,18 @@ export const dynamic = "force-dynamic";
  * it, which is the whole point of routing translations through the builder
  * instead of translating at render time.
  *
- * Requires a signed-in caller. The strings are the couple's own copy, but an
- * unauthenticated endpoint that forwards arbitrary text to a model is an open
- * proxy, and this one is reachable from the public internet.
+ * Two gates stand between a request and the model, because "signed in" alone
+ * isn't one — sign-up is open, so anyone can be:
+ *
+ *  1. The caller must be able to edit the form they name. That is decided by
+ *     RLS on `forms` through their own JWT — the same rule the builder itself
+ *     runs under — so a team member can translate a shared form and nobody
+ *     else's account can borrow this route as a general-purpose proxy.
+ *  2. A per-user limit in the database (`consume_rate_limit`), shared across
+ *     serverless instances. Without it, a form-owning account could still loop
+ *     on this route.
+ *
+ * Both run before any model call and fail closed.
  */
 
 const SUPABASE_URL =
@@ -40,6 +49,9 @@ const LANGUAGE_NAMES: Record<string, string> = {
  *  that a malformed client can't turn one click into a huge request. */
 const MAX_ITEMS = 120;
 const MAX_CHARS_PER_ITEM = 600;
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Item = { id: string; text: string };
 
@@ -89,11 +101,16 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { from?: unknown; to?: unknown; items?: unknown };
+  let body: { formId?: unknown; from?: unknown; to?: unknown; items?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  const formId = typeof body.formId === "string" ? body.formId : "";
+  if (!UUID_RE.test(formId)) {
+    return NextResponse.json({ error: "A form is required." }, { status: 400 });
   }
 
   const from = typeof body.from === "string" ? body.from : "";
@@ -110,6 +127,42 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Nothing valid to translate." },
       { status: 400 },
+    );
+  }
+
+  // Scope: can this caller edit this form? Answered by RLS on their own JWT,
+  // so owners and team members pass and everyone else sees no row. "Doesn't
+  // exist" and "isn't yours" are deliberately indistinguishable.
+  const { data: form, error: formErr } = await supabase
+    .from("forms")
+    .select("id")
+    .eq("id", formId)
+    .maybeSingle();
+  if (formErr || !form) {
+    return NextResponse.json({ error: "Form not found." }, { status: 404 });
+  }
+
+  // Spend: the model call is the expensive part, so the limit is consumed
+  // before it. If the counter can't be reached we refuse rather than skip the
+  // check — an unmetered path is exactly what this is here to prevent.
+  const { data: withinLimit, error: limitErr } = await supabase.rpc(
+    "consume_rate_limit",
+    { p_bucket: "translate" },
+  );
+  if (limitErr) {
+    console.error("translate: rate-limit check failed:", limitErr.message);
+    return NextResponse.json(
+      { error: "Couldn't check translation usage — try again shortly." },
+      { status: 503 },
+    );
+  }
+  if (withinLimit !== true) {
+    return NextResponse.json(
+      {
+        error:
+          "You've used automatic translation a lot in the last hour. Try again a little later, or write the other language in by hand.",
+      },
+      { status: 429 },
     );
   }
 
