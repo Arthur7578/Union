@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { jsonSchemaOutputFormat } from "@anthropic-ai/sdk/helpers/json-schema";
 import { createUnionClient } from "@union/shared";
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseConfig";
 import {
   forgetTranslationModel,
   resolveTranslationModel,
@@ -25,15 +26,6 @@ export const dynamic = "force-dynamic";
  * unauthenticated endpoint that forwards arbitrary text to a model is an open
  * proxy, and this one is reachable from the public internet.
  */
-
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://jriyeblycrzpozjuexvr.supabase.co";
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "sb_publishable_G0fMYmSyYm4hJWterPh3eg_GLdE92V-";
 
 const LANGUAGE_NAMES: Record<string, string> = {
   en: "English",
@@ -70,7 +62,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
-  const supabase = createUnionClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createUnionClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: `Bearer ${token}` } },
   });

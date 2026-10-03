@@ -211,16 +211,14 @@ code), `http://localhost:3000/guest/<invite-token>` for a guest's invitation, or
 `http://localhost:3000/guest/demo` for a demo invitation that needs no data.
 
 Copy `apps/web/.env.example` to `apps/web/.env.local` and fill it in. The
-Supabase variables fall back to the Union project's URL and publishable key when
-unset, so the app runs locally without any config — but that means it talks to the
-**hosted Union project**, not a local database. Set the variables if you want to
-point it somewhere else.
+Supabase URL and a key are **required**: there is no built-in default project.
+`npm run build` fails, naming what is missing or malformed, and `npm run dev`
+without them shows a "not configured" notice instead of the app.
 
 | Variable | Scope | Needed for |
 | --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | browser + server | Supabase project URL. Falls back to the Union project. |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | browser + server | Supabase publishable key. The legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` is also read. Falls back to the Union project. |
-| `SUPABASE_URL` | server | Optional server-side override of the URL, used by the API routes. Falls back to `NEXT_PUBLIC_SUPABASE_URL`. |
+| `NEXT_PUBLIC_SUPABASE_URL` | browser + server | **Required.** Supabase project URL, used by both the browser and the API routes so they always talk to the same project. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | browser + server | **Required** (or the legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY`; the publishable key wins if both are set). Supabase publishable key. |
 | `SUPABASE_SECRET_KEY` | **server-only** | `/api/invite-collaborator`, to email an invite to someone with no Union account yet (it creates the Auth user). Bypasses RLS — never expose it to the browser. Legacy `SUPABASE_SERVICE_ROLE_KEY` also works. Without it, invites to people who already have an account still send. |
 | `ANTHROPIC_API_KEY` | **server-only** | `/api/translate`, the form builder's auto-translate. Optional: without it that route returns `503` and the builder asks the couple to write the other language by hand. Nothing else depends on it. |
 | `ANTHROPIC_TRANSLATE_MODEL` | **server-only** | Optional. Pins the model `/api/translate` uses. Unset, the route uses the **newest Opus your key can list** (re-checked hourly, and logged when it changes), so a new Opus release is picked up without a code change; if listing fails it falls back to a built-in default (`FALLBACK_MODEL` in `apps/web/lib/translationModel.ts`). Pin it when price and behaviour must stay put. Redeploy to apply a change. If the model isn't found, the route answers `502` with a message saying so. |
@@ -234,9 +232,11 @@ SMS template settings.
 Deploying to Vercel: use the **repo root** as the project's root directory, not
 `apps/web`. The repo-root `vercel.json` sets the install, build (lint + build) and
 output paths for `apps/web`, and production builds run from the root with exactly
-those commands. Supabase's Vercel integration provides the
-Supabase variables, including `SUPABASE_SECRET_KEY`. Then update
-`EXPO_PUBLIC_RSVP_WEB_URL` in the mobile app to the deployed URL.
+those commands. Set `NEXT_PUBLIC_SUPABASE_URL` and a publishable key for every
+environment you build (Production and Preview) — the build fails without them.
+Supabase's Vercel integration can provide the key and `SUPABASE_SECRET_KEY`, but
+check that `NEXT_PUBLIC_SUPABASE_URL` is present for each environment. Then
+update `EXPO_PUBLIC_RSVP_WEB_URL` in the mobile app to the deployed URL.
 
 ### Checks
 
