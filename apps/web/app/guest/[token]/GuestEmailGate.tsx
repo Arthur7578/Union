@@ -6,6 +6,7 @@ import { sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { useTurnstile } from "@/lib/turnstile";
 
 type Step = "email" | "code" | "complete";
 
@@ -37,6 +38,7 @@ export function GuestEmailGate({
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { captcha, getCaptchaToken } = useTurnstile();
 
   if (step === "complete") return <>{children}</>;
 
@@ -45,7 +47,7 @@ export function GuestEmailGate({
     setBusy(true);
     setError(null);
     try {
-      await sendEmailOtp(email);
+      await sendEmailOtp(email, await getCaptchaToken());
       setCode("");
       setStep("code");
     } catch {
@@ -129,6 +131,7 @@ export function GuestEmailGate({
                 style={inputStyle}
               />
             </label>
+            {captcha}
             <button disabled={busy} style={primaryButtonStyle}>
               {busy
                 ? t.guestEmailSetup.sending
@@ -154,6 +157,7 @@ export function GuestEmailGate({
                 }}
               />
             </label>
+            {captcha}
             <button disabled={busy} style={primaryButtonStyle}>
               {busy
                 ? t.guestEmailSetup.verifying

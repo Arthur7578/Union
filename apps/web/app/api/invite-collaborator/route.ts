@@ -1,17 +1,10 @@
 import { NextResponse } from "next/server";
 import { createUnionClient } from "@union/shared";
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseConfig";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://jriyeblycrzpozjuexvr.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "sb_publishable_G0fMYmSyYm4hJWterPh3eg_GLdE92V-";
 const SUPABASE_ADMIN_KEY = (
   process.env.SUPABASE_SECRET_KEY ||
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
@@ -43,7 +36,11 @@ const EMAIL_RE = /^\S+@\S+\.\S+$/;
 type Body = {
   weddingId?: unknown;
   email?: unknown;
+  captchaToken?: unknown;
 };
+
+// Turnstile tokens are a couple of kilobytes at most; anything larger is junk.
+const MAX_CAPTCHA_TOKEN_LENGTH = 4096;
 
 /**
  * "This deployment has no secret key" is an unhelpful thing to be told when
@@ -129,6 +126,16 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  // Emailing an existing account goes through Supabase Auth's OTP endpoint,
+  // which demands a CAPTCHA token once protection is on. This route has no
+  // browser of its own to solve one, so it relays the token the inviter's
+  // browser solved. Ignored by Supabase while CAPTCHA protection is off.
+  const captchaToken =
+    typeof body.captchaToken === "string" &&
+    body.captchaToken.length > 0 &&
+    body.captchaToken.length <= MAX_CAPTCHA_TOKEN_LENGTH
+      ? body.captchaToken
+      : undefined;
 
   // Bound to the caller's JWT, so RLS — not this route — is what decides
   // whether they own the wedding they're inviting into.
@@ -224,6 +231,7 @@ export async function POST(request: Request) {
       options: {
         shouldCreateUser: false,
         emailRedirectTo: invitationUrl,
+        captchaToken,
       },
     });
     if (!otpErr) {
@@ -289,6 +297,7 @@ export async function POST(request: Request) {
       options: {
         shouldCreateUser: false,
         emailRedirectTo: invitationUrl,
+        captchaToken,
       },
     });
     if (!otpErr) {

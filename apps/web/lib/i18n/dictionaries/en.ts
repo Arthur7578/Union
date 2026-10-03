@@ -40,6 +40,11 @@ export const en = {
     handle: "Handle",
     invite: "Invite",
     adding: "Adding…",
+    phoneCountry: "Country",
+    phoneChooseCountry: "Choose a country",
+    phoneCountryMissing:
+      "Country not set. Choose one so this number can be recognised reliably.",
+    phoneInvalid: "Check this number. It doesn't look complete.",
   },
 
   // Landing page

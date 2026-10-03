@@ -7,6 +7,7 @@ import {
   ownerMergeGuests,
   type MergeOverrides,
 } from "@/lib/data";
+import { PhoneField } from "./PhoneField";
 
 /**
  * Any guest-like object with the fields that matter for a merge.
@@ -336,27 +337,39 @@ export function MergeReviewPanel({
                           setPicks((p) => ({ ...p, [field.key]: pick ?? "" }))
                         }
                       />
-                      <input
-                        type={
-                          field.kind === "int"
-                            ? "number"
-                            : field.kind === "email"
-                              ? "email"
-                              : field.kind === "tel"
-                                ? "tel"
+                      {field.kind === "tel" ? (
+                        <div style={{ flex: 1 }}>
+                          <PhoneField
+                            compact
+                            autoFocus
+                            value={pick == null ? "" : String(pick)}
+                            onChange={(phone) =>
+                              setPicks((p) => ({ ...p, [field.key]: phone }))
+                            }
+                            placeholder="Custom value"
+                          />
+                        </div>
+                      ) : (
+                        <input
+                          type={
+                            field.kind === "int"
+                              ? "number"
+                              : field.kind === "email"
+                                ? "email"
                                 : "text"
-                        }
-                        autoFocus
-                        value={pick == null ? "" : String(pick)}
-                        onChange={(e) =>
-                          setPicks((p) => ({
-                            ...p,
-                            [field.key]: e.target.value,
-                          }))
-                        }
-                        placeholder="Custom value"
-                        style={{ flex: 1 }}
-                      />
+                          }
+                          autoFocus
+                          value={pick == null ? "" : String(pick)}
+                          onChange={(e) =>
+                            setPicks((p) => ({
+                              ...p,
+                              [field.key]: e.target.value,
+                            }))
+                          }
+                          placeholder="Custom value"
+                          style={{ flex: 1 }}
+                        />
+                      )}
                     </label>
                   ) : (
                     <button
