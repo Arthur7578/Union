@@ -41,6 +41,11 @@ export const fr: Dictionary = {
     handle: "Je m'en charge",
     invite: "Inviter",
     adding: "Ajout…",
+    phoneCountry: "Pays",
+    phoneChooseCountry: "Choisir un pays",
+    phoneCountryMissing:
+      "Pays non renseigné. Choisissez-le pour que ce numéro soit reconnu de façon fiable.",
+    phoneInvalid: "Vérifiez ce numéro : il semble incomplet.",
   },
 
   landing: {

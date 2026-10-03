@@ -1,17 +1,9 @@
 import { NextResponse } from "next/server";
 import { createUnionClient, guestLinkUrl } from "@union/shared";
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseConfig";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://jriyeblycrzpozjuexvr.supabase.co";
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "sb_publishable_G0fMYmSyYm4hJWterPh3eg_GLdE92V-";
 
 // Trim the sender for Brevo. Rules:
 //   * numeric → strip everything but leading '+' and digits, keep as-is
@@ -148,7 +140,7 @@ export async function POST(request: Request) {
 
   // Client bound to the caller's JWT. Wedding/guest RLS authorizes either
   // the owner or an accepted collaborator; the anon key remains public.
-  const supabase = createUnionClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createUnionClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: `Bearer ${token}` } },
   });

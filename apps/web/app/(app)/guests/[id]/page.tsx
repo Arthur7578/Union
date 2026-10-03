@@ -48,6 +48,7 @@ import { SmsInviteModal } from "@/components/SmsInviteModal";
 import { DEFAULT_SMS_TEMPLATE, resolveSmsTemplate } from "@/lib/sms";
 import { DEFAULT_LOCALE, getDictionary, isLocale, type Locale } from "@/lib/i18n";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { PhoneField } from "@/components/PhoneField";
 
 const STATUS_LABEL: Record<
   string,
@@ -1143,12 +1144,7 @@ export default function GuestDetailPage() {
         </div>
         <div className="field">
           <label htmlFor="ph">Phone</label>
-          <input
-            id="ph"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
+          <PhoneField id="ph" value={phone} onChange={setPhone} />
         </div>
         <div className="field">
           <label>Can add a partner from their RSVP</label>

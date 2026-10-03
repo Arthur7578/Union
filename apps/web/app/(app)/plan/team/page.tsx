@@ -9,6 +9,7 @@ import { useWedding } from "@/lib/wedding";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { useLocale } from "@/lib/i18n/client";
+import { useTurnstile } from "@/lib/turnstile";
 import { initial, timeAgo } from "@/lib/format";
 import {
   fetchCollaborators,
@@ -27,6 +28,7 @@ export default function TeamPage() {
   const { session } = useAuth();
   const { wedding, setWedding } = useWedding();
   const { profile } = useProfile();
+  const { captcha, getCaptchaToken } = useTurnstile();
 
   const [collaborators, setCollaborators] = useState<CollaboratorWithProfile[] | null>(null);
   const [activity, setActivity] = useState<ActivityLogEntry[] | null>(null);
@@ -80,7 +82,11 @@ export default function TeamPage() {
     setInviteError(null);
     setInviteNotice(null);
     try {
-      const result = await inviteCollaborator(wedding.id, clean);
+      // Only needed to email someone who already has an account. If the
+      // challenge fails, still save the invite: the route then reports the mail
+      // as not sent, which this page already words as "saved, not sent".
+      const captchaToken = await getCaptchaToken().catch(() => undefined);
+      const result = await inviteCollaborator(wedding.id, clean, captchaToken);
       setCollaborators((prev) => [...(prev ?? []), result.collaborator]);
       setEmail("");
       // The row always saves; the mail is the part that can fail on its own,
@@ -318,6 +324,7 @@ export default function TeamPage() {
               {inviteBusy ? t.plan.inviteSending : t.common.invite}
             </Button>
           </form>
+          {captcha}
           {inviteError && (
             <div style={{ fontSize: 12.5, color: T.accentInk, marginTop: 8 }}>{inviteError}</div>
           )}

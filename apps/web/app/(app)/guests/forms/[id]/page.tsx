@@ -417,6 +417,7 @@ export default function FormBuilderPage() {
       if (!accessToken) throw new Error("You're signed out.");
 
       const translations = await requestTranslations(
+        form.id,
         slots,
         editingLocale,
         target,

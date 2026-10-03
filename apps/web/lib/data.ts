@@ -1298,6 +1298,7 @@ export type InviteResult = {
 export async function inviteCollaborator(
   weddingId: string,
   email: string,
+  captchaToken?: string,
 ): Promise<InviteResult> {
   const supabase = getBrowserSupabase();
   const {
@@ -1312,7 +1313,11 @@ export async function inviteCollaborator(
       "content-type": "application/json",
       authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ weddingId, email: email.trim().toLowerCase() }),
+    body: JSON.stringify({
+      weddingId,
+      email: email.trim().toLowerCase(),
+      captchaToken,
+    }),
   });
   const payload = await res.json().catch(() => ({}));
 
