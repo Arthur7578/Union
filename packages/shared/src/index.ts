@@ -64,6 +64,18 @@ export type {
   Enums,
 } from "./database.types";
 export { Constants } from "./database.types";
+export {
+  PHONE_COUNTRIES,
+  dialCode,
+  guessPhoneCountry,
+  isPhoneCountry,
+  isValidPhone,
+  parseStoredPhone,
+  toStoredPhone,
+  type ParsedPhone,
+  type PhoneCountry,
+} from "./phone";
+
 
 // Convenience row aliases used across apps.
 import type { Tables, Enums } from "./database.types";
