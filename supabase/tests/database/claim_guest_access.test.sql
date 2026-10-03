@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(16);
+select plan(17);
 
 -- Accounts. Contact details only count once Auth has confirmed them, so each
 -- kind of contact comes in a confirmed and an unconfirmed flavour.
@@ -13,14 +13,15 @@ select plan(16);
 --   4 carol  confirmed email
 --   5 dana   confirmed phone, no email
 --   6 erin   UNconfirmed phone, no email
+-- Auth keeps a phone without its leading "+".
 insert into auth.users (id, email, email_confirmed_at, phone, phone_confirmed_at)
 values
   ('10000000-0000-0000-0000-000000000001', 'claim-owner@example.test', now(), null, null),
   ('10000000-0000-0000-0000-000000000002', 'alice@example.test', now(), null, null),
   ('10000000-0000-0000-0000-000000000003', 'bob@example.test', null, null, null),
   ('10000000-0000-0000-0000-000000000004', 'carol@example.test', now(), null, null),
-  ('10000000-0000-0000-0000-000000000005', null, null, '+33612345678', now()),
-  ('10000000-0000-0000-0000-000000000006', null, null, '+33687654321', null);
+  ('10000000-0000-0000-0000-000000000005', null, null, '33612345678', now()),
+  ('10000000-0000-0000-0000-000000000006', null, null, '33687654321', null);
 
 insert into public.weddings (id, owner_id, partner_one, partner_two)
 values ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'Alex', 'Sam');
@@ -33,8 +34,8 @@ values ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-0000000
 --   5 already linked to carol, whose own email does not match it
 --   6 linked to carol; alice has no claim on it
 --   7 carol's address, but still linked to alice's older account
---   8 reachable by dana's phone, written the way a person types it
---   9 reachable by erin's phone
+--   8 reachable by dana's phone: it states its country, typed with spaces
+--   9 reachable by erin's phone, likewise
 insert into public.guests (id, wedding_id, invite_token, first_name, email, phone, profile_id)
 values
   ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000001', 'Alice', 'Alice@Example.test ', null, null),
@@ -44,8 +45,8 @@ values
   ('30000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000005', 'Linked', 'frank@example.test', null, '10000000-0000-0000-0000-000000000004'),
   ('30000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000006', 'Taken', 'grace@example.test', null, '10000000-0000-0000-0000-000000000004'),
   ('30000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000007', 'Relinked', 'carol@example.test', null, '10000000-0000-0000-0000-000000000002'),
-  ('30000000-0000-0000-0000-000000000008', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000008', 'Dana', null, '06 12 34 56 78', null),
-  ('30000000-0000-0000-0000-000000000009', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000009', 'Erin', null, '06 87 65 43 21', null);
+  ('30000000-0000-0000-0000-000000000008', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000008', 'Dana', null, '+33 6 12 34 56 78', null),
+  ('30000000-0000-0000-0000-000000000009', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000009', 'Erin', null, '+33 6 87 65 43 21', null);
 
 -- No session at all.
 set local request.jwt.claims = '';
@@ -166,7 +167,16 @@ set local role authenticated;
 select is(
   public.claim_guest_access('30000000-0000-0000-0000-000000000008') ->> 'status',
   'verified',
-  'a confirmed phone matches the guest''s number however it was typed'
+  'a confirmed phone matches a guest number that states its country, however it was spaced'
+);
+
+-- A guest with no phone has no canonical number, so comparing it with the
+-- caller's phone gives null, not false. That used to skip the refusal and
+-- hand the guest to anyone with a confirmed phone.
+select is(
+  public.claim_guest_access('30000000-0000-0000-0000-000000000004') ->> 'status',
+  'not_available',
+  'a confirmed phone cannot claim a guest who has no phone on file'
 );
 
 reset role;
