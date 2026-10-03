@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { useWedding } from "@/lib/wedding";
@@ -84,7 +84,7 @@ export default function AccountPage() {
               <div style={{ fontSize: 13, color: T.faint, marginTop: 1 }}>{email}</div>
             )}
           </div>
-          <ChevronRight size={18} stroke="#CBBCB6" />
+          <ChevronRight size={18} stroke={T.taupe} />
         </Card>
       </Link>
 
@@ -100,7 +100,7 @@ export default function AccountPage() {
                 {t.account.switchWeddingSub(weddings.length)}
               </div>
             </div>
-            <ChevronRight size={16} stroke="#CBBCB6" />
+            <ChevronRight size={16} stroke={T.taupe} />
           </Link>
         )}
         <Link href="/account/wedding" style={{ ...rowStyle, borderBottom: `1px solid ${T.line}` }}>
@@ -108,7 +108,7 @@ export default function AccountPage() {
             <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>{coupleLine}</div>
             <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>{weddingSub}</div>
           </div>
-          <ChevronRight size={16} stroke="#CBBCB6" />
+          <ChevronRight size={16} stroke={T.taupe} />
         </Link>
         <Link href="/plan/team" style={rowStyle}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -119,7 +119,7 @@ export default function AccountPage() {
               {t.account.teamRowSub(teamCount)}
             </div>
           </div>
-          <ChevronRight size={16} stroke="#CBBCB6" />
+          <ChevronRight size={16} stroke={T.taupe} />
         </Link>
       </div>
 
@@ -128,9 +128,9 @@ export default function AccountPage() {
         style={{
           marginTop: 14,
           borderRadius: 22,
-          background: "linear-gradient(158deg,#F8EDEA 0%,#F2E1E0 100%)",
+          background: T.heroGradient,
           padding: "18px 18px 16px",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
+          boxShadow: `inset 0 1px 0 ${alpha(T.white, 0.7)}`,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -176,7 +176,7 @@ export default function AccountPage() {
           <span style={{ fontWeight: 600, fontSize: 14.5, color: T.ink, flex: 1 }}>
             {t.account.settingsRow}
           </span>
-          <ChevronRight size={16} stroke="#CBBCB6" />
+          <ChevronRight size={16} stroke={T.taupe} />
         </Link>
         <Link href="/account/settings/notifications" style={{ ...rowStyle, borderBottom: `1px solid ${T.line}` }}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -187,13 +187,13 @@ export default function AccountPage() {
               {t.account.notificationsSub}
             </div>
           </div>
-          <ChevronRight size={16} stroke="#CBBCB6" />
+          <ChevronRight size={16} stroke={T.taupe} />
         </Link>
         <Link href="/account/privacy" style={rowStyle}>
           <span style={{ fontWeight: 600, fontSize: 14.5, color: T.ink, flex: 1 }}>
             {t.account.privacyRow}
           </span>
-          <ChevronRight size={16} stroke="#CBBCB6" />
+          <ChevronRight size={16} stroke={T.taupe} />
         </Link>
       </div>
 
@@ -233,7 +233,7 @@ export default function AccountPage() {
               {t.feedback.hubBody}
             </div>
           </div>
-          <ChevronRight size={16} stroke="#CBBCB6" />
+          <ChevronRight size={16} stroke={T.taupe} />
         </Card>
       </Link>
 

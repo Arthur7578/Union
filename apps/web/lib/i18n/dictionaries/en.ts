@@ -40,6 +40,11 @@ export const en = {
     handle: "Handle",
     invite: "Invite",
     adding: "Adding…",
+    phoneCountry: "Country",
+    phoneChooseCountry: "Choose a country",
+    phoneCountryMissing:
+      "Country not set. Choose one so this number can be recognised reliably.",
+    phoneInvalid: "Check this number. It doesn't look complete.",
   },
 
   // Landing page
@@ -479,8 +484,11 @@ export const en = {
     inviteSelf: "That's your own address — you're already on the team.",
     inviteSent: (email: string) => `Invitation emailed to ${email}.`,
     // The row saves even when the mail doesn't, so don't claim it was sent.
-    inviteSavedNotSent: (reason: string) =>
-      `Saved, but we couldn't email them${reason ? ` — ${reason}` : "."} They'll join automatically the first time they sign in with that address.`,
+    inviteSavedNotSent:
+      "Saved, but we couldn't email them. They'll join automatically the first time they sign in with that address.",
+    // The one delivery failure the inviter can act on: wait, then invite again.
+    inviteSavedRateLimited:
+      "Saved, but we can't send more emails right now, so this one didn't go out. Invite them again in a few minutes, or they'll join automatically the first time they sign in with that address.",
     cancelInvite: "Cancel invite",
     removeCoOrganiser: "Remove",
     removeConfirm: (name: string) =>

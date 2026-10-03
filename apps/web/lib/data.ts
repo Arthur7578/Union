@@ -1271,12 +1271,15 @@ export async function fetchCollaborators(weddingId: string): Promise<Collaborato
  *  written, but the email that tells them about it can fail on its own. */
 export type InviteResult = {
   collaborator: CollaboratorWithProfile;
-  /** False when the row saved but no mail went out — `reason` says why. */
+  /** False when the row saved but no mail went out. */
   delivered: boolean;
   /** "invited" = brand-new account, "existing" = they already had one and got
    *  a sign-in mail instead (signing in is what accepts the invite). */
   kind?: "invited" | "existing";
-  reason?: string;
+  /** Set only when the mail failed for a reason the inviter can act on:
+   *  "rate_limited" means wait a few minutes and invite again. Any other
+   *  failure is left unnamed; its detail is in the server log. */
+  failure?: "rate_limited";
 };
 
 /**
@@ -1295,6 +1298,7 @@ export type InviteResult = {
 export async function inviteCollaborator(
   weddingId: string,
   email: string,
+  captchaToken?: string,
 ): Promise<InviteResult> {
   const supabase = getBrowserSupabase();
   const {
@@ -1309,7 +1313,11 @@ export async function inviteCollaborator(
       "content-type": "application/json",
       authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ weddingId, email: email.trim().toLowerCase() }),
+    body: JSON.stringify({
+      weddingId,
+      email: email.trim().toLowerCase(),
+      captchaToken,
+    }),
   });
   const payload = await res.json().catch(() => ({}));
 
@@ -1325,7 +1333,7 @@ export async function inviteCollaborator(
     collaborator: payload.collaborator as CollaboratorWithProfile,
     delivered: payload.delivered === true,
     kind: payload.kind,
-    reason: typeof payload.reason === "string" ? payload.reason : undefined,
+    failure: payload.failure === "rate_limited" ? "rate_limited" : undefined,
   };
 }
 

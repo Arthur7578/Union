@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { guestLinkUrl } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import {
@@ -27,8 +28,8 @@ type Filter = "all" | "coming" | "waiting" | "declined";
 
 const STATUS_DOT: Record<string, string> = {
   attending: T.green,
-  declined: "#C7A9A2",
-  pending: "#DDB27C",
+  declined: T.roseSoft,
+  pending: T.ringAmber,
 };
 
 export default function GuestsPage() {
@@ -139,7 +140,7 @@ export default function GuestsPage() {
       const linksLine =
         waitingWithEmail.length === 1
           ? t.guests.emailBody.singleLink(
-              `${origin}/rsvp/${waitingWithEmail[0].invite_token}`,
+              guestLinkUrl(origin, waitingWithEmail[0].invite_token),
             )
           : t.guests.emailBody.multipleLinks;
       const body = `${t.guests.emailBody.hello}\n\n${t.guests.emailBody.lead}${linksLine}\n${t.guests.emailBody.thanks}\n${partners}`;
@@ -299,7 +300,7 @@ export default function GuestsPage() {
               padding: "11px 15px",
               borderRadius: 14,
               border: `1px solid ${T.line3}`,
-              background: "#fff",
+              background: T.white,
               fontFamily: T.sans,
               fontSize: 14,
               color: T.ink,

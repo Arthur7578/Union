@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { guestLinkUrl } from "@union/shared";
 import type { Wedding } from "@union/shared";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import { updateWedding } from "@/lib/data";
 import { BackHeader } from "@/components/BackHeader";
@@ -54,7 +55,7 @@ function SmsTemplateForm({
     () =>
       resolveSmsTemplate(template, {
         guest_first_name: "Priya",
-        guest_access_link: `${previewOrigin}/guest/sample-token`,
+        guest_access_link: guestLinkUrl(previewOrigin, "sample-token"),
         partner_1_first_name: wedding.partner_one || "Maya",
         partner_2_first_name: wedding.partner_two || "Daniel",
       }),
@@ -193,8 +194,8 @@ function SmsTemplateForm({
                 key={key}
                 onClick={() => insertPlaceholder(key)}
                 style={{
-                  border: "1px solid rgba(67,53,58,.12)",
-                  background: "rgba(224,204,177,.35)",
+                  border: `1px solid ${T.line3}`,
+                  background: T.tanSoft,
                   borderRadius: 20,
                   padding: "5px 10px",
                   fontSize: 12,
@@ -235,14 +236,14 @@ function SmsTemplateForm({
           </div>
           <div
             style={{
-              background: "#F5EFE6",
+              background: T.cream,
               borderRadius: 14,
               padding: "12px 14px",
               fontSize: 14,
               color: T.ink,
               whiteSpace: "pre-wrap",
               lineHeight: 1.45,
-              border: "1px solid rgba(67,53,58,.08)",
+              border: `1px solid ${alpha(T.ink, 0.08)}`,
             }}
           >
             {preview || (

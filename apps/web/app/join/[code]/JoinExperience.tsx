@@ -2,12 +2,17 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { guestLinkPath } from "@union/shared";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { CountrySelect, useBrowserCountry } from "@/components/PhoneField";
 import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { useTurnstile } from "@/lib/turnstile";
 import type { JoinWeddingPreview } from "./page";
+import { G, T, alpha } from "@/lib/theme";
+import { isPhoneCountry, toStoredPhone, type PhoneCountry } from "@union/shared";
 
 type View =
   | "checking"
@@ -74,10 +79,20 @@ export function JoinExperience({
   const [error, setError] = useState<string | null>(null);
   const [contact, setContact] = useState(() => (otpMode ? readLastEmail() : ""));
   const [email, setEmail] = useState(() => (otpMode ? readLastEmail() : ""));
+  // The country of a phone number typed without "+"; see phoneMode below.
+  // Until the guest chooses, the browser's country is shown for them to
+  // confirm or change.
+  const browserCountry = useBrowserCountry();
+  const [pickedCountry, setPickedCountry] = useState<
+    PhoneCountry | null | undefined
+  >(undefined);
+  const contactCountry =
+    pickedCountry !== undefined ? pickedCountry : browserCountry;
   const [firstName, setFirstName] = useState("");
   const [otp, setOtp] = useState("");
   const [disambiguationSource, setDisambiguationSource] =
     useState<DisambiguationSource>(null);
+  const { captcha, getCaptchaToken } = useTurnstile();
 
   const partners =
     [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") ||
@@ -95,7 +110,7 @@ export function JoinExperience({
   const redirectToGuest = useCallback(
     (token: string) => {
       setView("redirecting");
-      router.push(`/guest/${token}`);
+      router.push(guestLinkPath(token));
     },
     [router],
   );
@@ -202,7 +217,7 @@ export function JoinExperience({
     setError(null);
     try {
       setEmail(cleanEmail);
-      await sendEmailOtp(cleanEmail);
+      await sendEmailOtp(cleanEmail, await getCaptchaToken());
       setOtp("");
       setView("email_code");
     } catch {
@@ -212,9 +227,25 @@ export function JoinExperience({
     }
   };
 
+  // The guest types an email or a phone in one field. A number only means
+  // something with its country, so while they are typing one without a "+"
+  // (or 00) we ask for it, and the lookup always sends a number that states
+  // its country (E.164). Pre-selecting the browser's country only gives them
+  // something visible to confirm.
+  const looksLikePhone =
+    !otpMode && /\d/.test(contact) && !contact.includes("@");
+  const phoneMode = looksLikePhone && !/^\s*(\+|00)/.test(contact);
+
   const resolveContact = async (name?: string) => {
     const cleanContact = contact.trim();
     if (!cleanContact) return;
+    if (phoneMode && !contactCountry) {
+      setError(t.common.phoneCountryMissing);
+      return;
+    }
+    const lookup = looksLikePhone
+      ? toStoredPhone(contactCountry, cleanContact)
+      : cleanContact;
     setBusy(true);
     setError(null);
     try {
@@ -223,7 +254,7 @@ export function JoinExperience({
         "find_guest_by_contact",
         {
           p_join_code: code,
-          p_contact: cleanContact,
+          p_contact: lookup,
           p_first_name: name?.trim() || null,
         },
       );
@@ -302,7 +333,7 @@ export function JoinExperience({
   const renderContent = () => {
     if (view === "checking" || view === "redirecting") {
       return (
-        <div style={{ textAlign: "center", color: "#756b65", padding: "28px 0" }}>
+        <div style={{ textAlign: "center", color: G.muted2, padding: "28px 0" }}>
           {view === "checking"
             ? t.guestJoin.checkingSession
             : t.guestJoin.redirecting}
@@ -341,6 +372,15 @@ export function JoinExperience({
                 style={inputStyle}
               />
             </FieldLabel>
+            {phoneMode && (
+              <CountrySelect
+                value={contactCountry}
+                onChange={(code) =>
+                  setPickedCountry(isPhoneCountry(code) ? code : null)
+                }
+                style={inputStyle}
+              />
+            )}
             <button disabled={busy} style={primaryButtonStyle}>
               {busy ? t.guestJoin.searching : t.guestJoin.continueButton}
             </button>
@@ -449,9 +489,12 @@ export function JoinExperience({
             </p>
           )}
         </div>
-        <div style={{ borderTop: "1px solid #eee8e1", paddingTop: 28 }}>
+        <div style={{ borderTop: `1px solid ${T.sandBg}`, paddingTop: 28 }}>
           {error && <div style={errorStyle}>{error}</div>}
           {renderContent()}
+          {/* Every view that can send a code (first send, resend) shares this
+              one mount point; it stays empty unless a challenge needs a click. */}
+          {captcha}
         </div>
       </section>
     </main>
@@ -467,7 +510,7 @@ function FieldLabel({
 }) {
   return (
     <label style={{ display: "grid", gap: 7, textAlign: "left" }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: "#4f4742" }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: G.ink2 }}>
         {label}
       </span>
       {children}
@@ -480,23 +523,23 @@ const pageStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "#f4f1ea",
+  background: G.bg,
   padding: "80px 20px 32px",
-  color: "#2b2724",
+  color: G.ink,
 };
 
 const cardStyle: React.CSSProperties = {
   width: "100%",
   maxWidth: 480,
   borderRadius: 24,
-  background: "#fff",
-  boxShadow: "0 18px 55px rgba(43, 39, 36, 0.08)",
+  background: T.white,
+  boxShadow: `0 18px 55px ${alpha(G.ink, 0.08)}`,
   padding: "38px 32px",
   boxSizing: "border-box",
 };
 
 const kickerStyle: React.CSSProperties = {
-  color: "#9a7d66",
+  color: G.gold,
   fontSize: 11,
   fontWeight: 700,
   letterSpacing: "0.14em",
@@ -522,7 +565,7 @@ const titleStyle: React.CSSProperties = {
 };
 
 const bodyStyle: React.CSSProperties = {
-  color: "#756b65",
+  color: G.muted2,
   fontSize: 15,
   lineHeight: 1.55,
   textAlign: "center",
@@ -530,7 +573,7 @@ const bodyStyle: React.CSSProperties = {
 };
 
 const securityStyle: React.CSSProperties = {
-  color: "#968b84",
+  color: G.faint,
   fontSize: 12,
   lineHeight: 1.45,
   textAlign: "center",
@@ -550,9 +593,9 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   minHeight: 50,
   borderRadius: 12,
-  border: "1px solid #d8d0c8",
-  background: "#fff",
-  color: "#2b2724",
+  border: `1px solid ${G.borderInput}`,
+  background: T.white,
+  color: G.ink,
   fontSize: 16,
   padding: "0 14px",
   outline: "none",
@@ -564,8 +607,8 @@ const primaryButtonStyle: React.CSSProperties = {
   minHeight: 50,
   border: 0,
   borderRadius: 999,
-  background: "#2b2724",
-  color: "#fff",
+  background: G.ink,
+  color: T.white,
   fontSize: 15,
   fontWeight: 600,
   cursor: "pointer",
@@ -575,7 +618,7 @@ const primaryButtonStyle: React.CSSProperties = {
 const textButtonStyle: React.CSSProperties = {
   border: 0,
   background: "transparent",
-  color: "#6f655f",
+  color: G.muted3,
   fontSize: 14,
   textDecoration: "underline",
   cursor: "pointer",
@@ -583,9 +626,9 @@ const textButtonStyle: React.CSSProperties = {
 };
 
 const errorStyle: React.CSSProperties = {
-  background: "#fff1ed",
-  border: "1px solid #f0c6b9",
-  color: "#8c3f2f",
+  background: G.errBg,
+  border: `1px solid ${G.errBorder}`,
+  color: G.errInk,
   padding: "11px 13px",
   borderRadius: 10,
   fontSize: 13,

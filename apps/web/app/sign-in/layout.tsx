@@ -1,7 +1,7 @@
 import React from "react";
 import { Providers } from "@/components/Providers";
 import { ConfigNotice } from "@/components/ConfigNotice";
-import { supabaseConfigured } from "@/lib/supabaseClient";
+import { supabaseConfigured } from "@/lib/supabaseConfig";
 
 export default function SignInLayout({
   children,
