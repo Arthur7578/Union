@@ -5,10 +5,13 @@ const harness = vi.hoisted(() => ({
   guestSelects: [] as string[],
 }));
 
-// The route talks to Supabase through the caller's JWT client. Only the
-// shape it reads is faked here; the point is what the route does with the
-// guest row the database hands back.
-vi.mock("@union/shared", () => ({
+// The route talks to Supabase through the caller's JWT client. Only that
+// client is faked, and only the shape the route reads; the point is what the
+// route does with the guest row the database hands back. Everything else in
+// the shared package stays real, so the route can start using another of its
+// exports (it did, for the guest link) without this test breaking.
+vi.mock("@union/shared", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@union/shared")>()),
   createUnionClient: () => ({
     auth: {
       getUser: async () => ({ data: { user: { id: "owner-1" } }, error: null }),
