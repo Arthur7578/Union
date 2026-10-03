@@ -3,11 +3,13 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { CountrySelect, useBrowserCountry } from "@/components/PhoneField";
 import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import type { JoinWeddingPreview } from "./page";
+import { isPhoneCountry, toStoredPhone, type PhoneCountry } from "@union/shared";
 
 type View =
   | "checking"
@@ -74,6 +76,15 @@ export function JoinExperience({
   const [error, setError] = useState<string | null>(null);
   const [contact, setContact] = useState(() => (otpMode ? readLastEmail() : ""));
   const [email, setEmail] = useState(() => (otpMode ? readLastEmail() : ""));
+  // The country of a phone number typed without "+"; see phoneMode below.
+  // Until the guest chooses, the browser's country is shown for them to
+  // confirm or change.
+  const browserCountry = useBrowserCountry();
+  const [pickedCountry, setPickedCountry] = useState<
+    PhoneCountry | null | undefined
+  >(undefined);
+  const contactCountry =
+    pickedCountry !== undefined ? pickedCountry : browserCountry;
   const [firstName, setFirstName] = useState("");
   const [otp, setOtp] = useState("");
   const [disambiguationSource, setDisambiguationSource] =
@@ -212,9 +223,25 @@ export function JoinExperience({
     }
   };
 
+  // The guest types an email or a phone in one field. A number only means
+  // something with its country, so while they are typing one without a "+"
+  // (or 00) we ask for it, and the lookup always sends a number that states
+  // its country (E.164). Pre-selecting the browser's country only gives them
+  // something visible to confirm.
+  const looksLikePhone =
+    !otpMode && /\d/.test(contact) && !contact.includes("@");
+  const phoneMode = looksLikePhone && !/^\s*(\+|00)/.test(contact);
+
   const resolveContact = async (name?: string) => {
     const cleanContact = contact.trim();
     if (!cleanContact) return;
+    if (phoneMode && !contactCountry) {
+      setError(t.common.phoneCountryMissing);
+      return;
+    }
+    const lookup = looksLikePhone
+      ? toStoredPhone(contactCountry, cleanContact)
+      : cleanContact;
     setBusy(true);
     setError(null);
     try {
@@ -223,7 +250,7 @@ export function JoinExperience({
         "find_guest_by_contact",
         {
           p_join_code: code,
-          p_contact: cleanContact,
+          p_contact: lookup,
           p_first_name: name?.trim() || null,
         },
       );
@@ -341,6 +368,15 @@ export function JoinExperience({
                 style={inputStyle}
               />
             </FieldLabel>
+            {phoneMode && (
+              <CountrySelect
+                value={contactCountry}
+                onChange={(code) =>
+                  setPickedCountry(isPhoneCountry(code) ? code : null)
+                }
+                style={inputStyle}
+              />
+            )}
             <button disabled={busy} style={primaryButtonStyle}>
               {busy ? t.guestJoin.searching : t.guestJoin.continueButton}
             </button>
