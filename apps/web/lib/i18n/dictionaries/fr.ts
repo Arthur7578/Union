@@ -152,10 +152,13 @@ export const fr: Dictionary = {
     review: "Voir le détail",
     yourGuests: "Vos invités",
     guestStatsComing: "Viennent",
+    guestStatsMaybe: "Peut-être",
     guestStatsWaiting: "En attente",
     guestStatsCant: "Absents",
     guestStatsSummary: (parties: number, invited: number) =>
       `${parties} foyers · ${invited} invités`,
+    guestStatsSummaryRange: (parties: number, firm: number, ceiling: number) =>
+      `${parties} foyers · ${firm}–${ceiling} attendus`,
     openGuests: "Ouvrir les invités →",
     unionHandling: "Union s'en occupe",
     justClosed: "Fraîchement bouclé",
@@ -186,8 +189,11 @@ export const fr: Dictionary = {
     searchPlaceholder: "Rechercher par nom, e-mail, groupe…",
     filterAll: "Tous",
     filterComing: "Viennent",
+    filterMaybe: "Peut-être",
     filterWaiting: "En attente",
     filterCant: "Absents",
+    headcountRange: (firm: number, ceiling: number) =>
+      `Prévoyez ${firm}–${ceiling} : ${firm} confirmés, jusqu'à ${ceiling} si tous les peut-être viennent.`,
     loadingList: "Chargement de vos invités…",
     planningTools: "Outils de planification",
     tools: {
@@ -472,6 +478,7 @@ export const fr: Dictionary = {
     activityEmpty: "Rien pour l'instant — ce que vous et Union faites apparaîtra ici.",
     activityGuestAdded: (name: string) => `a ajouté ${name} à la liste des invités`,
     activityRsvpAttending: "a répondu présent·e",
+    activityRsvpMaybe: "a répondu peut-être",
     activityRsvpDeclined: "a répondu absent·e",
     activityCollaboratorInvited: (email: string) =>
       `a invité ${email} à organiser ensemble`,
@@ -1106,6 +1113,7 @@ export const fr: Dictionary = {
         title: "RSVP de Présence",
         subtitle: "Confirmez votre venue et celle de vos proches.",
         labelAttending: "Présent",
+        labelMaybe: "Peut-être",
         labelDeclined: "Absent",
       },
       reconfirmation: {

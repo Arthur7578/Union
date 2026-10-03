@@ -35,6 +35,7 @@ const RSVP_SLOTS = [
   "title",
   "subtitle",
   "label_attending",
+  "label_maybe",
   "label_declined",
 ] as const;
 

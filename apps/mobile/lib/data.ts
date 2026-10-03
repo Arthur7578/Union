@@ -39,6 +39,7 @@ export async function createWedding(
     | "ceremony_reserved_rows"
     | "allow_guests_add_partner"
     | "allow_guests_add_children"
+    | "allow_rsvp_maybe"
     | "max_children_per_guest"
     | "guest_count_target"
     | "style_vibe"

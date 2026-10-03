@@ -154,6 +154,8 @@ export default function TeamPage() {
       }
       case "rsvp_attending":
         return t.plan.activityRsvpAttending;
+      case "rsvp_maybe":
+        return t.plan.activityRsvpMaybe;
       case "rsvp_declined":
         return t.plan.activityRsvpDeclined;
       case "collaborator_invited": {

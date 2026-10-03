@@ -188,6 +188,18 @@ export default function TodayPage() {
               label={t.today.guestStatsComing}
               color={T.greenDeep}
             />
+            {/* A fourth column only when there's something in it — the snapshot
+                stays a three-up row for couples not using the option. */}
+            {stats && stats.maybe > 0 && (
+              <>
+                <Divider />
+                <SnapStat
+                  value={stats.maybe}
+                  label={t.today.guestStatsMaybe}
+                  color={T.blueInk}
+                />
+              </>
+            )}
             <Divider />
             <SnapStat
               value={stats ? stats.waiting : "—"}
@@ -213,7 +225,13 @@ export default function TodayPage() {
           >
             <span>
               {stats
-                ? t.today.guestStatsSummary(stats.parties, stats.invited)
+                ? stats.maybe > 0
+                  ? t.today.guestStatsSummaryRange(
+                      stats.parties,
+                      stats.headcount,
+                      stats.headcountMax,
+                    )
+                  : t.today.guestStatsSummary(stats.parties, stats.invited)
                 : t.common.loading}
             </span>
             <span style={{ color: T.accentInk, fontWeight: 600 }}>

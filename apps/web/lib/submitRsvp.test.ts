@@ -81,6 +81,50 @@ describe("submitGuestRsvp", () => {
     );
   });
 
+  it("sends a maybe through unchanged, for the guest and their companions", async () => {
+    // A party where one person is sure and another isn't is the ordinary
+    // case; each reply has to reach the server as the answer the guest gave,
+    // not rounded to the nearest yes/no.
+    const client = createClient();
+
+    await submitGuestRsvp(client, {
+      ...baseInput,
+      primaryStatus: "maybe",
+      companions: [{ id: "partner" }],
+      companionsRsvp: {
+        partner: { rsvp_status: "maybe", dietary_notes: "Nut allergy" },
+      },
+    });
+
+    expect(client.submitPrimary).toHaveBeenCalledWith(
+      expect.objectContaining({ p_status: "maybe" }),
+    );
+    expect(client.submitCompanion).toHaveBeenCalledOnce();
+    expect(client.submitCompanion).toHaveBeenCalledWith({
+      p_token: "invite-token",
+      p_companion_guest_id: "partner",
+      p_status: "maybe",
+      p_dietary_notes: "Nut allergy",
+    });
+  });
+
+  it("still collects dietary notes from a guest who only might come", async () => {
+    // The notes are worth having before the guest firms up — asking again
+    // later is what makes people stop replying.
+    const client = createClient();
+
+    await submitGuestRsvp(client, {
+      ...baseInput,
+      primaryStatus: "maybe",
+      companions: [],
+      companionsRsvp: {},
+    });
+
+    expect(client.submitPrimary).toHaveBeenCalledWith(
+      expect.objectContaining({ p_dietary_notes: "Vegetarian" }),
+    );
+  });
+
   it("does not submit companions when the primary RSVP fails", async () => {
     const client = createClient();
     const primaryError = new Error("primary failed");

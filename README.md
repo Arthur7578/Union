@@ -24,6 +24,8 @@ supabase/
 - **Guest list + RSVP tracking** — add/edit guests, share a personal invite link,
   see live RSVP status and confirmed headcount.
 - **Web RSVP** — guests open their link and accept/decline (no account needed).
+- **Optional "maybe" reply** — off by default; a couple turns it on per wedding
+  and guests get a third answer for "I don't know yet". See below.
 - **Web planning app** — a full responsive web version of the couple's app
   (Today, Vendors, Guests, Plan), recreated pixel-close from the Claude Design
   assets. See below.
@@ -69,17 +71,59 @@ migration, swap the `lib/sample.ts` import for a real fetch, and drop the
 
 ---
 
+## The "maybe" RSVP reply
+
+A yes/no-only RSVP makes an unsure guest guess, and a guess revised later
+reaches the couple as a bare status flip with no hint the guest was ever
+unsure. `weddings.allow_rsvp_maybe` gives that uncertainty somewhere honest to
+live.
+
+- **Off by default.** A third answer changes what a headcount means: a couple
+  whose caterer needs a firm number by a date would rather chase an unsure
+  guest than bank an unsure yes. Until they opt in, the RSVP behaves exactly as
+  it did before the feature existed.
+- **Turned on** under `/guests/forms/<primary RSVP form>` → *Access & rights*.
+  The button's wording is a fourth named slot in `forms.rsvp_copy`
+  (`label_maybe`), alongside its attending/declined siblings and translated the
+  same way.
+- **Guests** get the third button for themselves and for each companion — a
+  party where one person is sure and another isn't is the ordinary case. A
+  maybe is still asked for dietary notes; asking again later is what makes
+  people stop replying.
+- **Organisers** see maybes as their own count wherever RSVPs are counted, so
+  the headcount reads as a range (`headcount`–`headcountMax`) rather than one
+  number that can't be trusted. `headcount` still means firm yeses only. The
+  existing **reconfirmation** form is the intended way to turn maybes into firm
+  answers near the day.
+- **Turning it off** stops new maybe replies but never rewrites ones already
+  given — converting them would invent a commitment the guest never made.
+  Those guests keep the status until they answer again, and both the guest
+  portal and the organiser's own record still show it so it can be corrected.
+
+The answer set lives in one place per layer: `public._rsvp_status_allowed` in
+SQL (which is what actually protects the data) and
+`packages/shared/src/rsvpAnswers.ts` in the apps (which keeps the UI from
+offering a button the server would refuse).
+
+---
+
 ## Backend (Supabase)
 
 Project: **Union** (`jriyeblycrzpozjuexvr`, `eu-west-3`).
 
 Tables: `profiles`, `weddings`, `guests`, `rsvps` — all RLS-protected and
-owner-scoped. A trigger auto-creates a `profile` on signup. The public RSVP flow
-uses two `SECURITY DEFINER` RPCs scoped by an unguessable invite token, so guests
-never get direct table access:
+owner-scoped. `rsvps.status` is the `rsvp_status` enum:
+`pending | attending | maybe | declined`. A trigger auto-creates a `profile` on
+signup. The public RSVP flow uses `SECURITY DEFINER` RPCs scoped by an
+unguessable invite token, so guests never get direct table access:
 
 - `get_invitation(token)` — invitation details for the guest.
-- `submit_rsvp(token, status, num_attending, dietary_notes, message)` — upserts the reply.
+- `submit_rsvp(token, status, dietary_notes, message)` — upserts the reply.
+- `submit_companion_rsvp(token, companion_guest_id, status, dietary_notes)` —
+  the same, for a partner or child the token holder may answer for.
+
+Both submit RPCs check the reply against `_rsvp_status_allowed`, so `'maybe'`
+is refused unless the wedding has opted in.
 
 The applied SQL lives in `supabase/migrations/`. Generated TypeScript types live
 in `packages/shared/src/database.types.ts` (regenerate with the Supabase CLI or
