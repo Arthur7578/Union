@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import {
   choiceToOverride,
   guestLinkPath,
@@ -669,7 +669,7 @@ export default function GuestDetailPage() {
               autoFocus
               style={{ width: 72 }}
             />
-            {ageError && <span style={{ color: "#C0553B" }}>{ageError}</span>}
+            {ageError && <span style={{ color: T.danger }}>{ageError}</span>}
           </>
         ) : guest.age_years != null ? (
           <>
@@ -790,8 +790,8 @@ export default function GuestDetailPage() {
                 marginTop: 10,
                 padding: "10px 12px",
                 borderRadius: 12,
-                background: "rgba(224,204,177,.28)",
-                border: "1px solid rgba(67,53,58,.08)",
+                background: alpha(T.tan, 0.28),
+                border: `1px solid ${alpha(T.ink, 0.08)}`,
                 fontSize: 12.5,
                 color: T.muted2,
                 display: "grid",
@@ -876,8 +876,8 @@ export default function GuestDetailPage() {
                 onClick={() => setRsvpStatus(k)}
                 type="button"
                 style={{
-                  border: `1px solid ${on ? T.accentBorder : "rgba(67,53,58,.1)"}`,
-                  background: on ? T.accentSoft : "#fff",
+                  border: `1px solid ${on ? T.accentBorder : alpha(T.ink, 0.1)}`,
+                  background: on ? T.accentSoft : T.white,
                   color: on ? T.ink : T.muted2,
                   padding: "7px 13px",
                   borderRadius: 20,
@@ -972,8 +972,8 @@ export default function GuestDetailPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "rgba(224,204,177,.35)",
-                    border: "1px solid rgba(67,53,58,.12)",
+                    background: T.tanSoft,
+                    border: `1px solid ${T.line3}`,
                     borderRadius: 20,
                     padding: "5px 10px",
                     fontSize: 13,
@@ -1291,7 +1291,7 @@ export default function GuestDetailPage() {
             type="button"
             onClick={remove}
             className="u-link"
-            style={{ color: "#C0553B" }}
+            style={{ color: T.danger }}
           >
             Remove guest
           </button>

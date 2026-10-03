@@ -15,6 +15,7 @@ import type {
 import { GuestPortal } from "./GuestPortal";
 import { GuestEmailGate } from "./GuestEmailGate";
 import { GuestIdentityGate } from "./GuestIdentityGate";
+import { G, T, alpha } from "@/lib/theme";
 
 // Always fetch fresh invitation data (no static caching of personal links).
 export const dynamic = "force-dynamic";
@@ -150,20 +151,20 @@ export default async function GuestExperiencePage({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f4f1ea",
+          background: G.bg,
           fontFamily: "'Instrument Sans', sans-serif",
           padding: "24px",
-          color: "#2b2724",
+          color: G.ink,
         }}
       >
         <div
           style={{
             maxWidth: "460px",
             width: "100%",
-            background: "white",
+            background: T.white,
             padding: "40px 32px",
             borderRadius: "24px",
-            boxShadow: "0 15px 45px rgba(43, 39, 36, 0.05)",
+            boxShadow: `0 15px 45px ${alpha(G.ink, 0.05)}`,
             textAlign: "center",
           }}
         >
@@ -174,14 +175,14 @@ export default async function GuestExperiencePage({
               fontSize: "32px",
               fontWeight: "600",
               marginBottom: "12px",
-              color: "#2b2724",
+              color: G.ink,
             }}
           >
             {t.rsvp.invalidTitle}
           </h1>
           <p
             style={{
-              color: "#8a817c",
+              color: G.muted,
               fontSize: "16px",
               lineHeight: "1.6",
               marginBottom: "32px",
@@ -195,8 +196,8 @@ export default async function GuestExperiencePage({
               display: "inline-block",
               width: "100%",
               padding: "16px",
-              background: "#43353a",
-              color: "white",
+              background: T.ink,
+              color: T.white,
               borderRadius: "14px",
               fontWeight: "600",
               textDecoration: "none",

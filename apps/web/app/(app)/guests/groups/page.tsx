@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import type { GuestGroup } from "@union/shared";
 import {
@@ -29,12 +29,12 @@ import {
 } from "@/components/ui";
 
 const PALETTE = [
-  { bg: "#F2E1E0", ring: "#C79BA0", name: "Rosewood" },
-  { bg: "#E7EFE6", ring: "#A9C0AC", name: "Sage" },
-  { bg: "#FBEEE2", ring: "#DDB27C", name: "Amber" },
-  { bg: "#E4E7EE", ring: "#A6ACC0", name: "Slate" },
-  { bg: "#EEDCDF", ring: "#C79BA0", name: "Blush" },
-  { bg: "#EFE7DF", ring: "#C1B4AD", name: "Sand" },
+  { bg: T.accentPink, ring: T.ringRose, name: "Rosewood" },
+  { bg: T.greenBg, ring: T.ringSage, name: "Sage" },
+  { bg: T.amberBg, ring: T.ringAmber, name: "Amber" },
+  { bg: T.blueBg, ring: T.ringSlate, name: "Slate" },
+  { bg: T.blushBg, ring: T.ringRose, name: "Blush" },
+  { bg: T.sandBg, ring: T.taupe, name: "Sand" },
 ] as const;
 
 const STARTERS = ["Family", "Friends", "Colleagues", "Plus ones"] as const;
@@ -382,7 +382,7 @@ export default function GroupsPage() {
             fontWeight: 600,
             fontSize: 13,
             borderRadius: 12,
-            border: `1px solid rgba(126,154,130,.3)`,
+            border: `1px solid ${alpha(T.green, 0.3)}`,
           }}
         >
           {flash}
@@ -440,7 +440,7 @@ export default function GroupsPage() {
                     padding: "6px 12px",
                     borderRadius: 20,
                     border: `1px solid ${T.line3}`,
-                    background: "#fff",
+                    background: T.white,
                     color: T.ink,
                     fontWeight: 600,
                     fontSize: 12.5,
@@ -650,8 +650,8 @@ export default function GroupsPage() {
                         marginTop: 10,
                         padding: 10,
                         borderRadius: 10,
-                        background: "#F7E6E1",
-                        color: "#C0553B",
+                        background: T.dangerBg,
+                        color: T.danger,
                         fontSize: 12,
                         lineHeight: 1.4,
                       }}
@@ -665,8 +665,8 @@ export default function GroupsPage() {
                           type="button"
                           onClick={() => removeGroup(g)}
                           style={{
-                            background: "#C0553B",
-                            color: "#fff",
+                            background: T.danger,
+                            color: T.white,
                             fontWeight: 600,
                             fontSize: 12,
                             padding: "6px 12px",
@@ -709,7 +709,7 @@ export default function GroupsPage() {
                       <button
                         onClick={() => setConfirmDeleteId(g.id)}
                         className="u-link"
-                        style={{ color: "#C0553B", fontSize: 12 }}
+                        style={{ color: T.danger, fontSize: 12 }}
                         type="button"
                       >
                         Delete
@@ -959,7 +959,7 @@ export default function GroupsPage() {
                         minHeight: 32,
                         borderRadius: 8,
                         border: `1px solid ${T.line3}`,
-                        background: "#fff",
+                        background: T.white,
                         color: T.ink,
                         fontSize: 12.5,
                         padding: "0 8px",
@@ -1004,7 +1004,7 @@ export default function GroupsPage() {
               fontSize: 13.5,
               borderRadius: 12,
               border: `1px solid ${T.line3}`,
-              background: "#fff",
+              background: T.white,
               marginBottom: 12,
             }}
           />
@@ -1305,7 +1305,7 @@ export default function GroupsPage() {
                     minHeight: 36,
                     borderRadius: 10,
                     border: `1px solid ${T.line3}`,
-                    background: "#fff",
+                    background: T.white,
                     color: T.ink,
                     fontSize: 13,
                     padding: "0 8px",
@@ -1352,7 +1352,7 @@ export default function GroupsPage() {
                         borderRadius: 20,
                         border: `1px solid ${T.line3}`,
                         background:
-                          assignRoleValue === s ? T.accentSoft : "#fff",
+                          assignRoleValue === s ? T.accentSoft : T.white,
                         color: T.muted,
                         fontSize: 11.5,
                         fontWeight: 600,
@@ -1430,7 +1430,7 @@ function ghostBtn(disabled: boolean): React.CSSProperties {
     height: 24,
     borderRadius: 6,
     border: `1px solid ${T.line3}`,
-    background: "#fff",
+    background: T.white,
     color: disabled ? T.faint : T.ink,
     fontSize: 12,
     cursor: disabled ? "default" : "pointer",
@@ -1616,10 +1616,10 @@ function MemberRow({
               top: "100%",
               right: 12,
               marginTop: 4,
-              background: "#fff",
+              background: T.white,
               border: `1px solid ${T.line3}`,
               borderRadius: 12,
-              boxShadow: "0 12px 24px rgba(67,53,58,.12)",
+              boxShadow: `0 12px 24px ${T.line3}`,
               zIndex: 4,
               minWidth: 200,
               padding: 6,
@@ -1657,11 +1657,11 @@ function MemberRow({
                       height: 12,
                       borderRadius: 3,
                       border: `1.5px solid ${isMember ? T.ink : T.line3}`,
-                      background: isMember ? T.ink : "#fff",
+                      background: isMember ? T.ink : T.white,
                       display: "inline-flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      color: "#fff",
+                      color: T.white,
                       fontSize: 10,
                       lineHeight: 1,
                     }}

@@ -86,7 +86,7 @@ export default function SearchSetupPage() {
             marginTop: 13,
             height: 6,
             borderRadius: 6,
-            background: "rgba(67,53,58,.09)",
+            background: T.line2,
             position: "relative",
           }}
         >
@@ -111,7 +111,7 @@ export default function SearchSetupPage() {
                 width: 16,
                 height: 16,
                 borderRadius: "50%",
-                background: "#fff",
+                background: T.white,
                 border: `2px solid ${T.accent}`,
                 transform: "translate(-50%,-50%)",
               }}

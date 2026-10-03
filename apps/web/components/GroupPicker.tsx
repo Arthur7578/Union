@@ -189,8 +189,8 @@ export function GroupPicker({
             padding: 4,
             borderRadius: 10,
             border: `1px solid ${T.line3}`,
-            background: "#fff",
-            boxShadow: "0 6px 22px rgba(67,53,58,.12)",
+            background: T.white,
+            boxShadow: `0 6px 22px ${T.line3}`,
             display: "flex",
             flexDirection: "column",
             gap: 2,
@@ -249,7 +249,7 @@ export function GroupPicker({
                 gap: 8,
                 padding: "8px 10px",
                 borderRadius: 8,
-                background: "rgba(224,204,177,.35)",
+                background: T.tanSoft,
                 border: "none",
                 textAlign: "left",
                 cursor: "pointer",
@@ -266,7 +266,7 @@ export function GroupPicker({
       )}
 
       {err && (
-        <div style={{ fontSize: 12, color: "#C0553B", marginTop: 6 }}>
+        <div style={{ fontSize: 12, color: T.danger, marginTop: 6 }}>
           {err}
         </div>
       )}
