@@ -145,10 +145,14 @@ accent `#B07C82`). Buttons and touch targets are ≥ 44px for comfortable use.
 
 On web, `T` in `apps/web/lib/theme.ts` is the signed-in app's palette and `G`
 is the separate palette of the public guest pages (RSVP, guest portal, join
-flow). Inline colours (hex, `rgb()`/`rgba()`/`hsl()`) are not allowed outside that
-file — ESLint (`no-restricted-syntax` in `apps/web/eslint.config.mjs`) fails on
-them, so add a token (or reuse a close one) instead; use `alpha(T.ink, 0.1)` for
-a translucent one. `apps/web/app/globals.css` has no colour literals either: it
+flow). Inline colours (hex, `rgb()`/`hsl()`/`oklch()`/`color-mix()`, or a named
+colour such as `white`) are not allowed outside that file — ESLint
+(`no-restricted-syntax` in `apps/web/eslint.config.mjs`) fails on them, so add a
+token (or reuse a close one) instead; use `T.white` for white and
+`alpha(T.ink, 0.1)` for a translucent colour. `transparent`, `currentColor` and
+`inherit` are allowed, and so are the words `green`/`blue`, which components use
+as tone keys; the rule can't tell those from CSS colours, so spell those two as
+tokens. `apps/web/app/globals.css` has no colour literals either: it
 reads CSS variables that `CSS_VARS` in the theme file defines and `app/layout.tsx`
 sets on `<html>`, and `lib/theme.test.ts` fails if a literal or an undefined
 variable appears there. The web and mobile themes are intentionally not
