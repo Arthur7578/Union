@@ -1,15 +1,7 @@
 "use client";
 
 import { createUnionClient, type UnionClient } from "@union/shared";
-
-const DEFAULT_SUPABASE_URL = "https://jriyeblycrzpozjuexvr.supabase.co";
-const DEFAULT_SUPABASE_ANON_KEY =
-  "sb_publishable_G0fMYmSyYm4hJWterPh3eg_GLdE92V-";
-
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
-const anonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./supabaseConfig";
 
 let client: UnionClient | null = null;
 
@@ -22,7 +14,7 @@ let client: UnionClient | null = null;
  */
 export function getBrowserSupabase(): UnionClient {
   if (client) return client;
-  client = createUnionClient(url, anonKey, {
+  client = createUnionClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -34,7 +26,9 @@ export function getBrowserSupabase(): UnionClient {
 
 /** Public Auth origin used to validate emailed confirmation URLs before the
  * invitation handoff redirects the browser. */
-export const supabaseUrl = url;
+export const supabaseUrl = SUPABASE_URL;
 
 /** True when Supabase credentials are configured for this deployment. */
-export const supabaseConfigured = Boolean(url && anonKey);
+export const supabaseConfigured = Boolean(
+  SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY,
+);

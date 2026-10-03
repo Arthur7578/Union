@@ -1,13 +1,5 @@
 import { createUnionClient, type UnionClient } from "@union/shared";
-
-const DEFAULT_SUPABASE_URL = "https://jriyeblycrzpozjuexvr.supabase.co";
-const DEFAULT_SUPABASE_ANON_KEY =
-  "sb_publishable_G0fMYmSyYm4hJWterPh3eg_GLdE92V-";
-
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
-const anonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./supabaseConfig";
 
 /**
  * Anonymous Supabase client for the public RSVP flow. No session is
@@ -15,7 +7,7 @@ const anonKey =
  * `get_invitation` / `submit_rsvp`.
  */
 export function getSupabase(): UnionClient {
-  return createUnionClient(url, anonKey, {
+  return createUnionClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
