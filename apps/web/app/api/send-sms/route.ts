@@ -175,21 +175,29 @@ export async function POST(request: Request) {
 
   const { data: guest, error: gErr } = await supabase
     .from("guests")
-    .select("id, wedding_id, first_name, phone_e164, invite_token")
+    .select("id, wedding_id, first_name, phone, phone_e164, invite_token")
     .eq("id", guestId)
     .maybeSingle();
   if (gErr || !guest || guest.wedding_id !== weddingId) {
     return NextResponse.json({ error: "Guest not found." }, { status: 404 });
   }
 
-  // `phone_e164` is the database's own normalisation of what the organiser
-  // typed (local French 06… → +33 6…, 00… → +…), the same value guest
-  // matching and dedup use. It is null when the number can't be resolved
-  // to an international one, which is exactly when we must not send.
+  // `phone_e164` is the database's canonical form of the stored number, the
+  // same value guest matching uses. It is set only for a number that states
+  // its country ("+" or "00"). A national-format number such as
+  // "06 12 34 56 78" has none, because the same digits belong to different
+  // countries. The recipient is never rebuilt from `phone`: prefixing "+"
+  // to it is how "+0612345678" got sent. `phone` is read only to tell the
+  // organiser which of the two problems this is.
   const recipient = guest.phone_e164;
   if (!recipient) {
+    const hasNumber = Boolean((guest.phone ?? "").trim());
     return NextResponse.json(
-      { error: "This guest doesn't have a valid phone number." },
+      {
+        error: hasNumber
+          ? "This guest's phone number doesn't say which country it's in. Re-save this guest's phone number with its country, then try again."
+          : "This guest doesn't have a valid phone number.",
+      },
       { status: 400 },
     );
   }

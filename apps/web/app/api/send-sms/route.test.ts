@@ -112,6 +112,28 @@ describe("POST /api/send-sms recipient", () => {
     const res = await send();
 
     expect(res.status).toBe(400);
+    // Says what to do, not just that something is wrong: the number looks
+    // fine to the organiser, so "invalid" would send them hunting.
+    expect(await res.json()).toEqual({
+      error:
+        "This guest's phone number doesn't say which country it's in. Re-save this guest's phone number with its country, then try again.",
+    });
+    expect(brevo).not.toHaveBeenCalled();
+  });
+
+  it("does not ask for a country when there is no number at all", async () => {
+    harness.guest = {
+      id: "guest-1",
+      wedding_id: "wedding-1",
+      first_name: "Léa",
+      phone: "  ",
+      phone_e164: null,
+      invite_token: "tok",
+    };
+
+    const res = await send();
+
+    expect(res.status).toBe(400);
     expect(await res.json()).toEqual({
       error: "This guest doesn't have a valid phone number.",
     });
