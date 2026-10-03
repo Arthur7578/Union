@@ -70,14 +70,16 @@ afterEach(() => {
 });
 
 describe("POST /api/send-sms recipient", () => {
-  it("sends to the database's phone_e164, not a re-derivation of what was typed", async () => {
-    // What the organiser typed is a local French mobile; the generated
-    // column has already turned it into the international number.
+  it("sends to the database's phone_e164, not a re-derivation of the stored text", async () => {
+    // A number that states its country but is written the way people write
+    // it: the bracketed trunk 0 is not part of the number. The generated
+    // column drops it; stripping punctuation and prefixing "+" keeps it
+    // and sends "+330612345678".
     harness.guest = {
       id: "guest-1",
       wedding_id: "wedding-1",
       first_name: "Léa",
-      phone: "06 12 34 56 78",
+      phone: "+33 (0)6 12 34 56 78",
       phone_e164: "+33612345678",
       invite_token: "tok",
     };
@@ -93,15 +95,16 @@ describe("POST /api/send-sms recipient", () => {
     expect(harness.guestSelects[0]).toContain("phone_e164");
   });
 
-  it("refuses to send when the database could not normalise the number", async () => {
-    // phone_e164 is null for anything the normaliser can't resolve to an
-    // international number. Guessing a country code here is how
-    // "+0612345678" got sent in the first place.
+  it("refuses a national-format number whose country the database does not know", async () => {
+    // Saved before phone numbers were captured with a country: the text is
+    // kept as typed, and phone_e164 is null because the same digits belong
+    // to different countries. Prefixing "+" here is how "+0612345678" got
+    // sent in the first place.
     harness.guest = {
       id: "guest-1",
       wedding_id: "wedding-1",
       first_name: "Léa",
-      phone: "12345",
+      phone: "06 12 34 56 78",
       phone_e164: null,
       invite_token: "tok",
     };
