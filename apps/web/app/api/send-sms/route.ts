@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createUnionClient } from "@union/shared";
+import { createUnionClient, guestLinkUrl } from "@union/shared";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseConfig";
 
 export const runtime = "nodejs";
@@ -211,7 +211,7 @@ export async function POST(request: Request) {
         return "";
       }
     })();
-  const guestAccessLink = `${origin}/guest/${guest.invite_token}`;
+  const guestAccessLink = guestLinkUrl(origin, guest.invite_token);
 
   const templateVars = {
     guest_first_name: guest.first_name ?? "",

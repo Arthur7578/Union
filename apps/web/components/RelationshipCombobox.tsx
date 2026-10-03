@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import type { GuestWithRsvp } from "@/lib/data";
 
 /**
@@ -87,10 +87,10 @@ export function RelationshipCombobox({
             left: 0,
             right: 0,
             marginTop: 2,
-            background: "#fff",
-            border: "1px solid rgba(67,53,58,.15)",
+            background: T.white,
+            border: `1px solid ${alpha(T.ink, 0.15)}`,
             borderRadius: 8,
-            boxShadow: "0 6px 22px rgba(67,53,58,.12)",
+            boxShadow: `0 6px 22px ${T.line3}`,
             maxHeight: 260,
             overflowY: "auto",
             zIndex: 20,
@@ -124,7 +124,7 @@ export function RelationshipCombobox({
                 cursor: "pointer",
                 fontSize: 13,
                 gap: 6,
-                borderBottom: "1px solid rgba(67,53,58,.06)",
+                borderBottom: `1px solid ${alpha(T.ink, 0.06)}`,
                 color: T.ink,
               }}
               onMouseDown={(e) => e.preventDefault()}
@@ -151,7 +151,7 @@ export function RelationshipCombobox({
                 width: "100%",
                 textAlign: "left",
                 padding: "10px 12px",
-                background: "rgba(224,204,177,.35)",
+                background: T.tanSoft,
                 border: "none",
                 cursor: "pointer",
                 fontSize: 13,

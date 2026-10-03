@@ -7,7 +7,7 @@ import { Button, Loading } from "@/components/ui";
 import { formatShortDate } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { useLocale } from "@/lib/i18n/client";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 
 export default function ChooseWeddingPage() {
@@ -109,7 +109,7 @@ export default function ChooseWeddingPage() {
                   background: T.surface,
                   border: `1px solid ${T.line}`,
                   borderRadius: 20,
-                  boxShadow: "0 6px 18px rgba(67,53,58,.05)",
+                  boxShadow: `0 6px 18px ${alpha(T.ink, 0.05)}`,
                   cursor: "pointer",
                 }}
               >

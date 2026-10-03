@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { guestLinkUrl } from "@union/shared";
 import { Screen } from "../../../components/Screen";
 import { Button } from "../../../components/Button";
 import { Input } from "../../../components/Input";
@@ -21,7 +22,9 @@ import {
 } from "../../../lib/data";
 import { colors, fontSize, fontWeight, spacing } from "../../../theme/theme";
 
-const RSVP_WEB_URL =
+// The env var keeps its old RSVP-flavoured name on purpose: renaming it would
+// silently fall back to the default host for anyone with it already set.
+const WEB_APP_URL =
   process.env.EXPO_PUBLIC_RSVP_WEB_URL ?? "https://union-rsvp.vercel.app";
 
 export default function GuestDetail() {
@@ -83,7 +86,7 @@ export default function GuestDetail() {
 
   const shareInvite = async () => {
     if (!guest) return;
-    const url = `${RSVP_WEB_URL}/rsvp/${guest.invite_token}`;
+    const url = guestLinkUrl(WEB_APP_URL, guest.invite_token);
     try {
       await Share.share({
         message: `You're invited! Please RSVP here: ${url}`,
