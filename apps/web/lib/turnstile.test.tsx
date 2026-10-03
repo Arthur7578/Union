@@ -7,8 +7,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 type Options = {
   sitekey: string;
   appearance?: string;
+  retry?: string;
+  "refresh-expired"?: string;
+  "refresh-timeout"?: string;
   callback?: (token: string) => void;
-  "error-callback"?: () => void;
+  "error-callback"?: (errorCode: string) => boolean | void;
 };
 
 const fakeTurnstile = {
@@ -70,6 +73,12 @@ describe("useTurnstile", () => {
     expect(container).toBe(view.container.querySelector("form > div"));
     expect(options.sitekey).toBe("site-key");
     expect(options.appearance).toBe("interaction-only");
+    // The widget is removed as soon as it settles, so Turnstile must not
+    // schedule its own retry/refresh against it (that throws "Nothing to reset
+    // found for provided container" a moment later).
+    expect(options.retry).toBe("never");
+    expect(options["refresh-expired"]).toBe("never");
+    expect(options["refresh-timeout"]).toBe("never");
     // Tokens are single-use, so the widget is discarded once it has delivered.
     expect(fakeTurnstile.remove).toHaveBeenCalledWith("widget-1");
   });
@@ -86,15 +95,29 @@ describe("useTurnstile", () => {
     expect(await getToken()).toBe("token-2");
   });
 
-  it("rejects with a CaptchaError when the challenge fails", async () => {
+  it("rejects with a CaptchaError carrying Turnstile's error code", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    let handled: boolean | void = undefined;
     fakeTurnstile.render.mockImplementation((_container, options) => {
-      options["error-callback"]?.();
+      handled = options["error-callback"]?.("110200");
       return "widget-1";
     });
     const { getToken, CaptchaError } = await mount("site-key");
 
-    await expect(getToken()).rejects.toBeInstanceOf(CaptchaError);
+    const failure = await getToken().then(
+      () => null,
+      (error: unknown) => error,
+    );
+
+    expect(failure).toBeInstanceOf(CaptchaError);
+    expect((failure as InstanceType<typeof CaptchaError>).code).toBe("110200");
+    expect((failure as Error).message).toContain("110200");
     expect(fakeTurnstile.remove).toHaveBeenCalledWith("widget-1");
+    // Returning true marks the error as handled so Turnstile doesn't also log
+    // its own warning; ours already names the code.
+    expect(handled).toBe(true);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("110200"));
+    warn.mockRestore();
   });
 
   it("abandons an in-flight challenge when the form unmounts", async () => {

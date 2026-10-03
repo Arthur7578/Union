@@ -32,8 +32,12 @@ interface TurnstileApi {
     options: {
       sitekey: string;
       appearance?: "always" | "execute" | "interaction-only";
+      retry?: "auto" | "never";
+      "refresh-expired"?: "auto" | "manual" | "never";
+      "refresh-timeout"?: "auto" | "manual" | "never";
       callback?: (token: string) => void;
-      "error-callback"?: () => void;
+      /** Returning `true` tells Turnstile the error has been handled. */
+      "error-callback"?: (errorCode: string) => boolean | void;
       "expired-callback"?: () => void;
       "timeout-callback"?: () => void;
     },
@@ -50,9 +54,13 @@ declare global {
 /** The challenge could not be completed. Callers show their own localized
  *  "couldn't send the code" message rather than this one. */
 export class CaptchaError extends Error {
-  constructor(message = "CAPTCHA verification failed.") {
+  /** Turnstile's own error code when it supplied one (e.g. "110200"). */
+  readonly code?: string;
+
+  constructor(message = "CAPTCHA verification failed.", code?: string) {
     super(message);
     this.name = "CaptchaError";
+    this.code = code;
   }
 }
 
@@ -127,18 +135,42 @@ export function useTurnstile(): TurnstileHandle {
         outcome();
       };
       const succeed = (token: string) => settle(() => resolve(token));
-      const fail = () => settle(() => reject(new CaptchaError()));
+      const fail = (code?: string) =>
+        settle(() =>
+          reject(
+            new CaptchaError(
+              code
+                ? `CAPTCHA verification failed (Turnstile error ${code}).`
+                : undefined,
+              code,
+            ),
+          ),
+        );
 
-      const timer = window.setTimeout(fail, CHALLENGE_TIMEOUT_MS);
+      const timer = window.setTimeout(() => fail(), CHALLENGE_TIMEOUT_MS);
       cancelRef.current = fail;
       try {
         widgetId = api.render(container, {
           sitekey: TURNSTILE_SITE_KEY,
           appearance: "interaction-only",
+          // This widget lives for one submit and is removed the moment it
+          // settles. Turnstile's own retry / auto-refresh would schedule a
+          // reset() against the widget we just removed and throw "Nothing to
+          // reset found" a couple of seconds later, so switch them all off.
+          retry: "never",
+          "refresh-expired": "never",
+          "refresh-timeout": "never",
           callback: succeed,
-          "error-callback": fail,
-          "expired-callback": fail,
-          "timeout-callback": fail,
+          "error-callback": (code) => {
+            // Cloudflare's code (110200 = hostname not allowed for this widget,
+            // for instance) is the only clue why a challenge failed; the
+            // caller's localized message can't carry it.
+            console.warn(`[turnstile] challenge failed (error ${code})`);
+            fail(code);
+            return true;
+          },
+          "expired-callback": () => fail(),
+          "timeout-callback": () => fail(),
         });
       } catch {
         fail();
