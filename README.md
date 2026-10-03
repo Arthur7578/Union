@@ -11,6 +11,7 @@ A monorepo (npm workspaces) for the Union product:
 ```
 apps/
   mobile/     Expo (iOS + Android) app — Expo Router. The couple's planning app.
+              ⏸ Development is paused for now (see below); web is the active app.
   web/        Next.js app — the couple's full planning web app + the public RSVP page.
 packages/
   shared/     @union/shared — Supabase client factory + generated DB types.
@@ -95,6 +96,14 @@ npm install          # install all workspaces from the repo root
 
 ### Mobile app (Expo Go)
 
+> **Status: paused.** No new mobile work is planned for the time being; web is
+> the active app. The mobile app is kept compiling — CI still runs lint,
+> typecheck and tests across every workspace, and it still consumes
+> `@union/shared` — but it is not kept feature-level or visually in sync with
+> web. Its theme (`apps/mobile/theme/theme.ts`) still carries the "awaiting
+> final design assets" note and differs from web's palette, and its i18n
+> dictionaries are deliberately separate from web's.
+
 ```bash
 npm run mobile       # or: npm run start --workspace apps/mobile
 ```
@@ -128,8 +137,16 @@ npm run typecheck
 
 ## Design
 
-UI is driven by design tokens (`apps/mobile/theme/theme.ts`, `apps/web/lib/theme.ts`,
+UI is driven by design tokens (`apps/web/lib/theme.ts`, `apps/mobile/theme/theme.ts`,
 and CSS variables in `apps/web/app/globals.css`) so the whole look can be
 re-skinned in one place from the Claude Design assets — a warm editorial palette
 (Cormorant Garamond headings + Instrument Sans body, ink `#43353A`, rosewood
 accent `#B07C82`). Buttons and touch targets are ≥ 44px for comfortable use.
+
+On web, `T` in `apps/web/lib/theme.ts` is the signed-in app's palette and `G`
+is the separate palette of the public guest pages (RSVP, guest portal, join
+flow). Use a token instead of an inline hex; a colour used more than once
+belongs in the theme file. The web and mobile themes are intentionally not
+shared — they are differently shaped (mobile also carries spacing, radius and
+type scales; web is one flat object of colours and font stacks), and only `surface`/`surfaceAlt`
+overlap by name, with different values.
