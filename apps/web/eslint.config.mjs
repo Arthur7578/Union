@@ -1,11 +1,12 @@
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
 
-// Colours live in lib/theme.ts (see the header there). Hex literals anywhere
-// else — in strings, JSX attributes or template literals such as <style>
-// blocks — fail lint so the theme stays the single source.
-const HEX = "#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})(?![0-9A-Za-z_-])";
-const NO_INLINE_HEX = `Use a token from lib/theme.ts (T for the app, G for guest pages) instead of an inline hex colour. If no token is close, add one there.`;
+// Colours live in lib/theme.ts (see the header there). Hex and rgb()/hsl()
+// literals anywhere else — in strings, JSX attributes or template literals
+// such as <style> blocks — fail lint so the theme stays the single source.
+const COLOUR =
+  "(?:#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})(?![0-9A-Za-z_-])|\\b(?:rgb|rgba|hsl|hsla)\\()";
+const NO_INLINE_COLOUR = `Use a token from lib/theme.ts (T for the app, G for guest pages) instead of an inline colour — alpha(T.ink, 0.1) for a translucent one. If no token is close, add one there.`;
 
 const config = [
   { ignores: [".next/", "node_modules/", "public/sw.js"] },
@@ -25,8 +26,8 @@ const config = [
     rules: {
       "no-restricted-syntax": [
         "error",
-        { selector: `Literal[value=/${HEX}/]`, message: NO_INLINE_HEX },
-        { selector: `TemplateElement[value.raw=/${HEX}/]`, message: NO_INLINE_HEX },
+        { selector: `Literal[value=/${COLOUR}/]`, message: NO_INLINE_COLOUR },
+        { selector: `TemplateElement[value.raw=/${COLOUR}/]`, message: NO_INLINE_COLOUR },
       ],
     },
   },
