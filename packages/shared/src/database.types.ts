@@ -284,7 +284,6 @@ export type Database = {
           notes: string | null
           phone: string | null
           phone_e164: string | null
-          phone_e164_legacy_fr: string | null
           profile_id: string | null
           role: string | null
           room_block_id: string | null
@@ -311,7 +310,6 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           phone_e164?: never
-          phone_e164_legacy_fr?: never
           profile_id?: string | null
           role?: string | null
           room_block_id?: string | null
@@ -338,7 +336,6 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           phone_e164?: never
-          phone_e164_legacy_fr?: never
           profile_id?: string | null
           role?: string | null
           room_block_id?: string | null

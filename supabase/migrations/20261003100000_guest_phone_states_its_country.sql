@@ -25,22 +25,17 @@
 --     trunk digit, "+33 (0)6 ...", is dropped (it was kept before, which
 --     produced +330...).
 --
---   * Numbers saved before the picker existed have no stated country.
---     Rather than lose them (a French guest entered as 06 12 34 56 78
---     would stop being findable by phone) or rewrite organiser data,
---     their old French reading is kept in its own column,
---     phone_e164_legacy_fr. It is filled only while phone_e164 is null,
---     so a number that states its country never uses it, and the
---     assumption is visible and countable:
+--   * Nothing is read as French any more, on either side. A number saved
+--     before the picker existed, in national format, keeps its text in
+--     guests.phone untouched but has no canonical form, so it matches
+--     nothing by phone until someone re-saves it with a country (the
+--     guest form shows a note on such a number). To list them:
 --
---       select count(*) from public.guests
---       where phone_e164_legacy_fr is not null;
+--       select id, wedding_id from public.guests
+--       where nullif(trim(phone), '') is not null and phone_e164 is null;
 --
---     Once that reaches zero, drop the column and the second branch of
---     the three lookups below.
---
---   * The typed side never guesses: a contact typed without a country
---     is "not found", not read as French.
+--   * A contact typed without a country is "not found". The web join form
+--     always sends E.164.
 --
 -- Stored generated values are not recomputed when a function's body
 -- changes, so phone_e164 is dropped and rebuilt rather than patched in
@@ -87,147 +82,40 @@ as $$
   from parsed;
 $$;
 
--- What the system did before this migration to a number with no stated
--- country: read it as French. Used only to keep already-saved numbers
--- findable (see the header); never applied to anything typed by a guest.
-create or replace function public._legacy_french_phone_reading(p_phone text)
-returns text
-language sql
-immutable
-set search_path = ''
-as $$
-  select case
-    -- A "+" or "00" states a country, even when the number after it is
-    -- malformed. Never reinterpret that as French.
-    when raw ~ '^[^0-9]*\+' or digits like '00%' then null
-    when length(digits) < 8 or length(digits) > 15 then null
-    when length(digits) = 11 and digits like '33%' then '+' || digits
-    when length(digits) = 10 and digits ~ '^0[1-9]' then '+33' || substr(digits, 2)
-    when length(digits) = 9 and digits ~ '^[1-9]' then '+33' || digits
-  end
-  from (
-    select
-      coalesce(p_phone, '') as raw,
-      regexp_replace(coalesce(p_phone, ''), '\D', '', 'g') as digits
-  ) d;
-$$;
-
--- A generated column is recomputed as the writing role, so both helpers
+-- A generated column is recomputed as the writing role, so the helper
 -- must stay executable by `authenticated` (20260812 fixed exactly this
--- failure). Pure and side-effect free, so exposing them is harmless.
+-- failure). Pure and side-effect free, so exposing it is harmless.
 revoke all on function public._normalize_guest_phone(text) from public, anon;
 grant execute on function public._normalize_guest_phone(text)
-  to authenticated, service_role;
-revoke all on function public._legacy_french_phone_reading(text) from public, anon;
-grant execute on function public._legacy_french_phone_reading(text)
   to authenticated, service_role;
 
 alter table public.guests
   add column phone_e164 text
     generated always as (public._normalize_guest_phone(phone)) stored;
 
-alter table public.guests
-  add column phone_e164_legacy_fr text
-    generated always as (
-      case
-        when public._normalize_guest_phone(phone) is null
-          then public._legacy_french_phone_reading(phone)
-      end
-    ) stored;
-
 comment on column public.guests.phone_e164 is
-  'Canonical E.164 form of guests.phone, set only when the stored number states its country (+ or 00 prefix).';
-comment on column public.guests.phone_e164_legacy_fr is
-  'French reading of a guests.phone that states no country. Legacy compatibility only: filled while phone_e164 is null, matched by the contact lookups, and to be dropped once no row needs it.';
+  'Canonical E.164 form of guests.phone, set only when the stored number states its country (+ or 00 prefix). Null for a national-format number: its country is unknown.';
 
 create index guests_wedding_phone_e164_idx
   on public.guests (wedding_id, phone_e164)
   where phone_e164 is not null;
 
-create index guests_wedding_phone_e164_legacy_fr_idx
-  on public.guests (wedding_id, phone_e164_legacy_fr)
-  where phone_e164_legacy_fr is not null;
-
--- ---------- identity lookups ----------
--- Bodies are unchanged from 20260805090716_contact_first_guest_join.sql
--- except for how the phone is matched, marked below. The typed contact
--- is read as a number only if it states its country (the apps always
--- send E.164); a stored number matches on its stated country or, failing
--- that, on its legacy French reading.
-create or replace function public.find_guest_by_contact(
-  p_join_code text,
-  p_contact text,
-  p_first_name text default null
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_wedding public.weddings%rowtype;
-  v_contact text := nullif(trim(p_contact), '');
-  v_first text := nullif(trim(p_first_name), '');
-  v_is_email boolean;
-  v_email text;
-  v_phone text;
-  v_ids uuid[];
-  v_guest public.guests%rowtype;
-begin
-  select * into v_wedding
-  from public.weddings
-  where join_code = lower(trim(coalesce(p_join_code, '')));
-
-  if v_wedding.id is null then
-    return jsonb_build_object('status', 'invalid_link');
-  end if;
-  if v_contact is null then
-    return jsonb_build_object('status', 'not_found');
-  end if;
-
-  v_is_email := position('@' in v_contact) > 1;
-  v_email := case when v_is_email then lower(v_contact) else null end;
-  v_phone := case when not v_is_email then public._normalize_guest_phone(v_contact) else null end;
-
-  if v_wedding.guest_join_auth_mode = 'otp' and not v_is_email then
-    return jsonb_build_object('status', 'email_required');
-  end if;
-  if not v_is_email and v_phone is null then
-    return jsonb_build_object('status', 'not_found');
-  end if;
-
-  select array_agg(g.id order by g.id) into v_ids
-  from public.guests g
-  where g.wedding_id = v_wedding.id
-    and (
-      (v_is_email and g.email is not null and lower(trim(g.email)) = v_email)
-      or (not v_is_email and (g.phone_e164 = v_phone or g.phone_e164_legacy_fr = v_phone))
-    )
-    and (v_first is null or public._guest_first_name_matches(g.first_name, v_first));
-
-  if v_ids is null or array_length(v_ids, 1) = 0 then
-    return jsonb_build_object('status', 'not_found');
-  end if;
-  if array_length(v_ids, 1) > 1 then
-    return jsonb_build_object('status', 'ambiguous');
-  end if;
-
-  select * into v_guest from public.guests where id = v_ids[1];
-
-  if v_wedding.guest_join_auth_mode = 'otp'
-     or (v_is_email and v_guest.profile_id is not null) then
-    return jsonb_build_object('status', 'otp_required');
-  end if;
-
-  return jsonb_build_object(
-    'status', 'match',
-    'token', v_guest.invite_token
-  );
-end;
-$$;
-
+-- ---------- verified Auth phone ----------
+-- find_guest_by_contact needs no change: it already compares the
+-- normalised typed contact with phone_e164, and now simply never turns a
+-- number with no country into a match.
+--
 -- A confirmed Auth phone is E.164 by construction, but GoTrue stores it
--- without the "+", so the "+" is put back.
+-- without the "+" (the old normaliser only coped because of a "33..."
+-- special case), so the "+" is put back.
+--
+-- claim_guest_access also had a hole that predates this migration: it
+-- compared the caller's phone with a guest's phone_e164, and when that was
+-- null the comparison came out null instead of false, which skipped the
+-- "not_available" rejection. A caller with any confirmed phone could claim
+-- any guest with no canonical phone, email-only guests included. It is
+-- closed below. Otherwise the bodies are unchanged from
+-- 20260805090716_contact_first_guest_join.sql.
 create or replace function public.get_guest_access_options(
   p_join_code text default null,
   p_first_name text default null
@@ -277,7 +165,7 @@ begin
     and (
       g.profile_id = v_user_id
       or (v_email is not null and g.email is not null and lower(trim(g.email)) = v_email)
-      or (v_phone is not null and (g.phone_e164 = v_phone or g.phone_e164_legacy_fr = v_phone))
+      or (v_phone is not null and g.phone_e164 = v_phone)
     )
     and (v_first is null or public._guest_first_name_matches(g.first_name, v_first));
 
@@ -326,13 +214,19 @@ begin
     );
   end if;
 
-  v_contact_ok :=
+  -- coalesce: a caller with a confirmed phone and a guest whose phone_e164
+  -- is null makes the phone comparison null, not false, and `if not null`
+  -- does not fire, so the rejection below was skipped and the guest was
+  -- handed to the caller. Any email-only guest was claimable that way.
+  v_contact_ok := coalesce(
     (
       v_email is not null
       and v_guest.email is not null
       and lower(trim(v_guest.email)) = v_email
     )
-    or (v_phone is not null and (v_guest.phone_e164 = v_phone or v_guest.phone_e164_legacy_fr = v_phone));
+    or (v_phone is not null and v_guest.phone_e164 = v_phone),
+    false
+  );
 
   if not v_contact_ok then
     return jsonb_build_object('status', 'not_available');
