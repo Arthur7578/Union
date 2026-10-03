@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { jsonSchemaOutputFormat } from "@anthropic-ai/sdk/helpers/json-schema";
 import { createUnionClient } from "@union/shared";
+import {
+  forgetTranslationModel,
+  resolveTranslationModel,
+} from "@/lib/translationModel";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,14 +34,6 @@ const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "sb_publishable_G0fMYmSyYm4hJWterPh3eg_GLdE92V-";
-
-/**
- * The model that does the translating. Overridable with
- * ANTHROPIC_TRANSLATE_MODEL so that when this one is superseded or retired the
- * fix is a config change and a redeploy, not a code change. The default is
- * only what a deployment gets when the variable is unset.
- */
-const DEFAULT_MODEL = "claude-opus-5";
 
 const LANGUAGE_NAMES: Record<string, string> = {
   en: "English",
@@ -122,7 +118,9 @@ export async function POST(request: Request) {
   }
 
   const anthropic = new Anthropic({ apiKey });
-  const model = (process.env.ANTHROPIC_TRANSLATE_MODEL ?? "").trim() || DEFAULT_MODEL;
+  // The newest Opus the key can use, unless a deployment pins one. See
+  // lib/translationModel.ts.
+  const model = await resolveTranslationModel(anthropic);
 
   try {
     const response = await anthropic.messages.parse({
@@ -194,7 +192,10 @@ export async function POST(request: Request) {
     if (err instanceof Anthropic.NotFoundError) {
       // A 404 from this endpoint most likely means the model ID is unknown or
       // retired. Say that, since "Translation failed (404)" gives nobody a
-      // next step.
+      // next step — and forget the remembered lookup, so an auto-picked model
+      // that has just been retired is re-resolved on the next request instead
+      // of failing for the rest of its cache window.
+      forgetTranslationModel();
       return NextResponse.json(
         {
           error:
