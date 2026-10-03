@@ -724,7 +724,7 @@ export type Database = {
     }
     Functions: {
       accept_pending_invites: { Args: Record<PropertyKey, never>; Returns: undefined }
-      consume_rate_limit: { Args: { p_bucket: string }; Returns: boolean }
+      consume_translation_quota: { Args: { p_form_id: string }; Returns: string }
       invitation_recipient_exists: {
         Args: { p_email: string; p_wedding_id: string }
         Returns: boolean

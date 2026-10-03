@@ -24,11 +24,16 @@ export const dynamic = "force-dynamic";
  *     RLS on `forms` through their own JWT — the same rule the builder itself
  *     runs under — so a team member can translate a shared form and nobody
  *     else's account can borrow this route as a general-purpose proxy.
- *  2. A per-user limit in the database (`consume_rate_limit`), shared across
- *     serverless instances. Without it, a form-owning account could still loop
- *     on this route.
+ *  2. An allowance in the database (`consume_translation_quota`), shared
+ *     across serverless instances: per user per hour, per user per day, and
+ *     one daily ceiling for everyone. The per-user limits stop a single
+ *     account looping on this route; the ceiling is what still bounds spend
+ *     when someone makes many accounts, at the price of pausing the feature
+ *     for the day if it's ever reached.
  *
- * Both run before any model call and fail closed.
+ * And each request is capped in size — ids included, since the model has to
+ * echo them back. Everything above runs before any model call and fails
+ * closed.
  */
 
 const SUPABASE_URL =
@@ -46,9 +51,32 @@ const LANGUAGE_NAMES: Record<string, string> = {
 };
 
 /** One form's worth of short labels — generous for a real form, low enough
- *  that a malformed client can't turn one click into a huge request. */
+ *  that a malformed client can't turn one click into a huge request.
+ *
+ *  The ids count as much as the text: they go to the model and the model has
+ *  to echo every one back, so an unbounded id is an unbounded request. A real
+ *  slot id is `question.<uuid>.option.<uuid>`, about 90 characters.
+ *
+ *  For scale, the largest form in production holds a few hundred characters
+ *  in total; the per-form budget below is more than twenty times that. */
 const MAX_ITEMS = 120;
+const MAX_ID_CHARS = 128;
 const MAX_CHARS_PER_ITEM = 600;
+const MAX_TOTAL_CHARS = 24_000;
+
+/** Room for the model to answer, scaled to what it was asked. Output is the
+ *  expensive side, and a translation is about as long as its source, so a
+ *  flat ceiling sized for the biggest request is far too loose for a typical
+ *  one. Generous on purpose — thinking tokens count toward this too, and a
+ *  cut-off answer costs the couple more than the headroom does. */
+const MIN_OUTPUT_TOKENS = 2_000;
+const MAX_OUTPUT_TOKENS = 8_000;
+function outputTokenBudget(totalChars: number): number {
+  return Math.min(
+    MAX_OUTPUT_TOKENS,
+    Math.max(MIN_OUTPUT_TOKENS, Math.ceil(totalChars / 2) + 500),
+  );
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -63,7 +91,7 @@ function parseItems(raw: unknown): Item[] | null {
   for (const entry of raw) {
     if (!entry || typeof entry !== "object") return null;
     const { id, text } = entry as { id?: unknown; text?: unknown };
-    if (typeof id !== "string" || !id) return null;
+    if (typeof id !== "string" || !id || id.length > MAX_ID_CHARS) return null;
     if (typeof text !== "string" || !text.trim()) return null;
     if (text.length > MAX_CHARS_PER_ITEM) return null;
     items.push({ id, text });
@@ -129,6 +157,16 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  const totalChars = items.reduce((n, i) => n + i.id.length + i.text.length, 0);
+  if (totalChars > MAX_TOTAL_CHARS) {
+    return NextResponse.json(
+      {
+        error:
+          "This form has more text than automatic translation can handle in one go. Please write the other language in by hand.",
+      },
+      { status: 413 },
+    );
+  }
 
   // Scope: can this caller edit this form? Answered by RLS on their own JWT,
   // so owners and team members pass and everyone else sees no row. "Doesn't
@@ -142,27 +180,52 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Form not found." }, { status: 404 });
   }
 
-  // Spend: the model call is the expensive part, so the limit is consumed
-  // before it. If the counter can't be reached we refuse rather than skip the
-  // check — an unmetered path is exactly what this is here to prevent.
-  const { data: withinLimit, error: limitErr } = await supabase.rpc(
-    "consume_rate_limit",
-    { p_bucket: "translate" },
+  // Spend: the model call is the expensive part, so the allowance is consumed
+  // before it. The database answers with why, if it says no. If it can't be
+  // reached, or says anything we don't recognise, we refuse rather than skip
+  // the check — an unmetered path is exactly what this is here to prevent.
+  const { data: quota, error: quotaErr } = await supabase.rpc(
+    "consume_translation_quota",
+    { p_form_id: formId },
   );
-  if (limitErr) {
-    console.error("translate: rate-limit check failed:", limitErr.message);
+  if (quotaErr) {
+    console.error("translate: quota check failed:", quotaErr.message);
     return NextResponse.json(
       { error: "Couldn't check translation usage — try again shortly." },
       { status: 503 },
     );
   }
-  if (withinLimit !== true) {
+  if (quota === "user_limit") {
     return NextResponse.json(
       {
         error:
-          "You've used automatic translation a lot in the last hour. Try again a little later, or write the other language in by hand.",
+          "You've used automatic translation a lot lately. Try again a little later, or write the other language in by hand.",
       },
       { status: 429 },
+    );
+  }
+  if (quota === "global_limit") {
+    // Worth seeing in the logs: this means every account together used up
+    // today's budget, which is either real growth or someone leaning on it.
+    console.warn("translate: daily budget for all accounts is used up");
+    return NextResponse.json(
+      {
+        error:
+          "Automatic translation is at capacity for today. Try again tomorrow, or write the other language in by hand.",
+      },
+      { status: 503 },
+    );
+  }
+  if (quota === "no_access") {
+    // The RLS lookup above already passed, so this is a race (access
+    // removed mid-request) rather than a normal path.
+    return NextResponse.json({ error: "Form not found." }, { status: 404 });
+  }
+  if (quota !== "ok") {
+    console.error("translate: unexpected quota answer:", quota);
+    return NextResponse.json(
+      { error: "Couldn't check translation usage — try again shortly." },
+      { status: 503 },
     );
   }
 
@@ -171,7 +234,7 @@ export async function POST(request: Request) {
   try {
     const response = await anthropic.messages.parse({
       model: "claude-opus-5",
-      max_tokens: 8000,
+      max_tokens: outputTokenBudget(totalChars),
       // Short UI labels — low effort keeps the button feeling like a button.
       output_config: {
         effort: "low",
