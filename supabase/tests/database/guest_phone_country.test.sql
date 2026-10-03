@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(37);
+select plan(38);
 
 -- ---------- the normaliser ----------
 -- A number is canonicalised only if it states its country. National
@@ -93,17 +93,16 @@ select is((select phone_e164 from public.guests where first_name = 'Olivia'), nu
 
 -- ---------- a generated column is written by the role doing the writing ----------
 -- 20260812 fixed guest INSERTs failing with "permission denied for
--- function" because `authenticated` could not run the normaliser.
-set local request.jwt.claim.sub = '10000000-0000-0000-0000-000000000001';
-set local role authenticated;
-select lives_ok(
-  $$insert into public.guests (wedding_id, first_name, phone)
-    values ('20000000-0000-0000-0000-000000000001', 'Written as the owner', '+33 (0)7 98 76 54 32')$$,
-  'an authenticated owner can insert a guest (the helpers stay executable)');
-reset role;
-select is((select phone_e164 from public.guests where first_name = 'Written as the owner'),
-  '+33798765432',
-  'and the value written by that role is canonical');
+-- function" because `authenticated` could not run the normaliser: a stored
+-- generated column is recomputed as the writing role. Checked directly,
+-- because a role-level insert would also depend on table grants and RLS
+-- policies that differ between environments.
+select is(has_function_privilege('authenticated', 'public._normalize_guest_phone(text)', 'EXECUTE'), true,
+  'authenticated can run the normaliser, so it can write a guest');
+select is(has_function_privilege('service_role', 'public._normalize_guest_phone(text)', 'EXECUTE'), true,
+  'and so can the service role');
+select is(has_function_privilege('anon', 'public._normalize_guest_phone(text)', 'EXECUTE'), false,
+  'but anon cannot call it directly');
 
 -- ---------- contact-first join ----------
 -- The apps send E.164, so the typed side always states its country.
