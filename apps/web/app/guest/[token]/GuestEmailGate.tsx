@@ -6,7 +6,7 @@ import { sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
-import { G, T } from "@/lib/theme";
+import { G, T, alpha } from "@/lib/theme";
 
 type Step = "email" | "code" | "complete";
 
@@ -203,7 +203,7 @@ const cardStyle: React.CSSProperties = {
   maxWidth: 480,
   borderRadius: 24,
   background: T.white,
-  boxShadow: "0 18px 55px rgba(43, 39, 36, 0.08)",
+  boxShadow: `0 18px 55px ${alpha(G.ink, 0.08)}`,
   padding: "38px 32px",
   boxSizing: "border-box",
   textAlign: "center",

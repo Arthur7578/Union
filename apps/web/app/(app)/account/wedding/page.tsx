@@ -172,7 +172,7 @@ function WeddingSettingsForm({
           borderRadius: 22,
           background: T.heroGradient,
           padding: "20px 18px",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
+          boxShadow: `inset 0 1px 0 ${alpha(T.white, 0.7)}`,
           textAlign: "center",
         }}
       >
@@ -466,7 +466,7 @@ function DeleteConfirmModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(30,22,25,.42)",
+        background: alpha(T.scrim, 0.42),
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -483,7 +483,7 @@ function DeleteConfirmModal({
           padding: 22,
           width: "100%",
           maxWidth: 440,
-          boxShadow: "0 30px 60px rgba(30,22,25,.28)",
+          boxShadow: `0 30px 60px ${alpha(T.scrim, 0.28)}`,
         }}
       >
         <div

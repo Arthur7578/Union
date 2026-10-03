@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import type { SeatingTable } from "@union/shared";
 import {
@@ -500,7 +500,7 @@ export default function SeatingPage() {
                 fontWeight: 600,
                 fontSize: 13,
                 color: on ? T.ink : T.faint,
-                boxShadow: on ? "0 2px 6px rgba(67,53,58,.06)" : "none",
+                boxShadow: on ? `0 2px 6px ${alpha(T.ink, 0.06)}` : "none",
                 textTransform: "capitalize",
               }}
             >
@@ -523,7 +523,7 @@ export default function SeatingPage() {
               height: 340,
               borderRadius: 22,
               background: T.cream,
-              border: "1px solid rgba(67,53,58,.09)",
+              border: `1px solid ${T.line2}`,
               overflow: "hidden",
               touchAction: "none",
               userSelect: "none",
@@ -556,7 +556,7 @@ export default function SeatingPage() {
                 position: "absolute",
                 top: 8,
                 right: 8,
-                background: "rgba(255,255,255,.8)",
+                background: alpha(T.white, 0.8),
                 border: `1px solid ${T.line3}`,
                 borderRadius: 999,
                 padding: "4px 10px",
@@ -601,7 +601,7 @@ export default function SeatingPage() {
                   transform: "translate(-50%,-50%)",
                   width: 92,
                   height: 60,
-                  border: "1.5px dashed rgba(67,53,58,.2)",
+                  border: `1.5px dashed ${alpha(T.ink, 0.2)}`,
                   borderRadius: 9,
                   display: "flex",
                   alignItems: "center",
@@ -669,7 +669,7 @@ export default function SeatingPage() {
                     padding: isRect ? "0 8px" : 0,
                     textAlign: "center",
                     lineHeight: 1.1,
-                    boxShadow: on ? "0 4px 12px rgba(67,53,58,.14)" : "none",
+                    boxShadow: on ? `0 4px 12px ${alpha(T.ink, 0.14)}` : "none",
                     whiteSpace: "nowrap",
                   }}
                   title={`${t.name} · ${used}/${t.capacity} seated${over ? " (over)" : ""}`}
@@ -1476,7 +1476,7 @@ export default function SeatingPage() {
                   left: "50%",
                   top: 0,
                   bottom: 0,
-                  borderLeft: "1.5px dashed rgba(67,53,58,.16)",
+                  borderLeft: `1.5px dashed ${alpha(T.ink, 0.16)}`,
                   transform: "translateX(-50%)",
                 }}
               />
@@ -1512,7 +1512,7 @@ export default function SeatingPage() {
                             background: isReserved ? T.accentSoft : T.sandBg,
                             border: isReserved
                               ? `1px solid ${T.accentBorder}`
-                              : "1px solid rgba(67,53,58,.08)",
+                              : `1px solid ${alpha(T.ink, 0.08)}`,
                             outline: isOn ? `2px solid ${T.ink}` : "none",
                             outlineOffset: 1,
                             display: "flex",

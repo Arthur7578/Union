@@ -1,5 +1,5 @@
 import React from "react";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { Spark } from "./icons";
 
 /** Rounded surface card. */
@@ -19,12 +19,12 @@ export function Card({
       onClick={onClick}
       className={onClick ? "u-tap" : undefined}
       style={{
-        background: soft ? "rgba(255,252,250,.6)" : T.surface,
-        border: `1px solid ${soft ? "rgba(67,53,58,.14)" : T.line}`,
+        background: soft ? alpha(T.surface, 0.6) : T.surface,
+        border: `1px solid ${soft ? alpha(T.ink, 0.14) : T.line}`,
         borderStyle: soft ? "dashed" : "solid",
         borderRadius: 20,
         padding: 16,
-        boxShadow: soft ? "none" : "0 6px 18px rgba(67,53,58,.05)",
+        boxShadow: soft ? "none" : `0 6px 18px ${alpha(T.ink, 0.05)}`,
         ...style,
       }}
     >
@@ -110,7 +110,7 @@ export function Chip({
 }) {
   const bg = tone?.bg ?? (active ? T.accentSoft : T.white);
   const fg = tone?.fg ?? (active ? T.ink : T.muted2);
-  const border = tone?.border ?? (active ? T.accentBorder : "rgba(67,53,58,.1)");
+  const border = tone?.border ?? (active ? T.accentBorder : alpha(T.ink, 0.1));
   return (
     <span
       style={{
@@ -211,7 +211,7 @@ export function Avatar({
 export function ProgressBar({
   pct,
   color = T.accent,
-  track = "rgba(67,53,58,.08)",
+  track = alpha(T.ink, 0.08),
   height = 7,
 }: {
   pct: number;
@@ -309,7 +309,7 @@ export function Button({
         fontWeight: 600,
         fontSize: 15,
         padding: "0 18px",
-        boxShadow: primary ? "0 6px 16px rgba(67,53,58,.16)" : "none",
+        boxShadow: primary ? `0 6px 16px ${alpha(T.ink, 0.16)}` : "none",
         opacity: disabled ? 0.6 : 1,
         ...style,
       }}
@@ -352,7 +352,7 @@ export function Switch({
         boxSizing: "border-box",
         display: "flex",
         alignItems: "center",
-        background: on ? T.accent : "rgba(67,53,58,.16)",
+        background: on ? T.accent : alpha(T.ink, 0.16),
         transition: "background .15s ease",
       }}
     >
@@ -362,7 +362,7 @@ export function Switch({
           height: 23,
           borderRadius: "50%",
           background: T.white,
-          boxShadow: "0 1px 3px rgba(0,0,0,.25)",
+          boxShadow: `0 1px 3px ${alpha(T.scrim, 0.25)}`,
           transform: on ? "translateX(19px)" : "translateX(0)",
           transition: "transform .15s ease",
         }}

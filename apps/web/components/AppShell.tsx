@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { useWedding } from "@/lib/wedding";
@@ -240,7 +240,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: "0 7px 16px rgba(67,53,58,.24)",
+                    boxShadow: `0 7px 16px ${alpha(T.ink, 0.24)}`,
                     marginTop: -9,
                   }}
                 >

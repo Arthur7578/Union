@@ -4,7 +4,7 @@ import React, { useId } from "react";
 import type { GuestGroup } from "@union/shared";
 import type { NewRelatedGuest } from "@/lib/data";
 import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 
 /**
  * Editable card for a not-yet-persisted related guest (child, partner
@@ -60,9 +60,9 @@ export function NewRelativeForm({
         display: "grid",
         gap: 8,
         padding: 12,
-        border: "1px solid rgba(67,53,58,.12)",
+        border: `1px solid ${T.line3}`,
         borderRadius: 12,
-        background: "rgba(255,255,255,.55)",
+        background: alpha(T.white, 0.55),
       }}
     >
       <div style={{ display: "grid", gap: 8, gridTemplateColumns: "1fr 1fr" }}>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { Button } from "@/components/ui";
 import {
   ownerMergeGuests,
@@ -213,9 +213,9 @@ export function MergeReviewPanel({
                 padding: 10,
                 borderRadius: 10,
                 border: `1px solid ${
-                  isConflict ? "rgba(192,85,59,.35)" : "rgba(67,53,58,.10)"
+                  isConflict ? alpha(T.danger, 0.35) : alpha(T.ink, 0.1)
                 }`,
-                background: isConflict ? "rgba(255,248,244,.6)" : T.white,
+                background: isConflict ? alpha(T.surface, 0.6) : T.white,
               }}
             >
               <div

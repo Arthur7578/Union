@@ -86,7 +86,7 @@ export default function SearchSetupPage() {
             marginTop: 13,
             height: 6,
             borderRadius: 6,
-            background: "rgba(67,53,58,.09)",
+            background: T.line2,
             position: "relative",
           }}
         >

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { BackHeader } from "@/components/BackHeader";
 import { DemoBanner } from "@/components/SampleBadge";
 import { UnionNote } from "@/components/ui";
@@ -35,7 +35,7 @@ export default function WeekendPage() {
               flex: 1,
               textAlign: "center",
               background: d.active ? T.accentSoft : T.white,
-              border: `1px solid ${d.active ? T.accentBorder : "rgba(67,53,58,.1)"}`,
+              border: `1px solid ${d.active ? T.accentBorder : alpha(T.ink, 0.1)}`,
               borderRadius: 14,
               padding: "9px 0",
             }}
@@ -72,7 +72,7 @@ export default function WeekendPage() {
             top: 8,
             bottom: 14,
             width: 2,
-            background: "rgba(67,53,58,.08)",
+            background: alpha(T.ink, 0.08),
           }}
         />
         {sample.schedule.map((m, i) => (

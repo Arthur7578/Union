@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useLocale } from "@/lib/i18n/client";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import type { Locale } from "@/lib/i18n";
 
 /** Segmented switch between the available locales. Renders inline so it fits
@@ -28,7 +28,7 @@ export function LanguageSwitcher({
         gap: 0,
         padding: 3,
         borderRadius: 999,
-        background: "rgba(67,53,58,.06)",
+        background: alpha(T.ink, 0.06),
         border: `1px solid ${T.line}`,
         ...style,
       }}

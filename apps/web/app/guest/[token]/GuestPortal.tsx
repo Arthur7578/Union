@@ -17,7 +17,7 @@ import {
 import type { FormAnswers, GuestModuleKey, RsvpQuestion } from "@union/shared";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
-import { G, T } from "@/lib/theme";
+import { G, T, alpha } from "@/lib/theme";
 
 /** Tab label and icon per module, in the order guests see them. Keyed by the
  *  same module keys the couple toggles in /guests/modules, so a module can
@@ -615,8 +615,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         .countdown-pill {
           display: inline-flex;
           gap: 16px;
-          background: rgba(176, 124, 130, 0.08);
-          border: 1px solid rgba(176, 124, 130, 0.2);
+          background: ${alpha(T.accent, 0.08)};
+          border: 1px solid ${alpha(T.accent, 0.2)};
           padding: 8px 24px;
           border-radius: 100px;
           font-size: 13px;
@@ -631,7 +631,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           gap: 8px;
           margin: 32px auto 40px;
           padding: 4px;
-          background: rgba(67, 53, 58, 0.04);
+          background: ${alpha(T.ink, 0.04)};
           border-radius: 16px;
           max-width: 600px;
         }
@@ -656,7 +656,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         .tab-btn.active {
           background: var(--card-bg);
           color: var(--primary);
-          box-shadow: 0 4px 12px rgba(43, 39, 36, 0.06);
+          box-shadow: 0 4px 12px ${alpha(G.ink, 0.06)};
         }
 
         .container {
@@ -676,8 +676,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           border-radius: 24px;
           padding: 32px;
           margin-bottom: 24px;
-          box-shadow: 0 10px 30px rgba(43, 39, 36, 0.03);
-          border: 1px solid rgba(227, 222, 195, 0.5);
+          box-shadow: 0 10px 30px ${alpha(G.ink, 0.03)};
+          border: 1px solid ${alpha(G.border, 0.5)};
           position: relative;
           overflow: hidden;
         }
@@ -695,14 +695,14 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           background: white;
           padding: 24px;
           border-radius: 20px;
-          border: 1px solid rgba(67, 53, 58, 0.08);
+          border: 1px solid ${alpha(T.ink, 0.08)};
           transition: all 0.2s ease;
         }
 
         .form-card:hover {
           border-color: var(--accent);
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(176, 124, 130, 0.06);
+          box-shadow: 0 8px 24px ${alpha(T.accent, 0.06)};
         }
 
         .badge-status {
@@ -736,7 +736,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(43, 39, 36, 0.4);
+          background: ${alpha(G.ink, 0.4)};
           z-index: 1000;
           backdrop-filter: blur(4px);
           display: flex;
@@ -752,7 +752,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           padding: 40px 32px;
           display: flex;
           flex-direction: column;
-          box-shadow: -10px 0 40px rgba(43, 39, 36, 0.15);
+          box-shadow: -10px 0 40px ${alpha(G.ink, 0.15)};
           overflow-y: auto;
           animation: slideLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -894,7 +894,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         }
 
         .connection-card:hover {
-          box-shadow: 0 4px 12px rgba(43, 39, 36, 0.08);
+          box-shadow: 0 4px 12px ${alpha(G.ink, 0.08)};
           transform: translateY(-2px);
         }
 
@@ -909,7 +909,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         }
 
         .hotel-card:hover {
-          box-shadow: 0 4px 12px rgba(43, 39, 36, 0.08);
+          box-shadow: 0 4px 12px ${alpha(G.ink, 0.08)};
           transform: translateY(-2px);
         }
 
@@ -1045,7 +1045,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           textAlign: "center",
           fontSize: "13px",
           fontWeight: "600",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
+          boxShadow: `0 2px 10px ${alpha(T.scrim, 0.1)}`
         }}>
           {locale === "fr" ? "✨ Mode Démo - Vos modifications sont simulées." : "✨ Live Preview / Demo Mode - Submissions simulated."}
         </div>
@@ -1149,7 +1149,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 <button
                   onClick={() => openRsvpModal("primary")}
                   style={{
-                    background: primaryRsvp === "pending" ? "var(--primary)" : "rgba(67, 53, 58, 0.05)",
+                    background: primaryRsvp === "pending" ? "var(--primary)" : alpha(T.ink, 0.05),
                     color: primaryRsvp === "pending" ? "white" : "var(--primary)",
                     border: "none",
                     padding: "10px 20px",
@@ -1227,7 +1227,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                       disabled={state !== "live"}
                       onClick={() => openCustomForm(f.id)}
                       style={{
-                        background: state !== "live" ? G.disabledBg : (answered ? "rgba(67, 53, 58, 0.05)" : "var(--primary)"),
+                        background: state !== "live" ? G.disabledBg : (answered ? alpha(T.ink, 0.05) : "var(--primary)"),
                         color: state !== "live" ? G.disabledInk : (answered ? "var(--primary)" : "white"),
                         border: "none",
                         padding: "10px 20px",
@@ -1266,7 +1266,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                     <div key={match.id} className="connection-card">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontWeight: "600", fontSize: "15px" }}>{match.name}</span>
-                      <span style={{ fontSize: "12px", background: "rgba(110, 138, 114, 0.1)", color: "var(--success)", padding: "3px 8px", borderRadius: "100px", fontWeight: "600" }}>{match.date}</span>
+                      <span style={{ fontSize: "12px", background: alpha(T.greenInk, 0.1), color: "var(--success)", padding: "3px 8px", borderRadius: "100px", fontWeight: "600" }}>{match.date}</span>
                     </div>
                     <p style={{ margin: "6px 0", fontSize: "13px", color: "var(--muted)" }}>📍 {locale === "fr" ? "Depuis" : "From"}: <strong>{match.from}</strong></p>
                     <p style={{ margin: "4px 0", fontSize: "13px", color: "var(--muted)" }}>🚗 {locale === "fr" ? "Méthode" : "Method"}: {match.method}</p>
@@ -1284,7 +1284,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                       style={{
                         width: "100%",
                         marginTop: "12px",
-                        background: match.requested ? "rgba(110, 138, 114, 0.1)" : "var(--primary)",
+                        background: match.requested ? alpha(T.greenInk, 0.1) : "var(--primary)",
                         color: match.requested ? "var(--success)" : "white",
                         border: "none",
                         padding: "8px",
@@ -1353,7 +1353,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                   onClick={handleAddMyTravel}
                   disabled={!guestFrom.trim()}
                   style={{
-                    background: guestFrom.trim() ? "var(--accent)" : "rgba(176, 124, 130, 0.3)",
+                    background: guestFrom.trim() ? "var(--accent)" : T.accentBorder,
                     color: "white",
                     border: "none",
                     padding: "14px 24px",

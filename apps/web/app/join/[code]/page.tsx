@@ -4,7 +4,7 @@ import { getDictionary } from "@/lib/i18n";
 import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { JoinExperience } from "./JoinExperience";
-import { G } from "@/lib/theme";
+import { G, alpha } from "@/lib/theme";
 
 // Always fetch fresh — never cache a generic link's guest matching.
 export const dynamic = "force-dynamic";
@@ -66,7 +66,7 @@ export default async function JoinPage({
             background: "white",
             padding: "40px 32px",
             borderRadius: "24px",
-            boxShadow: "0 15px 45px rgba(43, 39, 36, 0.05)",
+            boxShadow: `0 15px 45px ${alpha(G.ink, 0.05)}`,
             textAlign: "center",
           }}
         >

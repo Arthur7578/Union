@@ -8,7 +8,7 @@ import { Button, Loading } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { formatShortDate } from "@/lib/format";
 import { useLocale } from "@/lib/i18n/client";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 
 function weddingName(wedding: Wedding, fallback: string): string {
@@ -117,7 +117,7 @@ export default function InvitationPage() {
               border: `1px solid ${T.line}`,
               borderRadius: 22,
               padding: 18,
-              boxShadow: "0 10px 26px rgba(67,53,58,.08)",
+              boxShadow: `0 10px 26px ${alpha(T.ink, 0.08)}`,
             }}
           >
             <div

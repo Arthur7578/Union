@@ -112,7 +112,7 @@ export default function BudgetPage() {
                 pct={c.pct}
                 color={TONE[c.tone]}
                 height={7}
-                track="rgba(67,53,58,.07)"
+                track={T.line}
               />
             </div>
           </div>

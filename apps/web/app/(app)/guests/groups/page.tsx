@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import type { GuestGroup } from "@union/shared";
 import {
@@ -382,7 +382,7 @@ export default function GroupsPage() {
             fontWeight: 600,
             fontSize: 13,
             borderRadius: 12,
-            border: `1px solid rgba(126,154,130,.3)`,
+            border: `1px solid ${alpha(T.green, 0.3)}`,
           }}
         >
           {flash}
@@ -1619,7 +1619,7 @@ function MemberRow({
               background: T.white,
               border: `1px solid ${T.line3}`,
               borderRadius: 12,
-              boxShadow: "0 12px 24px rgba(67,53,58,.12)",
+              boxShadow: `0 12px 24px ${T.line3}`,
               zIndex: 4,
               minWidth: 200,
               padding: 6,

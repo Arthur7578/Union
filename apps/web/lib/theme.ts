@@ -30,9 +30,15 @@ export const T = {
   surface: "#FFFCFA",
   surfaceAlt: "#FBFAF8",
   white: "#FFFFFF",
+  border: "#E7DED6",
   cream: "#F7F1EC",
   blush: "#F8EDEA",
   heroGradient: "linear-gradient(158deg,#F8EDEA 0%,#F2E1E0 100%)",
+
+  // Warm tan highlight (selected / hovered rows) and the dark scrim behind modals
+  tan: "#E0CCB1",
+  tanSoft: "rgba(224,204,177,.35)",
+  scrim: "#140F0F",
 
   // Hairlines
   line: "rgba(67,53,58,.07)",
@@ -127,3 +133,38 @@ export function alpha(hex: string, a: number): string {
   const b = n & 255;
   return `rgba(${r},${g},${b},${a})`;
 }
+
+/**
+ * CSS custom properties for the stylesheet. `app/layout.tsx` sets these on
+ * <html>, so `globals.css` reads `var(--…)` and carries no colour literals —
+ * theme.ts stays the only place a colour is defined (lib/theme.test.ts fails
+ * if globals.css reintroduces one or references an undefined variable).
+ *
+ * The first block is the public RSVP page's vocabulary (the page that renders
+ * with the `.card` / `.btn` classes); the guest portal re-declares a few of
+ * these locally. The second block is the app shell and form chrome.
+ */
+export const CSS_VARS = {
+  "--bg": T.bg,
+  "--surface": T.surface,
+  "--text": T.ink,
+  "--muted": G.muted,
+  "--border": T.border,
+  "--primary": T.accent,
+  "--primary-dark": T.accentInk,
+  "--success": T.greenInk,
+  "--success-bg": T.greenBg,
+  "--danger": T.danger,
+  "--danger-bg": T.dangerBg,
+
+  "--white": T.white,
+  "--label": T.label,
+  "--bg-top": T.bgTop,
+  "--bg-bottom": T.bgBottom,
+  "--tabbar-bg": alpha(T.bg, 0.92),
+  "--tabbar-line": alpha(T.ink, 0.06),
+  "--sidebar-bg": alpha(T.bg, 0.7),
+  "--sidebar-line": alpha(T.ink, 0.08),
+  "--card-shadow": alpha(G.ink, 0.06),
+  "--focus-ring": alpha(T.accent, 0.16),
+} as const;

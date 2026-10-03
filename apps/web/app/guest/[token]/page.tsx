@@ -14,7 +14,7 @@ import type {
 import { GuestPortal } from "./GuestPortal";
 import { GuestEmailGate } from "./GuestEmailGate";
 import { GuestIdentityGate } from "./GuestIdentityGate";
-import { G, T } from "@/lib/theme";
+import { G, T, alpha } from "@/lib/theme";
 
 // Always fetch fresh invitation data (no static caching of personal links).
 export const dynamic = "force-dynamic";
@@ -163,7 +163,7 @@ export default async function GuestExperiencePage({
             background: "white",
             padding: "40px 32px",
             borderRadius: "24px",
-            boxShadow: "0 15px 45px rgba(43, 39, 36, 0.05)",
+            boxShadow: `0 15px 45px ${alpha(G.ink, 0.05)}`,
             textAlign: "center",
           }}
         >

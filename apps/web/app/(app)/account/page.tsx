@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { useWedding } from "@/lib/wedding";
@@ -130,7 +130,7 @@ export default function AccountPage() {
           borderRadius: 22,
           background: T.heroGradient,
           padding: "18px 18px 16px",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
+          boxShadow: `inset 0 1px 0 ${alpha(T.white, 0.7)}`,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>

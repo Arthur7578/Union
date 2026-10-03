@@ -1,5 +1,5 @@
 import React from "react";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 
 type IconProps = { size?: number; color?: string; stroke?: string };
 
@@ -87,7 +87,7 @@ export function ChevronLeft({ size = 16, stroke = T.muted }: IconProps) {
   );
 }
 
-export function ChevronRight({ size = 14, stroke = "rgba(60,60,67,0.3)" }: IconProps) {
+export function ChevronRight({ size = 14, stroke = alpha(T.ink, 0.3) }: IconProps) {
   return (
     <svg width={(size * 8) / 14} height={size} viewBox="0 0 8 14" aria-hidden>
       <path

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { BackHeader } from "@/components/BackHeader";
 import { Card, SectionLabel, Button, Avatar, StatusPill, Loading } from "@/components/ui";
 import { Spark } from "@/components/icons";
@@ -286,7 +286,7 @@ export default function TeamPage() {
             borderRadius: 20,
             background: T.heroGradient,
             padding: "16px 16px 15px",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
+            boxShadow: `inset 0 1px 0 ${alpha(T.white, 0.7)}`,
           }}
         >
           <div className="u-serif" style={{ fontWeight: 600, fontSize: 19, color: T.ink }}>
@@ -386,7 +386,7 @@ export default function TeamPage() {
                   fontWeight: 600,
                   fontSize: 13,
                   color: on ? T.ink : T.faint,
-                  boxShadow: on ? "0 2px 6px rgba(67,53,58,.06)" : "none",
+                  boxShadow: on ? `0 2px 6px ${alpha(T.ink, 0.06)}` : "none",
                 }}
               >
                 {a.label}
@@ -419,7 +419,7 @@ export default function TeamPage() {
               top: 6,
               bottom: 12,
               width: 2,
-              background: "rgba(67,53,58,.08)",
+              background: alpha(T.ink, 0.08),
             }}
           />
           {activity.map((a) => (

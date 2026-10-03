@@ -454,8 +454,8 @@ function RelationshipSection({
                   alignItems: "center",
                   gap: 8,
                   padding: "6px 12px",
-                  background: "rgba(224,204,177,.35)",
-                  border: "1px solid rgba(67,53,58,.12)",
+                  background: T.tanSoft,
+                  border: `1px solid ${T.line3}`,
                   borderRadius: 20,
                   fontSize: 13,
                 }}

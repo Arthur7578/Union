@@ -508,7 +508,7 @@ export default function FormBuilderPage() {
             ? "This name is how you find the form. Guests see the headline you write below — or this name, if you leave it blank."
             : "The name and schedule are for you — guests never see them."
         }
-        tone={{ bg: T.sandBg, border: "rgba(169,154,144,.35)", fg: T.sand }}
+        tone={{ bg: T.sandBg, border: alpha(T.sand, 0.35), fg: T.sand }}
       >
         <Card style={{ padding: "13px 15px" }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: T.faint, marginBottom: 5 }}>
@@ -722,7 +722,7 @@ export default function FormBuilderPage() {
                         height: 16,
                         flexShrink: 0,
                         borderRadius: 5,
-                        border: `1.5px solid ${q.required ? T.accentInk : "rgba(67,53,58,.28)"}`,
+                        border: `1.5px solid ${q.required ? T.accentInk : alpha(T.ink, 0.28)}`,
                         background: q.required ? T.accentInk : "transparent",
                         color: T.white,
                         display: "flex",
@@ -783,7 +783,7 @@ export default function FormBuilderPage() {
                           padding: "6px 12px",
                           fontSize: 13,
                           color: T.ink,
-                          border: "1px solid rgba(67,53,58,.08)",
+                          border: `1px solid ${alpha(T.ink, 0.08)}`,
                           borderRadius: 10,
                           background: T.cream,
                         }}
@@ -836,7 +836,7 @@ export default function FormBuilderPage() {
                     marginTop: 11,
                     borderRadius: 12,
                     background: T.cream,
-                    border: "1px solid rgba(67,53,58,.08)",
+                    border: `1px solid ${alpha(T.ink, 0.08)}`,
                     padding: "11px 13px",
                     fontSize: 13,
                     color: T.label,
@@ -899,7 +899,7 @@ export default function FormBuilderPage() {
       <SectionBlock
         kicker="Access & rights"
         hint="Who can reach this form, and what they're allowed to do once they're in it."
-        tone={{ bg: T.blueBg, border: "rgba(92,100,138,.28)", fg: T.blueInk }}
+        tone={{ bg: T.blueBg, border: alpha(T.blueInk, 0.28), fg: T.blueInk }}
       >
         <Card style={{ padding: "13px 15px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

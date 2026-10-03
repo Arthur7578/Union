@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import type { Form, FormStatus, RsvpQuestion } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
@@ -407,7 +407,7 @@ function NewFormModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(20,15,15,0.45)",
+        background: alpha(T.scrim, 0.45),
         zIndex: 60,
         display: "flex",
         alignItems: "center",
@@ -422,7 +422,7 @@ function NewFormModal({
           padding: 20,
           width: "100%",
           maxWidth: 440,
-          boxShadow: "0 24px 60px rgba(20,15,15,.25)",
+          boxShadow: `0 24px 60px ${alpha(T.scrim, 0.25)}`,
           maxHeight: "88vh",
           overflow: "auto",
         }}
