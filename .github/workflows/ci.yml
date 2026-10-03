@@ -35,6 +35,11 @@ jobs:
       - run: npm test
 
       - run: npm run build --workspace apps/web
+        env:
+          # The build refuses to run without Supabase credentials. Placeholders
+          # are enough: building never contacts Supabase.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-publishable-key
 
   database:
     runs-on: ubuntu-latest

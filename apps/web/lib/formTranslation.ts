@@ -126,8 +126,12 @@ export function applyTranslations(
   return { rsvpCopy, guestCopy, questions };
 }
 
-/** Ask the server to translate a batch. Returns id → translated text. */
+/** Ask the server to translate a batch. Returns id → translated text.
+ *
+ *  `formId` names the form being edited; the server only translates for
+ *  someone who can edit it. */
 export async function requestTranslations(
+  formId: string,
   slots: TranslatableSlot[],
   from: Locale,
   to: Locale,
@@ -139,7 +143,7 @@ export async function requestTranslations(
       "content-type": "application/json",
       authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ from, to, items: slots }),
+    body: JSON.stringify({ formId, from, to, items: slots }),
   });
   const payload = (await res.json().catch(() => ({}))) as {
     translations?: Record<string, string>;
