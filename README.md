@@ -223,11 +223,26 @@ without them shows a "not configured" notice instead of the app.
 | `ANTHROPIC_API_KEY` | **server-only** | `/api/translate`, the form builder's auto-translate. Optional: without it that route returns `503` and the builder asks the couple to write the other language by hand. Nothing else depends on it. |
 | `ANTHROPIC_TRANSLATE_MODEL` | **server-only** | Optional. Pins the model `/api/translate` uses. Unset, the route uses the **newest Opus your key can list** (re-checked hourly, and logged when it changes), so a new Opus release is picked up without a code change; if listing fails it falls back to a built-in default (`FALLBACK_MODEL` in `apps/web/lib/translationModel.ts`). Pin it when price and behaviour must stay put. Redeploy to apply a change. If the model isn't found, the route answers `502` with a message saying so. |
 | `NEXT_PUBLIC_SITE_URL` | server | Optional. Canonical origin used for the redirect link in invite emails. Supabase only honours allow-listed redirect targets, so set it where the request's own host isn't one. |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | browser | Optional. Cloudflare Turnstile **site key** for sign-up bot protection (see below). Unset, no challenge runs and no token is sent. Inlined at build time, so redeploy after changing it. |
 | `NEXT_PUBLIC_CONTENTSQUARE_CLIENT_ID` | browser | Optional Contentsquare analytics. Loads only in a production build when `NEXT_PUBLIC_VERCEL_ENV` is `production`. |
 | `NEXT_PUBLIC_VERCEL_ENV` | browser | Gate for the analytics above. Provided by Vercel when system environment variables are exposed to the build; if it's unset, analytics stay off. |
 
 SMS needs no env var: each wedding stores its own Brevo API key and sender in its
 SMS template settings.
+
+**Bot protection on sign-up (optional).** Sign-up and sign-in are the same email-code
+flow, so the web app can run an invisible Cloudflare Turnstile challenge when someone
+asks for a code (sign-in, the guest join link, guest email setup, and co-organiser
+invites). It only becomes visible if Cloudflare can't vouch for the visitor. To turn
+it on, in this order:
+
+1. Create a Turnstile widget in Cloudflare (Managed mode) and copy its site key and secret.
+2. Set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` for each Vercel environment and redeploy.
+3. In the Supabase dashboard, enable **Authentication → Bot and Abuse Protection →
+   CAPTCHA protection**, pick Turnstile and paste the secret.
+
+Step 3 applies to the whole Supabase project. **The Expo app does not send a CAPTCHA
+token yet**, so once it is on, mobile sign-in is rejected until the app is updated.
 
 Deploying to Vercel: use the **repo root** as the project's root directory, not
 `apps/web`. The repo-root `vercel.json` sets the install, build (lint + build) and

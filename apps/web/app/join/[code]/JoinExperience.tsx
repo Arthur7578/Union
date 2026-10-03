@@ -7,6 +7,7 @@ import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { useTurnstile } from "@/lib/turnstile";
 import type { JoinWeddingPreview } from "./page";
 
 type View =
@@ -78,6 +79,7 @@ export function JoinExperience({
   const [otp, setOtp] = useState("");
   const [disambiguationSource, setDisambiguationSource] =
     useState<DisambiguationSource>(null);
+  const { captcha, getCaptchaToken } = useTurnstile();
 
   const partners =
     [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") ||
@@ -202,7 +204,7 @@ export function JoinExperience({
     setError(null);
     try {
       setEmail(cleanEmail);
-      await sendEmailOtp(cleanEmail);
+      await sendEmailOtp(cleanEmail, await getCaptchaToken());
       setOtp("");
       setView("email_code");
     } catch {
@@ -452,6 +454,9 @@ export function JoinExperience({
         <div style={{ borderTop: "1px solid #eee8e1", paddingTop: 28 }}>
           {error && <div style={errorStyle}>{error}</div>}
           {renderContent()}
+          {/* Every view that can send a code (first send, resend) shares this
+              one mount point; it stays empty unless a challenge needs a click. */}
+          {captcha}
         </div>
       </section>
     </main>
