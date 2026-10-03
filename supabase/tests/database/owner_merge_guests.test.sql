@@ -242,23 +242,13 @@ select results_eq(
   'chosen details win, and a blank last name stays blank rather than refilling from the source'
 );
 
--- KNOWN GAP, not asserted as passing. owner_merge_guests clears the source's
--- copy of each field that _merge_guests folds with COALESCE, so that a field
--- the owner deliberately blanks is not refilled from the source. It does this
--- for last_name, email, phone, role, notes and guest_group, and its comment
--- says age_years is not in that list. It is: _merge_guests has coalesced
--- age_years since 0014, so a blanked age comes back as the source's age. This
--- assertion states the intended behaviour; remove todo_start/todo_end once
--- the source's age_years is cleared alongside the others.
-select todo_start('a blanked age is refilled from the source');
-
+-- age_years is coalesced by _merge_guests too, so owner_merge_guests has to
+-- clear the source's copy for a blanked age to stick.
 select is(
   (select age_years from public.guests where id = '30000000-0000-0000-0000-000000000051'),
   null,
   'an age the owner chose to leave blank stays blank'
 );
-
-select todo_end();
 
 -- A collaborator -----------------------------------------------------------
 
