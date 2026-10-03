@@ -74,6 +74,24 @@ function logMissingAdminKey(): void {
   );
 }
 
+/**
+ * The invite row is saved but the email didn't go out. The inviter gets the
+ * client's localised "saved, but we couldn't email them" copy, so the response
+ * carries no `reason`: the upstream error is English, often technical, and not
+ * theirs to act on, so it goes to the server log instead.
+ */
+function notDelivered(
+  collaborator: object,
+  stage: string,
+  err: { message: string; code?: string; status?: number },
+) {
+  console.error(
+    `[invite-collaborator] invite saved but not emailed (${stage}): ${err.message}`,
+    { code: err.code, status: err.status },
+  );
+  return NextResponse.json({ collaborator, delivered: false });
+}
+
 /** Prefer the canonical production URL when configured. Supabase only honors
  * redirect targets on its allow list, so using a transient Host header in
  * production can silently fall back to the project's Site URL. */
@@ -212,11 +230,7 @@ export async function POST(request: Request) {
     { p_wedding_id: weddingId, p_email: email },
   );
   if (recipientLookupErr) {
-    return NextResponse.json({
-      collaborator,
-      delivered: false,
-      reason: `The invite is saved, but we couldn't determine how to email them: ${recipientLookupErr.message}`,
-    });
+    return notDelivered(collaborator, "recipient lookup", recipientLookupErr);
   }
 
   if (recipientExists) {
@@ -240,11 +254,7 @@ export async function POST(request: Request) {
         kind: "existing",
       });
     }
-    return NextResponse.json({
-      collaborator,
-      delivered: false,
-      reason: otpErr.message,
-    });
+    return notDelivered(collaborator, "sign-in email to existing account", otpErr);
   }
 
   if (!SUPABASE_ADMIN_KEY) {
@@ -302,16 +312,12 @@ export async function POST(request: Request) {
         kind: "existing",
       });
     }
-    return NextResponse.json({
+    return notDelivered(
       collaborator,
-      delivered: false,
-      reason: otpErr.message,
-    });
+      "sign-in email after account appeared mid-invite",
+      otpErr,
+    );
   }
 
-  return NextResponse.json({
-    collaborator,
-    delivered: false,
-    reason: inviteErr.message,
-  });
+  return notDelivered(collaborator, "admin invite", inviteErr);
 }
