@@ -83,7 +83,7 @@ export default function GuestDetail() {
 
   const shareInvite = async () => {
     if (!guest) return;
-    const url = `${RSVP_WEB_URL}/rsvp/${guest.invite_token}`;
+    const url = `${RSVP_WEB_URL}/guest/${guest.invite_token}`;
     try {
       await Share.share({
         message: `You're invited! Please RSVP here: ${url}`,

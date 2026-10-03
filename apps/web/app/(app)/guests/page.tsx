@@ -139,7 +139,7 @@ export default function GuestsPage() {
       const linksLine =
         waitingWithEmail.length === 1
           ? t.guests.emailBody.singleLink(
-              `${origin}/rsvp/${waitingWithEmail[0].invite_token}`,
+              `${origin}/guest/${waitingWithEmail[0].invite_token}`,
             )
           : t.guests.emailBody.multipleLinks;
       const body = `${t.guests.emailBody.hello}\n\n${t.guests.emailBody.lead}${linksLine}\n${t.guests.emailBody.thanks}\n${partners}`;

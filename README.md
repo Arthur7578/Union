@@ -47,7 +47,9 @@ Routes:
 - `/vendors` — vendor board, negotiation thread, add-a-vendor, and the
   "set a search in motion" / "search in progress" flow.
 - `/plan` — what's next, budget, the weekend run-of-show, and plan-together.
-- `/rsvp/[token]` — the public guest RSVP page (unchanged).
+- `/guest/[token]` — the public guest page (RSVP and event details).
+  `/rsvp/[token]` still works and redirects here, so links sent earlier keep
+  resolving.
 
 ### Live data vs. sample data
 
@@ -110,7 +112,7 @@ npm run web          # or: npm run dev --workspace apps/web
 ```
 
 Open `http://localhost:3000` for the planning app (sign in with an 8-digit
-email code), or `http://localhost:3000/rsvp/<invite-token>` for a guest's
+email code), or `http://localhost:3000/guest/<invite-token>` for a guest's
 RSVP page. Config is read from `apps/web/.env.local`
 (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). Deploy to
 Vercel with root directory `apps/web`; Supabase's Vercel integration provides

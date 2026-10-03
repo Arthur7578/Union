@@ -298,7 +298,7 @@ export default function GuestDetailPage() {
   const copyLink = async () => {
     const url =
       typeof window !== "undefined"
-        ? `${window.location.origin}/rsvp/${guest.invite_token}`
+        ? `${window.location.origin}/guest/${guest.invite_token}`
         : "";
     try {
       await navigator.clipboard.writeText(url);
@@ -370,7 +370,7 @@ export default function GuestDetailPage() {
     const partners = [wedding?.partner_one, wedding?.partner_two]
       .filter(Boolean)
       .join(" & ") || "us";
-    const url = `${origin}/rsvp/${guest.invite_token}`;
+    const url = `${origin}/guest/${guest.invite_token}`;
     const subject = `You're invited — RSVP for ${partners}`;
     const body = `Hi ${guest.first_name},\n\nWe'd love for you to celebrate with us. Your RSVP link:\n${url}\n\nWith love,\n${partners}`;
     window.location.href = `mailto:${encodeURIComponent(guest.email)}?subject=${encodeURIComponent(
@@ -730,7 +730,7 @@ export default function GuestDetailPage() {
               whiteSpace: "nowrap",
             }}
           >
-            /rsvp/{guest.invite_token}
+            /guest/{guest.invite_token}
           </div>
           <Button
             variant="secondary"
