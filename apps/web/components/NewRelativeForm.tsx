@@ -5,6 +5,7 @@ import type { GuestGroup } from "@union/shared";
 import type { NewRelatedGuest } from "@/lib/data";
 import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
 import { T } from "@/lib/theme";
+import { PhoneField } from "./PhoneField";
 
 /**
  * Editable card for a not-yet-persisted related guest (child, partner
@@ -88,11 +89,11 @@ export function NewRelativeForm({
           value={value.email ?? ""}
           onChange={(e) => onChange({ email: e.target.value })}
         />
-        <input
-          type="tel"
+        <PhoneField
+          compact
           placeholder="Phone (optional)"
           value={value.phone ?? ""}
-          onChange={(e) => onChange({ phone: e.target.value })}
+          onChange={(phone) => onChange({ phone })}
         />
       </div>
       <input
