@@ -576,13 +576,13 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         .premium-portal-theme {
           --primary: ${T.ink};
           --accent: ${T.accent};
-          --accent-light: #f7e6e8;
+          --accent-light: ${G.accentLight};
           --bg: ${G.bg};
-          --card-bg: #ffffff;
+          --card-bg: ${T.white};
           --text: ${G.ink};
           --muted: ${G.muted};
           --success: ${T.greenInk};
-          --border: #e3dec3;
+          --border: ${G.border};
           --font-serif: 'Cormorant Garamond', serif;
           --font-sans: 'Instrument Sans', sans-serif;
 
@@ -716,8 +716,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         }
 
         .badge-status.pending {
-          background: #fdf5e6;
-          color: #b8860b;
+          background: ${T.amberBg};
+          color: ${G.pendingInk};
         }
 
         .badge-status.completed {
@@ -726,8 +726,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         }
 
         .badge-status.locked {
-          background: #f2f2f2;
-          color: #999999;
+          background: ${G.disabledBg};
+          color: ${G.disabledInk};
         }
 
         .drawer-overlay {
@@ -923,7 +923,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         }
 
         .faq-item:hover {
-          background: #f8f5f2;
+          background: ${T.bg};
           border-color: var(--accent);
         }
 
@@ -1227,8 +1227,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                       disabled={state !== "live"}
                       onClick={() => openCustomForm(f.id)}
                       style={{
-                        background: state !== "live" ? "#f5f5f5" : (answered ? "rgba(67, 53, 58, 0.05)" : "var(--primary)"),
-                        color: state !== "live" ? "#999" : (answered ? "var(--primary)" : "white"),
+                        background: state !== "live" ? G.disabledBg : (answered ? "rgba(67, 53, 58, 0.05)" : "var(--primary)"),
+                        color: state !== "live" ? G.disabledInk : (answered ? "var(--primary)" : "white"),
                         border: "none",
                         padding: "10px 20px",
                         borderRadius: "10px",

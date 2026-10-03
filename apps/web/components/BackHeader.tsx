@@ -42,7 +42,7 @@ export function BackHeader({
           height: 38,
           borderRadius: "50%",
           border: `1px solid ${T.line3}`,
-          background: "#fff",
+          background: T.white,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

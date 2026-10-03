@@ -183,7 +183,7 @@ export default function VendorDetailPage() {
             flex: 1,
             height: 46,
             borderRadius: 23,
-            background: "#fff",
+            background: T.white,
             border: `1px solid ${T.line3}`,
             display: "flex",
             alignItems: "center",

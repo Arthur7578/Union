@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Wedding } from "@union/shared";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { useWedding } from "@/lib/wedding";
 import { updateWedding, deleteWedding } from "@/lib/data";
@@ -389,7 +389,7 @@ function WeddingSettingsForm({
               borderRadius: 18,
               background: T.surfaceAlt,
               border: `1px solid ${T.line}`,
-              color: "#B0664E",
+              color: T.danger,
               fontWeight: 600,
               fontSize: 14.5,
               cursor: "pointer",
@@ -547,12 +547,12 @@ function DeleteConfirmModal({
               minHeight: 46,
               borderRadius: 14,
               border: "none",
-              background: canConfirm ? "#B0664E" : "rgba(176,102,78,.35)",
-              color: "#fff",
+              background: canConfirm ? T.danger : alpha(T.danger, 0.35),
+              color: T.white,
               fontWeight: 600,
               fontSize: 15,
               cursor: canConfirm && !deleting ? "pointer" : "default",
-              boxShadow: canConfirm ? "0 6px 16px rgba(176,102,78,.24)" : "none",
+              boxShadow: canConfirm ? `0 6px 16px ${alpha(T.danger, 0.24)}` : "none",
               opacity: deleting ? 0.6 : 1,
             }}
           >

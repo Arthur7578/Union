@@ -34,7 +34,7 @@ export default function WeekendPage() {
             style={{
               flex: 1,
               textAlign: "center",
-              background: d.active ? T.accentSoft : "#fff",
+              background: d.active ? T.accentSoft : T.white,
               border: `1px solid ${d.active ? T.accentBorder : "rgba(67,53,58,.1)"}`,
               borderRadius: 14,
               padding: "9px 0",
@@ -86,7 +86,7 @@ export default function WeekendPage() {
                 height: m.accent ? 12 : 10,
                 borderRadius: "50%",
                 background: m.accent ? T.accent : T.sandBg,
-                border: m.accent ? "2px solid #fff" : `2px solid ${T.sand}`,
+                border: m.accent ? `2px solid ${T.white}` : `2px solid ${T.sand}`,
                 boxShadow: m.accent ? `0 0 0 2px ${T.accentBorder}` : "none",
               }}
             />
@@ -126,8 +126,8 @@ export default function WeekendPage() {
                   gap: 4,
                   fontWeight: 600,
                   fontSize: 11,
-                  color: "#8A6F74",
-                  background: "#F3EAE3",
+                  color: T.mauve,
+                  background: T.roseBg,
                   borderRadius: 7,
                   padding: "3px 8px",
                 }}

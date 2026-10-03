@@ -8,7 +8,7 @@ import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import type { JoinWeddingPreview } from "./page";
-import { G } from "@/lib/theme";
+import { G, T } from "@/lib/theme";
 
 type View =
   | "checking"
@@ -450,7 +450,7 @@ export function JoinExperience({
             </p>
           )}
         </div>
-        <div style={{ borderTop: "1px solid #eee8e1", paddingTop: 28 }}>
+        <div style={{ borderTop: `1px solid ${T.sandBg}`, paddingTop: 28 }}>
           {error && <div style={errorStyle}>{error}</div>}
           {renderContent()}
         </div>
@@ -490,7 +490,7 @@ const cardStyle: React.CSSProperties = {
   width: "100%",
   maxWidth: 480,
   borderRadius: 24,
-  background: "#fff",
+  background: T.white,
   boxShadow: "0 18px 55px rgba(43, 39, 36, 0.08)",
   padding: "38px 32px",
   boxSizing: "border-box",
@@ -531,7 +531,7 @@ const bodyStyle: React.CSSProperties = {
 };
 
 const securityStyle: React.CSSProperties = {
-  color: "#968b84",
+  color: G.faint,
   fontSize: 12,
   lineHeight: 1.45,
   textAlign: "center",
@@ -552,7 +552,7 @@ const inputStyle: React.CSSProperties = {
   minHeight: 50,
   borderRadius: 12,
   border: `1px solid ${G.borderInput}`,
-  background: "#fff",
+  background: T.white,
   color: G.ink,
   fontSize: 16,
   padding: "0 14px",
@@ -566,7 +566,7 @@ const primaryButtonStyle: React.CSSProperties = {
   border: 0,
   borderRadius: 999,
   background: G.ink,
-  color: "#fff",
+  color: T.white,
   fontSize: 15,
   fontWeight: 600,
   cursor: "pointer",

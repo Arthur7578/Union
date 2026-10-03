@@ -21,7 +21,7 @@ import {
 } from "./icons";
 
 const ON = T.ink;
-const OFF = T.stone;
+const OFF = T.taupe;
 
 type Tab = {
   key: NavKey;
@@ -244,7 +244,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     marginTop: -9,
                   }}
                 >
-                  <Spark size={22} color="#fff" />
+                  <Spark size={22} color={T.white} />
                 </span>
                 <span
                   style={{

@@ -117,7 +117,7 @@ export function Check({ size = 13, stroke = T.greenInk }: IconProps) {
   );
 }
 
-export function UpArrow({ size = 18, stroke = "#fff" }: IconProps) {
+export function UpArrow({ size = 18, stroke = T.white }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
       <path

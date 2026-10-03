@@ -10,7 +10,7 @@ import {
 } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
-import { G } from "@/lib/theme";
+import { G, T } from "@/lib/theme";
 
 type GateState = "checking" | "confirm" | "allowed";
 
@@ -143,7 +143,7 @@ const cardStyle: React.CSSProperties = {
   width: "100%",
   maxWidth: 480,
   borderRadius: 24,
-  background: "#fff",
+  background: T.white,
   boxShadow: "0 18px 55px rgba(43, 39, 36, 0.08)",
   padding: "38px 32px",
   boxSizing: "border-box",
@@ -180,7 +180,7 @@ const primaryButtonStyle: React.CSSProperties = {
   border: 0,
   borderRadius: 999,
   background: G.ink,
-  color: "#fff",
+  color: T.white,
   fontSize: 15,
   fontWeight: 600,
   cursor: "pointer",

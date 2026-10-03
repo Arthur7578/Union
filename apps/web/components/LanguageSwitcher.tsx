@@ -47,7 +47,7 @@ export function LanguageSwitcher({
               border: "none",
               borderRadius: 999,
               background: active ? T.accent : "transparent",
-              color: active ? "#fff" : T.muted2,
+              color: active ? T.white : T.muted2,
               fontWeight: 600,
               fontSize: compact ? 12 : 13,
               cursor: "pointer",

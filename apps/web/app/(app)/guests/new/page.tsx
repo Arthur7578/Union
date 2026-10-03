@@ -470,7 +470,7 @@ function RelationshipSection({
                   style={{
                     background: "transparent",
                     border: "none",
-                    color: "#8a7f80",
+                    color: T.muted2,
                     cursor: "pointer",
                     fontSize: 14,
                     lineHeight: 1,
@@ -502,7 +502,7 @@ function RelationshipSection({
       )}
       {children}
       {hint && (
-        <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: T.muted2, marginTop: 4 }}>
           {hint}
         </div>
       )}

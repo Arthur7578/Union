@@ -81,7 +81,7 @@ export default function AddVendorPage() {
             width: 24,
             height: 24,
             borderRadius: 7,
-            background: addToDirectory ? T.accent : "#fff",
+            background: addToDirectory ? T.accent : T.white,
             border: addToDirectory ? "none" : `1px solid ${T.line3}`,
             display: "flex",
             alignItems: "center",
@@ -89,7 +89,7 @@ export default function AddVendorPage() {
             flexShrink: 0,
           }}
         >
-          {addToDirectory && <Check stroke="#fff" />}
+          {addToDirectory && <Check stroke={T.white} />}
         </span>
         <span
           style={{

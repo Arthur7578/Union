@@ -113,7 +113,7 @@ export default function InvitationPage() {
         {invitedWedding && (
           <section
             style={{
-              background: "linear-gradient(150deg,#F8EDEA 0%,#F1DFDE 100%)",
+              background: `linear-gradient(150deg,${T.blush} 0%,${T.accentPink} 100%)`,
               border: `1px solid ${T.line}`,
               borderRadius: 22,
               padding: 18,

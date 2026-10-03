@@ -358,7 +358,7 @@ export default function TeamPage() {
           style={{
             display: "flex",
             gap: 5,
-            background: "#F1EDE7",
+            background: T.bgTop,
             borderRadius: 14,
             padding: 4,
             marginTop: 14,
@@ -379,7 +379,7 @@ export default function TeamPage() {
                   flex: 1,
                   textAlign: "center",
                   cursor: "pointer",
-                  background: on ? "#fff" : "transparent",
+                  background: on ? T.white : "transparent",
                   borderRadius: 11,
                   border: "none",
                   padding: "9px 4px",

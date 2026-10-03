@@ -189,7 +189,7 @@ export function GroupPicker({
             padding: 4,
             borderRadius: 10,
             border: `1px solid ${T.line3}`,
-            background: "#fff",
+            background: T.white,
             boxShadow: "0 6px 22px rgba(67,53,58,.12)",
             display: "flex",
             flexDirection: "column",

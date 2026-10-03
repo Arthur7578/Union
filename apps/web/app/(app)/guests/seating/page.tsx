@@ -34,7 +34,7 @@ const TONE_STYLE: Record<
   accent: { bg: T.accentPink, ring: T.ringRose, fg: T.accentInk, label: "Family" },
   green: { bg: T.greenBg, ring: T.ringSage, fg: T.greenInk, label: "Friends" },
   amber: { bg: T.amberBg, ring: T.ringAmber, fg: T.amberInk, label: "Work & neighbors" },
-  sand: { bg: "#F4EFE9", ring: T.stone, fg: T.sand, label: "Other" },
+  sand: { bg: T.cream, ring: T.taupe, fg: T.sand, label: "Other" },
 };
 
 const TONE_KEYS = Object.keys(TONE_STYLE) as ToneKey[];
@@ -493,7 +493,7 @@ export default function SeatingPage() {
                 flex: 1,
                 textAlign: "center",
                 cursor: "pointer",
-                background: on ? "#fff" : "transparent",
+                background: on ? T.white : "transparent",
                 borderRadius: 11,
                 border: "none",
                 padding: "9px 0",
@@ -522,7 +522,7 @@ export default function SeatingPage() {
               position: "relative",
               height: 340,
               borderRadius: 22,
-              background: "#F7F0EA",
+              background: T.cream,
               border: "1px solid rgba(67,53,58,.09)",
               overflow: "hidden",
               touchAction: "none",
@@ -538,7 +538,7 @@ export default function SeatingPage() {
                 fontSize: 9.5,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: T.stone,
+                color: T.taupe,
                 maxWidth: "70%",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
@@ -689,8 +689,8 @@ export default function SeatingPage() {
                         position: "absolute",
                         bottom: -6,
                         right: -6,
-                        background: over ? T.danger : "#fff",
-                        color: over ? "#fff" : T.muted,
+                        background: over ? T.danger : T.white,
+                        color: over ? T.white : T.muted,
                         border: `1px solid ${over ? T.danger : T.line3}`,
                         borderRadius: 999,
                         padding: "1px 6px",
@@ -751,7 +751,7 @@ export default function SeatingPage() {
                   width: 11,
                   height: 11,
                   borderRadius: "50%",
-                  background: "#F4EFE9",
+                  background: T.cream,
                   border: `1.5px dashed ${T.sand}`,
                 }}
               />
@@ -879,7 +879,7 @@ export default function SeatingPage() {
                               fontSize: 12,
                               cursor: "pointer",
                               border: `1px solid ${on ? s.ring : T.line3}`,
-                              background: on ? s.bg : "#fff",
+                              background: on ? s.bg : T.white,
                               color: T.ink,
                             }}
                           >
@@ -927,7 +927,7 @@ export default function SeatingPage() {
                               fontSize: 12,
                               cursor: "pointer",
                               border: `1px solid ${editShape === s ? T.accentBorder : T.line3}`,
-                              background: editShape === s ? T.accentSoft : "#fff",
+                              background: editShape === s ? T.accentSoft : T.white,
                               color: T.ink,
                               textTransform: "capitalize",
                             }}
@@ -981,7 +981,7 @@ export default function SeatingPage() {
                             height: 32,
                             border: `1px solid ${T.line3}`,
                             borderRadius: 8,
-                            background: "#fff",
+                            background: T.white,
                             cursor: "pointer",
                             fontSize: 11,
                             color: T.muted,
@@ -1098,7 +1098,7 @@ export default function SeatingPage() {
                                     fontSize: 12,
                                     fontWeight: 600,
                                     cursor: need > left ? "not-allowed" : "pointer",
-                                    background: need > left ? "#F5EFE9" : "#fff",
+                                    background: need > left ? T.cream : T.white,
                                     border: `1px solid ${T.line3}`,
                                     color: need > left ? T.faint : T.ink,
                                   }}
@@ -1209,7 +1209,7 @@ export default function SeatingPage() {
                             fontSize: 12,
                             cursor: "pointer",
                             border: `1px solid ${on ? s.ring : T.line3}`,
-                            background: on ? s.bg : "#fff",
+                            background: on ? s.bg : T.white,
                             color: T.ink,
                           }}
                         >
@@ -1251,7 +1251,7 @@ export default function SeatingPage() {
                             fontSize: 12,
                             cursor: "pointer",
                             border: `1px solid ${newShape === s ? T.accentBorder : T.line3}`,
-                            background: newShape === s ? T.accentSoft : "#fff",
+                            background: newShape === s ? T.accentSoft : T.white,
                             color: T.ink,
                           }}
                         >
@@ -1304,7 +1304,7 @@ export default function SeatingPage() {
                     padding: "9px 13px",
                     borderRadius: 12,
                     border: `1px solid ${T.line3}`,
-                    background: "#fff",
+                    background: T.white,
                     fontFamily: T.sans,
                     fontSize: 14,
                     color: T.ink,
@@ -1371,7 +1371,7 @@ export default function SeatingPage() {
                                 padding: "4px 6px",
                                 borderRadius: 8,
                                 border: `1px solid ${T.line3}`,
-                                background: "#fff",
+                                background: T.white,
                                 maxWidth: 140,
                               }}
                             >
@@ -1419,7 +1419,7 @@ export default function SeatingPage() {
           <Card
             style={{
               marginTop: 16,
-              background: "#F7F0EA",
+              background: T.cream,
               padding: 16,
             }}
           >
@@ -1509,7 +1509,7 @@ export default function SeatingPage() {
                             flex: 1,
                             minHeight: isReserved ? 26 : 22,
                             borderRadius: isReserved ? 6 : 5,
-                            background: isReserved ? T.accentSoft : "#EBE1D8",
+                            background: isReserved ? T.accentSoft : T.sandBg,
                             border: isReserved
                               ? `1px solid ${T.accentBorder}`
                               : "1px solid rgba(67,53,58,.08)",
@@ -1557,7 +1557,7 @@ export default function SeatingPage() {
                                     lineHeight: 1,
                                     padding: "2px 5px",
                                     borderRadius: 999,
-                                    background: "#fff",
+                                    background: T.white,
                                     color: T.ink,
                                     border: `1px solid ${T.line3}`,
                                     letterSpacing: 0,
@@ -1882,7 +1882,7 @@ function Stepper({
         padding: "6px 8px 6px 12px",
         borderRadius: 12,
         border: `1px solid ${T.line3}`,
-        background: "#fff",
+        background: T.white,
       }}
     >
       <span style={{ fontSize: 12, fontWeight: 600, color: T.muted }}>{label}</span>
@@ -1895,7 +1895,7 @@ function Stepper({
           height: 28,
           border: `1px solid ${T.line3}`,
           borderRadius: 8,
-          background: "#fff",
+          background: T.white,
           cursor: value <= min ? "not-allowed" : "pointer",
           color: T.muted,
           opacity: value <= min ? 0.4 : 1,
@@ -1924,7 +1924,7 @@ function Stepper({
           height: 28,
           border: `1px solid ${T.line3}`,
           borderRadius: 8,
-          background: "#fff",
+          background: T.white,
           cursor: value >= max ? "not-allowed" : "pointer",
           color: T.muted,
           opacity: value >= max ? 0.4 : 1,

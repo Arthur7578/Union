@@ -235,7 +235,7 @@ function SmsTemplateForm({
           </div>
           <div
             style={{
-              background: "#F5EFE6",
+              background: T.cream,
               borderRadius: 14,
               padding: "12px 14px",
               fontSize: 14,

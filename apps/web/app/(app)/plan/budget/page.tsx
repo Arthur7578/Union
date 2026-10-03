@@ -12,7 +12,7 @@ import { useLocale } from "@/lib/i18n/client";
 const TONE: Record<string, string> = {
   green: T.green,
   accent: T.accent,
-  faint: "#C7BAB2",
+  faint: T.taupe,
 };
 
 export default function BudgetPage() {

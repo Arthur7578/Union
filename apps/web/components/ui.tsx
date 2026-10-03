@@ -108,7 +108,7 @@ export function Chip({
   tone?: { bg: string; fg: string; border?: string };
   style?: React.CSSProperties;
 }) {
-  const bg = tone?.bg ?? (active ? T.accentSoft : "#fff");
+  const bg = tone?.bg ?? (active ? T.accentSoft : T.white);
   const fg = tone?.fg ?? (active ? T.ink : T.muted2);
   const border = tone?.border ?? (active ? T.accentBorder : "rgba(67,53,58,.1)");
   return (
@@ -305,7 +305,7 @@ export function Button({
         border: primary ? "none" : `1px solid ${T.line3}`,
         borderRadius: 14,
         background: primary ? T.accent : "transparent",
-        color: primary ? "#fff" : T.ink,
+        color: primary ? T.white : T.ink,
         fontWeight: 600,
         fontSize: 15,
         padding: "0 18px",
@@ -361,7 +361,7 @@ export function Switch({
           width: 23,
           height: 23,
           borderRadius: "50%",
-          background: "#fff",
+          background: T.white,
           boxShadow: "0 1px 3px rgba(0,0,0,.25)",
           transform: on ? "translateX(19px)" : "translateX(0)",
           transition: "transform .15s ease",

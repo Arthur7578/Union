@@ -369,7 +369,7 @@ function ClusterCard({
               padding: "10px 12px",
               borderRadius: 12,
               border: "1px solid rgba(67,53,58,.12)",
-              background: "#fff",
+              background: T.white,
             }}
           >
             <div style={{ flex: 1, fontSize: 13 }}>

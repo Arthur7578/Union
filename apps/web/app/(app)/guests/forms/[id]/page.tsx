@@ -36,7 +36,7 @@ import { BackHeader } from "@/components/BackHeader";
 import { Card, Chip, Button, Loading, Switch, StatusPill } from "@/components/ui";
 
 const KIND_LABEL: Record<RsvpQuestion["kind"], { label: string; bg: string; fg: string }> = {
-  single: { label: "Single choice", bg: "#EEE7F0", fg: "#7A6690" },
+  single: { label: "Single choice", bg: T.violetBg, fg: T.violetInk },
   multi: { label: "Multiple choice", bg: T.greenBg, fg: T.greenDeep },
   short: { label: "Short text", bg: T.amberBg, fg: T.amberInk },
   comment: { label: "Open comment", bg: T.amberBg, fg: T.amberInk },
@@ -167,7 +167,7 @@ function LanguageBar({
               style={{
                 border: `1px solid ${active ? T.accentInk : T.line3}`,
                 background: active ? T.accentInk : "transparent",
-                color: active ? "#fff" : T.muted2,
+                color: active ? T.white : T.muted2,
                 borderRadius: 20,
                 padding: "6px 13px",
                 fontSize: 12.5,
@@ -532,7 +532,7 @@ export default function FormBuilderPage() {
               minHeight: 40,
               border: `1px solid ${T.line3}`,
               borderRadius: 10,
-              background: "#F7F1EC",
+              background: T.cream,
             }}
           />
         </Card>
@@ -724,7 +724,7 @@ export default function FormBuilderPage() {
                         borderRadius: 5,
                         border: `1.5px solid ${q.required ? T.accentInk : "rgba(67,53,58,.28)"}`,
                         background: q.required ? T.accentInk : "transparent",
-                        color: "#fff",
+                        color: T.white,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -764,7 +764,7 @@ export default function FormBuilderPage() {
                   minHeight: 40,
                   border: `1px solid ${T.line3}`,
                   borderRadius: 10,
-                  background: "#F7F1EC",
+                  background: T.cream,
                 }}
               />
 
@@ -785,7 +785,7 @@ export default function FormBuilderPage() {
                           color: T.ink,
                           border: "1px solid rgba(67,53,58,.08)",
                           borderRadius: 10,
-                          background: "#F7F1EC",
+                          background: T.cream,
                         }}
                       />
                       {isAutoTranslated(opt.label, editingLocale) && <AutoBadge />}
@@ -835,7 +835,7 @@ export default function FormBuilderPage() {
                   style={{
                     marginTop: 11,
                     borderRadius: 12,
-                    background: "#F7F1EC",
+                    background: T.cream,
                     border: "1px solid rgba(67,53,58,.08)",
                     padding: "11px 13px",
                     fontSize: 13,
@@ -1111,7 +1111,7 @@ function CopyField({
           color: T.ink,
           border: `1px solid ${T.line3}`,
           borderRadius: 10,
-          background: "#F7F1EC",
+          background: T.cream,
         }}
       />
     </Card>

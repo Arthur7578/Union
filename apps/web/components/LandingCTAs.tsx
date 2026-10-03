@@ -60,7 +60,7 @@ export function LandingCTAs({ to }: { to: string }) {
     padding: "0 26px",
     borderRadius: 15,
     background: T.accent,
-    color: "#fff",
+    color: T.white,
     fontWeight: 600,
     fontSize: 16,
     boxShadow: "0 6px 16px rgba(67,53,58,.16)",

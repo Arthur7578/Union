@@ -87,7 +87,7 @@ export function RelationshipCombobox({
             left: 0,
             right: 0,
             marginTop: 2,
-            background: "#fff",
+            background: T.white,
             border: "1px solid rgba(67,53,58,.15)",
             borderRadius: 8,
             boxShadow: "0 6px 22px rgba(67,53,58,.12)",

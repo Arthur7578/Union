@@ -138,7 +138,7 @@ export default function PlanPage() {
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: "#C7BAB2",
+                background: T.taupe,
               }}
             />
             <span style={{ fontWeight: 500, fontSize: 14, color: T.muted }}>

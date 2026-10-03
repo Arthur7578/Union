@@ -111,7 +111,7 @@ export default function SearchSetupPage() {
                 width: 16,
                 height: 16,
                 borderRadius: "50%",
-                background: "#fff",
+                background: T.white,
                 border: `2px solid ${T.accent}`,
                 transform: "translate(-50%,-50%)",
               }}

@@ -871,7 +871,7 @@ export default function GuestDetailPage() {
                 type="button"
                 style={{
                   border: `1px solid ${on ? T.accentBorder : "rgba(67,53,58,.1)"}`,
-                  background: on ? T.accentSoft : "#fff",
+                  background: on ? T.accentSoft : T.white,
                   color: on ? T.ink : T.muted2,
                   padding: "7px 13px",
                   borderRadius: 20,

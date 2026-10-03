@@ -468,7 +468,7 @@ function NewFormModal({
                 textAlign: "left",
                 border: `1px solid ${T.line3}`,
                 borderRadius: 14,
-                background: "#fff",
+                background: T.white,
                 padding: "13px 14px",
                 cursor: busy ? "default" : "pointer",
                 opacity: busy ? 0.6 : 1,

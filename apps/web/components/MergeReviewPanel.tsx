@@ -215,7 +215,7 @@ export function MergeReviewPanel({
                 border: `1px solid ${
                   isConflict ? "rgba(192,85,59,.35)" : "rgba(67,53,58,.10)"
                 }`,
-                background: isConflict ? "rgba(255,248,244,.6)" : "#fff",
+                background: isConflict ? "rgba(255,248,244,.6)" : T.white,
               }}
             >
               <div
