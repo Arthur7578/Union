@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { Button } from "@/components/ui";
 import {
   ownerMergeGuests,
   type MergeOverrides,
 } from "@/lib/data";
+import { PhoneField } from "./PhoneField";
 
 /**
  * Any guest-like object with the fields that matter for a merge.
@@ -213,9 +214,9 @@ export function MergeReviewPanel({
                 padding: 10,
                 borderRadius: 10,
                 border: `1px solid ${
-                  isConflict ? "rgba(192,85,59,.35)" : "rgba(67,53,58,.10)"
+                  isConflict ? alpha(T.danger, 0.35) : alpha(T.ink, 0.1)
                 }`,
-                background: isConflict ? "rgba(255,248,244,.6)" : "#fff",
+                background: isConflict ? alpha(T.surface, 0.6) : T.white,
               }}
             >
               <div
@@ -336,27 +337,39 @@ export function MergeReviewPanel({
                           setPicks((p) => ({ ...p, [field.key]: pick ?? "" }))
                         }
                       />
-                      <input
-                        type={
-                          field.kind === "int"
-                            ? "number"
-                            : field.kind === "email"
-                              ? "email"
-                              : field.kind === "tel"
-                                ? "tel"
+                      {field.kind === "tel" ? (
+                        <div style={{ flex: 1 }}>
+                          <PhoneField
+                            compact
+                            autoFocus
+                            value={pick == null ? "" : String(pick)}
+                            onChange={(phone) =>
+                              setPicks((p) => ({ ...p, [field.key]: phone }))
+                            }
+                            placeholder="Custom value"
+                          />
+                        </div>
+                      ) : (
+                        <input
+                          type={
+                            field.kind === "int"
+                              ? "number"
+                              : field.kind === "email"
+                                ? "email"
                                 : "text"
-                        }
-                        autoFocus
-                        value={pick == null ? "" : String(pick)}
-                        onChange={(e) =>
-                          setPicks((p) => ({
-                            ...p,
-                            [field.key]: e.target.value,
-                          }))
-                        }
-                        placeholder="Custom value"
-                        style={{ flex: 1 }}
-                      />
+                          }
+                          autoFocus
+                          value={pick == null ? "" : String(pick)}
+                          onChange={(e) =>
+                            setPicks((p) => ({
+                              ...p,
+                              [field.key]: e.target.value,
+                            }))
+                          }
+                          placeholder="Custom value"
+                          style={{ flex: 1 }}
+                        />
+                      )}
                     </label>
                   ) : (
                     <button

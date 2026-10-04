@@ -195,7 +195,7 @@ function AuthModeOption({
           {hint}
         </div>
         {warning && (
-          <div style={{ fontSize: 12, color: "#9a5b23", marginTop: 8, lineHeight: 1.45 }}>
+          <div style={{ fontSize: 12, color: T.amberDeep, marginTop: 8, lineHeight: 1.45 }}>
             {warning}
           </div>
         )}

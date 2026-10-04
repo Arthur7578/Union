@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { BackHeader } from "@/components/BackHeader";
 import { DemoBanner } from "@/components/SampleBadge";
 import { Button } from "@/components/ui";
@@ -110,7 +110,7 @@ export default function VendorDetailPage() {
                 style={{
                   maxWidth: "82%",
                   background: mine ? T.accentSoft : T.surface,
-                  border: `1px solid ${mine ? T.accentBorder : "rgba(67,53,58,.09)"}`,
+                  border: `1px solid ${mine ? T.accentBorder : T.line2}`,
                   borderRadius: mine ? "20px 20px 6px 20px" : "20px 20px 20px 6px",
                   padding: "12px 15px",
                   fontSize: 14,
@@ -129,9 +129,9 @@ export default function VendorDetailPage() {
         style={{
           marginTop: 22,
           borderRadius: 22,
-          background: "linear-gradient(158deg,#F8EDEA 0%,#F2E1E0 100%)",
+          background: T.heroGradient,
           padding: 18,
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
+          boxShadow: `inset 0 1px 0 ${alpha(T.white, 0.7)}`,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -183,7 +183,7 @@ export default function VendorDetailPage() {
             flex: 1,
             height: 46,
             borderRadius: 23,
-            background: "#fff",
+            background: T.white,
             border: `1px solid ${T.line3}`,
             display: "flex",
             alignItems: "center",

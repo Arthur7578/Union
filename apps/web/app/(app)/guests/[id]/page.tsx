@@ -3,9 +3,11 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import {
   choiceToOverride,
+  guestLinkPath,
+  guestLinkUrl,
   overrideToChoice,
 } from "@union/shared";
 import type {
@@ -53,6 +55,7 @@ import { DEFAULT_SMS_TEMPLATE, resolveSmsTemplate } from "@/lib/sms";
 import { DEFAULT_LOCALE, getDictionary, isLocale, type Locale } from "@/lib/i18n";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { PhoneField } from "@/components/PhoneField";
 
 const STATUS_LABEL: Record<
   string,
@@ -354,7 +357,7 @@ export default function GuestDetailPage() {
   const copyLink = async () => {
     const url =
       typeof window !== "undefined"
-        ? `${window.location.origin}/rsvp/${guest.invite_token}`
+        ? guestLinkUrl(window.location.origin, guest.invite_token)
         : "";
     try {
       await navigator.clipboard.writeText(url);
@@ -370,7 +373,7 @@ export default function GuestDetailPage() {
     const template = wedding?.sms_template || DEFAULT_SMS_TEMPLATE;
     return resolveSmsTemplate(template, {
       guest_first_name: guest.first_name ?? "",
-      guest_access_link: `${origin}/guest/${guest.invite_token}`,
+      guest_access_link: guestLinkUrl(origin, guest.invite_token),
       partner_1_first_name: wedding?.partner_one ?? "",
       partner_2_first_name: wedding?.partner_two ?? "",
     });
@@ -426,7 +429,7 @@ export default function GuestDetailPage() {
     const partners = [wedding?.partner_one, wedding?.partner_two]
       .filter(Boolean)
       .join(" & ") || "us";
-    const url = `${origin}/rsvp/${guest.invite_token}`;
+    const url = guestLinkUrl(origin, guest.invite_token);
     const subject = `You're invited — RSVP for ${partners}`;
     const body = `Hi ${guest.first_name},\n\nWe'd love for you to celebrate with us. Your RSVP link:\n${url}\n\nWith love,\n${partners}`;
     window.location.href = `mailto:${encodeURIComponent(guest.email)}?subject=${encodeURIComponent(
@@ -732,7 +735,7 @@ export default function GuestDetailPage() {
               autoFocus
               style={{ width: 72 }}
             />
-            {ageError && <span style={{ color: "#C0553B" }}>{ageError}</span>}
+            {ageError && <span style={{ color: T.danger }}>{ageError}</span>}
           </>
         ) : guest.age_years != null ? (
           <>
@@ -778,7 +781,7 @@ export default function GuestDetailPage() {
               whiteSpace: "nowrap",
             }}
           >
-            /rsvp/{guest.invite_token}
+            {guestLinkPath(guest.invite_token)}
           </div>
           <Button
             variant="secondary"
@@ -832,8 +835,8 @@ export default function GuestDetailPage() {
                 marginTop: 10,
                 padding: "10px 12px",
                 borderRadius: 12,
-                background: "rgba(224,204,177,.28)",
-                border: "1px solid rgba(67,53,58,.08)",
+                background: alpha(T.tan, 0.28),
+                border: `1px solid ${alpha(T.ink, 0.08)}`,
                 fontSize: 12.5,
                 color: T.muted2,
                 display: "grid",
@@ -918,8 +921,8 @@ export default function GuestDetailPage() {
                 onClick={() => setRsvpStatus(k)}
                 type="button"
                 style={{
-                  border: `1px solid ${on ? T.accentBorder : "rgba(67,53,58,.1)"}`,
-                  background: on ? T.accentSoft : "#fff",
+                  border: `1px solid ${on ? T.accentBorder : alpha(T.ink, 0.1)}`,
+                  background: on ? T.accentSoft : T.white,
                   color: on ? T.ink : T.muted2,
                   padding: "7px 13px",
                   borderRadius: 20,
@@ -1233,8 +1236,8 @@ export default function GuestDetailPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "rgba(224,204,177,.35)",
-                    border: "1px solid rgba(67,53,58,.12)",
+                    background: T.tanSoft,
+                    border: `1px solid ${T.line3}`,
                     borderRadius: 20,
                     padding: "5px 10px",
                     fontSize: 13,
@@ -1409,12 +1412,7 @@ export default function GuestDetailPage() {
         </div>
         <div className="field">
           <label htmlFor="ph">Phone</label>
-          <input
-            id="ph"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
+          <PhoneField id="ph" value={phone} onChange={setPhone} />
         </div>
         <div className="field">
           <label>Can add a partner from their RSVP</label>
@@ -1561,7 +1559,7 @@ export default function GuestDetailPage() {
             type="button"
             onClick={remove}
             className="u-link"
-            style={{ color: "#C0553B" }}
+            style={{ color: T.danger }}
           >
             Remove guest
           </button>

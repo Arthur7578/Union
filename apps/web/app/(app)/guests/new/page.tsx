@@ -20,6 +20,7 @@ import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
 import { NewRelativeForm } from "@/components/NewRelativeForm";
 import { RelationshipCombobox } from "@/components/RelationshipCombobox";
 import { useT } from "@/lib/i18n/client";
+import { PhoneField } from "@/components/PhoneField";
 
 /**
  * Per-relationship state on the add-guest form: each entry is either
@@ -229,11 +230,10 @@ export default function NewGuestPage() {
         </div>
         <div className="field">
           <label htmlFor="ph">{t.guests.fields.phone}</label>
-          <input
+          <PhoneField
             id="ph"
-            type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={setPhone}
             placeholder={t.guests.placeholders.phone}
           />
         </div>
@@ -454,8 +454,8 @@ function RelationshipSection({
                   alignItems: "center",
                   gap: 8,
                   padding: "6px 12px",
-                  background: "rgba(224,204,177,.35)",
-                  border: "1px solid rgba(67,53,58,.12)",
+                  background: T.tanSoft,
+                  border: `1px solid ${T.line3}`,
                   borderRadius: 20,
                   fontSize: 13,
                 }}
@@ -470,7 +470,7 @@ function RelationshipSection({
                   style={{
                     background: "transparent",
                     border: "none",
-                    color: "#8a7f80",
+                    color: T.muted2,
                     cursor: "pointer",
                     fontSize: 14,
                     lineHeight: 1,
@@ -502,7 +502,7 @@ function RelationshipSection({
       )}
       {children}
       {hint && (
-        <div style={{ fontSize: 12, color: "#8a7f80", marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: T.muted2, marginTop: 4 }}>
           {hint}
         </div>
       )}

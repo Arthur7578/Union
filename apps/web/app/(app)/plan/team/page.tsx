@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { BackHeader } from "@/components/BackHeader";
 import { Card, SectionLabel, Button, Avatar, StatusPill, Loading } from "@/components/ui";
 import { Spark } from "@/components/icons";
@@ -9,6 +9,7 @@ import { useWedding } from "@/lib/wedding";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { useLocale } from "@/lib/i18n/client";
+import { useTurnstile } from "@/lib/turnstile";
 import { initial, timeAgo } from "@/lib/format";
 import {
   fetchCollaborators,
@@ -27,6 +28,7 @@ export default function TeamPage() {
   const { session } = useAuth();
   const { wedding, setWedding } = useWedding();
   const { profile } = useProfile();
+  const { captcha, getCaptchaToken } = useTurnstile();
 
   const [collaborators, setCollaborators] = useState<CollaboratorWithProfile[] | null>(null);
   const [activity, setActivity] = useState<ActivityLogEntry[] | null>(null);
@@ -80,7 +82,11 @@ export default function TeamPage() {
     setInviteError(null);
     setInviteNotice(null);
     try {
-      const result = await inviteCollaborator(wedding.id, clean);
+      // Only needed to email someone who already has an account. If the
+      // challenge fails, still save the invite: the route then reports the mail
+      // as not sent, which this page already words as "saved, not sent".
+      const captchaToken = await getCaptchaToken().catch(() => undefined);
+      const result = await inviteCollaborator(wedding.id, clean, captchaToken);
       setCollaborators((prev) => [...(prev ?? []), result.collaborator]);
       setEmail("");
       // The row always saves; the mail is the part that can fail on its own,
@@ -88,7 +94,13 @@ export default function TeamPage() {
       setInviteNotice(
         result.delivered
           ? { tone: "ok", text: t.plan.inviteSent(clean) }
-          : { tone: "warn", text: t.plan.inviteSavedNotSent(result.reason ?? "") },
+          : {
+              tone: "warn",
+              text:
+                result.failure === "rate_limited"
+                  ? t.plan.inviteSavedRateLimited
+                  : t.plan.inviteSavedNotSent,
+            },
       );
       refreshActivity();
     } catch (err) {
@@ -284,9 +296,9 @@ export default function TeamPage() {
           style={{
             marginTop: 14,
             borderRadius: 20,
-            background: "linear-gradient(158deg,#F8EDEA 0%,#F2E1E0 100%)",
+            background: T.heroGradient,
             padding: "16px 16px 15px",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
+            boxShadow: `inset 0 1px 0 ${alpha(T.white, 0.7)}`,
           }}
         >
           <div className="u-serif" style={{ fontWeight: 600, fontSize: 19, color: T.ink }}>
@@ -312,6 +324,7 @@ export default function TeamPage() {
               {inviteBusy ? t.plan.inviteSending : t.common.invite}
             </Button>
           </form>
+          {captcha}
           {inviteError && (
             <div style={{ fontSize: 12.5, color: T.accentInk, marginTop: 8 }}>{inviteError}</div>
           )}
@@ -358,7 +371,7 @@ export default function TeamPage() {
           style={{
             display: "flex",
             gap: 5,
-            background: "#F1EDE7",
+            background: T.bgTop,
             borderRadius: 14,
             padding: 4,
             marginTop: 14,
@@ -379,14 +392,14 @@ export default function TeamPage() {
                   flex: 1,
                   textAlign: "center",
                   cursor: "pointer",
-                  background: on ? "#fff" : "transparent",
+                  background: on ? T.white : "transparent",
                   borderRadius: 11,
                   border: "none",
                   padding: "9px 4px",
                   fontWeight: 600,
                   fontSize: 13,
                   color: on ? T.ink : T.faint,
-                  boxShadow: on ? "0 2px 6px rgba(67,53,58,.06)" : "none",
+                  boxShadow: on ? `0 2px 6px ${alpha(T.ink, 0.06)}` : "none",
                 }}
               >
                 {a.label}
@@ -419,7 +432,7 @@ export default function TeamPage() {
               top: 6,
               bottom: 12,
               width: 2,
-              background: "rgba(67,53,58,.08)",
+              background: alpha(T.ink, 0.08),
             }}
           />
           {activity.map((a) => (

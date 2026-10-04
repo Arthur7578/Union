@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import { useProfile } from "@/lib/profile";
 import { fetchGuests, guestStats, type GuestWithRsvp } from "@/lib/data";
@@ -72,8 +72,8 @@ export default function TodayPage() {
             height: 44,
             borderRadius: "50%",
             background: T.accentPink,
-            border: "1.5px solid rgba(255,255,255,.9)",
-            boxShadow: "0 3px 10px rgba(67,53,58,.12)",
+            border: `1.5px solid ${alpha(T.white, 0.9)}`,
+            boxShadow: `0 3px 10px ${T.line3}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -96,9 +96,9 @@ export default function TodayPage() {
         style={{
           marginTop: 20,
           borderRadius: 26,
-          background: "linear-gradient(158deg,#F8EDEA 0%,#F2E1E0 100%)",
+          background: T.heroGradient,
           padding: "22px 22px 20px",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
+          boxShadow: `inset 0 1px 0 ${alpha(T.white, 0.7)}`,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -137,7 +137,7 @@ export default function TodayPage() {
             {venueLine}
           </div>
         )}
-        <div style={{ height: 1, background: "rgba(67,53,58,.09)", margin: "16px 0 14px" }} />
+        <div style={{ height: 1, background: T.line2, margin: "16px 0 14px" }} />
         <div style={{ fontSize: 14, lineHeight: 1.55, color: T.ink2 }}>
           {t.today.handlingLead.before}{" "}
           <b style={{ color: T.ink }}>{t.today.handlingLead.strong}</b>{" "}
@@ -150,7 +150,7 @@ export default function TodayPage() {
         <span>{t.today.needsYou}</span>
         <SampleBadge />
       </SectionLabel>
-      <Card style={{ padding: 18, boxShadow: "0 10px 26px rgba(67,53,58,.06)" }}>
+      <Card style={{ padding: 18, boxShadow: `0 10px 26px ${alpha(T.ink, 0.06)}` }}>
         <div
           className="u-serif"
           style={{ fontWeight: 600, fontSize: 23, lineHeight: 1.15, color: T.ink }}
