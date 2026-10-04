@@ -49,33 +49,18 @@ const preview = {
 };
 
 beforeEach(() => {
-  window.scrollTo = vi.fn(); // jsdom does not implement it; the welcome resets scroll on mount
   harness.rpc.mockReset();
   harness.rpc.mockResolvedValue({ data: { status: "not_found" }, error: null });
 });
 
 afterEach(cleanup);
 
-// A group-link visitor meets the faire-part welcome before the form.
-async function openWelcome() {
-  render(<JoinExperience code="abc123" preview={preview} />);
-  return screen.findByRole("button", { name: "Respond to the invitation" });
-}
-
 async function openForm() {
-  fireEvent.click(await openWelcome());
+  render(<JoinExperience code="abc123" preview={preview} />);
   return (await screen.findByPlaceholderText(
     en.guestJoin.contactPlaceholder,
   )) as HTMLInputElement;
 }
-
-describe("JoinExperience welcome", () => {
-  it("greets a group link without a guest's name", async () => {
-    await openWelcome();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/You have received\s*an invitation/);
-    expect(screen.getByText("Invitation")).toBeInTheDocument();
-  });
-});
 
 const submit = () =>
   fireEvent.click(screen.getByRole("button", { name: en.guestJoin.continueButton }));

@@ -9,7 +9,6 @@ interface GuestWelcomeProps {
   eventDate?: string | null;
   venueName?: string | null;
   address?: string | null;
-  message?: string | null;
   locale: string;
   onRespond: () => void;
 }
@@ -22,7 +21,6 @@ export function GuestWelcome({
   eventDate,
   venueName,
   address,
-  message,
   locale,
   onRespond,
 }: GuestWelcomeProps) {
@@ -42,7 +40,6 @@ export function GuestWelcome({
       weddingDate={weddingDate}
       place={venueName || address}
       venue={[venueName, address].filter(Boolean).join(", ")}
-      welcomeNote={message}
       locale={locale}
       onRespond={onRespond}
     />

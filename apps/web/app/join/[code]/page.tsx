@@ -4,6 +4,7 @@ import { getDictionary } from "@/lib/i18n";
 import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { JoinExperience } from "./JoinExperience";
+import { WelcomeGate } from "@/components/guest/WelcomeGate";
 import { G, T, alpha } from "@/lib/theme";
 
 // Always fetch fresh — never cache a generic link's guest matching.
@@ -109,7 +110,15 @@ export default async function JoinPage({
 
   return (
     <LocaleProvider initialLocale={joinLocale}>
-      <JoinExperience code={code} preview={preview} />
+      <WelcomeGate
+        seenId={`join.${code}`}
+        partnerOne={preview.partner_one}
+        partnerTwo={preview.partner_two}
+        eventDate={preview.event_date}
+        venueName={preview.venue_name}
+      >
+        <JoinExperience code={code} preview={preview} />
+      </WelcomeGate>
     </LocaleProvider>
   );
 }

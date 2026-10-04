@@ -18,7 +18,8 @@ import type { FormAnswers, GuestModuleKey, RsvpQuestion } from "@union/shared";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
 import { G, T, alpha } from "@/lib/theme";
-import { GuestWelcome } from "@/components/guest/GuestWelcome";
+import { useReplayWelcome } from "@/components/guest/WelcomeGate";
+import { formatGuestAddress } from "@/lib/guestAddress";
 
 /** Tab label and icon per module, in the order guests see them. Keyed by the
  *  same module keys the couple toggles in /guests/modules, so a module can
@@ -126,7 +127,7 @@ const STAYS = [
 ];
 
 export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
-  const [showFairePart, setShowFairePart] = useState(true);
+  const replayWelcome = useReplayWelcome();
   const { t, locale } = useLocale();
   const router = useRouter();
   const [hasAuthSession, setHasAuthSession] = useState(false);
@@ -381,25 +382,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     { weekday: "long", year: "numeric", month: "long", day: "numeric" }
   ) : "Saturday, September 20, 2026";
 
-  // The RPC removes every field the couple has not chosen to disclose. The
-  // formatter still switches on the visibility tier so the guest UI cannot
-  // accidentally reintroduce area into precise addresses later.
-  const address = invitation.wedding.address;
-  const cityAndPostalCode = address?.city
-    ? `${address.city}${address.postal_code ? ` (${address.postal_code})` : ""}`
-    : address?.postal_code
-      ? `(${address.postal_code})`
-      : "";
-  const addressParts = address
-    ? invitation.wedding.address_visibility === "area"
-      ? [address.area, address.country]
-      : invitation.wedding.address_visibility === "partial"
-        ? [cityAndPostalCode, address.country]
-        : invitation.wedding.address_visibility === "full"
-          ? [address.line, cityAndPostalCode, address.country]
-          : []
-    : [];
-  const addressText = addressParts.filter(Boolean).join(", ");
+  const addressText = formatGuestAddress(invitation.wedding);
   const guestLocationSummary = invitation.wedding.venue_name || addressText;
   const addressPending = locale === "fr"
     ? "L'adresse complète sera communiquée prochainement."
@@ -568,25 +551,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       setAddCompanionBusy(false);
     }
   };
-
-  if (showFairePart) {
-    return (
-      <GuestWelcome
-        guestName={invitation.guest.first_name}
-        partnerOne={invitation.wedding.partner_one}
-        partnerTwo={invitation.wedding.partner_two}
-        eventDate={invitation.wedding.event_date}
-        venueName={invitation.wedding.venue_name}
-        address={addressText}
-        message={invitation.guest.message}
-        locale={locale}
-        onRespond={() => {
-          setShowFairePart(false);
-          setActiveFormModal("rsvp");
-        }}
-      />
-    );
-  }
 
   return (
     <div className="premium-portal-theme">
@@ -1098,6 +1062,23 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               }}
             >
               {signingOut ? t.common.signingOut : t.common.signOut}
+            </button>
+          )}
+          {replayWelcome && (
+            <button
+              type="button"
+              onClick={replayWelcome}
+              style={{
+                border: 0,
+                background: "transparent",
+                color: "var(--muted)",
+                fontSize: "13px",
+                textDecoration: "underline",
+                cursor: "pointer",
+                padding: "6px 2px",
+              }}
+            >
+              {locale === "fr" ? "Revoir l'invitation" : "See the invitation again"}
             </button>
           )}
           <LanguageSwitcher compact />

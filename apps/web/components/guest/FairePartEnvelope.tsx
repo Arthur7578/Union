@@ -15,8 +15,6 @@ interface FairePartEnvelopeProps {
   place?: string | null;
   /** Venue name and address, shown on the back of the card. */
   venue?: string | null;
-  /** The couple's welcome note for this guest. */
-  welcomeNote?: string | null;
   locale?: string;
   onRespond: () => void;
 }
@@ -28,7 +26,7 @@ const COPY = {
     to: (n: string) => `Pour ${n}`,
     anon: "Faire-part",
     kicker: "Le mariage",
-    fallbackLead: "Nous serions heureux de vous compter parmi nous.",
+    lead: "Nous serions heureux de vous compter parmi nous.",
     hint: "Touchez le sceau ou faites défiler",
     open: "Ouvrir l'enveloppe",
     flipCard: "Retourner le carton",
@@ -42,7 +40,7 @@ const COPY = {
     to: (n: string) => `For ${n}`,
     anon: "Invitation",
     kicker: "The wedding",
-    fallbackLead: "We would be delighted to have you with us.",
+    lead: "We would be delighted to have you with us.",
     hint: "Tap the seal or scroll",
     open: "Open the envelope",
     flipCard: "Turn the card over",
@@ -92,7 +90,6 @@ export function FairePartEnvelope({
   weddingDate,
   place,
   venue,
-  welcomeNote,
   locale = "fr",
   onRespond,
 }: FairePartEnvelopeProps) {
@@ -317,7 +314,7 @@ export function FairePartEnvelope({
                   <section className="side verso" data-id="verso" hidden>
                     <div className="verso-in">
                       <p className="kicker line">{t.kicker}</p>
-                      <p className="lead line">{welcomeNote || t.fallbackLead}</p>
+                      <p className="lead line">{t.lead}</p>
                       {venue ? <p className="foot line">{venue}</p> : null}
                     </div>
                   </section>

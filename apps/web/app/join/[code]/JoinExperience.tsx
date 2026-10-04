@@ -1,8 +1,8 @@
 "use client";
 
-import { GuestWelcome } from "@/components/guest/GuestWelcome";
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { markWelcomeSeen } from "@/components/guest/WelcomeGate";
 import { guestLinkPath } from "@union/shared";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { CountrySelect, useBrowserCountry } from "@/components/PhoneField";
@@ -76,8 +76,6 @@ export function JoinExperience({
   const router = useRouter();
   const otpMode = preview.guest_join_auth_mode === "otp";
   const [view, setView] = useState<View>("checking");
-  // The faire-part welcome greets a group-link visitor once, before identification.
-  const [welcomed, setWelcomed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [contact, setContact] = useState(() => (otpMode ? readLastEmail() : ""));
@@ -113,6 +111,8 @@ export function JoinExperience({
   const redirectToGuest = useCallback(
     (token: string) => {
       setView("redirecting");
+      // They have just read the invitation; their own link needn't repeat it.
+      markWelcomeSeen(token);
       router.push(guestLinkPath(token));
     },
     [router],
@@ -476,19 +476,6 @@ export function JoinExperience({
       </>
     );
   };
-
-  if (view === "contact_form" && !welcomed) {
-    return (
-      <GuestWelcome
-        partnerOne={preview.partner_one}
-        partnerTwo={preview.partner_two}
-        eventDate={preview.event_date}
-        venueName={preview.venue_name}
-        locale={locale}
-        onRespond={() => setWelcomed(true)}
-      />
-    );
-  }
 
   return (
     <main style={pageStyle}>

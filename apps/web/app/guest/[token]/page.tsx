@@ -15,6 +15,8 @@ import type {
 import { GuestPortal } from "./GuestPortal";
 import { GuestEmailGate } from "./GuestEmailGate";
 import { GuestIdentityGate } from "./GuestIdentityGate";
+import { WelcomeGate } from "@/components/guest/WelcomeGate";
+import { formatGuestAddress } from "@/lib/guestAddress";
 import { G, T, alpha } from "@/lib/theme";
 
 // Always fetch fresh invitation data (no static caching of personal links).
@@ -231,6 +233,15 @@ export default async function GuestExperiencePage({
 
   return (
     <LocaleProvider initialLocale={initialLocale}>
+      <WelcomeGate
+        seenId={token}
+        guestName={invitation.guest.first_name}
+        partnerOne={invitation.wedding.partner_one}
+        partnerTwo={invitation.wedding.partner_two}
+        eventDate={invitation.wedding.event_date}
+        venueName={invitation.wedding.venue_name}
+        address={formatGuestAddress(invitation.wedding)}
+      >
       <GuestIdentityGate
         guestId={invitation.guest.id}
         guestName={guestName}
@@ -248,6 +259,7 @@ export default async function GuestExperiencePage({
           />
         </GuestEmailGate>
       </GuestIdentityGate>
+      </WelcomeGate>
     </LocaleProvider>
   );
 }
