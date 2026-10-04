@@ -15,9 +15,11 @@ import {
   enabledGuestModules,
   normalizeQuestions,
 } from "@union/shared";
-import type { FormAnswers, GuestModuleKey, RsvpQuestion } from "@union/shared";
-import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
+import type { FormAnswers, GuestModuleKey } from "@union/shared";
+import { DEFAULT_LOCALE } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
+import { FormQuestionFields } from "./FormQuestionFields";
+import { RsvpQuestions, useRsvpAnswers } from "./RsvpQuestions";
 import { G, T, alpha } from "@/lib/theme";
 
 /** Tab label and icon per module, in the order guests see them. Keyed by the
@@ -49,77 +51,6 @@ interface GuestPortalProps {
   token: string;
   invitation: DBInvitation;
   isDemo: boolean;
-}
-
-function FormQuestionFields({
-  questions,
-  answers,
-  locale,
-  onChange,
-}: {
-  questions: RsvpQuestion[];
-  answers: FormAnswers;
-  locale: Locale;
-  onChange: (next: FormAnswers) => void;
-}) {
-  return questions.map((question) => (
-    <div className="field" key={question.id}>
-      <label>
-        {coupleText(question.title, locale) ?? ""}
-        {question.required ? " *" : ` (${locale === "fr" ? "optionnel" : "optional"})`}
-      </label>
-
-      {(question.kind === "single" || question.kind === "multi") && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {(question.options ?? []).map((option) => {
-            const current = answers[question.id];
-            const selected = question.kind === "single"
-              ? current === option.id
-              : Array.isArray(current) && current.includes(option.id);
-            return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => {
-                  if (question.kind === "single") {
-                    onChange({ ...answers, [question.id]: option.id });
-                    return;
-                  }
-                  const list = Array.isArray(current) ? current : [];
-                  onChange({
-                    ...answers,
-                    [question.id]: list.includes(option.id)
-                      ? list.filter((id) => id !== option.id)
-                      : [...list, option.id],
-                  });
-                }}
-                className={`choice-btn ${selected ? "selected-yes" : ""}`}
-                style={{ justifyContent: "flex-start", textAlign: "left" }}
-              >
-                {selected ? "✓ " : ""}{coupleText(option.label, locale) ?? ""}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {question.kind === "short" && (
-        <input
-          type="text"
-          value={typeof answers[question.id] === "string" ? answers[question.id] as string : ""}
-          onChange={(event) => onChange({ ...answers, [question.id]: event.target.value })}
-        />
-      )}
-
-      {question.kind === "comment" && (
-        <textarea
-          value={typeof answers[question.id] === "string" ? answers[question.id] as string : ""}
-          onChange={(event) => onChange({ ...answers, [question.id]: event.target.value })}
-          rows={3}
-        />
-      )}
-    </div>
-  ));
 }
 
 // Beautiful simulated database for guest connections (carsharing/travel buddy matches)
@@ -232,21 +163,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const [primaryRsvp, setPrimaryRsvp] = useState<"pending" | "attending" | "declined">(invitation.guest.rsvp_status);
 
   // RSVP follow-up questions use the same response model as every other
-  // form. Keep saved answers separate from the open modal's drafts so a
-  // second visit reopens on what was just submitted without a page reload.
-  const [rsvpSavedAnswers, setRsvpSavedAnswers] = useState<Record<string, Record<string, FormAnswers>>>(() => {
-    const byForm: Record<string, Record<string, FormAnswers>> = {};
-    for (const form of [invitation.rsvp_form, invitation.rsvp_reconfirmation]) {
-      if (!form) continue;
-      byForm[form.id] = {
-        [invitation.guest.id]: form.answers ?? {},
-        ...(form.companion_answers ?? {}),
-      };
-    }
-    return byForm;
-  });
-  const [rsvpDrafts, setRsvpDrafts] = useState<Record<string, FormAnswers>>({});
-  const [rsvpPersonId, setRsvpPersonId] = useState(invitation.guest.id);
+  // form, answered per attending person.
+  const rsvpAnswers = useRsvpAnswers(invitation);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
 
   // Companions — local state (not just the invitation prop) so a guest who
@@ -408,8 +326,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     ];
 
     for (const person of people) {
-      if (missingRequired(questions, rsvpDrafts[person.id]).length === 0) continue;
-      setRsvpPersonId(person.id);
+      if (missingRequired(questions, rsvpAnswers.drafts[person.id]).length === 0) continue;
+      rsvpAnswers.setPersonId(person.id);
       setRsvpError(
         people.length > 1
           ? locale === "fr"
@@ -440,7 +358,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
             responses: questions.length > 0
               ? people.map((person) => ({
                   guestId: person.id,
-                  answers: rsvpDrafts[person.id] ?? {},
+                  answers: rsvpAnswers.drafts[person.id] ?? {},
                 }))
               : [],
           },
@@ -452,13 +370,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       // the invitation prop.
 
       if (form) {
-        setRsvpSavedAnswers((prev) => ({
-          ...prev,
-          [form.id]: {
-            ...(prev[form.id] ?? {}),
-            ...Object.fromEntries(people.map((person) => [person.id, rsvpDrafts[person.id] ?? {}])),
-          },
-        }));
+        rsvpAnswers.markSaved(form.id, people.map((person) => person.id));
       }
       setActiveFormModal(null);
     } catch (e) {
@@ -586,8 +498,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     const form = context === "reconfirmation"
       ? invitation.rsvp_reconfirmation
       : invitation.rsvp_form;
-    setRsvpDrafts(form ? { ...(rsvpSavedAnswers[form.id] ?? {}) } : {});
-    setRsvpPersonId(invitation.guest.id);
+    rsvpAnswers.reset(form?.id ?? null);
     setRsvpError(null);
     setRsvpModalContext(context);
     setActiveFormModal("rsvp");
@@ -633,10 +544,9 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           }))
       : []),
   ];
-  const activeRsvpDraft = rsvpDrafts[rsvpPersonId] ?? {};
 
   const patchRsvpDraft = (next: FormAnswers) => {
-    setRsvpDrafts((prev) => ({ ...prev, [rsvpPersonId]: next }));
+    rsvpAnswers.patchDraft(next);
     setRsvpError(null);
   };
 
@@ -1845,7 +1755,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 <button
                   onClick={() => {
                     setPrimaryRsvp("attending");
-                    setRsvpPersonId(invitation.guest.id);
+                    rsvpAnswers.setPersonId(invitation.guest.id);
                     setRsvpError(null);
                   }}
                   className={`choice-btn ${primaryRsvp === "attending" ? "selected-yes" : ""}`}
@@ -1855,7 +1765,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 <button
                   onClick={() => {
                     setPrimaryRsvp("declined");
-                    setRsvpPersonId(invitation.guest.id);
+                    rsvpAnswers.setPersonId(invitation.guest.id);
                     setRsvpError(null);
                   }}
                   className={`choice-btn ${primaryRsvp === "declined" ? "selected-no" : ""}`}
@@ -1886,7 +1796,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                               ...companionsRsvp,
                               [companion.id]: { ...state, rsvp_status: "attending" },
                             });
-                            setRsvpPersonId(companion.id);
+                            rsvpAnswers.setPersonId(companion.id);
                             setRsvpError(null);
                           }}
                           className={`choice-btn ${state.rsvp_status === "attending" ? "selected-yes" : ""}`}
@@ -1899,8 +1809,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                               ...companionsRsvp,
                               [companion.id]: { ...state, rsvp_status: "declined" },
                             });
-                            if (rsvpPersonId === companion.id) {
-                              setRsvpPersonId(invitation.guest.id);
+                            if (rsvpAnswers.personId === companion.id) {
+                              rsvpAnswers.setPersonId(invitation.guest.id);
                             }
                             setRsvpError(null);
                           }}
@@ -2015,58 +1925,19 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               </div>
             )}
 
-            {activeRsvpQuestions.length > 0 && rsvpRespondents.length > 0 && (
-              <div style={{ borderTop: `1px solid ${G.border}`, paddingTop: 18, marginTop: 4 }}>
-                {rsvpRespondents.length > 1 && (
-                  <div style={{ marginBottom: 18 }}>
-                    <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 8px" }}>
-                      {locale === "fr"
-                        ? "Répondez pour chaque personne qui vient."
-                        : "Answer for each person who is coming."}
-                    </p>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      {rsvpRespondents.map((person) => {
-                        const on = person.id === rsvpPersonId;
-                        const complete = missingRequired(activeRsvpQuestions, rsvpDrafts[person.id]).length === 0
-                          && hasAnyAnswer(rsvpDrafts[person.id]);
-                        return (
-                          <button
-                            key={person.id}
-                            type="button"
-                            onClick={() => {
-                              setRsvpPersonId(person.id);
-                              setRsvpError(null);
-                            }}
-                            style={{
-                              border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`,
-                              background: on ? "var(--accent-light)" : T.white,
-                              color: on ? "var(--primary)" : "var(--muted)",
-                              borderRadius: 100,
-                              padding: "7px 14px",
-                              fontSize: 13,
-                              fontWeight: 600,
-                              cursor: "pointer",
-                            }}
-                          >
-                            {complete ? "✓ " : ""}
-                            {person.id === invitation.guest.id
-                              ? locale === "fr" ? "Vous" : "You"
-                              : person.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                <FormQuestionFields
-                  questions={activeRsvpQuestions}
-                  answers={activeRsvpDraft}
-                  locale={locale}
-                  onChange={patchRsvpDraft}
-                />
-              </div>
-            )}
+            <RsvpQuestions
+              questions={activeRsvpQuestions}
+              respondents={rsvpRespondents}
+              drafts={rsvpAnswers.drafts}
+              personId={rsvpAnswers.personId}
+              selfId={invitation.guest.id}
+              locale={locale}
+              onSelectPerson={(id) => {
+                rsvpAnswers.setPersonId(id);
+                setRsvpError(null);
+              }}
+              onChange={patchRsvpDraft}
+            />
 
             {rsvpError && (
               <div style={{ color: T.danger, fontSize: 13, marginBottom: 16 }}>{rsvpError}</div>
