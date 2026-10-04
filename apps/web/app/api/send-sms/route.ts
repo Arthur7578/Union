@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createUnionClient, guestLinkUrl } from "@union/shared";
+import { createUnionClient, guestLinkUrl, isValidE164 } from "@union/shared";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseConfig";
 
 export const runtime = "nodejs";
@@ -197,6 +197,19 @@ export async function POST(request: Request) {
         error: hasNumber
           ? "This guest's phone number doesn't say which country it's in. Re-save this guest's phone number with its country, then try again."
           : "This guest doesn't have a valid phone number.",
+      },
+      { status: 400 },
+    );
+  }
+  // The database only checks the shape of `phone_e164` ("+", then 8 to 15
+  // digits), and the phone field keeps an unfinished or wrong number rather
+  // than dropping it, so +10612345678 reaches here looking canonical. Don't
+  // spend a send, and a round trip to Brevo, on a number that isn't real.
+  if (!isValidE164(recipient)) {
+    return NextResponse.json(
+      {
+        error:
+          "This guest's phone number doesn't look complete or valid. Re-enter it in this guest's details and save, then try again.",
       },
       { status: 400 },
     );

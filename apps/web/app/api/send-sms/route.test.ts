@@ -124,6 +124,49 @@ describe("POST /api/send-sms recipient", () => {
     expect(brevo).not.toHaveBeenCalled();
   });
 
+  it("refuses a number that looks canonical to the database but isn't a real number", async () => {
+    // A French number typed while the phone field sat on the United States is
+    // saved as +10612345678. The database only checks the shape, so
+    // phone_e164 is set; Brevo would be asked to text a number that doesn't
+    // exist.
+    harness.guest = {
+      id: "guest-1",
+      wedding_id: "wedding-1",
+      first_name: "Léa",
+      phone: "+10612345678",
+      phone_e164: "+10612345678",
+      invite_token: "tok",
+    };
+
+    const res = await send();
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error:
+        "This guest's phone number doesn't look complete or valid. Re-enter it in this guest's details and save, then try again.",
+    });
+    expect(brevo).not.toHaveBeenCalled();
+  });
+
+  it("refuses a number whose trunk 0 was kept after the country code", async () => {
+    // "+33 06 12 34 56 78" is stored as +330612345678: the database leaves an
+    // unbracketed 0 alone. libphonenumber forgives it, but Brevo is sent the
+    // string as it is, and that is not a routable number.
+    harness.guest = {
+      id: "guest-1",
+      wedding_id: "wedding-1",
+      first_name: "Léa",
+      phone: "+33 06 12 34 56 78",
+      phone_e164: "+330612345678",
+      invite_token: "tok",
+    };
+
+    const res = await send();
+
+    expect(res.status).toBe(400);
+    expect(brevo).not.toHaveBeenCalled();
+  });
+
   it("does not ask for a country when there is no number at all", async () => {
     harness.guest = {
       id: "guest-1",

@@ -37,6 +37,22 @@ describe("smsBlockers", () => {
     ).toEqual(["no-country"]);
   });
 
+  it("flags a canonical number that isn't a real one, as the route will", () => {
+    // The database only checks the shape of phone_e164, so a French number
+    // saved under the United States (+10612345678) has one. The route
+    // refuses it; the page must not offer a send it would refuse.
+    expect(
+      smsBlockers({ ...ok, phone: "+10612345678", phoneE164: "+10612345678" }),
+    ).toEqual(["invalid-phone"]);
+    expect(
+      smsBlockers({ ...ok, phone: "+33 6 12", phoneE164: "+33612" }),
+    ).toEqual(["invalid-phone"]);
+    // A kept trunk 0: libphonenumber forgives it, the string isn't routable.
+    expect(
+      smsBlockers({ ...ok, phone: "+33 06 12 34 56 78", phoneE164: "+330612345678" }),
+    ).toEqual(["invalid-phone"]);
+  });
+
   it("reports a missing sender alongside the guest's problem", () => {
     expect(smsBlockers({ ...ok, sender: "  " })).toEqual(["no-sender"]);
     expect(
@@ -45,5 +61,8 @@ describe("smsBlockers", () => {
     expect(
       smsBlockers({ phone: "0612345678", phoneE164: null, sender: "" }),
     ).toEqual(["no-country", "no-sender"]);
+    expect(
+      smsBlockers({ phone: "+10612345678", phoneE164: "+10612345678", sender: "" }),
+    ).toEqual(["invalid-phone", "no-sender"]);
   });
 });

@@ -119,6 +119,25 @@ export function isValidPhone(
 }
 
 /**
+ * Whether a stored E.164 value ("+33612345678") is a real number in its
+ * country, written the way it is dialled. The database only checks the shape
+ * (a "+", then 8 to 15 digits), so a number the field kept unfinished or
+ * wrong, such as +10612345678, still reads as canonical there. Anything that
+ * is about to cost something, like an SMS, should ask this as well.
+ *
+ * It has to be the canonical spelling, not just a number libphonenumber can
+ * make sense of: it forgives a trunk 0 after the country code, so
+ * "+330612345678" parses as the valid +33612345678, but the string itself is
+ * not something an operator can route.
+ */
+export function isValidE164(value: string | null | undefined): boolean {
+  const text = (value ?? "").trim();
+  if (!text.startsWith("+")) return false;
+  const parsed = parsePhoneNumberFromString(text);
+  return Boolean(parsed?.isValid() && parsed.number === text);
+}
+
+/**
  * A starting point for the picker, from a browser or app language tag
  * such as "fr-FR". It only pre-selects a value the person can see and
  * change; it is never applied to a number silently. Null when the tag

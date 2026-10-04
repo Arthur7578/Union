@@ -790,6 +790,10 @@ export default function GuestDetailPage() {
             hints.push(
               "This guest's phone number doesn't say which country it's in, so the SMS can't be sent. Re-save it with its country in the details section below.",
             );
+          if (blockers.includes("invalid-phone"))
+            hints.push(
+              "This guest's phone number doesn't look complete or valid, so the SMS can't be sent. Re-enter it in the details section below and save.",
+            );
           if (blockers.includes("no-sender"))
             hints.push(
               "To send an SMS invite, set up your SMS sender number in the SMS Template settings first.",

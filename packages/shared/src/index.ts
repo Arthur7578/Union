@@ -70,6 +70,7 @@ export {
   dialCode,
   guessPhoneCountry,
   isPhoneCountry,
+  isValidE164,
   isValidPhone,
   parseStoredPhone,
   toStoredPhone,
