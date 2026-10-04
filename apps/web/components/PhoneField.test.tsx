@@ -86,6 +86,31 @@ describe("PhoneField", () => {
     expect(screen.queryByRole("note")).toBeNull();
   });
 
+  it("lets the person pick the right country for a number saved under the wrong one", () => {
+    // A French number typed while the dropdown sat on the United States.
+    // It isn't valid there, so what gets saved carries the picker's +1.
+    const typed = vi.fn();
+    const first = render(<Harness onStore={typed} />);
+    fireEvent.change(country(), { target: { value: "US" } });
+    fireEvent.change(number(), { target: { value: "06 12 34 56 78" } });
+    const saved = typed.mock.calls.at(-1)?.[0] as string;
+    expect(saved).toBe("+10612345678");
+    first.unmount();
+
+    // Back on the page. The dial code is not shown as if it were typed...
+    const onStore = vi.fn();
+    render(<Harness initial={saved} onStore={onStore} />);
+    expect(number().value).toBe("0612345678");
+    expect(country().value).toBe("");
+    expect(screen.getByRole("note")).toHaveTextContent("Country not set");
+    // ...and picking the right country corrects it. This did nothing: the
+    // text started with "+", which states its own country, so the picker
+    // was ignored.
+    fireEvent.change(country(), { target: { value: "FR" } });
+    expect(onStore).toHaveBeenLastCalledWith("+33612345678");
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+
   it("flags an unfinished number without blocking it", () => {
     const onStore = vi.fn();
     render(<Harness onStore={onStore} />);
