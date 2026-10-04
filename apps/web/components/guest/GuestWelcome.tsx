@@ -3,6 +3,7 @@
 import { FairePartEnvelope } from "@/components/guest/FairePartEnvelope";
 
 interface GuestWelcomeProps {
+  guestName?: string | null;
   partnerOne?: string | null;
   partnerTwo?: string | null;
   eventDate?: string | null;
@@ -15,6 +16,7 @@ interface GuestWelcomeProps {
 
 /** Welcome screen shown to a guest opening their group or individual link. */
 export function GuestWelcome({
+  guestName,
   partnerOne,
   partnerTwo,
   eventDate,
@@ -34,10 +36,12 @@ export function GuestWelcome({
 
   return (
     <FairePartEnvelope
-      coupleNames={[partnerOne, partnerTwo].filter(Boolean).join(" & ")}
+      guestName={guestName}
+      partnerOne={partnerOne}
+      partnerTwo={partnerTwo}
       weddingDate={weddingDate}
-      venueName={venueName}
-      venueCity={address}
+      place={venueName || address}
+      venue={[venueName, address].filter(Boolean).join(", ")}
       welcomeNote={message}
       locale={locale}
       onRespond={onRespond}

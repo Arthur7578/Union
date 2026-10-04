@@ -572,6 +572,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   if (showFairePart) {
     return (
       <GuestWelcome
+        guestName={invitation.guest.first_name}
         partnerOne={invitation.wedding.partner_one}
         partnerTwo={invitation.wedding.partner_two}
         eventDate={invitation.wedding.event_date}
