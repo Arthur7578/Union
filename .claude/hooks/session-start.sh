@@ -37,6 +37,14 @@ elif ! supabase --version 2>/dev/null | grep -qx "$SUPABASE_VERSION"; then
   install -m 0755 "$tmp/supabase" /usr/local/bin/supabase
 fi
 
+# The CLI pulls its images from public.ecr.aws by default, whose layer
+# downloads (CloudFront) the cloud proxy refuses. Docker Hub works, and
+# the CLI reads its registry from this variable.
+if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
+  grep -qs SUPABASE_INTERNAL_IMAGE_REGISTRY "$CLAUDE_ENV_FILE" ||
+    echo 'export SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io' >> "$CLAUDE_ENV_FILE"
+fi
+
 # `supabase start` runs the local stack in Docker. The daemon isn't started
 # in cloud containers by default.
 if command -v dockerd >/dev/null 2>&1 && ! docker info >/dev/null 2>&1; then
