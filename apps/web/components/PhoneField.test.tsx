@@ -1,12 +1,32 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { useState } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { forgetRequestCountry } from "@/lib/requestCountry";
 import { PhoneField } from "./PhoneField";
 
-afterEach(cleanup);
+const geoReply = (country: string | null) =>
+  new Response(JSON.stringify({ country }), { status: 200 });
+
+beforeEach(() => {
+  // The field asks /api/geo where the visitor is; by default it can't tell.
+  forgetRequestCountry();
+  vi.stubGlobal("fetch", vi.fn(async () => geoReply(null)));
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 /** The form around the field: holds the stored value, as every real form does. */
 function Harness({
@@ -134,5 +154,66 @@ describe("PhoneField", () => {
     rerender(<PhoneField id="ph" value="+31612345678" onChange={() => {}} />);
     expect(country().value).toBe("NL");
     expect(number().value).toBe("06 12345678");
+  });
+});
+
+describe("PhoneField default country", () => {
+  // jsdom's browser language is en-US.
+  it("starts an empty field on the country the request comes from, not the browser language", async () => {
+    // A French organiser on an English-language browser: the language says
+    // United States, the request says France. The number belongs to France.
+    vi.stubGlobal("fetch", vi.fn(async () => geoReply("FR")));
+    const onStore = vi.fn();
+    render(<Harness onStore={onStore} />);
+    await waitFor(() => expect(country().value).toBe("FR"));
+    fireEvent.change(number(), { target: { value: "06 12 34 56 78" } });
+    expect(onStore).toHaveBeenLastCalledWith("+33612345678");
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+
+  it("falls back to the browser language when the request's country can't be told", async () => {
+    render(<Harness />);
+    await waitFor(() => expect(country().value).toBe("US"));
+  });
+
+  it("falls back to the browser language when the lookup fails", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new TypeError("network down");
+    }));
+    render(<Harness />);
+    await waitFor(() => expect(country().value).toBe("US"));
+  });
+
+  it("shows no guess while the lookup is out, rather than one it then replaces", async () => {
+    let answer: (res: Response) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>((resolve) => (answer = resolve))),
+    );
+    render(<Harness />);
+    expect(country().value).toBe("");
+    await act(async () => answer(geoReply("FR")));
+    expect(country().value).toBe("FR");
+  });
+
+  it("never overrides a country the person already picked", async () => {
+    let answer: (res: Response) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>((resolve) => (answer = resolve))),
+    );
+    render(<Harness />);
+    fireEvent.change(country(), { target: { value: "DE" } });
+    await act(async () => answer(geoReply("FR")));
+    expect(country().value).toBe("DE");
+  });
+
+  it("leaves a number that is already there alone", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => geoReply("US")));
+    render(<Harness initial="+33612345678" />);
+    // Let the lookup finish; it only ever fills an empty field.
+    await act(async () => {});
+    expect(country().value).toBe("FR");
+    expect(number().value).toBe("06 12 34 56 78");
   });
 });

@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useMemo, useState, useSyncExternalStore } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   PHONE_COUNTRIES,
   dialCode,
@@ -13,22 +18,46 @@ import {
 } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useLocale } from "@/lib/i18n/client";
+import { getRequestCountry } from "@/lib/requestCountry";
 
 const subscribeNever = () => () => {};
 
 /**
- * The country of the visitor's browser language, or null. Only ever used to
- * pre-select something visible and changeable in an empty field, never
- * applied to a number silently. Null on the server and during hydration, so
- * server and client markup agree.
+ * The country to start an empty phone field on, or null. Only ever used to
+ * pre-select something visible and changeable, never applied to a number
+ * silently.
+ *
+ * The country the visitor's request comes from comes first: the browser
+ * language says what they read, not where they are, and a French organiser on
+ * an English browser would otherwise start on the United States. The language's
+ * region is the fallback when the request's country can't be told (no
+ * location from the host, a VPN, a slow answer).
+ *
+ * Null on the server, during hydration, and while the lookup is out, so server
+ * and client markup agree and the field never flashes a guess it then
+ * replaces.
  */
-export function useBrowserCountry(): PhoneCountry | null {
+export function useDefaultPhoneCountry(): PhoneCountry | null {
   const language = useSyncExternalStore(
     subscribeNever,
     () => navigator.language,
     () => null,
   );
-  return guessPhoneCountry(language);
+  // undefined: still asking.
+  const [located, setLocated] = useState<PhoneCountry | null | undefined>(
+    undefined,
+  );
+  useEffect(() => {
+    let current = true;
+    void getRequestCountry().then((country) => {
+      if (current) setLocated(country);
+    });
+    return () => {
+      current = false;
+    };
+  }, []);
+  if (located === undefined) return null;
+  return located ?? guessPhoneCountry(language);
 }
 
 /**
@@ -60,11 +89,11 @@ export function PhoneField({
   compact?: boolean;
 }) {
   const { t } = useLocale();
-  const browserCountry = useBrowserCountry();
+  const defaultCountry = useDefaultPhoneCountry();
 
   const [initial] = useState(() => readValue(value));
   // undefined: nobody has chosen. A number that is already there then has no
-  // country (null); an empty field starts from the browser's.
+  // country (null); an empty field starts from the default country.
   const [picked, setPicked] = useState<PhoneCountry | null | undefined>(
     initial.country ?? undefined,
   );
@@ -85,7 +114,7 @@ export function PhoneField({
   }
 
   const country: PhoneCountry | null =
-    picked !== undefined ? picked : startedEmpty ? browserCountry : null;
+    picked !== undefined ? picked : startedEmpty ? defaultCountry : null;
 
   const emit = (nextCountry: PhoneCountry | null, nextText: string) => {
     const stored = toStoredPhone(nextCountry, nextText);
