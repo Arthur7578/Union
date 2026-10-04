@@ -63,6 +63,8 @@ function preview(defaultLocale: string | null): JoinWeddingPreview {
     event_date: "2026-09-20",
     venue_name: "Wildflower Barn",
     guest_join_auth_mode: "contact",
+  address_visibility: "hidden",
+  address: null,
     default_locale: defaultLocale,
   };
 }

@@ -736,6 +736,23 @@ export const en = {
     update: "Update my reply",
   },
 
+  // The faire-part welcome a guest meets first, on a personal or group link.
+  welcome: {
+    titleNamed: "you have received an invitation",
+    titleAnon: ["You have received", "an invitation"],
+    to: (name: string) => `For ${name}`,
+    anon: "Invitation",
+    kicker: "The wedding",
+    lead: "We would be delighted to have you with us.",
+    hint: "Tap the seal or scroll",
+    open: "Open the envelope",
+    flipCard: "Turn the card over",
+    flipHint: "Tap the card to turn it over.",
+    skip: "Skip",
+    respond: "Respond to the invitation",
+    seeAgain: "See the invitation again",
+  },
+
   // Generic guest join link (/join/[code]) — the WhatsApp-group entry
   // point, where a guest identifies themselves by name instead of
   // opening a personal link.

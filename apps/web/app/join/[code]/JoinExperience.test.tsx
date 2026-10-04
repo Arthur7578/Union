@@ -46,6 +46,8 @@ const preview = {
   event_date: null,
   venue_name: null,
   guest_join_auth_mode: "contact" as const,
+  address_visibility: "hidden" as const,
+  address: null,
 };
 
 beforeEach(() => {

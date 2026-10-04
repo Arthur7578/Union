@@ -5,6 +5,8 @@ import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { JoinExperience } from "./JoinExperience";
 import { WelcomeGate } from "@/components/guest/WelcomeGate";
+import { formatGuestAddress } from "@/lib/guestAddress";
+import type { Invitation } from "@union/shared";
 import { G, T, alpha } from "@/lib/theme";
 
 // Always fetch fresh — never cache a generic link's guest matching.
@@ -20,6 +22,9 @@ export interface JoinWeddingPreview {
    *  the floor for the page's language, behind anything the visitor's own
    *  browser tells us. */
   default_locale?: string | null;
+  /** Same disclosure as a guest's own invitation: what the couple chose to show. */
+  address_visibility: Invitation["wedding"]["address_visibility"];
+  address: Invitation["wedding"]["address"];
 }
 
 export default async function JoinPage({
@@ -111,11 +116,12 @@ export default async function JoinPage({
   return (
     <LocaleProvider initialLocale={joinLocale}>
       <WelcomeGate
-        seenId={`join.${code}`}
+        deviceId={`join.${code}`}
         partnerOne={preview.partner_one}
         partnerTwo={preview.partner_two}
         eventDate={preview.event_date}
         venueName={preview.venue_name}
+        address={formatGuestAddress({ address_visibility: preview.address_visibility, address: preview.address })}
       >
         <JoinExperience code={code} preview={preview} />
       </WelcomeGate>

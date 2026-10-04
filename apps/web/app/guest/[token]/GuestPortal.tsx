@@ -242,32 +242,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     };
   }, []);
 
-  /**
-   * Remember a guest's own language choice against their invitation, not just
-   * in this browser's cookie.
-   *
-   * Invitations get opened on a phone, then a laptop, then a phone with
-   * cleared cookies. Storing the pick server-side means the couple's wording
-   * comes back in the right language every time.
-   *
-   * Only a deliberate switch is recorded — the language this page merely
-   * opened in is a guess from the browser's headers or the couple's default,
-   * and storing that as a choice would outrank every other signal on every
-   * later visit with something nobody actually chose. It lands in
-   * guests.chosen_locale, alongside rather than over the couple's own
-   * per-guest override. Best-effort besides: failing to save a preference
-   * must never break the invitation, so the error is swallowed.
-   */
-  const openedIn = React.useRef(locale);
-  useEffect(() => {
-    if (isDemo) return;
-    if (locale === openedIn.current) return;
-    const supabase = getBrowserSupabase();
-    void supabase
-      .rpc("set_guest_locale", { p_token: token, p_locale: locale })
-      .then(undefined, () => {});
-  }, [locale, token, isDemo]);
-
   // Update Countdown timer
   useEffect(() => {
     const targetDate = invitation.wedding.event_date ? new Date(`${invitation.wedding.event_date}T00:00:00`) : new Date("2026-09-20T16:00:00");
@@ -1078,7 +1052,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 padding: "6px 2px",
               }}
             >
-              {locale === "fr" ? "Revoir l'invitation" : "See the invitation again"}
+              {t.welcome.seeAgain}
             </button>
           )}
           <LanguageSwitcher compact />

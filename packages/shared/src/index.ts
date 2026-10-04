@@ -199,6 +199,8 @@ export type Invitation = {
     /** The language this guest picked in their own invitation, if they ever
      *  did. Top of the ranking — nothing overrides a deliberate choice. */
     chosen_locale?: string | null;
+    /** When this guest first opened the invitation welcome; null until they do. */
+    welcome_seen_at?: string | null;
   };
   companions: Array<{
     id: string;

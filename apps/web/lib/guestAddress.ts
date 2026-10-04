@@ -6,7 +6,9 @@ import type { Invitation } from "@union/shared";
  * tier so the guest UI cannot accidentally reintroduce area into precise
  * addresses later.
  */
-export function formatGuestAddress(wedding: Invitation["wedding"]): string {
+export function formatGuestAddress(
+  wedding: Pick<Invitation["wedding"], "address" | "address_visibility">,
+): string {
   const address = wedding.address;
   if (!address) return "";
   const cityAndPostalCode = address.city

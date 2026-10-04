@@ -710,6 +710,23 @@ export const fr: Dictionary = {
     update: "Modifier ma réponse",
   },
 
+  // Le faire-part d'accueil qu'un invité découvre en premier, sur un lien personnel ou de groupe.
+  welcome: {
+    titleNamed: "vous avez reçu une invitation",
+    titleAnon: ["Vous avez reçu", "une invitation"],
+    to: (name: string) => `Pour ${name}`,
+    anon: "Faire-part",
+    kicker: "Le mariage",
+    lead: "Nous serions heureux de vous compter parmi nous.",
+    hint: "Touchez le sceau ou faites défiler",
+    open: "Ouvrir l'enveloppe",
+    flipCard: "Retourner le carton",
+    flipHint: "Touchez le carton pour le retourner.",
+    skip: "Passer",
+    respond: "Répondre à l'invitation",
+    seeAgain: "Revoir l'invitation",
+  },
+
   // Lien d'accès générique (/join/[code]) — le point d'entrée pour un
   // groupe WhatsApp, où l'invité s'identifie par son nom plutôt que
   // d'ouvrir un lien personnel.

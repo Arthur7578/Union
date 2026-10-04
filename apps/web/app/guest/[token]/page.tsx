@@ -234,7 +234,9 @@ export default async function GuestExperiencePage({
   return (
     <LocaleProvider initialLocale={initialLocale}>
       <WelcomeGate
-        seenId={token}
+        token={token}
+        isDemo={isDemo}
+        seen={Boolean(invitation.guest.welcome_seen_at)}
         guestName={invitation.guest.first_name}
         partnerOne={invitation.wedding.partner_one}
         partnerTwo={invitation.wedding.partner_two}

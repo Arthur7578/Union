@@ -100,7 +100,8 @@
 .fp-root .primary:active{transform:scale(.98);background:var(--olive-lo)}
 .fp-root .note{margin:0;font-size:13px;color:var(--ink-soft);text-align:center;max-width:36ch}
 
-.skip{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:12px;z-index:40;border:1px solid rgba(58,58,48,.18);background:rgba(244,239,231,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:999px;padding:7px 12px;font-size:12px;color:var(--ink-soft)}
+.fp-root .lang{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:12px;z-index:40}
+.fp-root .skip{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:12px;z-index:40;border:1px solid rgba(58,58,48,.18);background:rgba(244,239,231,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:999px;padding:7px 12px;font-size:12px;color:var(--ink-soft)}
 
 @media (prefers-reduced-motion:reduce){
   .fp-root .arrive,.fp-root .shade,.fp-root .hint i,.fp-root .ping{animation:none}

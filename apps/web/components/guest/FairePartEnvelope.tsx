@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLocale } from "@/lib/i18n/client";
 import { T, alpha } from "@/lib/theme";
 import "./FairePartEnvelope.css";
 
@@ -15,40 +17,8 @@ interface FairePartEnvelopeProps {
   place?: string | null;
   /** Venue name and address, shown on the back of the card. */
   venue?: string | null;
-  locale?: string;
   onRespond: () => void;
 }
-
-const COPY = {
-  fr: {
-    titleNamed: "vous avez reçu une invitation",
-    titleAnon: ["Vous avez reçu", "une invitation"],
-    to: (n: string) => `Pour ${n}`,
-    anon: "Faire-part",
-    kicker: "Le mariage",
-    lead: "Nous serions heureux de vous compter parmi nous.",
-    hint: "Touchez le sceau ou faites défiler",
-    open: "Ouvrir l'enveloppe",
-    flipCard: "Retourner le carton",
-    flipHint: "Touchez le carton pour le retourner.",
-    skip: "Passer",
-    respond: "Répondre à l'invitation",
-  },
-  en: {
-    titleNamed: "you have received an invitation",
-    titleAnon: ["You have received", "an invitation"],
-    to: (n: string) => `For ${n}`,
-    anon: "Invitation",
-    kicker: "The wedding",
-    lead: "We would be delighted to have you with us.",
-    hint: "Tap the seal or scroll",
-    open: "Open the envelope",
-    flipCard: "Turn the card over",
-    flipHint: "Tap the card to turn it over.",
-    skip: "Skip",
-    respond: "Respond to the invitation",
-  },
-};
 
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
 const seg = (p: number, a: number, b: number) => clamp((p - a) / (b - a));
@@ -90,10 +60,10 @@ export function FairePartEnvelope({
   weddingDate,
   place,
   venue,
-  locale = "fr",
   onRespond,
 }: FairePartEnvelopeProps) {
-  const t = locale === "fr" ? COPY.fr : COPY.en;
+  const { t: dict } = useLocale();
+  const t = dict.welcome;
   const rootRef = useRef<HTMLDivElement>(null);
   const hasName = Boolean(guestName);
 
@@ -253,7 +223,12 @@ export function FairePartEnvelope({
       render(shown);
     });
 
+    // A language switch can reflow the heading, which positions the envelope.
+    const headObserver = typeof ResizeObserver === "function" ? new ResizeObserver(onResize) : null;
+    headObserver?.observe(head);
+
     return () => {
+      headObserver?.disconnect();
       cancelAnimationFrame(raf);
       cancelAnimationFrame(auto);
       (["wheel", "touchstart", "keydown"] as const).forEach((ev) => removeEventListener(ev, stopAuto));
@@ -264,6 +239,9 @@ export function FairePartEnvelope({
 
   return (
     <div className="fp-root" ref={rootRef}>
+      <div className="lang">
+        <LanguageSwitcher compact />
+      </div>
       <button type="button" className="skip" data-id="skip">{t.skip}</button>
 
       <main className="track">
