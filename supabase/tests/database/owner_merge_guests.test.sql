@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(21);
+select plan(26);
 
 --   1 owner of wedding 1
 --   2 an active collaborator on wedding 1
@@ -37,6 +37,8 @@ values (
 --   41 42   explicit field choices
 --   51 52   an explicit choice to blank the age
 --   61 62   merged by the collaborator
+--   71 72   both have a partner: 73 is the target's, 74 the source's
+--   81 82   only the source has a partner: 83
 insert into public.guests (id, wedding_id, invite_token, first_name, last_name, email, phone, age_years)
 values
   ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000001', 'Alpha', null, null, null, null),
@@ -55,7 +57,14 @@ values
   ('30000000-0000-0000-0000-000000000051', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000051', 'Target', null, null, null, 40),
   ('30000000-0000-0000-0000-000000000052', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000052', 'Source', null, null, null, 10),
   ('30000000-0000-0000-0000-000000000061', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000061', 'Target', null, null, null, null),
-  ('30000000-0000-0000-0000-000000000062', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000062', 'Source', null, null, null, null);
+  ('30000000-0000-0000-0000-000000000062', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000062', 'Source', null, null, null, null),
+  ('30000000-0000-0000-0000-000000000071', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000071', 'Target', null, null, null, null),
+  ('30000000-0000-0000-0000-000000000072', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000072', 'Source', null, null, null, null),
+  ('30000000-0000-0000-0000-000000000073', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000073', 'Target partner', null, null, null, null),
+  ('30000000-0000-0000-0000-000000000074', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000074', 'Source partner', null, null, null, null),
+  ('30000000-0000-0000-0000-000000000081', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000081', 'Target', null, null, null, null),
+  ('30000000-0000-0000-0000-000000000082', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000082', 'Source', null, null, null, null),
+  ('30000000-0000-0000-0000-000000000083', '20000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000083', 'Source partner', null, null, null, null);
 
 insert into public.rsvps (guest_id, status)
 values
@@ -67,7 +76,13 @@ insert into public.guest_relationships (wedding_id, from_guest, to_guest, kind)
 values
   ('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000032', '30000000-0000-0000-0000-000000000033', 'parent_of'),
   ('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000032', '30000000-0000-0000-0000-000000000034', 'parent_of'),
-  ('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000031', '30000000-0000-0000-0000-000000000033', 'parent_of');
+  ('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000031', '30000000-0000-0000-0000-000000000033', 'parent_of'),
+  ('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000071', '30000000-0000-0000-0000-000000000073', 'partner_of'),
+  ('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000073', '30000000-0000-0000-0000-000000000071', 'partner_of'),
+  ('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000072', '30000000-0000-0000-0000-000000000074', 'partner_of'),
+  ('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000074', '30000000-0000-0000-0000-000000000072', 'partner_of'),
+  ('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000082', '30000000-0000-0000-0000-000000000083', 'partner_of'),
+  ('20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000083', '30000000-0000-0000-0000-000000000082', 'partner_of');
 
 -- Who may merge ---------------------------------------------------------
 
@@ -183,6 +198,22 @@ select lives_ok(
   'the owner can merge and choose to leave the age blank'
 );
 
+select lives_ok(
+  $$select public.owner_merge_guests(
+      '30000000-0000-0000-0000-000000000072',
+      '30000000-0000-0000-0000-000000000071'
+    )$$,
+  'the owner can merge two guests who each have a different partner'
+);
+
+select lives_ok(
+  $$select public.owner_merge_guests(
+      '30000000-0000-0000-0000-000000000082',
+      '30000000-0000-0000-0000-000000000081'
+    )$$,
+  'the owner can merge when only the source has a partner'
+);
+
 reset role;
 
 -- What a merge leaves behind ---------------------------------------------
@@ -248,6 +279,35 @@ select is(
   (select age_years from public.guests where id = '30000000-0000-0000-0000-000000000051'),
   null,
   'an age the owner chose to leave blank stays blank'
+);
+
+-- A guest has one partner, stored as a mirrored pair of partner_of rows.
+select results_eq(
+  $$select right(from_guest::text, 2), right(to_guest::text, 2)
+      from public.guest_relationships
+     where kind = 'partner_of'
+       and '30000000-0000-0000-0000-000000000071' in (from_guest, to_guest)
+     order by 1$$,
+  $$values ('71', '73'), ('73', '71')$$,
+  'when both had a partner the target keeps its own'
+);
+
+select is(
+  (select count(*) from public.guest_relationships
+    where kind = 'partner_of'
+      and '30000000-0000-0000-0000-000000000074' in (from_guest, to_guest)),
+  0::bigint,
+  'the source''s partner is left without a partner rather than given a second one'
+);
+
+select results_eq(
+  $$select right(from_guest::text, 2), right(to_guest::text, 2)
+      from public.guest_relationships
+     where kind = 'partner_of'
+       and '30000000-0000-0000-0000-000000000081' in (from_guest, to_guest)
+     order by 1$$,
+  $$values ('81', '83'), ('83', '81')$$,
+  'when only the source had a partner, the partnership moves to the target'
 );
 
 -- A collaborator -----------------------------------------------------------
