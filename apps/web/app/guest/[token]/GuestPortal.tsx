@@ -18,6 +18,7 @@ import type { FormAnswers, GuestModuleKey, RsvpQuestion } from "@union/shared";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
 import { G, T, alpha } from "@/lib/theme";
+import { GuestWelcome } from "@/components/guest/GuestWelcome";
 
 /** Tab label and icon per module, in the order guests see them. Keyed by the
  *  same module keys the couple toggles in /guests/modules, so a module can
@@ -125,6 +126,7 @@ const STAYS = [
 ];
 
 export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
+  const [showFairePart, setShowFairePart] = useState(true);
   const { t, locale } = useLocale();
   const router = useRouter();
   const [hasAuthSession, setHasAuthSession] = useState(false);
@@ -566,6 +568,24 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
       setAddCompanionBusy(false);
     }
   };
+
+  if (showFairePart) {
+    return (
+      <GuestWelcome
+        partnerOne={invitation.wedding.partner_one}
+        partnerTwo={invitation.wedding.partner_two}
+        eventDate={invitation.wedding.event_date}
+        venueName={invitation.wedding.venue_name}
+        address={addressText}
+        message={invitation.guest.message}
+        locale={locale}
+        onRespond={() => {
+          setShowFairePart(false);
+          setActiveFormModal("rsvp");
+        }}
+      />
+    );
+  }
 
   return (
     <div className="premium-portal-theme">
