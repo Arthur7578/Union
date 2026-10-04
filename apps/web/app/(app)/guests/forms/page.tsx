@@ -8,6 +8,7 @@ import { useWedding } from "@/lib/wedding";
 import {
   addForm,
   addReconfirmationForm,
+  fetchFormResponseCounts,
   fetchForms,
   fetchGuests,
   formQuestions,
@@ -36,6 +37,9 @@ type Template = {
   title: string;
   sub: string;
   questions: RsvpQuestion[];
+  /** Whether this template's questions are asked once per person. A meal
+   *  choice and an allergy are; a blank form has no way to know yet. */
+  perPerson?: boolean;
 };
 
 function newId() {
@@ -57,6 +61,9 @@ const TEMPLATES: Template[] = [
     key: "details",
     title: "Guest details",
     sub: "Meals, stays, travel & songs — once they know they're coming",
+    // Meals and allergies are per plate, so this one starts out asked for
+    // every person in the group, children included.
+    perPerson: true,
     questions: [
       {
         id: newId(),
@@ -132,6 +139,9 @@ export default function FormsHubPage() {
   const router = useRouter();
   const [forms, setForms] = useState<Form[] | null>(null);
   const [guests, setGuests] = useState<GuestWithRsvp[] | null>(null);
+  // How many guests have replied to each custom form. A form's own card is
+  // where the couple looks to know whether it's worth chasing anyone.
+  const [responseCounts, setResponseCounts] = useState<Record<string, number>>({});
   const [showTemplates, setShowTemplates] = useState(false);
   const [creating, setCreating] = useState(false);
   const [addingReconfirmation, setAddingReconfirmation] = useState(false);
@@ -141,7 +151,16 @@ export default function FormsHubPage() {
     if (!wedding) return;
     let ok = true;
     fetchForms(wedding.id)
-      .then((f) => ok && setForms(f))
+      .then((f) => {
+        if (!ok) return;
+        setForms(f);
+        const custom = f.filter((x) => x.kind === "custom").map((x) => x.id);
+        return fetchFormResponseCounts(custom).then((counts) => {
+          if (ok) setResponseCounts(counts);
+        }).catch(() => {
+          if (ok) setResponseCounts({});
+        });
+      })
       .catch(() => ok && setForms([]));
     fetchGuests(wedding.id)
       .then((g) => ok && setGuests(g))
@@ -154,6 +173,7 @@ export default function FormsHubPage() {
   if (!wedding) return null;
 
   const stats = guests ? guestStats(guests) : null;
+  const guestCount = guests?.length ?? 0;
   const liveCount = forms?.filter((f) => formStatus(f) === "live").length ?? 0;
   const hasPrimaryRsvp = forms?.some((f) => f.kind === "rsvp" && f.purpose === "primary") ?? false;
   const reconfirmationForm = forms?.find((f) => f.kind === "rsvp" && f.purpose === "reconfirmation") ?? null;
@@ -179,6 +199,7 @@ export default function FormsHubPage() {
         wedding_id: wedding.id,
         title: tpl.title,
         questions: tpl.questions,
+        per_person: tpl.perPerson ?? false,
       });
       router.push(`/guests/forms/${f.id}`);
     } catch (err) {
@@ -267,6 +288,7 @@ export default function FormsHubPage() {
           {forms.map((f) => {
             const status = formStatus(f);
             const questionCount = formQuestions(f).length;
+            const answers = responseCounts[f.id] ?? 0;
             return (
               <Card
                 key={f.id}
@@ -308,19 +330,41 @@ export default function FormsHubPage() {
                   </div>
                 </div>
 
-                {f.kind === "rsvp" && f.purpose === "primary" && stats ? (
-                  <div style={{ display: "flex", gap: 8, marginTop: 13 }}>
-                    <MiniStat value={stats.coming} label="Coming" bg={T.greenBg} fg={T.greenDeep} />
-                    <MiniStat value={stats.declined} label="Can't" bg={T.roseBg} fg={T.rose} />
-                    <MiniStat value={stats.waiting} label="Waiting" bg={T.amberBg} fg={T.amberInk} />
-                  </div>
+                {f.kind === "rsvp" && f.purpose === "primary" ? (
+                  <>
+                    {stats && (
+                      <div style={{ display: "flex", gap: 8, marginTop: 13 }}>
+                        <MiniStat value={stats.coming} label="Coming" bg={T.greenBg} fg={T.greenDeep} />
+                        <MiniStat value={stats.declined} label="Can't" bg={T.roseBg} fg={T.rose} />
+                        <MiniStat value={stats.waiting} label="Waiting" bg={T.amberBg} fg={T.amberInk} />
+                      </div>
+                    )}
+                    <div style={{ fontSize: 12, color: T.faint, marginTop: 10 }}>
+                      {questionCount === 0
+                        ? "Reply only"
+                        : `${questionCount} follow-up question${questionCount === 1 ? "" : "s"} · answered for each attendee`}
+                    </div>
+                  </>
                 ) : f.kind === "rsvp" && f.purpose === "reconfirmation" ? (
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 10 }}>
-                    Reuses the RSVP block — same replies, a later nudge.
+                    Same replies as your RSVP, a later nudge
+                    {" · "}
+                    {questionCount === 0
+                      ? "reply only"
+                      : `${questionCount} follow-up question${questionCount === 1 ? "" : "s"}`}
                   </div>
                 ) : (
                   <div style={{ fontSize: 12, color: T.faint, marginTop: 10 }}>
                     {questionCount} question{questionCount === 1 ? "" : "s"}
+                    {f.per_person && " · per person"}
+                    {" · "}
+                    {answers === 0
+                      ? status === "draft" || status === "scheduled"
+                        ? "not open yet"
+                        : "no answers yet"
+                      : guestCount
+                        ? `${answers} of ${guestCount} answered`
+                        : `${answers} answered`}
                   </div>
                 )}
               </Card>
