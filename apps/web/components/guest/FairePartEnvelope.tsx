@@ -104,7 +104,7 @@ export function FairePartEnvelope({
     const root = rootRef.current;
     if (!root) return;
     const $ = <E extends HTMLElement = HTMLElement>(id: string) => root.querySelector<E>(`[data-id="${id}"]`)!;
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const stage = $("stage"), scene = $("scene"), card = $("card"), flap = $("flap");
     const flipper = $("flipper"), cta = $("cta"), head = $("head"), hint = $("hint");
