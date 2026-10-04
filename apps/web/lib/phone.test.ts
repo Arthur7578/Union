@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   dialCode,
   guessPhoneCountry,
+  isValidE164,
   isValidPhone,
   parseStoredPhone,
   toStoredPhone,
@@ -76,6 +77,33 @@ describe("parseStoredPhone", () => {
     });
   });
 
+  it("shows only the digits of a wrong number under a calling code several countries share", () => {
+    // toStoredPhone keeps the picked country's dial code on a number that
+    // isn't valid there, so a French number typed under the United States
+    // is saved as +10612345678. +1 is the picker's, not the person's, and
+    // the digits don't say which of the +1 countries it was: show the
+    // digits with no country, so a country can be picked for them.
+    expect(parseStoredPhone("+10612345678")).toEqual({
+      country: null,
+      national: "0612345678",
+      e164: null,
+    });
+    expect(parseStoredPhone("+44123")).toEqual({
+      country: null,
+      national: "123",
+      e164: null,
+    });
+  });
+
+  it("keeps a valid number that belongs to no country whole", () => {
+    // +800 is real and valid, but not tied to a country: nothing to strip.
+    expect(parseStoredPhone("+80012345678")).toEqual({
+      country: null,
+      national: "+80012345678",
+      e164: null,
+    });
+  });
+
   it("reads a 00 prefix as international", () => {
     expect(parseStoredPhone("0033612345678").country).toBe("FR");
   });
@@ -93,6 +121,44 @@ describe("isValidPhone", () => {
     expect(isValidPhone(null, "06 12 34 56 78")).toBe(false);
     expect(isValidPhone(null, "+33 6 12 34 56 78")).toBe(true);
     expect(isValidPhone("FR", "")).toBe(false);
+  });
+});
+
+describe("isValidE164", () => {
+  it("accepts a real number in canonical form, whatever the country", () => {
+    for (const number of [
+      "+33612345678", // France
+      "+31612345678", // Netherlands
+      "+491701234567", // Germany
+      "+34612345678", // Spain
+      "+14155552671", // United States
+      "+447911123456", // Guernsey/UK mobile
+    ]) {
+      expect(isValidE164(number)).toBe(true);
+    }
+  });
+
+  it("rejects what the database's shape check lets through", () => {
+    // "+", then 8 to 15 digits starting 1-9: all of these are canonical to
+    // the database, none of them is a real number. The first is what a
+    // French number typed under the United States is saved as.
+    expect(isValidE164("+10612345678")).toBe(false);
+    // A trunk 0 kept after the country code: libphonenumber forgives it
+    // ("+330612345678" parses as +33612345678), but the string isn't the
+    // number as it is dialled, and it is what would be sent.
+    expect(isValidE164("+330612345678")).toBe(false);
+    expect(isValidE164("+4407911123456")).toBe(false);
+    expect(isValidE164("+33612")).toBe(false); // unfinished
+    expect(isValidE164("+999123456789")).toBe(false); // no such country code
+  });
+
+  it("rejects anything that isn't a + number at all", () => {
+    expect(isValidE164("0612345678")).toBe(false);
+    expect(isValidE164("33612345678")).toBe(false);
+    expect(isValidE164("")).toBe(false);
+    expect(isValidE164("   ")).toBe(false);
+    expect(isValidE164(null)).toBe(false);
+    expect(isValidE164(undefined)).toBe(false);
   });
 });
 

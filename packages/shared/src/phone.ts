@@ -41,6 +41,15 @@ export type ParsedPhone = {
  * states its own country. Anything else is a number saved before
  * countries were captured: its country is unknown, and it is returned as
  * typed so nothing is silently rewritten.
+ *
+ * One more case: a number that isn't valid, under a calling code several
+ * countries share (+1, +44, +7...). toStoredPhone keeps the picked
+ * country's dial code on an unfinished or wrong number, so it comes back
+ * as "+10612345678" and the digits don't say which country it was. Its
+ * country is unknown, like a legacy number's, and the "+1" is the picker's
+ * dial code, not something the person typed, so only the digits are
+ * returned. Left as "+10612345678" the text would state its own country
+ * and the picker could no longer correct it.
  */
 export function parseStoredPhone(stored: string | null | undefined): ParsedPhone {
   const raw = (stored ?? "").trim();
@@ -52,6 +61,11 @@ export function parseStoredPhone(stored: string | null | undefined): ParsedPhone
       national: parsed.formatNational(),
       e164: parsed.isValid() ? parsed.number : null,
     };
+  }
+  // A valid number with no country is a real one that isn't tied to a
+  // country (+800...): it stays whole.
+  if (parsed && !parsed.isValid()) {
+    return { country: null, national: parsed.nationalNumber, e164: null };
   }
   return { country: null, national: raw, e164: null };
 }
@@ -102,6 +116,25 @@ export function isValidPhone(
     ? parsePhoneNumberFromString(text.replace(/^\s*00/, "+"))
     : parsePhoneNumberFromString(text, country as PhoneCountry);
   return Boolean(parsed?.isValid());
+}
+
+/**
+ * Whether a stored E.164 value ("+33612345678") is a real number in its
+ * country, written the way it is dialled. The database only checks the shape
+ * (a "+", then 8 to 15 digits), so a number the field kept unfinished or
+ * wrong, such as +10612345678, still reads as canonical there. Anything that
+ * is about to cost something, like an SMS, should ask this as well.
+ *
+ * It has to be the canonical spelling, not just a number libphonenumber can
+ * make sense of: it forgives a trunk 0 after the country code, so
+ * "+330612345678" parses as the valid +33612345678, but the string itself is
+ * not something an operator can route.
+ */
+export function isValidE164(value: string | null | undefined): boolean {
+  const text = (value ?? "").trim();
+  if (!text.startsWith("+")) return false;
+  const parsed = parsePhoneNumberFromString(text);
+  return Boolean(parsed?.isValid() && parsed.number === text);
 }
 
 /**

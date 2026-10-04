@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guestLinkPath } from "@union/shared";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { CountrySelect, useBrowserCountry } from "@/components/PhoneField";
+import { CountrySelect, useDefaultPhoneCountry } from "@/components/PhoneField";
 import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
@@ -80,14 +80,14 @@ export function JoinExperience({
   const [contact, setContact] = useState(() => (otpMode ? readLastEmail() : ""));
   const [email, setEmail] = useState(() => (otpMode ? readLastEmail() : ""));
   // The country of a phone number typed without "+"; see phoneMode below.
-  // Until the guest chooses, the browser's country is shown for them to
-  // confirm or change.
-  const browserCountry = useBrowserCountry();
+  // Until the guest chooses, the country their request comes from (or, failing
+  // that, their browser's) is shown for them to confirm or change.
+  const defaultCountry = useDefaultPhoneCountry();
   const [pickedCountry, setPickedCountry] = useState<
     PhoneCountry | null | undefined
   >(undefined);
   const contactCountry =
-    pickedCountry !== undefined ? pickedCountry : browserCountry;
+    pickedCountry !== undefined ? pickedCountry : defaultCountry;
   const [firstName, setFirstName] = useState("");
   const [otp, setOtp] = useState("");
   const [disambiguationSource, setDisambiguationSource] =
