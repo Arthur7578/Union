@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n/client";
-import { WelcomeGate } from "./WelcomeGate";
+import { WelcomeGate, useReplayWelcome } from "./WelcomeGate";
 
 /**
  * The invitation comes before any identity or e-mail step: the welcome shows
@@ -26,11 +26,21 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+function Hub() {
+  const replay = useReplayWelcome();
+  return (
+    <div>
+      <p>the hub</p>
+      {replay && <button onClick={replay}>replay</button>}
+    </div>
+  );
+}
+
 type Gate = Partial<React.ComponentProps<typeof WelcomeGate>>;
 const gate = (props: Gate = {}, locale: "en" | "fr" = "en") => (
   <LocaleProvider initialLocale={locale}>
     <WelcomeGate partnerOne="Maya" partnerTwo="Daniel" {...props}>
-      <p>the hub</p>
+      <Hub />
     </WelcomeGate>
   </LocaleProvider>
 );
@@ -45,8 +55,17 @@ describe("WelcomeGate", () => {
     expect(screen.getByText("the hub")).toBeInTheDocument();
   });
 
-  it("skips the welcome for a guest who has already seen it, and offers a replay", () => {
+  it("skips the welcome for a guest who has already seen it", () => {
     render(gate({ token: "tok", seen: true }));
+    expect(screen.getByText("the hub")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Respond to the invitation" })).not.toBeInTheDocument();
+  });
+
+  it("lets the hub replay the welcome, and come back", () => {
+    render(gate({ token: "tok", seen: true }));
+    fireEvent.click(screen.getByRole("button", { name: "replay" }));
+    expect(screen.queryByText("the hub")).not.toBeInTheDocument();
+    fireEvent.click(respond());
     expect(screen.getByText("the hub")).toBeInTheDocument();
   });
 
