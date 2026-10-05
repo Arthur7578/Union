@@ -5,13 +5,17 @@
 --    greets them before the hub. Kept server-side so it follows the guest to
 --    another device. get_invitation reports it; mark_welcome_seen sets it.
 --
--- 2. One rule for what a visitor may read about where the wedding is. The
---    address tiers lived inline in get_invitation while
---    get_wedding_by_join_code returned venue_name whatever the tier, so the
---    group link and a guest's own link disagreed. _wedding_address and
---    _wedding_venue_name are now the single source, and both RPCs use them.
---    NOTE: this means a group link no longer reveals the venue name when the
---    couple has not chosen the 'full' tier.
+-- 2. A group link discloses where the wedding is exactly as a guest's own link
+--    does. get_wedding_by_join_code used to return venue_name whatever the
+--    tier, so the two disagreed. _wedding_address and _wedding_venue_name now
+--    state the tiers once for the join RPC (get_invitation still carries the
+--    same rules inline; they are kept identical).
+--    NOTE: a group link no longer reveals the venue name when the couple has
+--    not chosen the 'full' tier.
+--
+-- get_invitation is patched in place from its live definition rather than
+-- redefined: several migrations have changed it, and rewriting it from an
+-- older copy would silently drop their fields.
 -- ============================================================
 
 alter table public.guests
@@ -64,163 +68,29 @@ $$;
 
 revoke all on function public._wedding_address(public.weddings) from public;
 revoke all on function public._wedding_venue_name(public.weddings) from public;
+-- Supabase also grants new functions to these roles directly.
+revoke all on function public._wedding_address(public.weddings) from anon, authenticated;
+revoke all on function public._wedding_venue_name(public.weddings) from anon, authenticated;
 
--- ---------- get_invitation: same payload plus guest.welcome_seen_at ----------
-create or replace function public.get_invitation(p_token uuid)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-stable
-as $$
+-- ---------- get_invitation: add guest.welcome_seen_at to the payload ----------
+do $migration$
 declare
-  v_guest        public.guests%rowtype;
-  v_wedding      public.weddings%rowtype;
-  v_kids_used    int;
-  v_kids_cap     int;
-  v_can_partner  boolean;
-  v_can_kids     boolean;
-  v_address      jsonb;
-  v_result       jsonb;
+  d text := pg_get_functiondef('public.get_invitation(uuid)'::regprocedure);
 begin
-  select * into v_guest from public.guests where invite_token = p_token;
-  if v_guest.id is null then
-    raise exception 'Invalid invitation token';
+  if position('welcome_seen_at' in d) > 0 then
+    return;
   end if;
-
-  select * into v_wedding from public.weddings where id = v_guest.wedding_id;
-
-  v_can_partner := coalesce(v_guest.can_add_partner, v_wedding.allow_guests_add_partner);
-  v_can_kids    := coalesce(v_guest.can_add_kids,    v_wedding.allow_guests_add_children);
-
-  select count(*) into v_kids_used
-  from public.guest_relationships gr
-  where gr.from_guest = v_guest.id and gr.kind = 'parent_of';
-
-  v_kids_cap := v_wedding.max_children_per_guest;
-
-  v_address := public._wedding_address(v_wedding);
-
-  v_result := jsonb_build_object(
-    'wedding', jsonb_build_object(
-      'partner_one',        v_wedding.partner_one,
-      'partner_two',        v_wedding.partner_two,
-      'event_date',         v_wedding.event_date,
-      'venue_name',         public._wedding_venue_name(v_wedding),
-      'address_visibility', v_wedding.address_visibility,
-      'address',            v_address,
-      'default_locale',     v_wedding.default_locale,
-      'guest_modules',      coalesce(v_wedding.guest_modules, '{}'::jsonb)
-    ),
-    'guest', (
-      select jsonb_build_object(
-        'id',            v_guest.id,
-        'first_name',    v_guest.first_name,
-        'last_name',     v_guest.last_name,
-        'age_years',     v_guest.age_years,
-        'locale',        v_guest.locale,
-        'chosen_locale', v_guest.chosen_locale,
-        'welcome_seen_at', v_guest.welcome_seen_at,
-        'rsvp_status',   coalesce(r.status, 'pending'::public.rsvp_status),
-        'dietary_notes', r.dietary_notes,
-        'message',       r.message
-      )
-      from (select v_guest.id as gid) self
-      left join public.rsvps r on r.guest_id = self.gid
-    ),
-    'companions', coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'id',            c.id,
-        'first_name',    c.first_name,
-        'last_name',     c.last_name,
-        'age_years',     c.age_years,
-        'relationship',  gr.kind,
-        'rsvp_status',   coalesce(cr.status, 'pending'::public.rsvp_status),
-        'dietary_notes', cr.dietary_notes
-      ) order by c.first_name)
-      from public.guest_relationships gr
-      join public.guests c on c.id = gr.to_guest
-      left join public.rsvps cr on cr.guest_id = c.id
-      where gr.from_guest = v_guest.id
-    ), '[]'::jsonb),
-    'permissions', jsonb_build_object(
-      'can_add_partner', v_can_partner,
-      'can_add_kids',    v_can_kids,
-      'kids_remaining',  case
-                           when not v_can_kids then 0
-                           when v_kids_cap is null then null
-                           else greatest(v_kids_cap - v_kids_used, 0)
-                         end
-    ),
-    'self_merge_candidates', coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'id',                    m.id,
-        'first_name',            m.first_name,
-        'last_name',             m.last_name,
-        'age_years',             m.age_years,
-        'added_by_first_name',   ab.first_name
-      ))
-      from public.guests m
-      left join public.guests ab on ab.id = m.added_by_guest_id
-      where m.wedding_id = v_guest.wedding_id
-        and m.id <> v_guest.id
-        and public._guest_matches(
-              m.first_name, m.last_name, m.age_years,
-              v_guest.first_name, v_guest.last_name, v_guest.age_years
-            )
-    ), '[]'::jsonb),
-    'rsvp_form', (
-      select jsonb_build_object(
-        'title',            nullif(f.rsvp_copy -> 'title', 'null'::jsonb),
-        'subtitle',         nullif(f.rsvp_copy -> 'subtitle', 'null'::jsonb),
-        'label_attending',  nullif(f.rsvp_copy -> 'label_attending', 'null'::jsonb),
-        'label_declined',   nullif(f.rsvp_copy -> 'label_declined', 'null'::jsonb)
-      )
-      from public.forms f
-      where f.wedding_id = v_guest.wedding_id
-        and f.kind = 'rsvp' and f.purpose = 'primary'
-      limit 1
-    ),
-    'rsvp_reconfirmation', (
-      select jsonb_build_object(
-        'title',      nullif(f.rsvp_copy -> 'title', 'null'::jsonb),
-        'subtitle',   nullif(f.rsvp_copy -> 'subtitle', 'null'::jsonb),
-        'published',  f.published,
-        'opens_at',   f.opens_at,
-        'closes_at',  f.closes_at
-      )
-      from public.forms f
-      where f.wedding_id = v_guest.wedding_id
-        and f.kind = 'rsvp' and f.purpose = 'reconfirmation'
-      limit 1
-    ),
-    'custom_forms', coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'id',         f.id,
-        'title',      f.title,
-        'guest_copy', f.guest_copy,
-        'questions',  f.questions,
-        'published',  f.published,
-        'opens_at',   f.opens_at,
-        'closes_at',  f.closes_at,
-        'answers',    (
-          select fr.answers from public.form_responses fr
-          where fr.form_id = f.id and fr.guest_id = v_guest.id
-        )
-      ) order by f.sort_order, f.created_at)
-      from public.forms f
-      where f.wedding_id = v_guest.wedding_id
-        and f.kind = 'custom'
-        and f.published = true
-    ), '[]'::jsonb)
+  d := replace(
+    d,
+    '''chosen_locale'', v_guest.chosen_locale,',
+    '''chosen_locale'', v_guest.chosen_locale,' || E'\n        ' || '''welcome_seen_at'', v_guest.welcome_seen_at,'
   );
-
-  return v_result;
-end;
-$$;
-
-revoke all on function public.get_invitation(uuid) from public;
-grant execute on function public.get_invitation(uuid) to anon, authenticated;
+  if position('welcome_seen_at' in d) = 0 then
+    raise exception 'get_invitation no longer has the expected guest block; patch this migration';
+  end if;
+  execute d;
+end
+$migration$;
 
 -- ---------- get_wedding_by_join_code: same disclosure as a guest's own link ----------
 create or replace function public.get_wedding_by_join_code(p_join_code text)
