@@ -6,12 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Invitation } from "@union/shared";
 import { ACTIVE_GUEST_IDENTITY_KEY } from "@/lib/guestIdentity";
 import { LocaleProvider } from "@/lib/i18n/client";
-import { en } from "@/lib/i18n/dictionaries/en";
 
 /**
  * The order a guest meets things on their personal link: the invitation
- * first, then the identity and e-mail steps that apply, then the hub.
- * Identification is a step on the way to the hub, never the first screen.
+ * first, then the identity step if it applies, then the hub. Identification is
+ * a step on the way to the hub, never the first screen, and a missing email
+ * never blocks the way (it is asked for when the guest replies).
  */
 
 const harness = vi.hoisted(() => ({
@@ -93,13 +93,11 @@ describe("GuestEntry", () => {
     expect(await screen.findByText("the hub")).toBeInTheDocument();
   });
 
-  it("shows the invitation before the e-mail step", async () => {
+  it("never stops a guest without an email on the way to the hub", async () => {
     entry({ seen: false, emailMissing: true });
 
-    expect(screen.queryByText(en.guestEmailSetup.title)).not.toBeInTheDocument();
     fireEvent.click(respond());
-    expect(await screen.findByText(en.guestEmailSetup.title)).toBeInTheDocument();
-    expect(screen.queryByText("the hub")).not.toBeInTheDocument();
+    expect(await screen.findByText("the hub")).toBeInTheDocument();
   });
 
   it("goes straight to the hub when there is nothing to check", async () => {

@@ -20,6 +20,7 @@ import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
 import { NewRelativeForm } from "@/components/NewRelativeForm";
 import { RelationshipCombobox } from "@/components/RelationshipCombobox";
 import { useT } from "@/lib/i18n/client";
+import { groupLinkNameClash } from "@/lib/guestNames";
 import { PhoneField } from "@/components/PhoneField";
 
 /**
@@ -85,6 +86,10 @@ export default function NewGuestPage() {
   }, [wedding]);
 
   if (!wedding) return null;
+
+  // Two guests the group link can't tell apart get stuck at "contact the
+  // couple", so say so while there's still a last name to add.
+  const nameClash = groupLinkNameClash(existingGuests, firstNameV, lastName);
 
   const excludedFor = (self: LinkedEntry[]): string[] => {
     const ids = new Set<string>();
@@ -218,6 +223,23 @@ export default function NewGuestPage() {
             placeholder={t.guests.placeholders.lastName}
           />
         </div>
+        {nameClash && (
+          <div
+            role="status"
+            style={{
+              marginTop: -6,
+              marginBottom: 14,
+              padding: "10px 12px",
+              borderRadius: 12,
+              background: T.amberBg,
+              color: T.amberDeep,
+              fontSize: 12.5,
+              lineHeight: 1.45,
+            }}
+          >
+            {t.guestNames.duplicateFirstName(nameClash.first_name)}
+          </div>
+        )}
         <div className="field">
           <label htmlFor="em">{t.guests.fields.email}</label>
           <input

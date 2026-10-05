@@ -72,7 +72,6 @@ export async function createWedding(
     | "id"
     | "created_at"
     | "join_code"
-    | "allow_name_fallback"
     | "guest_join_auth_mode"
     | "rsvp_form_questions"
     | "ceremony_rows"
@@ -238,22 +237,6 @@ export async function fetchGuests(weddingId: string): Promise<GuestWithRsvp[]> {
   }));
 }
 
-export async function fetchGuestEmailCoverage(
-  weddingId: string,
-): Promise<{ withEmail: number; total: number }> {
-  const supabase = getBrowserSupabase();
-  const { data, error } = await supabase
-    .from("guests")
-    .select("email")
-    .eq("wedding_id", weddingId);
-  if (error) throw error;
-  return {
-    withEmail: (data ?? []).filter((guest) => Boolean(guest.email?.trim()))
-      .length,
-    total: data?.length ?? 0,
-  };
-}
-
 export async function fetchGuest(id: string): Promise<GuestWithRsvp | null> {
   const supabase = getBrowserSupabase();
   const { data, error } = await supabase
@@ -358,6 +341,19 @@ export async function addGuest(input: NewGuest): Promise<Guest> {
     input.guest_group,
   );
   return data;
+}
+
+/** Signs out whoever secured this guest's invitation through the group link
+ *  and removes an email the guest gave. An email the couple entered stays. */
+export async function resetGuestAccess(guestId: string): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase.rpc("reset_guest_access", {
+    p_guest_id: guestId,
+  });
+  if (error) throw error;
+  if ((data as { status?: string } | null)?.status !== "ok") {
+    throw new Error("reset_guest_access refused");
+  }
 }
 
 export async function updateGuest(

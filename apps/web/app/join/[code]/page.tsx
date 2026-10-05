@@ -6,7 +6,7 @@ import { LocaleProvider } from "@/lib/i18n/client";
 import { JoinExperience } from "./JoinExperience";
 import { WelcomeGate } from "@/components/guest/WelcomeGate";
 import { formatGuestAddress } from "@/lib/guestAddress";
-import type { Invitation } from "@union/shared";
+import type { GuestJoinAuthMode, Invitation } from "@union/shared";
 import { G, T, alpha } from "@/lib/theme";
 
 // Always fetch fresh — never cache a generic link's guest matching.
@@ -17,7 +17,7 @@ export interface JoinWeddingPreview {
   partner_two: string | null;
   event_date: string | null;
   venue_name: string | null;
-  guest_join_auth_mode: "contact" | "otp";
+  guest_join_auth_mode: GuestJoinAuthMode;
   /** The language this couple writes their guest-facing content in. Used as
    *  the floor for the page's language, behind anything the visitor's own
    *  browser tells us. */
