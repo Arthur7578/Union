@@ -15,10 +15,11 @@ import { en } from "@/lib/i18n/dictionaries/en";
 
 const harness = vi.hoisted(() => ({
   rpc: vi.fn(),
+  push: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: harness.push, replace: vi.fn() }),
 }));
 
 vi.mock("@/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => null }));
@@ -46,9 +47,12 @@ const preview = {
   event_date: null,
   venue_name: null,
   guest_join_auth_mode: "contact" as const,
+  address_visibility: "hidden" as const,
+  address: null,
 };
 
 beforeEach(() => {
+  harness.push.mockReset();
   harness.rpc.mockReset();
   harness.rpc.mockResolvedValue({ data: { status: "not_found" }, error: null });
 });
@@ -126,5 +130,36 @@ describe("JoinExperience contact lookup", () => {
 
     await waitFor(() => expect(harness.rpc).toHaveBeenCalled());
     expect(lookupArgs()).toMatchObject({ p_contact: "jean2@example.test" });
+  });
+});
+
+describe("JoinExperience hand-over to the guest's own link", () => {
+  it("marks the welcome seen on the guest's link, then goes there", async () => {
+    harness.rpc.mockImplementation((name: string) =>
+      Promise.resolve({
+        data: name === "find_guest_by_contact" ? { status: "match", token: "guest-token" } : null,
+        error: null,
+      }),
+    );
+    const input = await openForm();
+    fireEvent.change(input, { target: { value: "jean2@example.test" } });
+    submit();
+
+    await waitFor(() => expect(harness.push).toHaveBeenCalled());
+    expect(harness.rpc).toHaveBeenCalledWith("mark_welcome_seen", { p_token: "guest-token" });
+    expect(harness.push.mock.calls[0]?.[0]).toContain("guest-token");
+  });
+
+  it("still goes there when recording that fails", async () => {
+    harness.rpc.mockImplementation((name: string) =>
+      name === "mark_welcome_seen"
+        ? Promise.reject(new Error("offline"))
+        : Promise.resolve({ data: { status: "match", token: "guest-token" }, error: null }),
+    );
+    const input = await openForm();
+    fireEvent.change(input, { target: { value: "jean2@example.test" } });
+    submit();
+
+    await waitFor(() => expect(harness.push).toHaveBeenCalled());
   });
 });

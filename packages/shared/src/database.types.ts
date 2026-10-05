@@ -273,6 +273,7 @@ export type Database = {
           ceremony_row: number | null
           ceremony_side: string | null
           chosen_locale: string | null
+          welcome_seen_at: string | null
           created_at: string
           email: string | null
           first_name: string
@@ -299,6 +300,7 @@ export type Database = {
           ceremony_row?: number | null
           ceremony_side?: string | null
           chosen_locale?: string | null
+          welcome_seen_at?: string | null
           created_at?: string
           email?: string | null
           first_name: string
@@ -325,6 +327,7 @@ export type Database = {
           ceremony_row?: number | null
           ceremony_side?: string | null
           chosen_locale?: string | null
+          welcome_seen_at?: string | null
           created_at?: string
           email?: string | null
           first_name?: string
@@ -869,6 +872,10 @@ export type Database = {
           p_status: string
           p_token: string
         }
+        Returns: Json
+      }
+      mark_welcome_seen: {
+        Args: { p_token: string }
         Returns: Json
       }
       set_guest_locale: {

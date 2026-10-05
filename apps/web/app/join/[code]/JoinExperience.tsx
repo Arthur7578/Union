@@ -110,7 +110,12 @@ export function JoinExperience({
   const redirectToGuest = useCallback(
     (token: string) => {
       setView("redirecting");
-      router.push(guestLinkPath(token));
+      // They have just read the invitation, so their own link needn't repeat
+      // it. Best-effort: failing to record it only means seeing it again.
+      void getBrowserSupabase()
+        .rpc("mark_welcome_seen", { p_token: token })
+        .then(undefined, () => {})
+        .then(() => router.push(guestLinkPath(token)));
     },
     [router],
   );
