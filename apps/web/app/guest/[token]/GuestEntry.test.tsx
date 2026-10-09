@@ -4,14 +4,13 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Invitation } from "@union/shared";
-import { ACTIVE_GUEST_IDENTITY_KEY } from "@/lib/guestIdentity";
 import { LocaleProvider } from "@/lib/i18n/client";
-import { en } from "@/lib/i18n/dictionaries/en";
 
 /**
  * The order a guest meets things on their personal link: the invitation
- * first, then the identity and e-mail steps that apply, then the hub.
- * Identification is a step on the way to the hub, never the first screen.
+ * first, then the hub. The link itself identifies the guest, so there is no
+ * identity step, and a missing email never blocks the way (it is asked for
+ * when the guest replies).
  */
 
 const harness = vi.hoisted(() => ({
@@ -70,36 +69,23 @@ const entry = (opts: { seen: boolean; emailMissing?: boolean; isDemo?: boolean }
 
 const respond = () => screen.getByRole("button", { name: "Respond to the invitation" });
 
-/** Someone else is signed in on this device, so the identity gate has a question. */
-const anotherGuestIsActive = () =>
-  window.localStorage.setItem(
-    ACTIVE_GUEST_IDENTITY_KEY,
-    JSON.stringify({ userId: "u1", guestId: "someone-else", guestName: "Someone Else" }),
-  );
-
 describe("GuestEntry", () => {
-  it("shows the invitation before the identity step", async () => {
-    anotherGuestIsActive();
+  it("shows the invitation, then the hub, with no identity step", async () => {
     entry({ seen: false });
 
     expect(screen.getByText("For Claire")).toBeInTheDocument();
-    expect(screen.queryByText("Switch invitations?")).not.toBeInTheDocument();
-
-    fireEvent.click(respond());
-    expect(await screen.findByText("Switch invitations?")).toBeInTheDocument();
     expect(screen.queryByText("the hub")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Continue as Claire Martin/ }));
+    fireEvent.click(respond());
     expect(await screen.findByText("the hub")).toBeInTheDocument();
+    expect(screen.queryByText(/Continue as/)).not.toBeInTheDocument();
   });
 
-  it("shows the invitation before the e-mail step", async () => {
+  it("never stops a guest without an email on the way to the hub", async () => {
     entry({ seen: false, emailMissing: true });
 
-    expect(screen.queryByText(en.guestEmailSetup.title)).not.toBeInTheDocument();
     fireEvent.click(respond());
-    expect(await screen.findByText(en.guestEmailSetup.title)).toBeInTheDocument();
-    expect(screen.queryByText("the hub")).not.toBeInTheDocument();
+    expect(await screen.findByText("the hub")).toBeInTheDocument();
   });
 
   it("goes straight to the hub when there is nothing to check", async () => {
@@ -109,11 +95,10 @@ describe("GuestEntry", () => {
   });
 
   it("skips the welcome for a guest whose invitation says they have seen it", async () => {
-    anotherGuestIsActive();
     entry({ seen: true });
 
     expect(screen.queryByRole("button", { name: "Respond to the invitation" })).not.toBeInTheDocument();
-    expect(await screen.findByText("Switch invitations?")).toBeInTheDocument();
+    expect(await screen.findByText("the hub")).toBeInTheDocument();
   });
 
   it("records the welcome as seen on the guest's invitation", async () => {

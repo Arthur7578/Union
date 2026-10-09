@@ -8,7 +8,6 @@ import React, {
   useState,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { clearActiveGuestIdentity } from "./guestIdentity";
 import { getBrowserSupabase } from "./supabaseClient";
 import {
   clearActiveWedding,
@@ -159,7 +158,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
         clearActiveWedding();
-        clearActiveGuestIdentity();
       },
     }),
     [session, loading],

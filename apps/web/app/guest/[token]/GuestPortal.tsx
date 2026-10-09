@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "@/lib/i18n/client";
 import { coupleText, coupleTextOr, rsvpDefaults } from "@/lib/i18n/text";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { clearActiveGuestIdentity } from "@/lib/guestIdentity";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { submitGuestRsvp } from "@/lib/submitRsvp";
+import { ReplyEmailField, useReplyEmail } from "./ReplyEmailField";
 import {
   canAddChildren,
   canAddPartner as mayAddPartner,
@@ -50,6 +50,8 @@ interface GuestPortalProps {
   token: string;
   invitation: DBInvitation;
   isDemo: boolean;
+  /** The couple has no email for this guest: ask for one when they reply. */
+  emailMissing?: boolean;
 }
 
 // Beautiful simulated database for guest connections (carsharing/travel buddy matches)
@@ -126,7 +128,7 @@ const STAYS = [
   }
 ];
 
-export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
+export function GuestPortal({ token, invitation, isDemo, emailMissing = false }: GuestPortalProps) {
   const replayWelcome = useReplayWelcome();
   const { t, locale } = useLocale();
   const router = useRouter();
@@ -210,6 +212,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
   // Loading/submitting states
   const [submittingRsvp, setSubmittingRsvp] = useState<boolean>(false);
+  const replyEmail = useReplyEmail({ token, emailMissing, isDemo });
 
   // Travel matching state
   const [connections, setConnections] = useState(SAMPLE_CONNECTIONS);
@@ -273,6 +276,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
     setSubmittingRsvp(true);
     try {
+      if (!(await replyEmail.save())) return;
       if (!isDemo) {
         const supabase = getBrowserSupabase();
         await submitGuestRsvp(
@@ -344,7 +348,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         scope: "local",
       });
       if (error) throw error;
-      clearActiveGuestIdentity();
       router.push("/");
     } catch (error) {
       console.error("Failed to sign out guest:", error);
@@ -1706,6 +1709,11 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 )}
               </div>
             )}
+
+            <ReplyEmailField
+              state={replyEmail}
+              couple={[invitation.wedding.partner_one, invitation.wedding.partner_two].filter(Boolean).join(" & ") || t.guests.theCouple}
+            />
 
             {/* Message to Couple */}
             <div className="field">

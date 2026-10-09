@@ -61,7 +61,6 @@ vi.mock("@/lib/supabase", () => ({
 // The guest UI itself is irrelevant here and drags in the browser: stub it.
 vi.mock("./GuestPortal", () => ({ GuestPortal: () => null }));
 vi.mock("./GuestEmailGate", () => ({ GuestEmailGate: () => null }));
-vi.mock("./GuestIdentityGate", () => ({ GuestIdentityGate: () => null }));
 
 function invitation(signals: {
   weddingDefault?: string | null;
