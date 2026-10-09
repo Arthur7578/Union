@@ -7,7 +7,6 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { looksLikeEmail } from "@/lib/emailSuggest";
 import { markGroupLinkArrival } from "@/lib/groupLinkArrival";
-import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { useTurnstile } from "@/lib/turnstile";
@@ -160,14 +159,6 @@ export function JoinExperience({
       if (rpcError) throw rpcError;
       const result = data as unknown as SecureResult;
       if (result.status === "verified" && result.token) {
-        const { data: auth } = await supabase.auth.getSession();
-        if (auth.session) {
-          writeActiveGuestIdentity({
-            userId: auth.session.user.id,
-            guestId: id,
-            guestName: fullName(result.first_name ?? "", result.last_name),
-          });
-        }
         redirectToGuest(result.token);
       }
       return result.status;

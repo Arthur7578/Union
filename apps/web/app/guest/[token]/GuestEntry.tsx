@@ -2,19 +2,15 @@
 
 import { WelcomeGate } from "@/components/guest/WelcomeGate";
 import { formatGuestAddress } from "@/lib/guestAddress";
-import { GuestIdentityGate } from "./GuestIdentityGate";
 import { GuestPortal } from "./GuestPortal";
 import type { DBInvitation } from "./page";
 
 /**
- * What a guest passes through, in order, on their personal link: the
- * invitation first, then the identity check if another guest is active on
- * this device, then the hub.
- *
- * The order is the point. Identification is a step on the way to the hub, not
- * the first thing a guest meets, so the welcome sits in front of it. Nothing
- * here asks for an email: a guest without one is asked when they reply (see
- * ReplyEmailField), and a personal link never requires it.
+ * What a guest passes through on their personal link: the invitation first,
+ * then the hub. The link itself says who the guest is (the couple sent it to
+ * them), so there is no identity step, and nothing here asks for an email: a
+ * guest without one is asked when they reply (see ReplyEmailField), and a
+ * personal link never requires it.
  */
 export function GuestEntry({
   token,
@@ -27,10 +23,6 @@ export function GuestEntry({
   isDemo: boolean;
   emailMissing: boolean;
 }) {
-  const guestName = [invitation.guest.first_name, invitation.guest.last_name]
-    .filter(Boolean)
-    .join(" ");
-
   return (
     <WelcomeGate
       token={token}
@@ -43,14 +35,12 @@ export function GuestEntry({
       venueName={invitation.wedding.venue_name}
       address={formatGuestAddress(invitation.wedding)}
     >
-      <GuestIdentityGate guestId={invitation.guest.id} guestName={guestName}>
-        <GuestPortal
-          token={token}
-          invitation={invitation}
-          isDemo={isDemo}
-          emailMissing={emailMissing}
-        />
-      </GuestIdentityGate>
+      <GuestPortal
+        token={token}
+        invitation={invitation}
+        isDemo={isDemo}
+        emailMissing={emailMissing}
+      />
     </WelcomeGate>
   );
 }

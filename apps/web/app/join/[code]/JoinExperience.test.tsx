@@ -37,8 +37,6 @@ vi.mock("@/lib/auth", () => ({
   verifyEmailOtp: harness.verifyEmailOtp,
 }));
 
-vi.mock("@/lib/guestIdentity", () => ({ writeActiveGuestIdentity: vi.fn() }));
-
 vi.mock("@/lib/supabaseClient", () => ({
   getBrowserSupabase: () => ({
     auth: { getSession: () => Promise.resolve({ data: { session: harness.session } }) },

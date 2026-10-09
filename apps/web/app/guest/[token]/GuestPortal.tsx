@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "@/lib/i18n/client";
 import { coupleText, coupleTextOr, rsvpDefaults } from "@/lib/i18n/text";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { clearActiveGuestIdentity } from "@/lib/guestIdentity";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { submitGuestRsvp } from "@/lib/submitRsvp";
 import { ReplyEmailField, useReplyEmail } from "./ReplyEmailField";
@@ -349,7 +348,6 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
         scope: "local",
       });
       if (error) throw error;
-      clearActiveGuestIdentity();
       router.push("/");
     } catch (error) {
       console.error("Failed to sign out guest:", error);
