@@ -4,7 +4,6 @@ import React, { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guestLinkPath } from "@union/shared";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { useWelcomeShownThisVisit } from "@/components/guest/WelcomeGate";
 import { sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { looksLikeEmail } from "@/lib/emailSuggest";
 import { markGroupLinkArrival } from "@/lib/groupLinkArrival";
@@ -107,7 +106,6 @@ export function JoinExperience({
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const { captcha, getCaptchaToken } = useTurnstile();
-  const welcomeShown = useWelcomeShownThisVisit();
 
   const partners =
     [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") ||
@@ -126,12 +124,6 @@ export function JoinExperience({
     (token: string) => {
       setView("redirecting");
       markGroupLinkArrival(token);
-      if (!welcomeShown) {
-        // The welcome was skipped here (this device had seen it), so this
-        // guest may never have: their own invitation shows it to them.
-        router.push(guestLinkPath(token));
-        return;
-      }
       // They have just read the invitation, so their own link needn't repeat
       // it. Best-effort: failing to record it only means seeing it again.
       void getBrowserSupabase()
@@ -139,7 +131,7 @@ export function JoinExperience({
         .then(undefined, () => {})
         .then(() => router.push(guestLinkPath(token)));
     },
-    [router, welcomeShown],
+    [router],
   );
 
   /**

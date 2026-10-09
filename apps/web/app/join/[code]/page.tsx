@@ -116,7 +116,6 @@ export default async function JoinPage({
   return (
     <LocaleProvider initialLocale={joinLocale}>
       <WelcomeGate
-        deviceId={`join.${code}`}
         partnerOne={preview.partner_one}
         partnerTwo={preview.partner_two}
         eventDate={preview.event_date}

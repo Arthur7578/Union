@@ -17,7 +17,6 @@ import type { JoinWeddingPreview } from "./page";
 type RpcReply = { data: unknown; error: null };
 
 const harness = vi.hoisted(() => ({
-  welcomeShown: false,
   push: vi.fn(),
   session: null as null | { user: { id: string } },
   replies: {} as Record<string, (args: Record<string, unknown>) => unknown>,
@@ -32,9 +31,6 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => null }));
 
-vi.mock("@/components/guest/WelcomeGate", () => ({
-  useWelcomeShownThisVisit: () => harness.welcomeShown,
-}));
 
 vi.mock("@/lib/auth", () => ({
   LAST_EMAIL_KEY: "union.lastEmail",
@@ -70,7 +66,6 @@ beforeEach(() => {
   window.localStorage.clear();
   harness.push.mockReset();
   harness.session = null;
-  harness.welcomeShown = false;
   harness.replies = {};
   harness.sendEmailOtp.mockReset().mockResolvedValue(undefined);
   harness.verifyEmailOtp.mockReset().mockResolvedValue(undefined);
@@ -244,8 +239,7 @@ describe("JoinExperience, secure mode", () => {
     expect(harness.sendEmailOtp).not.toHaveBeenCalled();
   });
 
-  it("records the welcome as seen when the guest just read it here", async () => {
-    harness.welcomeShown = true;
+  it("records the welcome as seen, since the guest just read it here", async () => {
     reply("find_guest_for_join", () => ({ status: "match", mode: "light", token: "tok-julie" }));
     render(<JoinExperience code="abc" preview={preview("light")} />);
 
@@ -253,16 +247,6 @@ describe("JoinExperience, secure mode", () => {
 
     await waitFor(() => expect(harness.push).toHaveBeenCalledWith("/guest/tok-julie"));
     expect(rpcCalls("mark_welcome_seen")).toEqual([{ p_token: "tok-julie" }]);
-  });
-
-  it("does not record the welcome as seen when it was skipped on this device", async () => {
-    reply("find_guest_for_join", () => ({ status: "match", mode: "light", token: "tok-matteo" }));
-    render(<JoinExperience code="abc" preview={preview("light")} />);
-
-    await typeFirstName("Matteo");
-
-    await waitFor(() => expect(harness.push).toHaveBeenCalledWith("/guest/tok-matteo"));
-    expect(rpcCalls("mark_welcome_seen")).toHaveLength(0);
   });
 
   it("never secures someone else's invitation with the email signed in on this device", async () => {

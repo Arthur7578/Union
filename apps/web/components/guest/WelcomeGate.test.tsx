@@ -4,13 +4,13 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n/client";
-import { WelcomeGate, useReplayWelcome, useWelcomeShownThisVisit } from "./WelcomeGate";
+import { WelcomeGate, useReplayWelcome } from "./WelcomeGate";
 
 /**
  * The invitation comes before any identity or e-mail step: the welcome shows
  * first, and only "Respond to the invitation" lets the guest through. It is
  * translated, offers the language switcher from the start, and is remembered
- * on the guest (personal link) or on the device (group link).
+ * on the guest (personal link). A group link shows it on every visit.
  */
 
 const harness = vi.hoisted(() => ({ rpc: vi.fn(() => Promise.resolve({ data: null, error: null })) }));
@@ -28,11 +28,9 @@ afterEach(cleanup);
 
 function Hub() {
   const replay = useReplayWelcome();
-  const shown = useWelcomeShownThisVisit();
   return (
     <div>
       <p>the hub</p>
-      <p>{shown ? "welcome shown this visit" : "welcome not shown this visit"}</p>
       {replay && <button onClick={replay}>replay</button>}
     </div>
   );
@@ -87,31 +85,22 @@ describe("WelcomeGate", () => {
     render(gate({ token: "tok", seen: false, guestName: "Claire" }));
     expect(screen.getByText("For Claire")).toBeInTheDocument();
     cleanup();
-    render(gate({ deviceId: "join.abc" }));
+    render(gate());
     expect(screen.getByText("Invitation")).toBeInTheDocument();
   });
 
-  it("tells the page whether the welcome was on screen during this visit", () => {
-    render(gate({ deviceId: "join.abc" }));
-    fireEvent.click(respond());
-    expect(screen.getByText("welcome shown this visit")).toBeInTheDocument();
-    cleanup();
-    // Same device, next visit: skipped, so whoever comes next hasn't seen it.
-    render(gate({ deviceId: "join.abc" }));
-    expect(screen.getByText("welcome not shown this visit")).toBeInTheDocument();
-  });
-
-  it("remembers a group-link visitor on this device only", () => {
-    render(gate({ deviceId: "join.abc" }));
+  it("shows a group link's welcome on every visit, whoever came before on this device", () => {
+    render(gate());
     fireEvent.click(respond());
     expect(harness.rpc).not.toHaveBeenCalled();
     cleanup();
-    render(gate({ deviceId: "join.abc" }));
-    expect(screen.getByText("the hub")).toBeInTheDocument();
+    render(gate());
+    expect(respond()).toBeInTheDocument();
+    expect(screen.queryByText("the hub")).not.toBeInTheDocument();
   });
 
   it("is translated, with the language switcher from the start", () => {
-    render(gate({ deviceId: "join.abc" }, "fr"));
+    render(gate({}, "fr"));
     expect(respond("Répondre à l'invitation")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "EN" }));
     expect(respond()).toBeInTheDocument();
