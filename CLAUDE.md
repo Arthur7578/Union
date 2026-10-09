@@ -15,3 +15,14 @@ Sizes measured on 2026-10-03:
 | `apps/web/app/(app)/guests/groups/page.tsx` | ~1707 | 20 | One `GroupsPage` function of ~1370 lines. |
 
 When you finish extracting something, update the numbers above. Delete a row once its file is down to a reasonable size.
+
+## Known limitations (accepted for now)
+
+### Merging three or more guests (`apps/web/components/MergeReviewPanel.tsx`)
+
+The panel merges a cluster by calling `owner_merge_guests` once per extra guest, each call in its own transaction. Noted on 2026-10-04 and deliberately left as is:
+
+- **Not all-or-nothing.** If one call fails, the calls before it stay committed and the cluster is left half merged (seen with three "Pat" guests before `20261009235900_merge_keeps_one_partner.sql`).
+- **The owner's choices only reach the first call.** Later calls get no overrides, so `_merge_guests` can refill a field the owner chose to leave blank from a later guest.
+
+The fix for both is a single RPC that takes the whole cluster plus the overrides and merges it in one transaction. Do it if either problem shows up again, or when this panel is next reworked.

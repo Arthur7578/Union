@@ -160,7 +160,9 @@ export function MergeReviewPanel({
       // Fold every non-target guest into target, in order. Each
       // fold is one RPC call inside its own transaction. Overrides
       // apply on the first fold; subsequent folds just carry
-      // relationships / RSVP / groups over.
+      // relationships / RSVP / groups over. Known limitation, see
+      // CLAUDE.md: a failed fold leaves the earlier ones committed,
+      // and later folds can refill a field the owner blanked.
       let survivingId = target.id;
       for (let i = 0; i < others.length; i += 1) {
         const src = others[i];
