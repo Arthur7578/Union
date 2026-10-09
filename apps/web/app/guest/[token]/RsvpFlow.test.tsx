@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n/client";
 
 /**
@@ -58,7 +58,28 @@ function open(opts: { companions?: Companion[]; onSaved?: (r: RsvpReply) => void
 }
 
 const enter = () => fireEvent.keyDown(window, { key: "Enter" });
-const question = (text: string) => screen.findByRole("heading", { name: new RegExp(text) });
+/** Waits for a step, then for its effects (the choices' letter keys) to be
+ *  wired: a real guest can't type within that instant, a test can. */
+const question = async (text: string) => {
+  const heading = await screen.findByRole("heading", { name: new RegExp(text) });
+  await act(async () => {});
+  return heading;
+};
+
+// Reduced motion: steps change at once instead of after their exit
+// animation, which keeps these multi-step tests well inside their timeout.
+beforeAll(() => {
+  window.matchMedia = ((query: string) => ({
+    matches: query.includes("reduce"),
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia;
+});
 
 beforeEach(() => {
   harness.rpc.mockClear();

@@ -35,6 +35,8 @@ export type FlowStep = {
   invalidMessage?: string;
   /** Label of the button that moves on (defaults to OK / Start). */
   okLabel?: string;
+  /** The button's label while `onNext` runs (defaults to "Saving…"). */
+  busyLabel?: string;
   /** No button: the step moves on by itself (a single choice), or not at all. */
   hideOk?: boolean;
   /** Runs when the guest moves on. Throwing keeps them on the step. */
@@ -84,11 +86,15 @@ export function Flow({
   label,
   steps,
   onClose,
+  topRight,
 }: {
   /** Shown small at the top, and the dialog's accessible name. */
   label: string;
   steps: FlowStep[];
-  onClose: () => void;
+  /** Without it there is no close button: a step the guest must get through. */
+  onClose?: () => void;
+  /** Extra controls at the top right, before the close button. */
+  topRight?: React.ReactNode;
 }) {
   const { t } = useLocale();
   const copy = t.guestFlow;
@@ -158,7 +164,12 @@ export function Flow({
         const target = pick();
         leavingRef.current = false;
         setLeaving(false);
-        if (target) setCurrentKey(target);
+        if (target) {
+          // Now, not after the next render: a choice picked the instant the
+          // step appears must know which step it belongs to.
+          keyRef.current = target;
+          setCurrentKey(target);
+        }
       };
       if (reducedMotion()) {
         later(land, 0);
@@ -296,11 +307,16 @@ export function Flow({
 
         <header className="tf-top">
           <span className="tf-label">{label}</span>
-          <button type="button" className="tf-close" onClick={onClose} aria-label={copy.close}>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
+          <div className="tf-top-right">
+            {topRight}
+            {onClose && (
+              <button type="button" className="tf-close" onClick={onClose} aria-label={copy.close}>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            )}
+          </div>
         </header>
 
         <div className="tf-stage">
@@ -312,7 +328,7 @@ export function Flow({
             className={`tf-step tf-${kind} tf-${motion}`}
           >
             {step.before}
-            <h2 id={titleId} className="tf-title">
+            <div className="tf-q">
               {kind === "question" && (
                 <span className="tf-num" aria-hidden="true">
                   {questionNumber}
@@ -321,8 +337,10 @@ export function Flow({
                   </svg>
                 </span>
               )}
-              {step.title}
-            </h2>
+              <h2 id={titleId} className="tf-title">
+                {step.title}
+              </h2>
+            </div>
             {step.description ? <div className="tf-desc">{step.description}</div> : null}
             {step.body ? <div className="tf-body">{step.body}</div> : null}
 
@@ -335,7 +353,7 @@ export function Flow({
             {!step.hideOk && (
               <div className="tf-actions">
                 <button type="button" className="tf-ok" onClick={() => void next()} disabled={busy}>
-                  {busy ? t.common.saving : okLabel}
+                  {busy ? (step.busyLabel ?? t.common.saving) : okLabel}
                   {!busy && kind === "question" && (
                     <svg viewBox="0 0 16 16" aria-hidden="true">
                       <path d="M3 8.5l3.2 3L13 4.5" />

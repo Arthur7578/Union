@@ -9,6 +9,7 @@ import {
   normalizeQuestions,
 } from "@union/shared";
 import type { FormAnswers, GuestModuleKey } from "@union/shared";
+import { LocaleToggle } from "@/components/guest/LocaleToggle";
 import { OliveBranch } from "@/components/guest/OliveBranch";
 import { useReplayWelcome } from "@/components/guest/WelcomeGate";
 import { formatGuestAddress } from "@/lib/guestAddress";
@@ -75,7 +76,7 @@ function useActiveSection(ids: string[]) {
 
 export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   const replayWelcome = useReplayWelcome();
-  const { t, locale, locales, setLocale } = useLocale();
+  const { t, locale } = useLocale();
   const hub = t.guestHub;
   const router = useRouter();
   const [hasAuthSession, setHasAuthSession] = useState(false);
@@ -281,18 +282,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           {partnerTwo?.charAt(0)}
         </span>
         <div className="gh-top-actions">
-          <div className="gh-lang" role="group" aria-label={t.lang.switchTo}>
-            {locales.map((code) => (
-              <button
-                key={code}
-                type="button"
-                aria-pressed={locale === code}
-                onClick={() => setLocale(code)}
-              >
-                {code.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          <LocaleToggle />
           {(replayWelcome || (hasAuthSession && !isDemo)) && (
             <div className="gh-menu" ref={menuRef}>
               <button

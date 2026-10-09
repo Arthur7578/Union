@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { DaRoot } from "@/components/guest/DaRoot";
+import { Flow, type FlowStep } from "@/components/guest/flow/Flow";
+import { FlowChoices } from "@/components/guest/flow/fields";
+import { LocaleToggle } from "@/components/guest/LocaleToggle";
+import { OliveBranch } from "@/components/guest/OliveBranch";
 import {
   readActiveGuestIdentity,
   readStoredActiveGuestIdentity,
@@ -10,7 +14,6 @@ import {
 } from "@/lib/guestIdentity";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
-import { G, T, alpha } from "@/lib/theme";
 
 type GateState = "checking" | "confirm" | "allowed";
 
@@ -28,6 +31,7 @@ export function GuestIdentityGate({
   const [userId, setUserId] = useState<string | null>(null);
   const [activeGuest, setActiveGuest] =
     useState<ActiveGuestIdentity | null>(null);
+  const [choice, setChoice] = useState<"continue" | "cancel" | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -75,125 +79,69 @@ export function GuestIdentityGate({
     setState("allowed");
   };
 
+  const step: FlowStep =
+    state === "checking"
+      ? {
+          key: "checking",
+          kind: "intro",
+          before: <OliveBranch className="tf-ornament" />,
+          title: isFrench ? "Un instant…" : "One moment…",
+          description: isFrench ? "Vérification de l’invitation…" : "Checking the invitation…",
+          hideOk: true,
+        }
+      : {
+          key: "confirm",
+          kind: "intro",
+          before: <OliveBranch className="tf-ornament" />,
+          title: switching
+            ? isFrench
+              ? "Changer d’invitation ?"
+              : "Switch invitations?"
+            : isFrench
+              ? "Ouvrir cette invitation ?"
+              : "Open this invitation?",
+          description: switching
+            ? isFrench
+              ? `Vous utilisez actuellement l’invitation de ${activeGuest.guestName}. Ce lien privé est destiné à ${guestName}.`
+              : `You are currently using ${activeGuest.guestName}’s invitation. This private link is for ${guestName}.`
+            : isFrench
+              ? `Ce lien privé est destiné à ${guestName}. Confirmez avant de continuer.`
+              : `This private link is for ${guestName}. Confirm before continuing.`,
+          body: (
+            <div className="tf-choices-center">
+              <FlowChoices
+                options={[
+                  {
+                    id: "continue",
+                    label: isFrench ? `Continuer en tant que ${guestName}` : `Continue as ${guestName}`,
+                  },
+                  { id: "cancel", label: isFrench ? "Annuler" : "Cancel" },
+                ]}
+                value={choice}
+                onChange={(id) => setChoice(id as "continue" | "cancel")}
+              />
+            </div>
+          ),
+          valid: choice !== null,
+          hideOk: true,
+          onNext: () => {
+            if (choice === "cancel") {
+              setChoice(null);
+              window.history.back();
+            } else {
+              confirm();
+            }
+            return false;
+          },
+        };
+
   return (
-    <main style={pageStyle}>
-      <div style={{ position: "absolute", top: 20, right: 20 }}>
-        <LanguageSwitcher />
-      </div>
-      <section style={cardStyle}>
-        <div style={kickerStyle}>
-          {isFrench ? "Identité d’invité" : "Guest identity"}
-        </div>
-        {state === "checking" ? (
-          <p style={bodyStyle}>
-            {isFrench
-              ? "Vérification de l’invitation…"
-              : "Checking the invitation…"}
-          </p>
-        ) : (
-          <>
-            <h1 style={titleStyle}>
-              {switching
-                ? isFrench
-                  ? "Changer d’invitation ?"
-                  : "Switch invitations?"
-                : isFrench
-                  ? "Ouvrir cette invitation ?"
-                  : "Open this invitation?"}
-            </h1>
-            <p style={bodyStyle}>
-              {switching
-                ? isFrench
-                  ? `Vous utilisez actuellement l’invitation de ${activeGuest.guestName}. Ce lien privé est destiné à ${guestName}.`
-                  : `You are currently using ${activeGuest.guestName}’s invitation. This private link is for ${guestName}.`
-                : isFrench
-                  ? `Ce lien privé est destiné à ${guestName}. Confirmez avant de continuer.`
-                  : `This private link is for ${guestName}. Confirm before continuing.`}
-            </p>
-            <button type="button" onClick={confirm} style={primaryButtonStyle}>
-              {isFrench
-                ? `Continuer en tant que ${guestName}`
-                : `Continue as ${guestName}`}
-            </button>
-            <button
-              type="button"
-              onClick={() => window.history.back()}
-              style={textButtonStyle}
-            >
-              {isFrench ? "Annuler" : "Cancel"}
-            </button>
-          </>
-        )}
-      </section>
-    </main>
+    <DaRoot>
+      <Flow
+        label={isFrench ? "Identité d’invité" : "Guest identity"}
+        steps={[step]}
+        topRight={<LocaleToggle />}
+      />
+    </DaRoot>
   );
 }
-
-const pageStyle: React.CSSProperties = {
-  minHeight: "100vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: G.bg,
-  padding: "80px 20px 32px",
-  color: G.ink,
-};
-
-const cardStyle: React.CSSProperties = {
-  width: "100%",
-  maxWidth: 480,
-  borderRadius: 24,
-  background: T.white,
-  boxShadow: `0 18px 55px ${alpha(G.ink, 0.08)}`,
-  padding: "38px 32px",
-  boxSizing: "border-box",
-  textAlign: "center",
-};
-
-const kickerStyle: React.CSSProperties = {
-  color: G.gold,
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  marginBottom: 10,
-};
-
-const titleStyle: React.CSSProperties = {
-  fontFamily: "var(--font-serif)",
-  fontSize: 32,
-  lineHeight: 1.15,
-  margin: "0 0 12px",
-  fontWeight: 600,
-};
-
-const bodyStyle: React.CSSProperties = {
-  color: G.muted2,
-  fontSize: 15,
-  lineHeight: 1.55,
-  margin: "0 0 22px",
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  width: "100%",
-  minHeight: 50,
-  border: 0,
-  borderRadius: 999,
-  background: G.ink,
-  color: T.white,
-  fontSize: 15,
-  fontWeight: 600,
-  cursor: "pointer",
-  padding: "0 20px",
-};
-
-const textButtonStyle: React.CSSProperties = {
-  border: 0,
-  background: "transparent",
-  color: G.muted3,
-  fontSize: 14,
-  textDecoration: "underline",
-  cursor: "pointer",
-  padding: 8,
-  marginTop: 12,
-};

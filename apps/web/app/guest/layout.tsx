@@ -1,4 +1,4 @@
-import { guestFontVariables } from "./_fonts";
+import { guestFontVariables } from "@/components/guest/fonts";
 
 /**
  * Makes the wedding's typefaces available to every guest page, as CSS

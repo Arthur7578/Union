@@ -19,8 +19,9 @@
 
 .tf-top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:calc(12px + env(safe-area-inset-top,0px)) 16px 0}
-.tf-label{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--da-ink-soft);
+.tf-label{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--da-ink-soft);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tf-top-right{flex:none;display:flex;align-items:center;gap:8px}
 .tf-close{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--da-line);background:var(--da-glass);
   display:grid;place-items:center;cursor:pointer;color:var(--da-ink);transition:background .2s,border-color .2s}
 .tf-close:hover{background:var(--da-card);border-color:var(--da-sage)}
@@ -42,7 +43,9 @@
 /* the question: script, large, as on the stationery */
 .tf-title{margin:0;font-family:var(--font-guest-script),"Snell Roundhand","Apple Chancery",cursive;font-weight:400;
   font-size:clamp(36px,9.4vw,56px);line-height:1.12;color:var(--da-olive-deep);text-wrap:balance}
-.tf-num{display:inline-flex;align-items:center;gap:4px;margin-right:.4em;vertical-align:.45em;
+.tf-q{display:flex;align-items:baseline;gap:10px}
+.tf-intro .tf-q,.tf-end .tf-q{justify-content:center}
+.tf-num{flex:none;display:inline-flex;align-items:center;gap:4px;
   font-family:var(--font-guest-serif),Georgia,serif;font-size:15px;letter-spacing:.06em;color:var(--da-sage-deep);
   font-variant-numeric:lining-nums}
 .tf-num svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
@@ -85,7 +88,7 @@
 .tf-error{display:inline-block;margin:18px 0 0;padding:6px 12px;border-radius:4px;font-size:15px;
   color:var(--da-error);background:var(--da-card);border:1px solid var(--da-line)}
 
-.tf-actions{display:flex;align-items:center;gap:14px;margin-top:28px}
+.tf-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-top:28px}
 .tf-intro .tf-actions,.tf-end .tf-actions{justify-content:center;flex-direction:column;gap:10px}
 .tf-ok{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:12px 26px;cursor:pointer;
   background:var(--da-olive);color:var(--da-on-olive);font:inherit;font-size:16px;letter-spacing:.16em;text-transform:uppercase;
@@ -117,6 +120,16 @@
 .tf-ghost{border:1px solid var(--da-sage-deep);background:transparent;border-radius:999px;padding:9px 18px;font:inherit;font-size:15px;
   color:var(--da-olive-deep);cursor:pointer;transition:background .2s}
 .tf-ghost:hover{background:var(--da-sage-pale)}
+
+.tf-choices-center .tf-choices{align-items:center}
+.tf-choices-center .tf-choice{width:min(100%,340px)}
+.tf-captcha{margin-top:20px}
+.tf .tf-code{letter-spacing:.3em;font-variant-numeric:lining-nums tabular-nums}
+.tf-links{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:18px}
+.tf-link{border:0;background:none;padding:4px 0;cursor:pointer;font:inherit;font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--da-olive);text-decoration:underline;text-decoration-color:var(--da-sage);text-underline-offset:5px}
+.tf-link:hover{color:var(--da-olive-deep)}
+.tf-link:disabled{opacity:.6;cursor:wait}
 
 .tf :focus-visible{outline:2px solid var(--da-olive);outline-offset:3px}
 .tf .tf-step:focus,.tf .tf-step:focus-visible{outline:none}

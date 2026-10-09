@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RsvpQuestion } from "@union/shared";
 import { LocaleProvider } from "@/lib/i18n/client";
@@ -64,6 +64,7 @@ describe("CustomFormFlow", () => {
     expect(screen.getByText("2 questions")).toBeInTheDocument();
     enter();
     await screen.findByRole("heading", { name: "Your main course?" });
+    await act(async () => {}); // let the choices wire their letter keys
 
     // Required: OK alone doesn't move on.
     enter();

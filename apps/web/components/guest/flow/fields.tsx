@@ -92,6 +92,9 @@ export function FlowText({
   label,
   autoFocus = true,
   autoComplete,
+  type = "text",
+  inputMode,
+  className,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -100,12 +103,16 @@ export function FlowText({
   label?: string;
   autoFocus?: boolean;
   autoComplete?: string;
+  type?: "text" | "email";
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  className?: string;
 }) {
   const { t } = useLocale();
   return (
     <input
-      className="tf-input"
-      type="text"
+      className={className ? `tf-input ${className}` : "tf-input"}
+      type={type}
+      inputMode={inputMode}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder ?? t.guestFlow.typeHere}
