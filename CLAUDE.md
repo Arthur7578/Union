@@ -1,5 +1,9 @@
 # Notes for Claude
 
+## Ideas for later
+
+When the user asks to keep an idea for later, open a GitHub issue and give the user the issue link. Call it an issue, not a pull request.
+
 ## Opportunistic refactors (tech debt)
 
 Three client pages are each one giant component with a lot of local state. Nothing is broken and CI is green, so this is not urgent. Do not split them as a drive-by or in a dedicated refactor: they have no UI tests, so a big restructure is risky.
