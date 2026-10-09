@@ -24,10 +24,12 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => null }));
 
+const auth = vi.hoisted(() => ({ sendEmailOtp: vi.fn(), verifyEmailOtp: vi.fn() }));
+
 vi.mock("@/lib/auth", () => ({
   LAST_EMAIL_KEY: "union.lastEmail",
-  sendEmailOtp: vi.fn(),
-  verifyEmailOtp: vi.fn(),
+  sendEmailOtp: auth.sendEmailOtp,
+  verifyEmailOtp: auth.verifyEmailOtp,
 }));
 
 vi.mock("@/lib/guestIdentity", () => ({ writeActiveGuestIdentity: vi.fn() }));
@@ -161,5 +163,78 @@ describe("JoinExperience hand-over to the guest's own link", () => {
     submit();
 
     await waitFor(() => expect(harness.push).toHaveBeenCalled());
+  });
+});
+
+describe("JoinExperience, one question at a time", () => {
+  it("asks for the first name when the contact matches several guests", async () => {
+    harness.rpc.mockImplementation((name: string, args: { p_first_name: string | null }) =>
+      Promise.resolve({
+        data:
+          name === "find_guest_by_contact"
+            ? args.p_first_name
+              ? { status: "match", token: "guest-token" }
+              : { status: "ambiguous" }
+            : null,
+        error: null,
+      }),
+    );
+    const input = await openForm();
+    fireEvent.change(input, { target: { value: "family@example.test" } });
+    submit();
+
+    await screen.findByRole("heading", { name: en.guestJoin.firstNameTitle });
+    fireEvent.change(screen.getByRole("textbox", { name: en.guestJoin.firstNameLabel }), {
+      target: { value: "Jean" },
+    });
+    submit();
+
+    await waitFor(() => expect(harness.push).toHaveBeenCalled());
+    expect(harness.rpc).toHaveBeenCalledWith("find_guest_by_contact", {
+      p_join_code: "abc123",
+      p_contact: "family@example.test",
+      p_first_name: "Jean",
+    });
+  });
+
+  it("sends a code when the wedding needs one, then opens the guest's invitation", async () => {
+    harness.rpc.mockImplementation((name: string) =>
+      Promise.resolve({
+        data:
+          name === "find_guest_by_contact"
+            ? { status: "otp_required" }
+            : name === "get_guest_access_options"
+              ? { status: "ok", matches: [{ guest_id: "g-1", first_name: "Jean", last_name: null }] }
+              : name === "claim_guest_access"
+                ? { status: "verified", token: "guest-token" }
+                : null,
+        error: null,
+      }),
+    );
+    const input = await openForm();
+    fireEvent.change(input, { target: { value: "jean@example.test" } });
+    submit();
+
+    await screen.findByRole("heading", { name: en.guestJoin.codeTitle });
+    expect(auth.sendEmailOtp).toHaveBeenCalledWith("jean@example.test", undefined);
+    fireEvent.change(screen.getByRole("textbox", { name: en.guestJoin.codeLabel }), {
+      target: { value: "12345678" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: en.guestJoin.verifyButton }));
+
+    await waitFor(() => expect(harness.push).toHaveBeenCalled());
+    expect(auth.verifyEmailOtp).toHaveBeenCalledWith("jean@example.test", "12345678");
+    expect(harness.rpc).toHaveBeenCalledWith("claim_guest_access", { p_guest_id: "g-1" });
+    expect(harness.push.mock.calls[0]?.[0]).toContain("guest-token");
+  });
+
+  it("says so when nobody matches, and starts over on request", async () => {
+    const input = await openForm();
+    fireEvent.change(input, { target: { value: "nobody@example.test" } });
+    submit();
+
+    await screen.findByRole("heading", { name: en.guestJoin.noMatchTitle });
+    fireEvent.click(screen.getByRole("button", { name: en.guestJoin.tryAgainButton }));
+    expect(await screen.findByRole("heading", { name: en.guestJoin.title })).toBeInTheDocument();
   });
 });

@@ -3,7 +3,11 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guestLinkPath } from "@union/shared";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { DaRoot } from "@/components/guest/DaRoot";
+import { Flow, useFlow, type FlowStep } from "@/components/guest/flow/Flow";
+import { FlowText } from "@/components/guest/flow/fields";
+import { LocaleToggle } from "@/components/guest/LocaleToggle";
+import { OliveBranch } from "@/components/guest/OliveBranch";
 import { CountrySelect, useBrowserCountry } from "@/components/PhoneField";
 import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
@@ -11,16 +15,10 @@ import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { useTurnstile } from "@/lib/turnstile";
 import type { JoinWeddingPreview } from "./page";
-import { G, T, alpha } from "@/lib/theme";
 import { isPhoneCountry, toStoredPhone, type PhoneCountry } from "@union/shared";
 
-type View =
-  | "checking"
-  | "contact_form"
-  | "first_name"
-  | "email_code"
-  | "no_match"
-  | "redirecting";
+/** The screens of the form; each step answers which one comes next. */
+type View = "contact" | "first_name" | "email_code" | "no_match" | "redirecting";
 
 type DisambiguationSource = "contact" | "authenticated" | null;
 
@@ -56,6 +54,9 @@ interface ClaimGuestAccessResult {
   token?: string;
 }
 
+/** An error worded for the guest: shown as is, never replaced by a generic one. */
+class GuestFacingError extends Error {}
+
 function readLastEmail(): string {
   try {
     return window.localStorage.getItem(LAST_EMAIL_KEY) ?? "";
@@ -64,6 +65,80 @@ function readLastEmail(): string {
   }
 }
 
+// The country picker keeps its native <select>; only its look follows the
+// underlined answers around it.
+const COUNTRY_STYLE: React.CSSProperties = {
+  width: "100%",
+  minHeight: 0,
+  marginTop: 18,
+  padding: "8px 0",
+  border: 0,
+  borderBottom: "1px solid var(--da-sage)",
+  borderRadius: 0,
+  background: "transparent",
+  color: "var(--da-ink)",
+  font: "inherit",
+  fontSize: 18,
+};
+
+/** "Use another email or phone number": back to the first question. */
+function StartOver({ onStartOver }: { onStartOver: () => void }) {
+  const { t } = useLocale();
+  const flow = useFlow();
+  return (
+    <button
+      type="button"
+      className="tf-link"
+      onClick={() => {
+        onStartOver();
+        flow.goTo("contact");
+      }}
+    >
+      {t.guestJoin.useAnotherContact}
+    </button>
+  );
+}
+
+/** "Resend code", with its own busy state and error, without leaving the step. */
+function Resend({ onResend }: { onResend: () => Promise<unknown> }) {
+  const { t } = useLocale();
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        className="tf-link"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setFailed(false);
+          try {
+            await onResend();
+          } catch {
+            setFailed(true);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {t.guestJoin.resendButton}
+      </button>
+      {failed ? (
+        <p className="tf-error" role="alert">
+          {t.guestJoin.sendCodeError}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * The group link (/join/[code]): a guest finds their own invitation by the
+ * e-mail or phone the couple has for them, then their first name or a
+ * one-time code if needed — asked one question at a time, like every guest
+ * form. Which question comes next is the server's answer to the last one.
+ */
 export function JoinExperience({
   code,
   preview,
@@ -71,123 +146,85 @@ export function JoinExperience({
   code: string;
   preview: JoinWeddingPreview;
 }) {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
+  const copy = t.guestJoin;
   const router = useRouter();
   const otpMode = preview.guest_join_auth_mode === "otp";
-  const [view, setView] = useState<View>("checking");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Where the form opens, once the session check has answered.
+  const [start, setStart] = useState<View | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
   const [contact, setContact] = useState(() => (otpMode ? readLastEmail() : ""));
   const [email, setEmail] = useState(() => (otpMode ? readLastEmail() : ""));
+  const [codeSent, setCodeSent] = useState(false);
   // The country of a phone number typed without "+"; see phoneMode below.
   // Until the guest chooses, the browser's country is shown for them to
   // confirm or change.
   const browserCountry = useBrowserCountry();
-  const [pickedCountry, setPickedCountry] = useState<
-    PhoneCountry | null | undefined
-  >(undefined);
-  const contactCountry =
-    pickedCountry !== undefined ? pickedCountry : browserCountry;
+  const [pickedCountry, setPickedCountry] = useState<PhoneCountry | null | undefined>(undefined);
+  const contactCountry = pickedCountry !== undefined ? pickedCountry : browserCountry;
   const [firstName, setFirstName] = useState("");
   const [otp, setOtp] = useState("");
-  const [disambiguationSource, setDisambiguationSource] =
-    useState<DisambiguationSource>(null);
+  const [disambiguationSource, setDisambiguationSource] = useState<DisambiguationSource>(null);
   const { captcha, getCaptchaToken } = useTurnstile();
 
-  const partners =
-    [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") ||
-    t.guests.theCouple;
-
-  const dateLabel = preview.event_date
-    ? new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        timeZone: "UTC",
-      }).format(new Date(`${preview.event_date}T00:00:00Z`))
-    : null;
+  const partners = [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") || t.guests.theCouple;
 
   const redirectToGuest = useCallback(
-    (token: string) => {
-      setView("redirecting");
+    (token: string): View => {
       // They have just read the invitation, so their own link needn't repeat
       // it. Best-effort: failing to record it only means seeing it again.
       void getBrowserSupabase()
         .rpc("mark_welcome_seen", { p_token: token })
         .then(undefined, () => {})
         .then(() => router.push(guestLinkPath(token)));
+      return "redirecting";
     },
     [router],
   );
 
   const claimAndContinue = useCallback(
-    async (match: GuestAccessOption) => {
-      setBusy(true);
-      setError(null);
-      try {
-        const supabase = getBrowserSupabase();
-        const { data, error: rpcError } = await supabase.rpc(
-          "claim_guest_access",
-          { p_guest_id: match.guest_id },
-        );
-        if (rpcError) throw rpcError;
+    async (match: GuestAccessOption): Promise<View> => {
+      const supabase = getBrowserSupabase();
+      const { data, error: rpcError } = await supabase.rpc("claim_guest_access", { p_guest_id: match.guest_id });
+      if (rpcError) throw new GuestFacingError(t.guestJoin.genericError);
 
-        const result = data as unknown as ClaimGuestAccessResult;
-        if (result.status !== "verified" || !result.token) {
-          throw new Error(t.guestJoin.accessUnavailable);
-        }
-
-        const { data: authData } = await supabase.auth.getSession();
-        if (authData.session) {
-          writeActiveGuestIdentity({
-            userId: authData.session.user.id,
-            guestId: match.guest_id,
-            guestName: [match.first_name, match.last_name]
-              .filter(Boolean)
-              .join(" "),
-          });
-        }
-        redirectToGuest(result.token);
-      } catch (reason) {
-        setError(
-          reason instanceof Error
-            ? reason.message
-            : t.guestJoin.genericError,
-        );
-        setBusy(false);
+      const result = data as unknown as ClaimGuestAccessResult;
+      if (result.status !== "verified" || !result.token) {
+        throw new GuestFacingError(t.guestJoin.accessUnavailable);
       }
+
+      const { data: authData } = await supabase.auth.getSession();
+      if (authData.session) {
+        writeActiveGuestIdentity({
+          userId: authData.session.user.id,
+          guestId: match.guest_id,
+          guestName: [match.first_name, match.last_name].filter(Boolean).join(" "),
+        });
+      }
+      return redirectToGuest(result.token);
     },
     [redirectToGuest, t],
   );
 
+  /** For a signed-in guest: their invitations on this wedding, by first name if given. */
   const loadAuthenticatedOptions = useCallback(
-    async (name?: string) => {
+    async (name?: string): Promise<View> => {
       const supabase = getBrowserSupabase();
-      const { data, error: rpcError } = await supabase.rpc(
-        "get_guest_access_options",
-        {
-          p_join_code: code,
-          p_first_name: name?.trim() || null,
-        },
-      );
+      const { data, error: rpcError } = await supabase.rpc("get_guest_access_options", {
+        p_join_code: code,
+        p_first_name: name?.trim() || null,
+      });
       if (rpcError) throw rpcError;
 
       const result = data as unknown as GuestAccessOptionsResult;
       const found = result.matches ?? [];
-      if (result.status !== "ok" || found.length === 0) {
-        setView("no_match");
-        return;
-      }
+      if (result.status !== "ok" || found.length === 0) return "no_match";
       if (found.length > 1) {
-        if (name) {
-          setView("no_match");
-        } else {
-          setDisambiguationSource("authenticated");
-          setView("first_name");
-        }
-        return;
+        if (name) return "no_match";
+        setDisambiguationSource("authenticated");
+        return "first_name";
       }
-      await claimAndContinue(found[0]);
+      return claimAndContinue(found[0]);
     },
     [claimAndContinue, code],
   );
@@ -200,13 +237,16 @@ export function JoinExperience({
       .then(async ({ data }) => {
         if (!active) return;
         if (!data.session) {
-          setView("contact_form");
+          setStart("contact");
           return;
         }
         try {
-          await loadAuthenticatedOptions();
-        } catch {
-          if (active) setView("contact_form");
+          const view = await loadAuthenticatedOptions();
+          if (active) setStart(view);
+        } catch (reason) {
+          if (!active) return;
+          if (reason instanceof GuestFacingError) setStartError(reason.message);
+          setStart("contact");
         }
       });
 
@@ -215,21 +255,17 @@ export function JoinExperience({
     };
   }, [loadAuthenticatedOptions, otpMode]);
 
-  const requestEmailCode = async (address = email) => {
+  const requestEmailCode = async (address = email): Promise<View> => {
     const cleanEmail = address.trim();
-    if (!cleanEmail) return;
-    setBusy(true);
-    setError(null);
     try {
       setEmail(cleanEmail);
       await sendEmailOtp(cleanEmail, await getCaptchaToken());
-      setOtp("");
-      setView("email_code");
     } catch {
-      setError(t.guestJoin.sendCodeError);
-    } finally {
-      setBusy(false);
+      throw new GuestFacingError(copy.sendCodeError);
     }
+    setOtp("");
+    setCodeSent(true);
+    return "email_code";
   };
 
   // The guest types an email or a phone in one field. A number only means
@@ -237,405 +273,206 @@ export function JoinExperience({
   // (or 00) we ask for it, and the lookup always sends a number that states
   // its country (E.164). Pre-selecting the browser's country only gives them
   // something visible to confirm.
-  const looksLikePhone =
-    !otpMode && /\d/.test(contact) && !contact.includes("@");
+  const looksLikePhone = !otpMode && /\d/.test(contact) && !contact.includes("@");
   const phoneMode = looksLikePhone && !/^\s*(\+|00)/.test(contact);
 
-  const resolveContact = async (name?: string) => {
+  const resolveContact = async (name?: string): Promise<View> => {
     const cleanContact = contact.trim();
-    if (!cleanContact) return;
-    if (phoneMode && !contactCountry) {
-      setError(t.common.phoneCountryMissing);
-      return;
-    }
-    const lookup = looksLikePhone
-      ? toStoredPhone(contactCountry, cleanContact)
-      : cleanContact;
-    setBusy(true);
-    setError(null);
+    if (phoneMode && !contactCountry) throw new GuestFacingError(t.common.phoneCountryMissing);
+    const lookup = looksLikePhone ? toStoredPhone(contactCountry, cleanContact) : cleanContact;
+
+    let result: ContactLookupResult;
     try {
-      const supabase = getBrowserSupabase();
-      const { data, error: rpcError } = await supabase.rpc(
-        "find_guest_by_contact",
-        {
-          p_join_code: code,
-          p_contact: lookup,
-          p_first_name: name?.trim() || null,
-        },
-      );
+      const { data, error: rpcError } = await getBrowserSupabase().rpc("find_guest_by_contact", {
+        p_join_code: code,
+        p_contact: lookup,
+        p_first_name: name?.trim() || null,
+      });
       if (rpcError) throw rpcError;
-
-      const result = data as unknown as ContactLookupResult;
-      if (result.status === "match" && result.token) {
-        redirectToGuest(result.token);
-        return;
-      }
-      if (result.status === "ambiguous" && !name) {
-        setDisambiguationSource("contact");
-        setView("first_name");
-        return;
-      }
-      if (result.status === "otp_required") {
-        await requestEmailCode(cleanContact);
-        return;
-      }
-      if (result.status === "email_required") {
-        setError(t.guestJoin.emailRequired);
-        setView("contact_form");
-        return;
-      }
-      setView("no_match");
+      result = data as unknown as ContactLookupResult;
     } catch {
-      setError(t.guestJoin.genericError);
-    } finally {
-      setBusy(false);
+      throw new GuestFacingError(copy.genericError);
     }
-  };
 
-  const submitContact = (event: React.FormEvent) => {
-    event.preventDefault();
-    void resolveContact();
-  };
-
-  const submitFirstName = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!firstName.trim()) return;
-    if (disambiguationSource === "authenticated") {
-      setBusy(true);
-      setError(null);
-      void loadAuthenticatedOptions(firstName)
-        .catch(() => setError(t.guestJoin.genericError))
-        .finally(() => setBusy(false));
-    } else {
-      void resolveContact(firstName);
+    if (result.status === "match" && result.token) return redirectToGuest(result.token);
+    if (result.status === "ambiguous" && !name) {
+      setDisambiguationSource("contact");
+      return "first_name";
     }
-  };
-
-  const submitOtp = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!otp.trim()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await verifyEmailOtp(email, otp);
-      await loadAuthenticatedOptions(firstName || undefined);
-    } catch {
-      setError(t.guestJoin.invalidCode);
-    } finally {
-      setBusy(false);
-    }
+    if (result.status === "otp_required") return requestEmailCode(cleanContact);
+    if (result.status === "email_required") throw new GuestFacingError(copy.emailRequired);
+    return "no_match";
   };
 
   const startOver = () => {
     setFirstName("");
     setOtp("");
     setEmail("");
+    setCodeSent(false);
     setDisambiguationSource(null);
-    setError(null);
-    setView("contact_form");
+    setStartError(null);
   };
 
-  const renderContent = () => {
-    if (view === "checking" || view === "redirecting") {
-      return (
-        <div style={{ textAlign: "center", color: G.muted2, padding: "28px 0" }}>
-          {view === "checking"
-            ? t.guestJoin.checkingSession
-            : t.guestJoin.redirecting}
-        </div>
-      );
-    }
+  const withCaptcha = (body: React.ReactNode) => (
+    <>
+      {body}
+      {/* Every step that can send a code (first send, resend) renders the
+          challenge; it stays empty unless one needs a click. */}
+      {captcha ? <div className="tf-captcha">{captcha}</div> : null}
+    </>
+  );
 
-    if (view === "contact_form") {
-      return (
+  const steps: FlowStep[] = [
+    {
+      key: "contact",
+      title: copy.title,
+      description: otpMode ? copy.otpSubtitle : copy.contactSubtitle,
+      body: withCaptcha(
         <>
-          <h2 style={titleStyle}>{t.guestJoin.title}</h2>
-          <p style={bodyStyle}>
-            {otpMode
-              ? t.guestJoin.otpSubtitle
-              : t.guestJoin.contactSubtitle}
-          </p>
-          <form onSubmit={submitContact} style={{ display: "grid", gap: 16 }}>
-            <FieldLabel
-              label={
-                otpMode
-                  ? t.guestJoin.emailLabel
-                  : t.guestJoin.contactLabel
-              }
-            >
-              <input
-                type={otpMode ? "email" : "text"}
-                autoComplete={otpMode ? "email" : "username"}
-                value={contact}
-                onChange={(event) => setContact(event.target.value)}
-                placeholder={
-                  otpMode
-                    ? t.guestJoin.emailPlaceholder
-                    : t.guestJoin.contactPlaceholder
-                }
-                required
-                style={inputStyle}
-              />
-            </FieldLabel>
-            {phoneMode && (
-              <CountrySelect
-                value={contactCountry}
-                onChange={(code) =>
-                  setPickedCountry(isPhoneCountry(code) ? code : null)
-                }
-                style={inputStyle}
-              />
-            )}
-            <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.guestJoin.searching : t.guestJoin.continueButton}
-            </button>
-          </form>
-          <p style={securityStyle}>
-            {otpMode
-              ? t.guestJoin.otpSecurityNote
-              : t.guestJoin.contactSecurityNote}
-          </p>
-        </>
-      );
-    }
-
-    if (view === "first_name") {
-      return (
-        <>
-          <h2 style={titleStyle}>{t.guestJoin.firstNameTitle}</h2>
-          <p style={bodyStyle}>{t.guestJoin.firstNameSubtitle}</p>
-          <form onSubmit={submitFirstName} style={{ display: "grid", gap: 16 }}>
-            <FieldLabel label={t.guestJoin.firstNameLabel}>
-              <input
-                autoComplete="given-name"
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                required
-                style={inputStyle}
-              />
-            </FieldLabel>
-            <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.guestJoin.searching : t.guestJoin.continueButton}
-            </button>
-          </form>
-          <button type="button" onClick={startOver} style={textButtonStyle}>
-            {t.guestJoin.useAnotherContact}
-          </button>
-        </>
-      );
-    }
-
-    if (view === "email_code") {
-      return (
-        <>
-          <h2 style={titleStyle}>{t.guestJoin.codeTitle}</h2>
-          <p style={bodyStyle}>{t.guestJoin.codeSent(email)}</p>
-          <form onSubmit={submitOtp} style={{ display: "grid", gap: 16 }}>
-            <FieldLabel label={t.guestJoin.codeLabel}>
-              <input
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={otp}
-                onChange={(event) => setOtp(event.target.value)}
-                placeholder={t.guestJoin.codePlaceholder}
-                required
-                style={{
-                  ...inputStyle,
-                  textAlign: "center",
-                  letterSpacing: "0.25em",
-                  fontSize: 20,
-                }}
-              />
-            </FieldLabel>
-            <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.guestJoin.verifying : t.guestJoin.verifyButton}
-            </button>
-          </form>
-          <div style={linkRowStyle}>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void requestEmailCode()}
-              style={textButtonStyle}
-            >
-              {t.guestJoin.resendButton}
-            </button>
-            <button type="button" onClick={startOver} style={textButtonStyle}>
-              {t.guestJoin.useAnotherContact}
-            </button>
-          </div>
-        </>
-      );
-    }
-
-    return (
-      <>
-        <h2 style={titleStyle}>{t.guestJoin.noMatchTitle}</h2>
-        <p style={bodyStyle}>{t.guestJoin.noMatchBody(partners)}</p>
-        <button type="button" onClick={startOver} style={primaryButtonStyle}>
-          {t.guestJoin.tryAgainButton}
-        </button>
-      </>
-    );
-  };
-
-  return (
-    <main style={pageStyle}>
-      <div style={{ position: "absolute", top: 20, right: 20 }}>
-        <LanguageSwitcher />
-      </div>
-      <section style={cardStyle}>
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={kickerStyle}>{t.join.heroKicker}</div>
-          <h1 style={heroStyle}>{partners}</h1>
-          {(dateLabel || preview.venue_name) && (
-            <p style={{ ...bodyStyle, marginBottom: 0 }}>
-              {[dateLabel, preview.venue_name].filter(Boolean).join(" · ")}
-            </p>
+          <FlowText
+            type={otpMode ? "email" : "text"}
+            value={contact}
+            onChange={setContact}
+            placeholder={otpMode ? copy.emailPlaceholder : copy.contactPlaceholder}
+            label={otpMode ? copy.emailLabel : copy.contactLabel}
+            autoComplete={otpMode ? "email" : "username"}
+          />
+          {phoneMode && (
+            <CountrySelect
+              value={contactCountry}
+              onChange={(c) => setPickedCountry(isPhoneCountry(c) ? c : null)}
+              style={COUNTRY_STYLE}
+            />
           )}
-        </div>
-        <div style={{ borderTop: `1px solid ${T.sandBg}`, paddingTop: 28 }}>
-          {error && <div style={errorStyle}>{error}</div>}
-          {renderContent()}
-          {/* Every view that can send a code (first send, resend) shares this
-              one mount point; it stays empty unless a challenge needs a click. */}
-          {captcha}
-        </div>
-      </section>
-    </main>
-  );
-}
+          {startError ? (
+            <p className="tf-error" role="alert">
+              {startError}
+            </p>
+          ) : null}
+          <p className="tf-note">{otpMode ? copy.otpSecurityNote : copy.contactSecurityNote}</p>
+        </>,
+      ),
+      valid: contact.trim() !== "",
+      okLabel: copy.continueButton,
+      busyLabel: copy.searching,
+      onNext: () => {
+        setStartError(null);
+        return resolveContact();
+      },
+    },
+  ];
 
-function FieldLabel({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+  if (disambiguationSource) {
+    steps.push({
+      key: "first_name",
+      title: copy.firstNameTitle,
+      description: copy.firstNameSubtitle,
+      body: withCaptcha(
+        <>
+          <FlowText
+            value={firstName}
+            onChange={setFirstName}
+            placeholder={copy.firstNameLabel}
+            label={copy.firstNameLabel}
+            autoComplete="given-name"
+          />
+          <div className="tf-links">
+            <StartOver onStartOver={startOver} />
+          </div>
+        </>,
+      ),
+      valid: firstName.trim() !== "",
+      okLabel: copy.continueButton,
+      busyLabel: copy.searching,
+      onNext: async () => {
+        if (disambiguationSource !== "authenticated") return resolveContact(firstName);
+        try {
+          return await loadAuthenticatedOptions(firstName);
+        } catch (reason) {
+          throw reason instanceof GuestFacingError ? reason : new GuestFacingError(copy.genericError);
+        }
+      },
+    });
+  }
+
+  if (codeSent) {
+    steps.push({
+      key: "email_code",
+      title: copy.codeTitle,
+      description: copy.codeSent(email),
+      body: withCaptcha(
+        <>
+          <FlowText
+            value={otp}
+            onChange={setOtp}
+            placeholder={copy.codePlaceholder}
+            label={copy.codeLabel}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            className="tf-code"
+          />
+          <div className="tf-links">
+            <Resend onResend={() => requestEmailCode()} />
+            <StartOver onStartOver={startOver} />
+          </div>
+        </>,
+      ),
+      valid: otp.trim() !== "",
+      okLabel: copy.verifyButton,
+      busyLabel: copy.verifying,
+      onNext: async () => {
+        try {
+          await verifyEmailOtp(email, otp);
+          return await loadAuthenticatedOptions(firstName || undefined);
+        } catch (reason) {
+          throw reason instanceof GuestFacingError ? reason : new GuestFacingError(copy.invalidCode);
+        }
+      },
+    });
+  }
+
+  steps.push(
+    {
+      key: "no_match",
+      kind: "end",
+      before: <OliveBranch className="tf-ornament" />,
+      title: copy.noMatchTitle,
+      description: copy.noMatchBody(partners),
+      okLabel: copy.tryAgainButton,
+      onNext: () => {
+        startOver();
+        return "contact";
+      },
+    },
+    {
+      key: "redirecting",
+      kind: "end",
+      before: <OliveBranch className="tf-ornament" />,
+      title: copy.redirecting,
+      hideOk: true,
+    },
+  );
+
   return (
-    <label style={{ display: "grid", gap: 7, textAlign: "left" }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: G.ink2 }}>
-        {label}
-      </span>
-      {children}
-    </label>
+    <DaRoot>
+      {start ? (
+        <Flow key="join" label={partners} steps={steps} initialKey={start} topRight={<LocaleToggle />} />
+      ) : (
+        <Flow
+          key="checking"
+          label={partners}
+          topRight={<LocaleToggle />}
+          steps={[
+            {
+              key: "checking",
+              kind: "intro",
+              before: <OliveBranch className="tf-ornament" />,
+              title: copy.checkingSession,
+              hideOk: true,
+            },
+          ]}
+        />
+      )}
+    </DaRoot>
   );
 }
-
-const pageStyle: React.CSSProperties = {
-  minHeight: "100vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: G.bg,
-  padding: "80px 20px 32px",
-  color: G.ink,
-};
-
-const cardStyle: React.CSSProperties = {
-  width: "100%",
-  maxWidth: 480,
-  borderRadius: 24,
-  background: T.white,
-  boxShadow: `0 18px 55px ${alpha(G.ink, 0.08)}`,
-  padding: "38px 32px",
-  boxSizing: "border-box",
-};
-
-const kickerStyle: React.CSSProperties = {
-  color: G.gold,
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  marginBottom: 10,
-};
-
-const heroStyle: React.CSSProperties = {
-  fontFamily: "var(--font-serif)",
-  fontSize: 38,
-  lineHeight: 1.05,
-  margin: "0 0 12px",
-  fontWeight: 600,
-};
-
-const titleStyle: React.CSSProperties = {
-  fontFamily: "var(--font-serif)",
-  fontSize: 29,
-  lineHeight: 1.15,
-  margin: "0 0 10px",
-  fontWeight: 600,
-  textAlign: "center",
-};
-
-const bodyStyle: React.CSSProperties = {
-  color: G.muted2,
-  fontSize: 15,
-  lineHeight: 1.55,
-  textAlign: "center",
-  margin: "0 0 22px",
-};
-
-const securityStyle: React.CSSProperties = {
-  color: G.faint,
-  fontSize: 12,
-  lineHeight: 1.45,
-  textAlign: "center",
-  margin: "14px 0 6px",
-};
-
-const linkRowStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexWrap: "wrap",
-  gap: 12,
-  marginTop: 12,
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  minHeight: 50,
-  borderRadius: 12,
-  border: `1px solid ${G.borderInput}`,
-  background: T.white,
-  color: G.ink,
-  fontSize: 16,
-  padding: "0 14px",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  width: "100%",
-  minHeight: 50,
-  border: 0,
-  borderRadius: 999,
-  background: G.ink,
-  color: T.white,
-  fontSize: 15,
-  fontWeight: 600,
-  cursor: "pointer",
-  padding: "0 20px",
-};
-
-const textButtonStyle: React.CSSProperties = {
-  border: 0,
-  background: "transparent",
-  color: G.muted3,
-  fontSize: 14,
-  textDecoration: "underline",
-  cursor: "pointer",
-  padding: 4,
-};
-
-const errorStyle: React.CSSProperties = {
-  background: G.errBg,
-  border: `1px solid ${G.errBorder}`,
-  color: G.errInk,
-  padding: "11px 13px",
-  borderRadius: 10,
-  fontSize: 13,
-  marginBottom: 18,
-};

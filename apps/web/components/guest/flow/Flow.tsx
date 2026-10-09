@@ -87,6 +87,7 @@ export function Flow({
   steps,
   onClose,
   topRight,
+  initialKey,
 }: {
   /** Shown small at the top, and the dialog's accessible name. */
   label: string;
@@ -95,11 +96,13 @@ export function Flow({
   onClose?: () => void;
   /** Extra controls at the top right, before the close button. */
   topRight?: React.ReactNode;
+  /** The step to open on, when it isn't the first. */
+  initialKey?: string;
 }) {
   const { t } = useLocale();
   const copy = t.guestFlow;
 
-  const [currentKey, setCurrentKey] = useState(steps[0]?.key ?? "");
+  const [currentKey, setCurrentKey] = useState(initialKey ?? steps[0]?.key ?? "");
   const [leaving, setLeaving] = useState(false);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [showInvalid, setShowInvalid] = useState(false);

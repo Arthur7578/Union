@@ -124,6 +124,7 @@
 .tf-choices-center .tf-choices{align-items:center}
 .tf-choices-center .tf-choice{width:min(100%,340px)}
 .tf-captcha{margin-top:20px}
+.tf-note{margin:18px 0 0;font-size:14px;font-style:italic;line-height:1.5;color:var(--da-ink-soft)}
 .tf .tf-code{letter-spacing:.3em;font-variant-numeric:lining-nums tabular-nums}
 .tf-links{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:18px}
 .tf-link{border:0;background:none;padding:4px 0;cursor:pointer;font:inherit;font-size:12px;letter-spacing:.2em;text-transform:uppercase;
