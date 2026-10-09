@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "@/lib/i18n/client";
 import { coupleText, coupleTextOr, rsvpDefaults } from "@/lib/i18n/text";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { clearActiveGuestIdentity } from "@/lib/guestIdentity";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { submitGuestRsvp } from "@/lib/submitRsvp";
+import { ReplyEmailField, useReplyEmail } from "./ReplyEmailField";
 import {
   canAddChildren,
   canAddPartner as mayAddPartner,
@@ -18,6 +18,8 @@ import type { FormAnswers, GuestModuleKey, RsvpQuestion } from "@union/shared";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import type { DBInvitation } from "./page";
 import { G, T, alpha } from "@/lib/theme";
+import { useReplayWelcome } from "@/components/guest/WelcomeGate";
+import { formatGuestAddress } from "@/lib/guestAddress";
 
 /** Tab label and icon per module, in the order guests see them. Keyed by the
  *  same module keys the couple toggles in /guests/modules, so a module can
@@ -48,6 +50,8 @@ interface GuestPortalProps {
   token: string;
   invitation: DBInvitation;
   isDemo: boolean;
+  /** The couple has no email for this guest: ask for one when they reply. */
+  emailMissing?: boolean;
 }
 
 // Beautiful simulated database for guest connections (carsharing/travel buddy matches)
@@ -124,7 +128,8 @@ const STAYS = [
   }
 ];
 
-export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
+export function GuestPortal({ token, invitation, isDemo, emailMissing = false }: GuestPortalProps) {
+  const replayWelcome = useReplayWelcome();
   const { t, locale } = useLocale();
   const router = useRouter();
   const [hasAuthSession, setHasAuthSession] = useState(false);
@@ -207,6 +212,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
   // Loading/submitting states
   const [submittingRsvp, setSubmittingRsvp] = useState<boolean>(false);
+  const replyEmail = useReplyEmail({ token, emailMissing, isDemo });
 
   // Travel matching state
   const [connections, setConnections] = useState(SAMPLE_CONNECTIONS);
@@ -239,32 +245,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     };
   }, []);
 
-  /**
-   * Remember a guest's own language choice against their invitation, not just
-   * in this browser's cookie.
-   *
-   * Invitations get opened on a phone, then a laptop, then a phone with
-   * cleared cookies. Storing the pick server-side means the couple's wording
-   * comes back in the right language every time.
-   *
-   * Only a deliberate switch is recorded — the language this page merely
-   * opened in is a guess from the browser's headers or the couple's default,
-   * and storing that as a choice would outrank every other signal on every
-   * later visit with something nobody actually chose. It lands in
-   * guests.chosen_locale, alongside rather than over the couple's own
-   * per-guest override. Best-effort besides: failing to save a preference
-   * must never break the invitation, so the error is swallowed.
-   */
-  const openedIn = React.useRef(locale);
-  useEffect(() => {
-    if (isDemo) return;
-    if (locale === openedIn.current) return;
-    const supabase = getBrowserSupabase();
-    void supabase
-      .rpc("set_guest_locale", { p_token: token, p_locale: locale })
-      .then(undefined, () => {});
-  }, [locale, token, isDemo]);
-
   // Update Countdown timer
   useEffect(() => {
     const targetDate = invitation.wedding.event_date ? new Date(`${invitation.wedding.event_date}T00:00:00`) : new Date("2026-09-20T16:00:00");
@@ -296,6 +276,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
 
     setSubmittingRsvp(true);
     try {
+      if (!(await replyEmail.save())) return;
       if (!isDemo) {
         const supabase = getBrowserSupabase();
         await submitGuestRsvp(
@@ -367,7 +348,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
         scope: "local",
       });
       if (error) throw error;
-      clearActiveGuestIdentity();
       router.push("/");
     } catch (error) {
       console.error("Failed to sign out guest:", error);
@@ -379,25 +359,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     { weekday: "long", year: "numeric", month: "long", day: "numeric" }
   ) : "Saturday, September 20, 2026";
 
-  // The RPC removes every field the couple has not chosen to disclose. The
-  // formatter still switches on the visibility tier so the guest UI cannot
-  // accidentally reintroduce area into precise addresses later.
-  const address = invitation.wedding.address;
-  const cityAndPostalCode = address?.city
-    ? `${address.city}${address.postal_code ? ` (${address.postal_code})` : ""}`
-    : address?.postal_code
-      ? `(${address.postal_code})`
-      : "";
-  const addressParts = address
-    ? invitation.wedding.address_visibility === "area"
-      ? [address.area, address.country]
-      : invitation.wedding.address_visibility === "partial"
-        ? [cityAndPostalCode, address.country]
-        : invitation.wedding.address_visibility === "full"
-          ? [address.line, cityAndPostalCode, address.country]
-          : []
-    : [];
-  const addressText = addressParts.filter(Boolean).join(", ");
+  const addressText = formatGuestAddress(invitation.wedding);
   const guestLocationSummary = invitation.wedding.venue_name || addressText;
   const addressPending = locale === "fr"
     ? "L'adresse complète sera communiquée prochainement."
@@ -1079,6 +1041,23 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
               {signingOut ? t.common.signingOut : t.common.signOut}
             </button>
           )}
+          {replayWelcome && (
+            <button
+              type="button"
+              onClick={replayWelcome}
+              style={{
+                border: 0,
+                background: "transparent",
+                color: "var(--muted)",
+                fontSize: "13px",
+                textDecoration: "underline",
+                cursor: "pointer",
+                padding: "6px 2px",
+              }}
+            >
+              {t.welcome.seeAgain}
+            </button>
+          )}
           <LanguageSwitcher compact />
         </div>
         <p className="u-serif" style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "2px", color: "var(--accent)", fontWeight: "600" }}>
@@ -1730,6 +1709,11 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
                 )}
               </div>
             )}
+
+            <ReplyEmailField
+              state={replyEmail}
+              couple={[invitation.wedding.partner_one, invitation.wedding.partner_two].filter(Boolean).join(" & ") || t.guests.theCouple}
+            />
 
             {/* Message to Couple */}
             <div className="field">

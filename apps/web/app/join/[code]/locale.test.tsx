@@ -62,7 +62,9 @@ function preview(defaultLocale: string | null): JoinWeddingPreview {
     partner_two: "Daniel",
     event_date: "2026-09-20",
     venue_name: "Wildflower Barn",
-    guest_join_auth_mode: "contact",
+    guest_join_auth_mode: "secure",
+  address_visibility: "hidden",
+  address: null,
     default_locale: defaultLocale,
   };
 }

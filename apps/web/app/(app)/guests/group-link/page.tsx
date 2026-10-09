@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import type { GuestJoinAuthMode } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
-import { fetchGuestEmailCoverage, updateWedding } from "@/lib/data";
+import { updateWedding } from "@/lib/data";
 import { BackHeader } from "@/components/BackHeader";
 import { Button, Card, SectionLabel, Loading } from "@/components/ui";
 import { useT } from "@/lib/i18n/client";
@@ -13,26 +14,6 @@ export default function GroupLinkPage() {
   const { wedding, refresh } = useWedding();
   const [copied, setCopied] = useState(false);
   const [modeBusy, setModeBusy] = useState(false);
-  const [coverage, setCoverage] = useState<{
-    withEmail: number;
-    total: number;
-  } | null>(null);
-  const weddingId = wedding?.id;
-
-  useEffect(() => {
-    if (!weddingId) return;
-    let active = true;
-    void fetchGuestEmailCoverage(weddingId)
-      .then((result) => {
-        if (active) setCoverage(result);
-      })
-      .catch(() => {
-        if (active) setCoverage(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [weddingId]);
 
   if (!wedding)
     return (
@@ -41,7 +22,7 @@ export default function GroupLinkPage() {
       </main>
     );
 
-  const setAuthMode = async (next: "contact" | "otp") => {
+  const setAuthMode = async (next: GuestJoinAuthMode) => {
     setModeBusy(true);
     try {
       await updateWedding(wedding.id, { guest_join_auth_mode: next });
@@ -122,26 +103,24 @@ export default function GroupLinkPage() {
         </div>
         <div style={{ display: "grid", gap: 10 }}>
           <AuthModeOption
-            id="guest-auth-contact"
-            checked={wedding.guest_join_auth_mode === "contact"}
+            id="guest-auth-secure"
+            checked={wedding.guest_join_auth_mode !== "light"}
             disabled={modeBusy}
-            label={t.groupLink.contactModeLabel}
-            hint={t.groupLink.contactModeHint}
-            onChange={() => void setAuthMode("contact")}
+            label={t.groupLink.secureModeLabel}
+            hint={t.groupLink.secureModeHint}
+            onChange={() => void setAuthMode("secure")}
           />
           <AuthModeOption
-            id="guest-auth-otp"
-            checked={wedding.guest_join_auth_mode === "otp"}
+            id="guest-auth-light"
+            checked={wedding.guest_join_auth_mode === "light"}
             disabled={modeBusy}
-            label={t.groupLink.otpModeLabel}
-            hint={t.groupLink.otpModeHint}
-            warning={
-              coverage
-                ? t.groupLink.otpCoverage(coverage.withEmail, coverage.total)
-                : undefined
-            }
-            onChange={() => void setAuthMode("otp")}
+            label={t.groupLink.lightModeLabel}
+            hint={t.groupLink.lightModeHint}
+            onChange={() => void setAuthMode("light")}
           />
+        </div>
+        <div style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.5, marginTop: 14 }}>
+          {t.groupLink.personalLinksNote}
         </div>
       </Card>
     </main>
@@ -154,7 +133,6 @@ function AuthModeOption({
   disabled,
   label,
   hint,
-  warning,
   onChange,
 }: {
   id: string;
@@ -162,7 +140,6 @@ function AuthModeOption({
   disabled: boolean;
   label: string;
   hint: string;
-  warning?: string;
   onChange: () => void;
 }) {
   return (
@@ -194,11 +171,6 @@ function AuthModeOption({
         <div style={{ fontSize: 12, color: T.faint, marginTop: 4, lineHeight: 1.45 }}>
           {hint}
         </div>
-        {warning && (
-          <div style={{ fontSize: 12, color: T.amberDeep, marginTop: 8, lineHeight: 1.45 }}>
-            {warning}
-          </div>
-        )}
       </div>
     </label>
   );

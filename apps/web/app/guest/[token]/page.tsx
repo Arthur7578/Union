@@ -12,9 +12,7 @@ import type {
   LocalizedText,
   RsvpQuestion,
 } from "@union/shared";
-import { GuestPortal } from "./GuestPortal";
-import { GuestEmailGate } from "./GuestEmailGate";
-import { GuestIdentityGate } from "./GuestIdentityGate";
+import { GuestEntry } from "./GuestEntry";
 import { G, T, alpha } from "@/lib/theme";
 
 // Always fetch fresh invitation data (no static caching of personal links).
@@ -212,10 +210,6 @@ export default async function GuestExperiencePage({
     );
   }
 
-  const guestName = [invitation.guest.first_name, invitation.guest.last_name]
-    .filter(Boolean)
-    .join(" ");
-
   // Which language to open the invitation in. The ranking lives in
   // resolveGuestLocale: anything the guest said themselves, then the couple's
   // override for them, then their browser, and only then the language the
@@ -231,23 +225,12 @@ export default async function GuestExperiencePage({
 
   return (
     <LocaleProvider initialLocale={initialLocale}>
-      <GuestIdentityGate
-        guestId={invitation.guest.id}
-        guestName={guestName}
-      >
-        <GuestEmailGate
-          token={token}
-          guestId={invitation.guest.id}
-          guestName={guestName}
-          emailMissing={emailMissing}
-        >
-          <GuestPortal
-            token={token}
-            invitation={invitation}
-            isDemo={isDemo}
-          />
-        </GuestEmailGate>
-      </GuestIdentityGate>
+      <GuestEntry
+        token={token}
+        invitation={invitation}
+        isDemo={isDemo}
+        emailMissing={emailMissing}
+      />
     </LocaleProvider>
   );
 }
