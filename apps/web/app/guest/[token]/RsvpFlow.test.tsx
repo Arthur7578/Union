@@ -20,6 +20,7 @@ vi.mock("@/lib/supabaseClient", () => ({
 }));
 
 import { RsvpFlow, type Companion, type RsvpReply } from "./RsvpFlow";
+import type { ReplyEmail } from "./ReplyEmailField";
 
 const guinevere: Companion = {
   id: "c-1",
@@ -33,7 +34,14 @@ const guinevere: Companion = {
 
 const pending: RsvpReply = { status: "pending", dietary: "", message: "", companions: {} };
 
-function open(opts: { companions?: Companion[]; onSaved?: (r: RsvpReply) => void; onClose?: () => void } = {}) {
+function open(
+  opts: {
+    companions?: Companion[];
+    onSaved?: (r: RsvpReply) => void;
+    onClose?: () => void;
+    replyEmail?: ReplyEmail;
+  } = {},
+) {
   return render(
     <LocaleProvider initialLocale="en">
       <RsvpFlow
@@ -45,6 +53,7 @@ function open(opts: { companions?: Companion[]; onSaved?: (r: RsvpReply) => void
         labelDeclined="Declined"
         guestFirstName="Arthur"
         coupleNames="Maya & Daniel"
+        replyEmail={opts.replyEmail}
         initial={pending}
         companions={opts.companions ?? []}
         canAddPartner={false}
@@ -192,5 +201,33 @@ describe("RsvpFlow", () => {
     await question("Thank you, Arthur");
     fireEvent.click(screen.getByRole("button", { name: "Back to the invitation" }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("asks a guest the couple has no email for, and keeps them there until it's saved", async () => {
+    const save = vi.fn(() => Promise.resolve(false));
+    const replyEmail: ReplyEmail = {
+      show: true,
+      required: true,
+      email: "",
+      setEmail: () => {},
+      error: null,
+      save,
+    };
+    open({ replyEmail });
+    enter();
+    await question("will you join us");
+    fireEvent.keyDown(window, { key: "b" });
+
+    await question("Your email");
+    expect(screen.getByText("So Maya & Daniel can send you the practical details.")).toBeInTheDocument();
+    enter();
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.getByRole("heading", { name: "Your email" })).toBeInTheDocument();
+    expect(harness.rpc).not.toHaveBeenCalled();
+
+    save.mockImplementation(() => Promise.resolve(true));
+    enter();
+    expect(await question("A word for Maya & Daniel")).toBeInTheDocument();
   });
 });

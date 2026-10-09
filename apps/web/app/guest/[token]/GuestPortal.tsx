@@ -13,7 +13,6 @@ import { LocaleToggle } from "@/components/guest/LocaleToggle";
 import { OliveBranch } from "@/components/guest/OliveBranch";
 import { useReplayWelcome } from "@/components/guest/WelcomeGate";
 import { formatGuestAddress } from "@/lib/guestAddress";
-import { clearActiveGuestIdentity } from "@/lib/guestIdentity";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { useLocale } from "@/lib/i18n/client";
 import { coupleText, coupleTextOr, rsvpDefaults } from "@/lib/i18n/text";
@@ -22,6 +21,7 @@ import { GUEST_DA_VARS } from "@/lib/theme";
 import { CustomFormFlow } from "./CustomFormFlow";
 import { FaqSection } from "./FaqSection";
 import { LogisticsSection } from "./LogisticsSection";
+import { useReplyEmail } from "./ReplyEmailField";
 import { RsvpFlow, type RsvpReply } from "./RsvpFlow";
 import { SectionHead } from "./SectionHead";
 import { TravelSection } from "./TravelSection";
@@ -32,6 +32,8 @@ interface GuestPortalProps {
   token: string;
   invitation: DBInvitation;
   isDemo: boolean;
+  /** The couple has no email for this guest: ask for one when they reply. */
+  emailMissing?: boolean;
 }
 
 type CustomForm = NonNullable<DBInvitation["custom_forms"]>[number];
@@ -74,7 +76,7 @@ function useActiveSection(ids: string[]) {
   return active;
 }
 
-export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
+export function GuestPortal({ token, invitation, isDemo, emailMissing = false }: GuestPortalProps) {
   const replayWelcome = useReplayWelcome();
   const { t, locale } = useLocale();
   const hub = t.guestHub;
@@ -128,6 +130,8 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
   );
 
   const daysLeft = useDaysLeft(invitation.wedding.event_date);
+  // A guest the couple has no email for is asked for one as part of the RSVP.
+  const replyEmail = useReplyEmail({ token, emailMissing, isDemo });
 
   useEffect(() => {
     let mounted = true;
@@ -166,7 +170,6 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
     try {
       const { error } = await getBrowserSupabase().auth.signOut({ scope: "local" });
       if (error) throw error;
-      clearActiveGuestIdentity();
       router.push("/");
     } catch (error) {
       console.error("Failed to sign out guest:", error);
@@ -458,6 +461,7 @@ export function GuestPortal({ token, invitation, isDemo }: GuestPortalProps) {
           labelDeclined={labelDeclined}
           guestFirstName={guestFirstName}
           coupleNames={coupleNames}
+          replyEmail={replyEmail}
           initial={reply}
           companions={companions}
           canAddPartner={canAddPartner}

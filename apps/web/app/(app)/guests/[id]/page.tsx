@@ -45,6 +45,7 @@ import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
 import { NewRelativeForm } from "@/components/NewRelativeForm";
 import { RelationshipCombobox } from "@/components/RelationshipCombobox";
 import { SmsInviteModal } from "@/components/SmsInviteModal";
+import { GuestEmailStatus } from "@/components/GuestEmailStatus";
 import { DEFAULT_SMS_TEMPLATE, resolveSmsTemplate } from "@/lib/sms";
 import { DEFAULT_LOCALE, getDictionary, isLocale, type Locale } from "@/lib/i18n";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
@@ -1140,6 +1141,16 @@ export default function GuestDetailPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+          />
+          <GuestEmailStatus
+            guest={guest}
+            onReset={async () => {
+              const fresh = await fetchGuest(guest.id);
+              if (fresh) {
+                setGuest(fresh);
+                setEmail(fresh.email ?? "");
+              }
+            }}
           />
         </div>
         <div className="field">

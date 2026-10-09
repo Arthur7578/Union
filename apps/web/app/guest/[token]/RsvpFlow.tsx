@@ -6,8 +6,10 @@ import { FlowChoices, FlowLongText, FlowText } from "@/components/guest/flow/fie
 import { OliveBranch } from "@/components/guest/OliveBranch";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { suggestEmailFix } from "@/lib/emailSuggest";
 import { submitGuestRsvp, type CompanionRsvp, type RsvpStatus } from "@/lib/submitRsvp";
 import type { DBInvitation } from "./page";
+import type { ReplyEmail } from "./ReplyEmailField";
 
 export type Companion = DBInvitation["companions"][number];
 type Candidates = DBInvitation["self_merge_candidates"];
@@ -104,6 +106,7 @@ export function RsvpFlow({
   labelDeclined,
   guestFirstName,
   coupleNames,
+  replyEmail,
   initial,
   companions,
   canAddPartner,
@@ -120,6 +123,8 @@ export function RsvpFlow({
   labelDeclined: string;
   guestFirstName: string;
   coupleNames: string;
+  /** The guest's email, asked here when the couple has none (see ReplyEmailField). */
+  replyEmail?: ReplyEmail;
   initial: RsvpReply;
   companions: Companion[];
   canAddPartner: boolean;
@@ -357,6 +362,42 @@ export function RsvpFlow({
         });
       }
     }
+  }
+
+  if (replyEmail?.show) {
+    const suggestion = suggestEmailFix(replyEmail.email);
+    steps.push({
+      key: "email",
+      title: t.replyEmail.label,
+      description: replyEmail.required ? t.replyEmail.hintRequired(coupleNames) : t.replyEmail.hintOptional(coupleNames),
+      body: (
+        <>
+          <FlowText
+            type="email"
+            value={replyEmail.email}
+            onChange={replyEmail.setEmail}
+            placeholder={t.replyEmail.placeholder}
+            label={t.replyEmail.label}
+            autoComplete="email"
+          />
+          {suggestion ? (
+            <div className="tf-links">
+              <button type="button" className="tf-link" onClick={() => replyEmail.setEmail(suggestion)}>
+                {t.replyEmail.suggestion(suggestion)}
+              </button>
+            </div>
+          ) : null}
+          {replyEmail.error ? (
+            <p className="tf-error" role="alert">
+              {replyEmail.error}
+            </p>
+          ) : null}
+        </>
+      ),
+      // Saved as given (unconfirmed) before the reply itself is sent; a
+      // required address that's missing or malformed keeps the guest here.
+      onNext: async () => ((await replyEmail.save()) ? undefined : false),
+    });
   }
 
   steps.push(

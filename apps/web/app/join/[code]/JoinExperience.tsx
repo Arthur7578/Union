@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guestLinkPath } from "@union/shared";
 import { DaRoot } from "@/components/guest/DaRoot";
@@ -8,102 +8,115 @@ import { Flow, useFlow, type FlowStep } from "@/components/guest/flow/Flow";
 import { FlowText } from "@/components/guest/flow/fields";
 import { LocaleToggle } from "@/components/guest/LocaleToggle";
 import { OliveBranch } from "@/components/guest/OliveBranch";
-import { CountrySelect, useBrowserCountry } from "@/components/PhoneField";
-import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
-import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
+import { sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
+import { looksLikeEmail } from "@/lib/emailSuggest";
+import { markGroupLinkArrival } from "@/lib/groupLinkArrival";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { useTurnstile } from "@/lib/turnstile";
 import type { JoinWeddingPreview } from "./page";
-import { isPhoneCountry, toStoredPhone, type PhoneCountry } from "@union/shared";
 
-/** The screens of the form; each step answers which one comes next. */
-type View = "contact" | "first_name" | "email_code" | "no_match" | "redirecting";
+/**
+ * The group link, after the welcome: a guest finds their own invitation by
+ * name. Their first name, then their last name only when several guests
+ * share that first name. In secure mode they then confirm an email with a
+ * code (the one the couple entered, or their own, which then secures the
+ * invitation); in light mode the name alone opens it.
+ *
+ * Everyone starts at the name, even on a device already signed in: it may be
+ * someone else's (a shared computer, a family tablet). When the account
+ * signed in here already holds the invitation for that name, the code step
+ * is skipped.
+ *
+ * Asked one question at a time, like every guest form: each step answers
+ * which one comes next, from the server's reply to it.
+ */
 
-type DisambiguationSource = "contact" | "authenticated" | null;
+type View =
+  | "name"
+  | "last_name"
+  | "email"
+  | "code"
+  | "not_found"
+  | "ambiguous"
+  | "already_secured"
+  | "redirecting";
 
-interface ContactLookupResult {
+interface FindResult {
   status:
     | "match"
+    | "needs_last_name"
     | "ambiguous"
-    | "otp_required"
-    | "email_required"
+    | "not_found"
+    | "invalid_link"
+    | "rate_limited";
+  mode?: "secure" | "light";
+  token?: string;
+  guest_id?: string;
+}
+
+interface CheckEmailResult {
+  status:
+    | "ok"
+    | "email_mismatch"
+    | "already_secured"
+    | "invalid_email"
+    | "not_found"
+    | "invalid_link"
+    | "rate_limited";
+}
+
+interface SecureResult {
+  status:
+    | "verified"
+    | "not_authenticated"
+    | "email_not_confirmed"
+    | "email_mismatch"
+    | "already_secured"
     | "not_found"
     | "invalid_link";
   token?: string;
+  guest_id?: string;
+  first_name?: string;
+  last_name?: string | null;
 }
 
-interface GuestAccessOption {
+interface AccessOption {
   guest_id: string;
   first_name: string;
   last_name: string | null;
 }
 
-interface GuestAccessOptionsResult {
+interface AccessOptionsResult {
   status: "ok" | "not_authenticated";
-  matches?: GuestAccessOption[];
-}
-
-interface ClaimGuestAccessResult {
-  status:
-    | "verified"
-    | "not_authenticated"
-    | "not_found"
-    | "already_claimed"
-    | "not_available";
-  token?: string;
+  matches?: AccessOption[];
 }
 
 /** An error worded for the guest: shown as is, never replaced by a generic one. */
 class GuestFacingError extends Error {}
 
-function readLastEmail(): string {
-  try {
-    return window.localStorage.getItem(LAST_EMAIL_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-// The country picker keeps its native <select>; only its look follows the
-// underlined answers around it.
-const COUNTRY_STYLE: React.CSSProperties = {
-  width: "100%",
-  minHeight: 0,
-  marginTop: 18,
-  padding: "8px 0",
-  border: 0,
-  borderBottom: "1px solid var(--da-sage)",
-  borderRadius: 0,
-  background: "transparent",
-  color: "var(--da-ink)",
-  font: "inherit",
-  fontSize: 18,
-};
-
-/** "Use another email or phone number": back to the first question. */
-function StartOver({ onStartOver }: { onStartOver: () => void }) {
-  const { t } = useLocale();
+/** A link under a step's answer that resets the form and goes back to a step. */
+function BackTo({ to, label, onReset }: { to: View; label: string; onReset?: () => void }) {
   const flow = useFlow();
   return (
     <button
       type="button"
       className="tf-link"
       onClick={() => {
-        onStartOver();
-        flow.goTo("contact");
+        onReset?.();
+        flow.goTo(to);
       }}
     >
-      {t.guestJoin.useAnotherContact}
+      {label}
     </button>
   );
 }
 
-/** "Resend code", with its own busy state and error, without leaving the step. */
-function Resend({ onResend }: { onResend: () => Promise<unknown> }) {
-  const { t } = useLocale();
+/** "Resend code", without leaving the step unless the server says otherwise. */
+function Resend({ label, onResend }: { label: string; onResend: () => Promise<View> }) {
+  const flow = useFlow();
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
   return (
     <>
       <button
@@ -112,33 +125,28 @@ function Resend({ onResend }: { onResend: () => Promise<unknown> }) {
         disabled={busy}
         onClick={async () => {
           setBusy(true);
-          setFailed(false);
+          setFailure(null);
           try {
-            await onResend();
-          } catch {
-            setFailed(true);
+            const next = await onResend();
+            if (next !== "code") flow.goTo(next);
+          } catch (reason) {
+            setFailure(reason instanceof Error ? reason.message : null);
           } finally {
             setBusy(false);
           }
         }}
       >
-        {t.guestJoin.resendButton}
+        {label}
       </button>
-      {failed ? (
+      {failure ? (
         <p className="tf-error" role="alert">
-          {t.guestJoin.sendCodeError}
+          {failure}
         </p>
       ) : null}
     </>
   );
 }
 
-/**
- * The group link (/join/[code]): a guest finds their own invitation by the
- * e-mail or phone the couple has for them, then their first name or a
- * one-time code if needed — asked one question at a time, like every guest
- * form. Which question comes next is the server's answer to the last one.
- */
 export function JoinExperience({
   code,
   preview,
@@ -149,28 +157,26 @@ export function JoinExperience({
   const { t } = useLocale();
   const copy = t.guestJoin;
   const router = useRouter();
-  const otpMode = preview.guest_join_auth_mode === "otp";
-  // Where the form opens, once the session check has answered.
-  const [start, setStart] = useState<View | null>(null);
-  const [startError, setStartError] = useState<string | null>(null);
-  const [contact, setContact] = useState(() => (otpMode ? readLastEmail() : ""));
-  const [email, setEmail] = useState(() => (otpMode ? readLastEmail() : ""));
-  const [codeSent, setCodeSent] = useState(false);
-  // The country of a phone number typed without "+"; see phoneMode below.
-  // Until the guest chooses, the browser's country is shown for them to
-  // confirm or change.
-  const browserCountry = useBrowserCountry();
-  const [pickedCountry, setPickedCountry] = useState<PhoneCountry | null | undefined>(undefined);
-  const contactCountry = pickedCountry !== undefined ? pickedCountry : browserCountry;
+  const [askLastName, setAskLastName] = useState(false);
   const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [guestId, setGuestId] = useState<string | null>(null);
+  // Not prefilled from this device's last sign-in: on a shared device that
+  // is someone else's address.
+  const [email, setEmail] = useState("");
+  // Why the guest was sent back to the email step, if they were.
+  const [emailNotice, setEmailNotice] = useState<string | null>(null);
+  const [codeSent, setCodeSent] = useState(false);
   const [otp, setOtp] = useState("");
-  const [disambiguationSource, setDisambiguationSource] = useState<DisambiguationSource>(null);
   const { captcha, getCaptchaToken } = useTurnstile();
 
-  const partners = [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") || t.guests.theCouple;
+  const partners =
+    [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") ||
+    t.guests.theCouple;
 
   const redirectToGuest = useCallback(
     (token: string): View => {
+      markGroupLinkArrival(token);
       // They have just read the invitation, so their own link needn't repeat
       // it. Best-effort: failing to record it only means seeing it again.
       void getBrowserSupabase()
@@ -182,135 +188,141 @@ export function JoinExperience({
     [router],
   );
 
-  const claimAndContinue = useCallback(
-    async (match: GuestAccessOption): Promise<View> => {
+  /**
+   * Opens the invitation for the signed-in account, if it may. Returns the
+   * outcome so each caller decides what a refusal means for it.
+   */
+  const secureWithSession = useCallback(
+    async (id: string): Promise<SecureResult["status"]> => {
       const supabase = getBrowserSupabase();
-      const { data, error: rpcError } = await supabase.rpc("claim_guest_access", { p_guest_id: match.guest_id });
-      if (rpcError) throw new GuestFacingError(t.guestJoin.genericError);
-
-      const result = data as unknown as ClaimGuestAccessResult;
-      if (result.status !== "verified" || !result.token) {
-        throw new GuestFacingError(t.guestJoin.accessUnavailable);
+      const { data, error: rpcError } = await supabase.rpc(
+        "secure_guest_invitation",
+        { p_join_code: code, p_guest_id: id },
+      );
+      if (rpcError) throw rpcError;
+      const result = data as unknown as SecureResult;
+      if (result.status === "verified" && result.token) {
+        redirectToGuest(result.token);
       }
-
-      const { data: authData } = await supabase.auth.getSession();
-      if (authData.session) {
-        writeActiveGuestIdentity({
-          userId: authData.session.user.id,
-          guestId: match.guest_id,
-          guestName: [match.first_name, match.last_name].filter(Boolean).join(" "),
-        });
-      }
-      return redirectToGuest(result.token);
+      return result.status;
     },
-    [redirectToGuest, t],
+    [code, redirectToGuest],
   );
 
-  /** For a signed-in guest: their invitations on this wedding, by first name if given. */
-  const loadAuthenticatedOptions = useCallback(
-    async (name?: string): Promise<View> => {
+  const findByName = async (withLastName: boolean): Promise<View> => {
+    let result: FindResult;
+    try {
       const supabase = getBrowserSupabase();
-      const { data, error: rpcError } = await supabase.rpc("get_guest_access_options", {
+      const { data, error: rpcError } = await supabase.rpc("find_guest_for_join", {
         p_join_code: code,
-        p_first_name: name?.trim() || null,
+        p_first_name: firstName.trim(),
+        p_last_name: withLastName ? lastName.trim() : null,
       });
       if (rpcError) throw rpcError;
+      result = data as unknown as FindResult;
 
-      const result = data as unknown as GuestAccessOptionsResult;
-      const found = result.matches ?? [];
-      if (result.status !== "ok" || found.length === 0) return "no_match";
-      if (found.length > 1) {
-        if (name) return "no_match";
-        setDisambiguationSource("authenticated");
-        return "first_name";
+      if (result.status === "match") {
+        if (result.mode === "light" && result.token) return redirectToGuest(result.token);
+        if (result.guest_id) {
+          setGuestId(result.guest_id);
+          // No code when this device's account already holds this very
+          // invitation. Anything else goes through the email step, so a
+          // signed-in visitor typing someone else's name can never attach
+          // their own email to that guest's invitation.
+          const { data: auth } = await supabase.auth.getSession();
+          if (auth.session) {
+            const { data: own } = await supabase.rpc("get_guest_access_options", {
+              p_join_code: code,
+            });
+            const mine = ((own as unknown as AccessOptionsResult | null)?.matches ?? []).some(
+              (option) => option.guest_id === result.guest_id,
+            );
+            if (mine && (await secureWithSession(result.guest_id)) === "verified") return "redirecting";
+          }
+          setEmailNotice(null);
+          return "email";
+        }
       }
-      return claimAndContinue(found[0]);
-    },
-    [claimAndContinue, code],
-  );
+    } catch {
+      throw new GuestFacingError(copy.genericError);
+    }
+    if (result.status === "needs_last_name") {
+      setAskLastName(true);
+      return "last_name";
+    }
+    if (result.status === "ambiguous") return "ambiguous";
+    if (result.status === "rate_limited") throw new GuestFacingError(copy.rateLimited);
+    return "not_found";
+  };
 
-  useEffect(() => {
-    let active = true;
-
-    void getBrowserSupabase()
-      .auth.getSession()
-      .then(async ({ data }) => {
-        if (!active) return;
-        if (!data.session) {
-          setStart("contact");
-          return;
-        }
-        try {
-          const view = await loadAuthenticatedOptions();
-          if (active) setStart(view);
-        } catch (reason) {
-          if (!active) return;
-          if (reason instanceof GuestFacingError) setStartError(reason.message);
-          setStart("contact");
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [loadAuthenticatedOptions, otpMode]);
-
-  const requestEmailCode = async (address = email): Promise<View> => {
-    const cleanEmail = address.trim();
+  const requestCode = async (): Promise<View> => {
+    const cleanEmail = email.trim();
+    if (!guestId) throw new GuestFacingError(copy.genericError);
+    if (!looksLikeEmail(cleanEmail)) throw new GuestFacingError(copy.invalidEmail);
+    let result: CheckEmailResult;
     try {
-      setEmail(cleanEmail);
+      const { data, error: rpcError } = await getBrowserSupabase().rpc("check_join_email", {
+        p_join_code: code,
+        p_guest_id: guestId,
+        p_email: cleanEmail,
+      });
+      if (rpcError) throw rpcError;
+      result = data as unknown as CheckEmailResult;
+    } catch {
+      throw new GuestFacingError(copy.genericError);
+    }
+    if (result.status === "already_secured") return "already_secured";
+    if (result.status !== "ok") {
+      throw new GuestFacingError(
+        result.status === "email_mismatch"
+          ? copy.emailMismatch(partners)
+          : result.status === "invalid_email"
+            ? copy.invalidEmail
+            : result.status === "rate_limited"
+              ? copy.rateLimited
+              : copy.genericError,
+      );
+    }
+    try {
       await sendEmailOtp(cleanEmail, await getCaptchaToken());
     } catch {
       throw new GuestFacingError(copy.sendCodeError);
     }
     setOtp("");
     setCodeSent(true);
-    return "email_code";
+    return "code";
   };
 
-  // The guest types an email or a phone in one field. A number only means
-  // something with its country, so while they are typing one without a "+"
-  // (or 00) we ask for it, and the lookup always sends a number that states
-  // its country (E.164). Pre-selecting the browser's country only gives them
-  // something visible to confirm.
-  const looksLikePhone = !otpMode && /\d/.test(contact) && !contact.includes("@");
-  const phoneMode = looksLikePhone && !/^\s*(\+|00)/.test(contact);
-
-  const resolveContact = async (name?: string): Promise<View> => {
-    const cleanContact = contact.trim();
-    if (phoneMode && !contactCountry) throw new GuestFacingError(t.common.phoneCountryMissing);
-    const lookup = looksLikePhone ? toStoredPhone(contactCountry, cleanContact) : cleanContact;
-
-    let result: ContactLookupResult;
+  const submitCode = async (): Promise<View> => {
+    if (!guestId) throw new GuestFacingError(copy.genericError);
     try {
-      const { data, error: rpcError } = await getBrowserSupabase().rpc("find_guest_by_contact", {
-        p_join_code: code,
-        p_contact: lookup,
-        p_first_name: name?.trim() || null,
-      });
-      if (rpcError) throw rpcError;
-      result = data as unknown as ContactLookupResult;
+      await verifyEmailOtp(email, otp);
+    } catch {
+      throw new GuestFacingError(copy.invalidCode);
+    }
+    let status: SecureResult["status"];
+    try {
+      status = await secureWithSession(guestId);
     } catch {
       throw new GuestFacingError(copy.genericError);
     }
-
-    if (result.status === "match" && result.token) return redirectToGuest(result.token);
-    if (result.status === "ambiguous" && !name) {
-      setDisambiguationSource("contact");
-      return "first_name";
+    if (status === "verified") return "redirecting";
+    if (status === "already_secured") return "already_secured";
+    if (status === "email_mismatch") {
+      setEmailNotice(copy.emailMismatch(partners));
+      return "email";
     }
-    if (result.status === "otp_required") return requestEmailCode(cleanContact);
-    if (result.status === "email_required") throw new GuestFacingError(copy.emailRequired);
-    return "no_match";
+    throw new GuestFacingError(copy.genericError);
   };
 
   const startOver = () => {
     setFirstName("");
-    setOtp("");
-    setEmail("");
+    setLastName("");
+    setAskLastName(false);
+    setGuestId(null);
     setCodeSent(false);
-    setDisambiguationSource(null);
-    setStartError(null);
+    setOtp("");
+    setEmailNotice(null);
   };
 
   const withCaptcha = (body: React.ReactNode) => (
@@ -324,50 +336,10 @@ export function JoinExperience({
 
   const steps: FlowStep[] = [
     {
-      key: "contact",
+      key: "name",
       title: copy.title,
-      description: otpMode ? copy.otpSubtitle : copy.contactSubtitle,
-      body: withCaptcha(
-        <>
-          <FlowText
-            type={otpMode ? "email" : "text"}
-            value={contact}
-            onChange={setContact}
-            placeholder={otpMode ? copy.emailPlaceholder : copy.contactPlaceholder}
-            label={otpMode ? copy.emailLabel : copy.contactLabel}
-            autoComplete={otpMode ? "email" : "username"}
-          />
-          {phoneMode && (
-            <CountrySelect
-              value={contactCountry}
-              onChange={(c) => setPickedCountry(isPhoneCountry(c) ? c : null)}
-              style={COUNTRY_STYLE}
-            />
-          )}
-          {startError ? (
-            <p className="tf-error" role="alert">
-              {startError}
-            </p>
-          ) : null}
-          <p className="tf-note">{otpMode ? copy.otpSecurityNote : copy.contactSecurityNote}</p>
-        </>,
-      ),
-      valid: contact.trim() !== "",
-      okLabel: copy.continueButton,
-      busyLabel: copy.searching,
-      onNext: () => {
-        setStartError(null);
-        return resolveContact();
-      },
-    },
-  ];
-
-  if (disambiguationSource) {
-    steps.push({
-      key: "first_name",
-      title: copy.firstNameTitle,
-      description: copy.firstNameSubtitle,
-      body: withCaptcha(
+      description: copy.nameSubtitle,
+      body: (
         <>
           <FlowText
             value={firstName}
@@ -376,30 +348,82 @@ export function JoinExperience({
             label={copy.firstNameLabel}
             autoComplete="given-name"
           />
-          <div className="tf-links">
-            <StartOver onStartOver={startOver} />
-          </div>
-        </>,
+          <p className="tf-note">{copy.securityNote}</p>
+        </>
       ),
       valid: firstName.trim() !== "",
       okLabel: copy.continueButton,
       busyLabel: copy.searching,
-      onNext: async () => {
-        if (disambiguationSource !== "authenticated") return resolveContact(firstName);
-        try {
-          return await loadAuthenticatedOptions(firstName);
-        } catch (reason) {
-          throw reason instanceof GuestFacingError ? reason : new GuestFacingError(copy.genericError);
-        }
-      },
+      onNext: () => findByName(false),
+    },
+  ];
+
+  if (askLastName) {
+    steps.push({
+      key: "last_name",
+      title: copy.lastNameTitle,
+      description: copy.lastNameSubtitle(firstName.trim()),
+      body: (
+        <>
+          <FlowText
+            value={lastName}
+            onChange={setLastName}
+            placeholder={copy.lastNameLabel}
+            label={copy.lastNameLabel}
+            autoComplete="family-name"
+          />
+          <div className="tf-links">
+            <BackTo to="name" label={copy.tryAgainButton} onReset={startOver} />
+          </div>
+        </>
+      ),
+      valid: lastName.trim() !== "",
+      okLabel: copy.continueButton,
+      busyLabel: copy.searching,
+      onNext: () => findByName(true),
+    });
+  }
+
+  if (guestId) {
+    steps.push({
+      key: "email",
+      title: copy.emailTitle,
+      description: copy.emailSubtitle,
+      body: withCaptcha(
+        <>
+          <FlowText
+            type="email"
+            value={email}
+            onChange={(v) => {
+              setEmail(v);
+              setEmailNotice(null);
+            }}
+            placeholder={copy.emailPlaceholder}
+            label={copy.emailLabel}
+            autoComplete="email"
+          />
+          {emailNotice ? (
+            <p className="tf-error" role="alert">
+              {emailNotice}
+            </p>
+          ) : null}
+          <div className="tf-links">
+            <BackTo to="name" label={copy.someoneElse} onReset={startOver} />
+          </div>
+        </>,
+      ),
+      valid: email.trim() !== "",
+      okLabel: copy.sendCodeButton,
+      busyLabel: copy.sending,
+      onNext: requestCode,
     });
   }
 
   if (codeSent) {
     steps.push({
-      key: "email_code",
+      key: "code",
       title: copy.codeTitle,
-      description: copy.codeSent(email),
+      description: copy.codeSent(email.trim()),
       body: withCaptcha(
         <>
           <FlowText
@@ -412,38 +436,35 @@ export function JoinExperience({
             className="tf-code"
           />
           <div className="tf-links">
-            <Resend onResend={() => requestEmailCode()} />
-            <StartOver onStartOver={startOver} />
+            <Resend label={copy.resendButton} onResend={requestCode} />
+            <BackTo to="email" label={copy.changeEmail} />
           </div>
         </>,
       ),
       valid: otp.trim() !== "",
       okLabel: copy.verifyButton,
       busyLabel: copy.verifying,
-      onNext: async () => {
-        try {
-          await verifyEmailOtp(email, otp);
-          return await loadAuthenticatedOptions(firstName || undefined);
-        } catch (reason) {
-          throw reason instanceof GuestFacingError ? reason : new GuestFacingError(copy.invalidCode);
-        }
-      },
+      onNext: submitCode,
     });
   }
 
-  steps.push(
-    {
-      key: "no_match",
-      kind: "end",
-      before: <OliveBranch className="tf-ornament" />,
-      title: copy.noMatchTitle,
-      description: copy.noMatchBody(partners),
-      okLabel: copy.tryAgainButton,
-      onNext: () => {
-        startOver();
-        return "contact";
-      },
+  const ending = (key: View, title: string, body: string): FlowStep => ({
+    key,
+    kind: "end",
+    before: <OliveBranch className="tf-ornament" />,
+    title,
+    description: body,
+    okLabel: copy.tryAgainButton,
+    onNext: () => {
+      startOver();
+      return "name";
     },
+  });
+
+  steps.push(
+    ending("not_found", copy.notFoundTitle, copy.notFoundBody(partners)),
+    ending("ambiguous", copy.ambiguousTitle, copy.ambiguousBody(partners)),
+    ending("already_secured", copy.alreadySecuredTitle, copy.alreadySecuredBody(partners)),
     {
       key: "redirecting",
       kind: "end",
@@ -455,24 +476,7 @@ export function JoinExperience({
 
   return (
     <DaRoot>
-      {start ? (
-        <Flow key="join" label={partners} steps={steps} initialKey={start} topRight={<LocaleToggle />} />
-      ) : (
-        <Flow
-          key="checking"
-          label={partners}
-          topRight={<LocaleToggle />}
-          steps={[
-            {
-              key: "checking",
-              kind: "intro",
-              before: <OliveBranch className="tf-ornament" />,
-              title: copy.checkingSession,
-              hideOk: true,
-            },
-          ]}
-        />
-      )}
+      <Flow label={partners} steps={steps} topRight={<LocaleToggle />} />
     </DaRoot>
   );
 }

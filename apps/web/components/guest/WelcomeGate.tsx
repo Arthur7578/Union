@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { GuestWelcome } from "@/components/guest/GuestWelcome";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
@@ -12,35 +12,15 @@ export function useReplayWelcome() {
   return useContext(ReplayWelcome);
 }
 
-const noopSubscribe = () => () => {};
-
-const deviceKey = (id: string) => `union.welcomeSeen.${id}`;
-
-function readDeviceSeen(id: string) {
-  try {
-    return window.localStorage.getItem(deviceKey(id)) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function writeDeviceSeen(id: string) {
-  try {
-    window.localStorage.setItem(deviceKey(id), "1");
-  } catch {
-    // Private mode: the welcome simply shows again next visit.
-  }
-}
-
 /**
  * The invitation comes first: the faire-part welcome shows before any identity
  * or e-mail step, and "Respond to the invitation" hands over to `children`
  * (those steps, then the hub). The hub can replay it.
  *
- * Whether it has been seen is remembered where we can: on the guest, for a
- * personal link (`token`, with `seen` from the invitation), so it follows them
- * to another device. A group link has no guest yet, so there it is remembered
- * on this device only (`deviceId`).
+ * Whether it has been seen is remembered on the guest, for a personal link
+ * (`token`, with `seen` from the invitation), so it follows them to another
+ * device. A group link always shows it: it is a shared door, and the device
+ * can't know who is arriving (a shared computer, a family tablet).
  *
  * The guest's own language pick on the welcome is recorded on their invitation
  * too (personal links), as the hub used to do on its own.
@@ -48,7 +28,6 @@ function writeDeviceSeen(id: string) {
 export function WelcomeGate({
   token,
   seen,
-  deviceId,
   isDemo,
   guestName,
   partnerOne,
@@ -62,8 +41,6 @@ export function WelcomeGate({
   token?: string;
   /** Whether the guest has already seen the welcome, from the invitation. */
   seen?: boolean;
-  /** What to remember "seen" under on this device, when there is no `token`. */
-  deviceId?: string;
   isDemo?: boolean;
   guestName?: string | null;
   partnerOne?: string | null;
@@ -75,17 +52,8 @@ export function WelcomeGate({
 }) {
   const { locale } = useLocale();
 
-  // localStorage can't be read while rendering on the server, so a device-only
-  // gate starts as "pending" (nothing) rather than flashing the envelope at a
-  // returning guest.
-  const deviceSeen = useSyncExternalStore(
-    noopSubscribe,
-    () => (deviceId ? readDeviceSeen(deviceId) : false),
-    () => (deviceId ? null : false),
-  );
   const [override, setOverride] = useState<"welcome" | "done" | null>(null);
-  const known = seen ?? deviceSeen;
-  const state = override ?? (known === null ? "pending" : known ? "done" : "welcome");
+  const state = override ?? (seen ? "done" : "welcome");
 
   const replay = useCallback(() => setOverride("welcome"), []);
 
@@ -99,7 +67,6 @@ export function WelcomeGate({
       .then(undefined, () => {});
   }, [locale, token, isDemo]);
 
-  if (state === "pending") return null;
   if (state === "welcome") {
     return (
       <GuestWelcome
@@ -115,7 +82,6 @@ export function WelcomeGate({
               .rpc("mark_welcome_seen", { p_token: token })
               .then(undefined, () => {});
           }
-          if (deviceId) writeDeviceSeen(deviceId);
           window.scrollTo(0, 0);
           setOverride("done");
         }}

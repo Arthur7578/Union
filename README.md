@@ -69,7 +69,7 @@ account area (`/account/*`) sits outside them.
 | `/invitation` | Where an emailed co-organiser invite lands (`?wedding=<id>`): offers the invited wedding first, then any others. | Live |
 | `/accept-invite` | Hop in front of Supabase's one-time auth link. The auth email templates link here with `#confirmation_url=…`; the page checks the link points at this project's `/auth/v1/verify`, remembers the invited wedding, then follows it. | Live |
 | `/guest/[token]` | **The guest page.** A guest's invitation portal, opened from their personal invite link (`token` = the guest's invite token). Handles RSVP, companions, the wedding's custom forms, and the travel / logistics / FAQ tabs (each can be switched off per wedding). Opens in the guest's language. `/guest/demo` renders a demo invitation with no database. | Live |
-| `/join/[code]` | The wedding's generic group link (`code` = `weddings.join_code`). The guest identifies themselves — by contact details (default) or an emailed code — and lands on their own `/guest/[token]`. | Live |
+| `/join/[code]` | The wedding's generic group link (`code` = `weddings.join_code`). After the welcome, the guest types their first name (their last name only when several guests share it). In **secure** mode (default) they then confirm an email with a one-time code: the one the couple entered, or their own, which then secures the invitation. In **light** mode the name alone opens it. Lands on their own `/guest/[token]`. | Live |
 | `/rsvp/[token]` | Legacy alias. A ~15-line redirect to `/guest/[token]`. Kept because links sent before the move still use `/rsvp/<token>`; nothing emits it any more (links are built with `guestLinkPath` / `guestLinkUrl` from `@union/shared`). Don't build on it. | Redirect |
 | `/offline` | Offline fallback page, precached by the service worker. | Static |
 
@@ -91,7 +91,7 @@ account area (`/account/*`) sits outside them.
 | `/guests/sms-template` | The invitation SMS template, sender, and the wedding's own Brevo key. | Live |
 | `/guests/modules` | Turn guest-portal sections on or off (forms, travel, logistics, FAQ). At least one must stay on. | Live |
 | `/guests/permissions` | Wedding-level defaults for what a guest can do from their invite: add a partner, add children, and a cap on children. | Live |
-| `/guests/group-link` | Share the generic `/join/[code]` link (copy / WhatsApp) and choose how guests identify themselves: contact details or an emailed code. | Live |
+| `/guests/group-link` | Share the generic `/join/[code]` link (copy / WhatsApp) and choose how guests identify themselves: name + email code (secure) or name only (light). | Live |
 | `/vendors` | Vendor board. | Sample |
 | `/vendors/new` | Add a vendor. | Sample |
 | `/vendors/[id]` | Vendor detail and negotiation thread. | Sample |
@@ -166,14 +166,22 @@ link, the wedding's join code). The ones callable without signing in are:
   RSVPs for a guest's companions, and merging a self-registered duplicate.
 - `submit_form_response(…)` — answers to the couple's custom forms.
 - `set_guest_locale(…)` — the guest's chosen language.
-- `get_wedding_by_join_code(code)` and `find_guest_by_contact(code, contact, first_name)`
-  — the group-link lookup.
-- `get_guest_email_status(token)` — whether a guest still needs an email on file.
+- `get_wedding_by_join_code(code)`, `find_guest_for_join(code, first_name, last_name)`
+  and `check_join_email(code, guest_id, email)` — the group-link lookup by name
+  (rate-limited per client address; never returns a guest list).
+- `get_guest_email_status(token)` — whether the couple has an email for the guest.
+- `set_guest_email(token, email)` — a guest without an email gives one when they
+  reply. Never replaces an email already on file.
+
+A guest's email records where it came from (`guests.email_source`: `organiser` or
+`guest`) and whether the guest confirmed it with a code (`guests.email_confirmed_at`);
+the guest's page in the app shows both.
 
 Organiser-only RPCs (`create_guest_with_links`, `find_duplicate_groups`,
 `owner_merge_guests`, `list_collaborators`, `accept_pending_invites`, …) and the
 signed-in guest-access RPCs (`get_guest_access_options`, `claim_guest_access`,
-`complete_guest_email_setup`) require an authenticated user.
+`secure_guest_invitation`) require an authenticated user. `reset_guest_access` lets
+the couple undo who secured an invitation (it does not change the personal link).
 
 The applied SQL lives in `supabase/migrations/`. Generated TypeScript types live
 in `packages/shared/src/database.types.ts` (regenerate with the Supabase CLI or
@@ -241,7 +249,7 @@ SMS template settings.
 
 **Bot protection on sign-up (optional).** Sign-up and sign-in are the same email-code
 flow, so the web app can run an invisible Cloudflare Turnstile challenge when someone
-asks for a code (sign-in, the guest join link, guest email setup, and co-organiser
+asks for a code (sign-in, the guest join link, and co-organiser
 invites). It only becomes visible if Cloudflare can't vouch for the visitor. To turn
 it on, in this order:
 
