@@ -1,0 +1,127 @@
+/* Question-by-question form, in the wedding's stationery.
+   Colours and fonts come from the hub root (--da-*, --font-guest-*): this
+   sheet defines none of its own. */
+
+.tf{
+  position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;
+  background:var(--da-paper);color:var(--da-ink);
+  font-family:var(--font-guest-serif),"EB Garamond",Garamond,Georgia,serif;
+  animation:tf-open .5s cubic-bezier(.16,1,.3,1) both;
+}
+.tf::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:
+    radial-gradient(90% 60% at 100% 0%,var(--da-sage-pale),transparent 60%),
+    radial-gradient(70% 50% at 0% 100%,var(--da-lavender-pale),transparent 60%)}
+@keyframes tf-open{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+
+.tf-progress{position:relative;z-index:2;height:3px;background:var(--da-line-soft)}
+.tf-progress span{position:absolute;inset:0;background:var(--da-olive);transform-origin:0 50%;transition:transform .6s cubic-bezier(.16,1,.3,1)}
+
+.tf-top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:calc(12px + env(safe-area-inset-top,0px)) 16px 0}
+.tf-label{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--da-ink-soft);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tf-close{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--da-line);background:var(--da-glass);
+  display:grid;place-items:center;cursor:pointer;color:var(--da-ink);transition:background .2s,border-color .2s}
+.tf-close:hover{background:var(--da-card);border-color:var(--da-sage)}
+.tf-close svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round}
+
+.tf-stage{position:relative;z-index:1;flex:1;overflow-y:auto;display:flex;padding:24px 24px 96px}
+.tf-step{margin:auto;width:100%;max-width:640px;outline:none}
+.tf-intro,.tf-end{text-align:center;max-width:540px}
+
+.tf-in-up{animation:tf-in-up .55s cubic-bezier(.16,1,.3,1) both}
+.tf-in-down{animation:tf-in-down .55s cubic-bezier(.16,1,.3,1) both}
+.tf-out-up{animation:tf-out-up .24s cubic-bezier(.4,0,1,1) both}
+.tf-out-down{animation:tf-out-down .24s cubic-bezier(.4,0,1,1) both}
+@keyframes tf-in-up{from{opacity:0;transform:translateY(56px)}to{opacity:1;transform:none}}
+@keyframes tf-in-down{from{opacity:0;transform:translateY(-56px)}to{opacity:1;transform:none}}
+@keyframes tf-out-up{to{opacity:0;transform:translateY(-56px)}}
+@keyframes tf-out-down{to{opacity:0;transform:translateY(56px)}}
+
+/* the question: script, large, as on the stationery */
+.tf-title{margin:0;font-family:var(--font-guest-script),"Snell Roundhand","Apple Chancery",cursive;font-weight:400;
+  font-size:clamp(36px,9.4vw,56px);line-height:1.12;color:var(--da-olive-deep);text-wrap:balance}
+.tf-num{display:inline-flex;align-items:center;gap:4px;margin-right:.4em;vertical-align:.45em;
+  font-family:var(--font-guest-serif),Georgia,serif;font-size:15px;letter-spacing:.06em;color:var(--da-sage-deep);
+  font-variant-numeric:lining-nums}
+.tf-num svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.tf-desc{margin:14px 0 0;font-size:19px;line-height:1.5;font-style:italic;color:var(--da-ink-soft)}
+.tf-intro .tf-desc,.tf-end .tf-desc{margin-inline:auto;max-width:30em}
+.tf-body{margin-top:32px}
+.tf-intro .tf-body,.tf-end .tf-body{margin-top:24px}
+
+/* answers */
+/* .tf-prefixed so they outrank the app's global input[type] / textarea rules */
+.tf .tf-input{display:block;width:100%;min-height:0;border:0;border-bottom:1px solid var(--da-sage);background:transparent;border-radius:0;
+  padding:8px 0 10px;font:inherit;font-size:clamp(22px,5.4vw,28px);color:var(--da-olive-deep);outline:none;box-shadow:none;
+  -webkit-appearance:none;appearance:none;transition:border-color .2s,box-shadow .2s}
+.tf .tf-input::placeholder{color:var(--da-faint);opacity:.75}
+.tf .tf-input:focus-visible{outline:none}
+.tf .tf-input:focus{border-color:transparent;border-bottom-color:var(--da-olive);box-shadow:0 1px 0 var(--da-olive)}
+.tf .tf-textarea{resize:none;overflow:hidden;line-height:1.35;min-height:1.6em}
+.tf-shift{margin:10px 0 0;font-size:13px;color:var(--da-ink-soft)}
+.tf-pair{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:520px){.tf-pair{grid-template-columns:1fr;gap:12px}}
+
+.tf-choices{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.tf-choice{position:relative;display:flex;align-items:center;gap:14px;min-width:min(100%,320px);max-width:100%;
+  padding:11px 44px 11px 12px;border:1px solid var(--da-line);border-radius:6px;background:var(--da-glass);
+  color:var(--da-ink);font:inherit;font-size:20px;text-align:left;cursor:pointer;
+  transition:background .2s,border-color .2s,transform .15s}
+.tf-choice:hover{border-color:var(--da-sage-deep);background:var(--da-card)}
+.tf-choice:active{transform:scale(.99)}
+.tf-choice.is-on{border-color:var(--da-olive);background:var(--da-sage-pale)}
+.tf-choice.is-blink{animation:tf-blink .4s steps(1,end) 1}
+@keyframes tf-blink{0%,50%{background:var(--da-sage-pale)}25%,75%{background:var(--da-card)}}
+.tf-key{flex:none;display:grid;place-items:center;width:26px;height:26px;border:1px solid var(--da-sage);border-radius:4px;
+  font-family:inherit;font-size:13px;letter-spacing:.04em;color:var(--da-olive);background:var(--da-card);transition:background .2s,color .2s}
+.tf-choice.is-on .tf-key{background:var(--da-olive);border-color:var(--da-olive);color:var(--da-on-olive)}
+.tf-choice-label{line-height:1.3}
+.tf-tick{position:absolute;right:14px;top:50%;width:18px;height:18px;margin-top:-9px;fill:none;stroke:var(--da-olive);stroke-width:1.6;
+  stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity .2s}
+.tf-choice.is-on .tf-tick{opacity:1}
+
+.tf-error{display:inline-block;margin:18px 0 0;padding:6px 12px;border-radius:4px;font-size:15px;
+  color:var(--da-error);background:var(--da-card);border:1px solid var(--da-line)}
+
+.tf-actions{display:flex;align-items:center;gap:14px;margin-top:28px}
+.tf-intro .tf-actions,.tf-end .tf-actions{justify-content:center;flex-direction:column;gap:10px}
+.tf-ok{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:12px 26px;cursor:pointer;
+  background:var(--da-olive);color:var(--da-on-olive);font:inherit;font-size:16px;letter-spacing:.16em;text-transform:uppercase;
+  box-shadow:0 10px 24px -14px var(--da-shadow);transition:background .2s,transform .15s}
+.tf-ok:hover{background:var(--da-olive-deep)}
+.tf-ok:active{transform:scale(.98)}
+.tf-ok:disabled{opacity:.7;cursor:wait}
+.tf-ok svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.tf-hint{font-size:13px;color:var(--da-ink-soft)}
+.tf-hint::first-letter{text-transform:uppercase}
+@media (hover:none){.tf-hint,.tf-shift{display:none}}
+
+.tf-nav{position:absolute;z-index:2;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;
+  border-radius:6px;overflow:hidden;box-shadow:0 8px 20px -12px var(--da-shadow)}
+.tf-nav button{width:40px;height:36px;border:0;display:grid;place-items:center;cursor:pointer;
+  background:var(--da-olive);color:var(--da-on-olive);transition:background .2s}
+.tf-nav button + button{border-left:1px solid var(--da-olive-deep)}
+.tf-nav button:hover:not(:disabled){background:var(--da-olive-deep)}
+.tf-nav button:disabled{opacity:.45;cursor:default}
+.tf-nav svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* framing screens */
+.tf-ornament{display:block;width:150px;height:auto;margin:0 auto 18px;color:var(--da-sage-deep)}
+.tf-meta{margin:0;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--da-ink-soft)}
+.tf-candidates{margin:22px 0 0;padding:16px 18px;border:1px solid var(--da-line);border-radius:6px;background:var(--da-card)}
+.tf-candidates p{margin:0 0 6px;font-size:17px}
+.tf-candidates ul{margin:0 0 14px;padding-left:18px;color:var(--da-ink-soft)}
+.tf-candidates .row{display:flex;flex-wrap:wrap;gap:10px}
+.tf-ghost{border:1px solid var(--da-sage-deep);background:transparent;border-radius:999px;padding:9px 18px;font:inherit;font-size:15px;
+  color:var(--da-olive-deep);cursor:pointer;transition:background .2s}
+.tf-ghost:hover{background:var(--da-sage-pale)}
+
+.tf :focus-visible{outline:2px solid var(--da-olive);outline-offset:3px}
+.tf .tf-step:focus,.tf .tf-step:focus-visible{outline:none}
+
+@media (prefers-reduced-motion:reduce){
+  .tf,.tf-in-up,.tf-in-down,.tf-out-up,.tf-out-down,.tf-choice.is-blink{animation:none}
+  .tf-progress span{transition:none}
+}
