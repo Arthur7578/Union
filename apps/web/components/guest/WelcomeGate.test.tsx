@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n/client";
-import { WelcomeGate, useReplayWelcome } from "./WelcomeGate";
+import { WelcomeGate, useReplayWelcome, useWelcomeShownThisVisit } from "./WelcomeGate";
 
 /**
  * The invitation comes before any identity or e-mail step: the welcome shows
@@ -28,9 +28,11 @@ afterEach(cleanup);
 
 function Hub() {
   const replay = useReplayWelcome();
+  const shown = useWelcomeShownThisVisit();
   return (
     <div>
       <p>the hub</p>
+      <p>{shown ? "welcome shown this visit" : "welcome not shown this visit"}</p>
       {replay && <button onClick={replay}>replay</button>}
     </div>
   );
@@ -87,6 +89,16 @@ describe("WelcomeGate", () => {
     cleanup();
     render(gate({ deviceId: "join.abc" }));
     expect(screen.getByText("Invitation")).toBeInTheDocument();
+  });
+
+  it("tells the page whether the welcome was on screen during this visit", () => {
+    render(gate({ deviceId: "join.abc" }));
+    fireEvent.click(respond());
+    expect(screen.getByText("welcome shown this visit")).toBeInTheDocument();
+    cleanup();
+    // Same device, next visit: skipped, so whoever comes next hasn't seen it.
+    render(gate({ deviceId: "join.abc" }));
+    expect(screen.getByText("welcome not shown this visit")).toBeInTheDocument();
   });
 
   it("remembers a group-link visitor on this device only", () => {

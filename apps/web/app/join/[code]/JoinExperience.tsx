@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guestLinkPath } from "@union/shared";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
+import { useWelcomeShownThisVisit } from "@/components/guest/WelcomeGate";
+import { sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { looksLikeEmail } from "@/lib/emailSuggest";
 import { markGroupLinkArrival } from "@/lib/groupLinkArrival";
 import { useLocale } from "@/lib/i18n/client";
@@ -20,13 +21,13 @@ import { G, T, alpha } from "@/lib/theme";
  * code (the one the couple entered, or their own, which then secures the
  * invitation); in light mode the name alone opens it.
  *
- * A browser already signed in goes straight to the invitation that account
- * secured, or lets the guest pick among that account's own invitations.
+ * Everyone starts at the name, even on a device already signed in: it may be
+ * someone else's (a shared computer, a family tablet). When the account
+ * signed in here already holds the invitation for that name, the code step
+ * is skipped.
  */
 
 type View =
-  | "checking"
-  | "pick"
   | "name"
   | "last_name"
   | "email"
@@ -86,17 +87,6 @@ interface AccessOptionsResult {
   matches?: AccessOption[];
 }
 
-function readLastEmail(): string {
-  try {
-    return window.localStorage.getItem(LAST_EMAIL_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-const fullName = (first: string, last?: string | null) =>
-  [first, last].filter(Boolean).join(" ");
-
 export function JoinExperience({
   code,
   preview,
@@ -106,17 +96,18 @@ export function JoinExperience({
 }) {
   const { t, locale } = useLocale();
   const router = useRouter();
-  const secureMode = preview.guest_join_auth_mode !== "light";
-  const [view, setView] = useState<View>(secureMode ? "checking" : "name");
+  const [view, setView] = useState<View>("name");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [guestId, setGuestId] = useState<string | null>(null);
-  const [email, setEmail] = useState(() => (secureMode ? readLastEmail() : ""));
+  // Not prefilled from this device's last sign-in: on a shared device that
+  // is someone else's address.
+  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
-  const [options, setOptions] = useState<AccessOption[]>([]);
   const { captcha, getCaptchaToken } = useTurnstile();
+  const welcomeShown = useWelcomeShownThisVisit();
 
   const partners =
     [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") ||
@@ -135,6 +126,12 @@ export function JoinExperience({
     (token: string) => {
       setView("redirecting");
       markGroupLinkArrival(token);
+      if (!welcomeShown) {
+        // The welcome was skipped here (this device had seen it), so this
+        // guest may never have: their own invitation shows it to them.
+        router.push(guestLinkPath(token));
+        return;
+      }
       // They have just read the invitation, so their own link needn't repeat
       // it. Best-effort: failing to record it only means seeing it again.
       void getBrowserSupabase()
@@ -142,7 +139,7 @@ export function JoinExperience({
         .then(undefined, () => {})
         .then(() => router.push(guestLinkPath(token)));
     },
-    [router],
+    [router, welcomeShown],
   );
 
   /**
@@ -165,51 +162,6 @@ export function JoinExperience({
     },
     [code, redirectToGuest],
   );
-
-  // The check on arrival runs once per page: re-running it (a new router
-  // object, a new callback) would pull the guest back off a later step.
-  const secureWithSessionRef = useRef(secureWithSession);
-  useEffect(() => {
-    secureWithSessionRef.current = secureWithSession;
-  }, [secureWithSession]);
-
-  useEffect(() => {
-    if (!secureMode) return;
-    let active = true;
-
-    const start = async () => {
-      const supabase = getBrowserSupabase();
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) return "name" as const;
-
-      const { data: optionsData, error: rpcError } = await supabase.rpc(
-        "get_guest_access_options",
-        { p_join_code: code },
-      );
-      if (rpcError) return "name" as const;
-      const found = (optionsData as unknown as AccessOptionsResult).matches ?? [];
-      if (!active) return null;
-      if (found.length === 1) {
-        const status = await secureWithSessionRef.current(found[0].guest_id);
-        return status === "verified" ? null : ("name" as const);
-      }
-      if (found.length > 1) {
-        setOptions(found);
-        return "pick" as const;
-      }
-      return "name" as const;
-    };
-
-    void start()
-      .catch(() => "name" as const)
-      .then((next) => {
-        if (active && next) setView(next);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [code, secureMode]);
 
   const findByName = async (withLastName: boolean) => {
     if (!firstName.trim() || (withLastName && !lastName.trim())) return;
@@ -347,19 +299,6 @@ export function JoinExperience({
     }
   };
 
-  const pickOption = async (option: AccessOption) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const status = await secureWithSession(option.guest_id);
-      if (status !== "verified") setError(t.guestJoin.genericError);
-    } catch {
-      setError(t.guestJoin.genericError);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const startOver = () => {
     setFirstName("");
     setLastName("");
@@ -375,40 +314,11 @@ export function JoinExperience({
   };
 
   const renderContent = () => {
-    if (view === "checking" || view === "redirecting") {
+    if (view === "redirecting") {
       return (
         <div style={{ textAlign: "center", color: G.muted2, padding: "28px 0" }}>
-          {view === "checking"
-            ? t.guestJoin.checkingSession
-            : t.guestJoin.redirecting}
+          {t.guestJoin.redirecting}
         </div>
-      );
-    }
-
-    if (view === "pick") {
-      return (
-        <>
-          <h2 style={titleStyle}>{t.guestJoin.pickTitle}</h2>
-          <p style={bodyStyle}>{t.guestJoin.pickSubtitle}</p>
-          <div style={{ display: "grid", gap: 10 }}>
-            {options.map((option) => (
-              <button
-                key={option.guest_id}
-                type="button"
-                disabled={busy}
-                onClick={() => void pickOption(option)}
-                style={primaryButtonStyle}
-              >
-                {fullName(option.first_name, option.last_name)}
-              </button>
-            ))}
-          </div>
-          <div style={linkRowStyle}>
-            <button type="button" onClick={startOver} style={textButtonStyle}>
-              {t.guestJoin.someoneElse}
-            </button>
-          </div>
-        </>
       );
     }
 

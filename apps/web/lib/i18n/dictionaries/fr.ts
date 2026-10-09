@@ -762,9 +762,6 @@ export const fr: Dictionary = {
     verifying: "Vérification…",
     resendButton: "Renvoyer le code",
     changeEmail: "Utiliser un autre e-mail",
-    pickTitle: "Qui répond ?",
-    pickSubtitle:
-      "Ces invitations sont liées à l'e-mail confirmé sur cet appareil.",
     someoneElse: "Quelqu'un d'autre",
     notFoundTitle: "Nous n'avons pas retrouvé votre invitation",
     notFoundBody: (couple: string) =>
@@ -783,7 +780,6 @@ export const fr: Dictionary = {
     invalidCode: "Ce code n'a pas fonctionné, ou il a expiré.",
     sendCodeError: "Impossible d'envoyer le code. Merci de réessayer.",
     genericError: "Une erreur est survenue. Merci de réessayer.",
-    checkingSession: "Un instant…",
     redirecting: "Direction votre invitation…",
   },
 

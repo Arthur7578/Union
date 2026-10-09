@@ -788,9 +788,6 @@ export const en = {
     verifying: "Checking…",
     resendButton: "Resend code",
     changeEmail: "Use another email",
-    pickTitle: "Who's replying?",
-    pickSubtitle:
-      "These invitations are linked to the email confirmed on this device.",
     someoneElse: "Someone else",
     notFoundTitle: "We couldn't find your invitation",
     notFoundBody: (couple: string) =>
@@ -809,7 +806,6 @@ export const en = {
     invalidCode: "That code didn't work, or it's expired.",
     sendCodeError: "We couldn't send the code. Please try again.",
     genericError: "Something went wrong. Please try again.",
-    checkingSession: "One moment…",
     redirecting: "Taking you to your invitation…",
   },
 

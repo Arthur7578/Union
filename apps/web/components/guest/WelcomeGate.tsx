@@ -12,6 +12,18 @@ export function useReplayWelcome() {
   return useContext(ReplayWelcome);
 }
 
+const WelcomeShown = createContext(false);
+
+/**
+ * Whether the welcome was on screen during this visit (the guest pressed
+ * "Respond to the invitation"), as opposed to skipped because this device or
+ * this guest had seen it before. The group link uses it so that a guest who
+ * never saw the welcome there still gets their own on their invitation.
+ */
+export function useWelcomeShownThisVisit() {
+  return useContext(WelcomeShown);
+}
+
 const noopSubscribe = () => () => {};
 
 const deviceKey = (id: string) => `union.welcomeSeen.${id}`;
@@ -122,5 +134,9 @@ export function WelcomeGate({
       />
     );
   }
-  return <ReplayWelcome.Provider value={replay}>{children}</ReplayWelcome.Provider>;
+  return (
+    <ReplayWelcome.Provider value={replay}>
+      <WelcomeShown.Provider value={override === "done"}>{children}</WelcomeShown.Provider>
+    </ReplayWelcome.Provider>
+  );
 }

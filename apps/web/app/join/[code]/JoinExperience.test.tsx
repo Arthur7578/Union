@@ -11,12 +11,13 @@ import type { JoinWeddingPreview } from "./page";
  * The group link after the welcome: a guest finds their invitation by name
  * (the last name only when several guests share the first name), then, in
  * secure mode, confirms an email with a code. Light mode opens on the name.
- * A browser already signed in picks among its own invitations.
+ * Everyone starts at the name, even on a device someone already signed in on.
  */
 
 type RpcReply = { data: unknown; error: null };
 
 const harness = vi.hoisted(() => ({
+  welcomeShown: false,
   push: vi.fn(),
   session: null as null | { user: { id: string } },
   replies: {} as Record<string, (args: Record<string, unknown>) => unknown>,
@@ -30,6 +31,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/components/LanguageSwitcher", () => ({ LanguageSwitcher: () => null }));
+
+vi.mock("@/components/guest/WelcomeGate", () => ({
+  useWelcomeShownThisVisit: () => harness.welcomeShown,
+}));
 
 vi.mock("@/lib/auth", () => ({
   LAST_EMAIL_KEY: "union.lastEmail",
@@ -65,6 +70,7 @@ beforeEach(() => {
   window.localStorage.clear();
   harness.push.mockReset();
   harness.session = null;
+  harness.welcomeShown = false;
   harness.replies = {};
   harness.sendEmailOtp.mockReset().mockResolvedValue(undefined);
   harness.verifyEmailOtp.mockReset().mockResolvedValue(undefined);
@@ -206,61 +212,57 @@ describe("JoinExperience, secure mode", () => {
     expect(harness.sendEmailOtp).not.toHaveBeenCalled();
   });
 
-  it("lets a signed-in browser pick among its own invitations, or be someone else", async () => {
-    harness.session = { user: { id: "u1" } };
+  it("starts at the name even on a device someone else signed in on", async () => {
+    harness.session = { user: { id: "lolo" } };
     reply("get_guest_access_options", () => ({
       status: "ok",
       matches: [
-        { guest_id: "g-anne", first_name: "Anne", last_name: "Petit" },
-        { guest_id: "g-marc", first_name: "Marc", last_name: "Petit" },
-      ],
-    }));
-    reply("secure_guest_invitation", (args) => ({
-      status: "verified",
-      token: `tok-${String(args.p_guest_id)}`,
-      first_name: "Marc",
-      last_name: "Petit",
-    }));
-    render(<JoinExperience code="abc" preview={preview("secure")} />);
-
-    expect(await screen.findByText(en.guestJoin.pickTitle)).toBeInTheDocument();
-    expect(screen.queryByText(/another email or phone/i)).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Marc Petit" }));
-    await waitFor(() => expect(harness.push).toHaveBeenCalledWith("/guest/tok-g-marc"));
-  });
-
-  it("goes back to the name step for someone else on a shared device", async () => {
-    harness.session = { user: { id: "u1" } };
-    reply("get_guest_access_options", () => ({
-      status: "ok",
-      matches: [
-        { guest_id: "g-anne", first_name: "Anne", last_name: null },
-        { guest_id: "g-marc", first_name: "Marc", last_name: null },
+        { guest_id: "g-lolo", first_name: "Lolo", last_name: null },
+        { guest_id: "g-test", first_name: "testsss", last_name: null },
       ],
     }));
     render(<JoinExperience code="abc" preview={preview("secure")} />);
 
-    fireEvent.click(await screen.findByRole("button", { name: en.guestJoin.someoneElse }));
     expect(await screen.findByLabelText(en.guestJoin.firstNameLabel)).toBeInTheDocument();
+    expect(screen.queryByText("Lolo")).not.toBeInTheDocument();
+    expect(rpcCalls("secure_guest_invitation")).toHaveLength(0);
   });
 
-  it("opens straight away when the signed-in account already secured the invitation", async () => {
-    harness.session = { user: { id: "u1" } };
+  it("skips the code when this device's account already holds the invitation for that name", async () => {
+    harness.session = { user: { id: "u-paul" } };
+    reply("find_guest_for_join", () => ({ status: "match", mode: "secure", guest_id: "g-paul" }));
     reply("get_guest_access_options", () => ({
       status: "ok",
       matches: [{ guest_id: "g-paul", first_name: "Paul", last_name: null }],
     }));
-    reply("secure_guest_invitation", () => ({
-      status: "verified",
-      token: "tok-paul",
-      first_name: "Paul",
-      last_name: null,
-    }));
+    reply("secure_guest_invitation", () => ({ status: "verified", token: "tok-paul" }));
     render(<JoinExperience code="abc" preview={preview("secure")} />);
+
+    await typeFirstName("Paul");
 
     await waitFor(() => expect(harness.push).toHaveBeenCalledWith("/guest/tok-paul"));
     expect(harness.sendEmailOtp).not.toHaveBeenCalled();
+  });
+
+  it("records the welcome as seen when the guest just read it here", async () => {
+    harness.welcomeShown = true;
+    reply("find_guest_for_join", () => ({ status: "match", mode: "light", token: "tok-julie" }));
+    render(<JoinExperience code="abc" preview={preview("light")} />);
+
+    await typeFirstName("Julie");
+
+    await waitFor(() => expect(harness.push).toHaveBeenCalledWith("/guest/tok-julie"));
+    expect(rpcCalls("mark_welcome_seen")).toEqual([{ p_token: "tok-julie" }]);
+  });
+
+  it("does not record the welcome as seen when it was skipped on this device", async () => {
+    reply("find_guest_for_join", () => ({ status: "match", mode: "light", token: "tok-matteo" }));
+    render(<JoinExperience code="abc" preview={preview("light")} />);
+
+    await typeFirstName("Matteo");
+
+    await waitFor(() => expect(harness.push).toHaveBeenCalledWith("/guest/tok-matteo"));
+    expect(rpcCalls("mark_welcome_seen")).toHaveLength(0);
   });
 
   it("never secures someone else's invitation with the email signed in on this device", async () => {
