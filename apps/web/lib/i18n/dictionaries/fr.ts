@@ -795,6 +795,28 @@ export const fr: Dictionary = {
     invalid: "Cette adresse e-mail ne semble pas valide.",
     suggestion: (email: string) => `Vouliez-vous dire ${email} ?`,
     saveError: "Impossible d'enregistrer votre e-mail. Merci de réessayer.",
+    confirmTitle: "Votre e-mail est-il correct ?",
+    confirmBody: (couple: string) =>
+      `${couple} l'utiliseront pour vous envoyer les infos pratiques. Vous ne pourrez pas le modifier vous-même ensuite.`,
+    confirmYes: "Oui, c'est le bon",
+    confirmEdit: "Non, je le corrige",
+    suggestionBody: (typed: string) => `Vous avez saisi ${typed}.`,
+    useSuggestion: (email: string) => `Utiliser ${email}`,
+    keepTyped: "Garder ma saisie",
+    onFile: (couple: string) =>
+      `${couple} ont cet e-mail pour vous. Pour le modifier, demandez-leur.`,
+    onFileNoHint: (couple: string) =>
+      `${couple} ont déjà votre e-mail. Pour le modifier, demandez-leur.`,
+  },
+
+  // Les champs fixes du bloc RSVP, en plus des boutons de réponse. Partagés
+  // par le formulaire de l'invité et l'aperçu du couple.
+  rsvpFields: {
+    dietaryLabel: "Vos restrictions alimentaires / allergies",
+    dietaryPlaceholder: "Ex: sans gluten, végétarien...",
+    companionsTitle: "Proches de votre foyer :",
+    messageLabel: (couple: string) => `Un mot pour ${couple} ?`,
+    messagePlaceholder: "Hâte de fêter avec vous !",
   },
 
   // L'e-mail d'un invité sur sa fiche, côté organisateur.

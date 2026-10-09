@@ -8,6 +8,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { submitGuestRsvp } from "@/lib/submitRsvp";
 import { ReplyEmailField, useReplyEmail } from "./ReplyEmailField";
+import { PrimaryReplyFields, RsvpMessageField } from "./RsvpFields";
 import {
   canAddChildren,
   canAddPartner as mayAddPartner,
@@ -52,6 +53,8 @@ interface GuestPortalProps {
   isDemo: boolean;
   /** The couple has no email for this guest: ask for one when they reply. */
   emailMissing?: boolean;
+  /** The email on file, masked, shown read-only on the RSVP form. */
+  emailHint?: string | null;
 }
 
 // Beautiful simulated database for guest connections (carsharing/travel buddy matches)
@@ -128,7 +131,7 @@ const STAYS = [
   }
 ];
 
-export function GuestPortal({ token, invitation, isDemo, emailMissing = false }: GuestPortalProps) {
+export function GuestPortal({ token, invitation, isDemo, emailMissing = false, emailHint = null }: GuestPortalProps) {
   const replayWelcome = useReplayWelcome();
   const { t, locale } = useLocale();
   const router = useRouter();
@@ -212,7 +215,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
 
   // Loading/submitting states
   const [submittingRsvp, setSubmittingRsvp] = useState<boolean>(false);
-  const replyEmail = useReplyEmail({ token, emailMissing, isDemo });
+  const replyEmail = useReplyEmail({ token, emailMissing, emailHint, isDemo });
 
   // Travel matching state
   const [connections, setConnections] = useState(SAMPLE_CONNECTIONS);
@@ -271,12 +274,14 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   }, [invitation.wedding.event_date]);
 
   // Submissions
-  const handleSaveRsvp = async () => {
+  /** `confirmedEmail` is the address the guest just said is right, when the
+   *  reply was waiting on that. */
+  const handleSaveRsvp = async (confirmedEmail?: string) => {
     if (primaryRsvp === "pending") return;
 
     setSubmittingRsvp(true);
     try {
-      if (!(await replyEmail.save())) return;
+      if (!(await replyEmail.save(confirmedEmail))) return;
       if (!isDemo) {
         const supabase = getBrowserSupabase();
         await submitGuestRsvp(
@@ -340,6 +345,11 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   };
 
   const coupleNames = `${invitation.wedding.partner_one} & ${invitation.wedding.partner_two}`;
+  // The couple as the RSVP form names them, with a fallback if a name is
+  // missing.
+  const replyCouple =
+    [invitation.wedding.partner_one, invitation.wedding.partner_two].filter(Boolean).join(" & ") ||
+    t.guests.theCouple;
 
   const handleGuestSignOut = async () => {
     setSigningOut(true);
@@ -1525,43 +1535,21 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
             </p>
 
             {/* Primary Guest RSVP */}
-            <div style={{ marginBottom: "24px" }}>
-              <p style={{ fontWeight: "bold", color: "var(--accent)", margin: "0 0 10px" }}>
-                👤 {invitation.guest.first_name} {invitation.guest.last_name || ""}
-              </p>
-              <div className="choice-row">
-                <button
-                  onClick={() => setPrimaryRsvp("attending")}
-                  className={`choice-btn ${primaryRsvp === "attending" ? "selected-yes" : ""}`}
-                >
-                  ✓ {labelAttending}
-                </button>
-                <button
-                  onClick={() => setPrimaryRsvp("declined")}
-                  className={`choice-btn ${primaryRsvp === "declined" ? "selected-no" : ""}`}
-                >
-                  ✗ {labelDeclined}
-                </button>
-              </div>
-
-              {primaryRsvp === "attending" && (
-                <div className="field" style={{ marginTop: "16px" }}>
-                  <label>🍏 {locale === "fr" ? "Vos restrictions alimentaires / allergies" : "Your Dietary Restrictions"}</label>
-                  <input
-                    type="text"
-                    value={primaryDietary}
-                    onChange={(e) => setPrimaryDietary(e.target.value)}
-                    placeholder={locale === "fr" ? "Ex: sans gluten, végétarien..." : "e.g. vegetarian, nut allergies"}
-                  />
-                </div>
-              )}
-            </div>
+            <PrimaryReplyFields
+              name={`${invitation.guest.first_name} ${invitation.guest.last_name || ""}`.trim()}
+              status={primaryRsvp}
+              onStatus={setPrimaryRsvp}
+              dietary={primaryDietary}
+              onDietary={setPrimaryDietary}
+              labelAttending={labelAttending}
+              labelDeclined={labelDeclined}
+            />
 
             {/* Companion RSVPs */}
             {primaryRsvp === "attending" && (companions.length > 0 || canAddPartner || canAddKids) && (
               <div style={{ marginBottom: "24px" }}>
                 <h4 style={{ fontWeight: "bold", fontSize: "14px", margin: "0 0 12px", borderTop: `1px solid ${G.border}`, paddingTop: "16px" }}>
-                  👥 {locale === "fr" ? "Proches de votre foyer :" : "Companions in your group :"}
+                  👥 {t.rsvpFields.companionsTitle}
                 </h4>
                 {companions.map((companion) => {
                   const state = companionsRsvp[companion.id] || { rsvp_status: "pending", dietary_notes: "" };
@@ -1712,24 +1700,16 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
 
             <ReplyEmailField
               state={replyEmail}
-              couple={[invitation.wedding.partner_one, invitation.wedding.partner_two].filter(Boolean).join(" & ") || t.guests.theCouple}
+              couple={replyCouple}
+              onConfirmed={(email) => void handleSaveRsvp(email)}
             />
 
-            {/* Message to Couple */}
-            <div className="field">
-              <label>✍️ {locale === "fr" ? "Un mot pour Maya & Daniel ?" : "A message for the couple"}</label>
-              <textarea
-                value={primaryMessage}
-                onChange={(e) => setPrimaryMessage(e.target.value)}
-                placeholder={locale === "fr" ? "Hâte de fêter avec vous !" : "Can't wait to see you!"}
-                rows={3}
-              />
-            </div>
+            <RsvpMessageField couple={replyCouple} value={primaryMessage} onChange={setPrimaryMessage} />
 
             <button
               className="btn-submit"
               disabled={submittingRsvp || primaryRsvp === "pending"}
-              onClick={handleSaveRsvp}
+              onClick={() => void handleSaveRsvp()}
             >
               {submittingRsvp ? t.common.saving : (locale === "fr" ? "Soumettre le RSVP" : "Submit RSVP")}
             </button>

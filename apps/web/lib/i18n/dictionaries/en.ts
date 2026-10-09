@@ -821,6 +821,28 @@ export const en = {
     invalid: "That doesn't look like an email address.",
     suggestion: (email: string) => `Did you mean ${email}?`,
     saveError: "We couldn't save your email. Please try again.",
+    confirmTitle: "Is this email correct?",
+    confirmBody: (couple: string) =>
+      `${couple} will use it to send you the practical details. You won't be able to change it yourself afterwards.`,
+    confirmYes: "Yes, it's correct",
+    confirmEdit: "No, let me fix it",
+    suggestionBody: (typed: string) => `You typed ${typed}.`,
+    useSuggestion: (email: string) => `Use ${email}`,
+    keepTyped: "Keep what I typed",
+    onFile: (couple: string) =>
+      `${couple} have this email for you. To change it, ask them.`,
+    onFileNoHint: (couple: string) =>
+      `${couple} already have your email. To change it, ask them.`,
+  },
+
+  // The fixed fields of the RSVP block, besides the reply buttons. Shared by
+  // the guest's form and the couple's preview of it, so both read the same.
+  rsvpFields: {
+    dietaryLabel: "Your dietary restrictions",
+    dietaryPlaceholder: "e.g. vegetarian, nut allergies",
+    companionsTitle: "Companions in your group:",
+    messageLabel: (couple: string) => `A message for ${couple}`,
+    messagePlaceholder: "Can't wait to see you!",
   },
 
   // A guest's email on their page in the organiser app.

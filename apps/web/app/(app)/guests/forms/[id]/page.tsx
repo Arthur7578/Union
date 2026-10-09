@@ -608,6 +608,7 @@ export default function FormBuilderPage() {
           purpose={form.purpose === "reconfirmation" ? "reconfirmation" : "primary"}
           copy={rsvpCopyState}
           locale={editingLocale}
+          couple={[wedding.partner_one, wedding.partner_two].filter(Boolean).join(" & ")}
           onChange={(next) => {
             setRsvpCopyState(next);
             markDirty();
@@ -1130,12 +1131,15 @@ function RsvpWordingEditor({
   purpose,
   copy,
   locale,
+  couple,
   onChange,
 }: {
   purpose: "primary" | "reconfirmation";
   copy: RsvpBlockCopy;
   /** The language being written and previewed. */
   locale: Locale;
+  /** The couple's names, as guests read them on the form. */
+  couple: string;
   onChange: (next: RsvpBlockCopy) => void;
 }) {
   const defaults = rsvpDefaults(locale, purpose);
@@ -1242,8 +1246,74 @@ function RsvpWordingEditor({
               </span>
             </div>
           )}
+          <RsvpFixedFieldsPreview locale={locale} couple={couple} />
         </Card>
       </div>
     </SectionBlock>
+  );
+}
+
+/** The rest of the RSVP form, as guests see it in `locale`: fields the
+ *  couple can't reword here but that guests may be asked, each with when it
+ *  shows up. Kept in step with the guest form (app/guest/[token]), which
+ *  reads the same dictionary entries. */
+function RsvpFixedFieldsPreview({ locale, couple }: { locale: Locale; couple: string }) {
+  const t = getDictionary(locale);
+  const names = couple || t.guests.theCouple;
+  const fields: { icon: string; label: string; placeholder: string; when: string }[] = [
+    {
+      icon: "🍏",
+      label: t.rsvpFields.dietaryLabel,
+      placeholder: t.rsvpFields.dietaryPlaceholder,
+      when: "Once they say they're coming.",
+    },
+    {
+      icon: "👥",
+      label: t.rsvpFields.companionsTitle,
+      placeholder: "",
+      when: "Once they say they're coming, when you've listed people with them, or let them add a partner or children (Access & rights below).",
+    },
+    {
+      icon: "✉️",
+      label: t.replyEmail.label,
+      placeholder: t.replyEmail.placeholder,
+      when: "Only for guests you have no email for, whatever your group link settings: required when they open their invitation from the group link, optional from their personal link. They confirm it before it's saved, and only you can change it afterwards. Guests who already have one see it, masked.",
+    },
+    {
+      icon: "✍️",
+      label: t.rsvpFields.messageLabel(names),
+      placeholder: t.rsvpFields.messagePlaceholder,
+      when: "Always, optional.",
+    },
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
+      {fields.map((f) => (
+        <div key={f.icon}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: T.ink }}>
+            {f.icon} {f.label}
+          </div>
+          {f.placeholder && (
+            <div
+              style={{
+                marginTop: 5,
+                borderRadius: 10,
+                background: T.cream,
+                border: `1px solid ${alpha(T.ink, 0.08)}`,
+                padding: "8px 11px",
+                fontSize: 12.5,
+                color: T.faint,
+              }}
+            >
+              {f.placeholder}
+            </div>
+          )}
+          <div style={{ fontSize: 11, color: T.muted2, marginTop: 4, lineHeight: 1.45 }}>
+            {f.when}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

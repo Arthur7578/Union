@@ -68,6 +68,7 @@ export default async function GuestExperiencePage({
   let invitation: DBInvitation | null = null;
   let isDemo = false;
   let emailMissing = false;
+  let emailHint: string | null = null;
 
   if (token === "demo") {
     isDemo = true;
@@ -131,9 +132,12 @@ export default async function GuestExperiencePage({
       ) {
         // Since get_invitation returns a JSONB object, cast it directly to DBInvitation
         invitation = invitationResult.data as unknown as DBInvitation;
-        emailMissing = Boolean(
-          (emailStatusResult.data as { email_missing?: boolean }).email_missing,
-        );
+        const emailStatus = emailStatusResult.data as {
+          email_missing?: boolean;
+          email_hint?: string | null;
+        };
+        emailMissing = Boolean(emailStatus.email_missing);
+        emailHint = emailStatus.email_hint ?? null;
       }
     } catch (e) {
       console.error("Failed to load invitation from Supabase:", e);
@@ -230,6 +234,7 @@ export default async function GuestExperiencePage({
         invitation={invitation}
         isDemo={isDemo}
         emailMissing={emailMissing}
+        emailHint={emailHint}
       />
     </LocaleProvider>
   );

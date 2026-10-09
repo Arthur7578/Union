@@ -17,11 +17,14 @@ export function GuestEntry({
   invitation,
   isDemo,
   emailMissing,
+  emailHint = null,
 }: {
   token: string;
   invitation: DBInvitation;
   isDemo: boolean;
   emailMissing: boolean;
+  /** The email on file, masked, for the RSVP form to show. */
+  emailHint?: string | null;
 }) {
   return (
     <WelcomeGate
@@ -40,6 +43,7 @@ export function GuestEntry({
         invitation={invitation}
         isDemo={isDemo}
         emailMissing={emailMissing}
+        emailHint={emailHint}
       />
     </WelcomeGate>
   );

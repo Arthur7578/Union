@@ -169,7 +169,7 @@ link, the wedding's join code). The ones callable without signing in are:
 - `get_wedding_by_join_code(code)`, `find_guest_for_join(code, first_name, last_name)`
   and `check_join_email(code, guest_id, email)` — the group-link lookup by name
   (rate-limited per client address; never returns a guest list).
-- `get_guest_email_status(token)` — whether the couple has an email for the guest.
+- `get_guest_email_status(token)` — whether the couple has an email for the guest, and that email with its local part masked (`j•••@gmail.com`), shown read-only on the RSVP form.
 - `set_guest_email(token, email)` — a guest without an email gives one when they
   reply. Never replaces an email already on file.
 
