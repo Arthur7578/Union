@@ -29,4 +29,4 @@ The panel merges a cluster by calling `owner_merge_guests` once per extra guest,
 - **Not all-or-nothing.** If one call fails, the calls before it stay committed and the cluster is left half merged (seen with three "Pat" guests before `20261009235900_merge_keeps_one_partner.sql`).
 - **The owner's choices only reach the first call.** Later calls get no overrides, so `_merge_guests` can refill a field the owner chose to leave blank from a later guest.
 
-The fix for both is a single RPC that takes the whole cluster plus the overrides and merges it in one transaction. Do it if either problem shows up again, or when this panel is next reworked.
+The fix for both is a single RPC that takes the whole cluster plus the overrides and merges it in one transaction. Do it if either problem shows up again, or when this panel is next reworked. Tracked in issue #79.
