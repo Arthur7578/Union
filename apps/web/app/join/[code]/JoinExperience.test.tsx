@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { en } from "@/lib/i18n/dictionaries/en";
 import { arrivedThroughGroupLink } from "@/lib/groupLinkArrival";
+import { takeRsvpHandoff } from "@/lib/rsvpHandoff";
 import type { JoinWeddingPreview } from "./page";
 
 /**
@@ -100,6 +101,8 @@ describe("JoinExperience, light mode", () => {
       p_last_name: null,
     });
     expect(arrivedThroughGroupLink("tok-julie")).toBe(true);
+    // They chose to respond on the faire-part: the invitation opens on the RSVP.
+    expect(takeRsvpHandoff("tok-julie")).toBe(true);
     expect(harness.sendEmailOtp).not.toHaveBeenCalled();
   });
 
