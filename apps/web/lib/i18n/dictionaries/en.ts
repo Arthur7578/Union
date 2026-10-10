@@ -740,10 +740,24 @@ export const en = {
   welcome: {
     titleNamed: "you have received an invitation",
     titleAnon: ["You have received", "an invitation"],
-    to: (name: string) => `For ${name}`,
-    anon: "Invitation",
-    kicker: "The wedding",
-    lead: "We would be delighted to have you with us.",
+    // Front of the card: names, then this line, then the dates and the zone.
+    joy: "are delighted to invite you to celebrate their wedding",
+    inPlace: (_kind: "area" | "city", name: string) => `in ${name}`,
+    // Back of the card.
+    greetingNamed: (name: string) => `Dear ${name},`,
+    greetingAnon: "Dear friends,",
+    moments: "There are moments we especially want to share with the people who matter to us.",
+    // `route` is the already-phrased place and dates ("in Provence, from June 11 to 13, 2027,"), or
+    // empty; `days` is how long the wedding lasts, or null when no date is known.
+    invite: (route: string, days: number | null) => {
+      const words = ["", "a", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+      const span =
+        days === null ? "moments" : days === 1 ? "a day" : `${words[days] || days} days`;
+      return `We would be so happy to see you${route ? ` ${route}` : ""} to celebrate our wedding and share ${span} of celebration, joy and beautiful memories.`;
+    },
+    hope: "We truly hope you will be able to join us.",
+    lookingForward: "We can't wait to live these beautiful moments with you.",
+    closing: "With all our love,",
     hint: "Tap the seal or scroll",
     open: "Open the envelope",
     flipCard: "Turn the card over",

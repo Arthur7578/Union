@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLocale } from "@/lib/i18n/client";
 import { T, alpha } from "@/lib/theme";
+import type { GuestZone } from "@/lib/guestAddress";
+import type { WeddingDateText } from "@/lib/weddingDates";
 import "./FairePartEnvelope.css";
 
 interface FairePartEnvelopeProps {
@@ -11,12 +13,10 @@ interface FairePartEnvelopeProps {
   guestName?: string | null;
   partnerOne?: string | null;
   partnerTwo?: string | null;
-  /** Already formatted, e.g. "12 juin 2027". */
-  weddingDate?: string | null;
-  /** Short place line shown on the front of the card. */
-  place?: string | null;
-  /** Venue name and address, shown on the back of the card. */
-  venue?: string | null;
+  /** The wedding's dates, already written for the guest's language ("11 — 13 juin 2027"). */
+  dates?: WeddingDateText | null;
+  /** Where the wedding is, as far as the couple discloses it ("Provence", else the city). */
+  zone?: GuestZone | null;
   onRespond: () => void;
 }
 
@@ -24,6 +24,7 @@ const clamp = (v: number) => Math.max(0, Math.min(1, v));
 const seg = (p: number, a: number, b: number) => clamp((p - a) / (b - a));
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** Olive sprig: leaves placed along a curved stem (SVG markup from numbers only). */
 function sprig(x0: number, y0: number, x1: number, y1: number, n: number, len: number, bend: number) {
@@ -57,15 +58,20 @@ export function FairePartEnvelope({
   guestName,
   partnerOne,
   partnerTwo,
-  weddingDate,
-  place,
-  venue,
+  dates,
+  zone,
   onRespond,
 }: FairePartEnvelopeProps) {
   const { t: dict } = useLocale();
   const t = dict.welcome;
   const rootRef = useRef<HTMLDivElement>(null);
   const hasName = Boolean(guestName);
+
+  // "en Provence, du 11 au 13 juin 2027," — whichever of the two is known.
+  const where = zone ? t.inPlace(zone.kind, zone.name) : null;
+  const route = [where, dates?.spoken].filter(Boolean);
+  const routeText = route.join(", ") + (route.length > 1 ? "," : "");
+  const signature = [partnerOne, partnerTwo].filter(Boolean).join(" & ");
 
   useEffect(() => {
     const root = rootRef.current;
@@ -135,7 +141,7 @@ export function FairePartEnvelope({
       flipper.style.filter = `brightness(${1 - 0.16 * Math.abs(Math.sin((a * Math.PI) / 180))})`;
       recto.hidden = back;
       verso.hidden = !back;
-      lines.forEach((el, i) => el.style.setProperty("--o", String(seg(p, 0.84 + i * 0.02, 0.91 + i * 0.02))));
+      lines.forEach((el, i) => el.style.setProperty("--o", String(seg(p, 0.84 + i * 0.012, 0.91 + i * 0.012))));
       flipper.classList.toggle("can", p > 0.98);
       flipper.tabIndex = p > 0.98 ? 0 : -1;
 
@@ -277,23 +283,28 @@ export function FairePartEnvelope({
                 <div className="flipper" data-id="flipper" role="button" tabIndex={-1} aria-label={t.flipCard}>
                   <section className="side recto" data-id="recto">
                     <div>
-                      <p className="to">{hasName ? t.to(guestName!) : t.anon}</p>
                       <h2 className="names">
                         {partnerOne}
                         {partnerOne && partnerTwo ? <b>&amp;</b> : null}
                         {partnerTwo}
                       </h2>
+                      <p className="joy">{t.joy}</p>
                     </div>
                     <div>
-                      {weddingDate ? <p className="when">{weddingDate}</p> : null}
-                      {place ? <p className="where">{place}</p> : null}
+                      {dates ? <p className="when">{dates.short}</p> : null}
+                      {where ? <p className="where">{upperFirst(where)} ♡</p> : null}
                     </div>
                   </section>
                   <section className="side verso" data-id="verso" hidden>
                     <div className="verso-in">
-                      <p className="kicker line">{t.kicker}</p>
-                      <p className="lead line">{t.lead}</p>
-                      {venue ? <p className="foot line">{venue}</p> : null}
+                      <p className="greet line">{hasName ? t.greetingNamed(guestName!) : t.greetingAnon}</p>
+                      <p className="line">{t.moments}</p>
+                      <p className="line">{t.invite(routeText, dates?.days ?? null)}</p>
+                      <p className="line">
+                        {t.hope} {t.lookingForward}
+                      </p>
+                      <p className="line">{t.closing}</p>
+                      {signature ? <p className="sign line">{signature}</p> : null}
                     </div>
                   </section>
                 </div>

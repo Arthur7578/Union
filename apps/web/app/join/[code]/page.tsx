@@ -5,7 +5,7 @@ import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { JoinExperience } from "./JoinExperience";
 import { WelcomeGate } from "@/components/guest/WelcomeGate";
-import { formatGuestAddress } from "@/lib/guestAddress";
+import { guestZone } from "@/lib/guestAddress";
 import type { GuestJoinAuthMode, Invitation } from "@union/shared";
 import { G, T, alpha } from "@/lib/theme";
 
@@ -16,6 +16,8 @@ export interface JoinWeddingPreview {
   partner_one: string | null;
   partner_two: string | null;
   event_date: string | null;
+  /** Last day of a multi-day wedding. Absent until the server sends it. */
+  event_end_date?: string | null;
   venue_name: string | null;
   guest_join_auth_mode: GuestJoinAuthMode;
   /** The language this couple writes their guest-facing content in. Used as
@@ -119,8 +121,8 @@ export default async function JoinPage({
         partnerOne={preview.partner_one}
         partnerTwo={preview.partner_two}
         eventDate={preview.event_date}
-        venueName={preview.venue_name}
-        address={formatGuestAddress({ address_visibility: preview.address_visibility, address: preview.address })}
+        eventEndDate={preview.event_end_date}
+        zone={guestZone({ address_visibility: preview.address_visibility, address: preview.address })}
       >
         <JoinExperience code={code} preview={preview} />
       </WelcomeGate>

@@ -1,7 +1,9 @@
 "use client";
 
 import { FairePartEnvelope } from "@/components/guest/FairePartEnvelope";
+import type { GuestZone } from "@/lib/guestAddress";
 import { useLocale } from "@/lib/i18n/client";
+import { weddingDateText } from "@/lib/weddingDates";
 
 interface GuestWelcomeProps {
   /** Only for a personal link; a group link greets no one by name. */
@@ -9,9 +11,10 @@ interface GuestWelcomeProps {
   partnerOne?: string | null;
   partnerTwo?: string | null;
   eventDate?: string | null;
-  /** Both of these are exactly what the couple has chosen to disclose. */
-  venueName?: string | null;
-  address?: string | null;
+  /** Last day of a wedding that lasts more than one; absent for a single day. */
+  eventEndDate?: string | null;
+  /** Exactly what the couple has chosen to disclose; see `guestZone`. */
+  zone?: GuestZone | null;
   onRespond: () => void;
 }
 
@@ -21,27 +24,18 @@ export function GuestWelcome({
   partnerOne,
   partnerTwo,
   eventDate,
-  venueName,
-  address,
+  eventEndDate,
+  zone,
   onRespond,
 }: GuestWelcomeProps) {
   const { locale } = useLocale();
-  const weddingDate = eventDate
-    ? new Date(`${eventDate}T00:00:00`).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : null;
-
   return (
     <FairePartEnvelope
       guestName={guestName}
       partnerOne={partnerOne}
       partnerTwo={partnerTwo}
-      weddingDate={weddingDate}
-      place={venueName || address}
-      venue={[venueName, address].filter(Boolean).join(", ")}
+      dates={weddingDateText(eventDate, eventEndDate, locale)}
+      zone={zone}
       onRespond={onRespond}
     />
   );

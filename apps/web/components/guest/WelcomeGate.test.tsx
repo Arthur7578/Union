@@ -83,10 +83,10 @@ describe("WelcomeGate", () => {
 
   it("greets a named guest, and a group link without a name", () => {
     render(gate({ token: "tok", seen: false, guestName: "Claire" }));
-    expect(screen.getByText("For Claire")).toBeInTheDocument();
+    expect(screen.getByText("Dear Claire,")).toBeInTheDocument();
     cleanup();
     render(gate());
-    expect(screen.getByText("Invitation")).toBeInTheDocument();
+    expect(screen.getByText("Dear friends,")).toBeInTheDocument();
   });
 
   it("shows a group link's welcome on every visit, whoever came before on this device", () => {

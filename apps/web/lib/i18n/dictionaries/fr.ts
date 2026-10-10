@@ -714,10 +714,25 @@ export const fr: Dictionary = {
   welcome: {
     titleNamed: "vous avez reçu une invitation",
     titleAnon: ["Vous avez reçu", "une invitation"],
-    to: (name: string) => `Pour ${name}`,
-    anon: "Faire-part",
-    kicker: "Le mariage",
-    lead: "Nous serions heureux de vous compter parmi nous.",
+    // Recto : les prénoms, puis cette ligne, puis les dates et la zone.
+    joy: "ont la joie de t'inviter à célébrer leur mariage",
+    inPlace: (kind: "area" | "city", name: string) => `${kind === "area" ? "en" : "à"} ${name}`,
+    // Verso.
+    greetingNamed: (name: string) => `Cher(e) ${name},`,
+    greetingAnon: "Chers amis,",
+    moments:
+      "Il y a des moments que l'on a particulièrement envie de partager avec les personnes qui comptent pour nous.",
+    // `route` est le lieu et les dates déjà tournés en phrase (« en Provence, du 11 au 13 juin 2027, »),
+    // ou vide ; `days` est la durée du mariage, ou null si aucune date n'est connue.
+    invite: (route: string, days: number | null) => {
+      const words = ["", "une", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix"];
+      const span =
+        days === null ? "des moments" : days === 1 ? "une journée" : `${words[days] || days} jours`;
+      return `Nous serions très heureux de te retrouver${route ? ` ${route}` : ""} pour célébrer notre mariage et partager ${span} de fête, de joie et de beaux souvenirs.`;
+    },
+    hope: "Nous espérons de tout cœur que tu pourras être des nôtres.",
+    lookingForward: "Nous avons hâte de vivre ces beaux moments avec toi.",
+    closing: "Avec toute notre affection,",
     hint: "Touchez le sceau ou faites défiler",
     open: "Ouvrir l'enveloppe",
     flipCard: "Retourner le carton",

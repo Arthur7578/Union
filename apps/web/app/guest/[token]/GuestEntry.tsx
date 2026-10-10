@@ -1,7 +1,7 @@
 "use client";
 
 import { WelcomeGate } from "@/components/guest/WelcomeGate";
-import { formatGuestAddress } from "@/lib/guestAddress";
+import { guestZone } from "@/lib/guestAddress";
 import { GuestPortal } from "./GuestPortal";
 import type { DBInvitation } from "./page";
 
@@ -32,8 +32,8 @@ export function GuestEntry({
       partnerOne={invitation.wedding.partner_one}
       partnerTwo={invitation.wedding.partner_two}
       eventDate={invitation.wedding.event_date}
-      venueName={invitation.wedding.venue_name}
-      address={formatGuestAddress(invitation.wedding)}
+      eventEndDate={invitation.wedding.event_end_date}
+      zone={guestZone(invitation.wedding)}
     >
       <GuestPortal
         token={token}

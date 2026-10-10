@@ -1,5 +1,31 @@
 import type { Invitation } from "@union/shared";
 
+/** The most precise place name a guest may read, and which kind it is. */
+export interface GuestZone {
+  kind: "area" | "city";
+  name: string;
+}
+
+/**
+ * The "zone" of the wedding for the faire-part ("En Provence"): the area, or
+ * when there is none the city, and nothing when neither is disclosed. The
+ * country alone is never enough, and the postal code and street are too
+ * precise for a headline. Like `formatGuestAddress`, this follows the
+ * visibility tier so a hidden address can never leak into the card.
+ */
+export function guestZone(
+  wedding: Pick<Invitation["wedding"], "address" | "address_visibility">,
+): GuestZone | null {
+  const address = wedding.address;
+  if (!address) return null;
+  const tier = wedding.address_visibility;
+  const area = tier === "area" ? address.area?.trim() : "";
+  if (area) return { kind: "area", name: area };
+  const city = tier === "partial" || tier === "full" ? address.city?.trim() : "";
+  if (city) return { kind: "city", name: city };
+  return null;
+}
+
 /**
  * The venue address as a guest may read it. The RPC removes every field the
  * couple has not chosen to disclose. This still switches on the visibility

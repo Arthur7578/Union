@@ -69,28 +69,28 @@
 .fp-root .flipper::before{content:"";position:absolute;inset:9px 8px 6px;
   box-shadow:0 3px 4px rgba(52,44,30,.28),0 12px 18px -4px rgba(52,44,30,.24),0 30px 50px -16px rgba(52,44,30,calc(.18 + .22 * var(--lift,0)))}
 .fp-root .side{position:absolute;inset:0;background:var(--img-card) center/100% 100% no-repeat;display:flex;flex-direction:column;align-items:center;text-align:center}
+.fp-root .side[hidden]{display:none}
 .fp-root .recto{justify-content:center;gap:1.05em;padding:6% 9%}
 .fp-root .recto::after{content:"";position:absolute;inset:0;pointer-events:none;background:#2A281C;opacity:var(--dim,0);
   -webkit-mask:var(--img-card) center/100% 100% no-repeat;mask:var(--img-card) center/100% 100% no-repeat}
 /* the flipper's rotation mirrors the back of the sheet, which is right for the paper; the text is mirrored back */
-.fp-root .verso-in{position:absolute;inset:0;transform:scaleX(-1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1em;text-align:center;padding:6% 10%}
+.fp-root .verso-in{position:absolute;inset:0;transform:scaleX(-1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.62em;text-align:center;padding:5% 9%}
 .fp-root .card-sprig{width:3.6em;color:var(--olive);display:block;margin:0 auto 1.1em;opacity:.85}
 .fp-root .stem{width:1px;height:3.4em;background:var(--gold-ink);opacity:.55}
-.fp-root .kicker{margin:0;font-family:var(--serif);font-size:.95em;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-soft);padding-left:.3em}
-.fp-root .to{font-family:var(--serif);font-style:italic;font-size:1.2em;color:var(--gold-ink);margin:0 0 .45em}
+.fp-root .joy{font-family:var(--serif);font-style:italic;font-size:1.05em;line-height:1.3;color:var(--gold-ink);margin:.7em auto 0;max-width:15em;text-wrap:balance}
 .fp-root .names{margin:0;font-family:var(--serif);font-weight:500;font-size:2.15em;letter-spacing:.2em;text-transform:uppercase;line-height:1.18;padding-left:.2em}
 .fp-root .names b{display:block;font-weight:400;font-style:italic;font-size:.62em;letter-spacing:0;text-transform:none;color:var(--gold-ink);line-height:1.1}
 .fp-root .when{margin:0;font-family:var(--serif);font-size:1.3em;letter-spacing:.14em}
 .fp-root .where{margin:.15em 0 0;font-family:var(--serif);font-style:italic;font-size:1.15em;color:var(--ink-soft)}
 .fp-root .line{opacity:var(--o,1);transform:translateY(calc((1 - var(--o,1)) * .7em))}
-.fp-root .lead{margin:0;font-family:var(--serif);font-style:italic;font-size:1.5em;line-height:1.25;text-wrap:balance;max-width:14em}
+.fp-root .verso-in p{margin:0;font-family:var(--serif);font-size:.86em;line-height:1.32;text-wrap:balance}
+.fp-root .verso-in .greet{font-style:italic;font-size:1em;color:var(--gold-ink)}
+.fp-root .verso-in .sign{font-size:1em;font-style:italic;letter-spacing:.06em}
 .fp-root .days{list-style:none;margin:0;padding:0;width:100%;display:grid;gap:.7em}
 .fp-root .days li{display:grid;grid-template-columns:5.4em 1fr;gap:.8em;align-items:baseline;text-align:left;font-size:.95em;padding-bottom:.7em;border-bottom:1px solid var(--rule)}
 .fp-root .days li:last-child{border-bottom:0;padding-bottom:0}
 .fp-root .days .d{font-family:var(--serif);font-size:1.12em;letter-spacing:.12em;text-transform:uppercase;font-variant-numeric:tabular-nums;white-space:nowrap}
 .fp-root .days .w{color:var(--ink-soft);line-height:1.3}
-.fp-root .foot{margin:0;font-size:.88em;line-height:1.5;color:var(--ink-soft)}
-.fp-root .foot strong{font-weight:600;color:var(--ink)}
 
 .fp-root .cta{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:8px;
   background:linear-gradient(180deg,rgba(235,228,221,0),var(--paper) 42%);opacity:0;pointer-events:none}

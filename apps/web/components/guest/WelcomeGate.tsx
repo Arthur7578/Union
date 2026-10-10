@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { GuestWelcome } from "@/components/guest/GuestWelcome";
+import type { GuestZone } from "@/lib/guestAddress";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 
@@ -33,8 +34,8 @@ export function WelcomeGate({
   partnerOne,
   partnerTwo,
   eventDate,
-  venueName,
-  address,
+  eventEndDate,
+  zone,
   children,
 }: {
   /** The guest's invitation token (personal link). */
@@ -46,8 +47,8 @@ export function WelcomeGate({
   partnerOne?: string | null;
   partnerTwo?: string | null;
   eventDate?: string | null;
-  venueName?: string | null;
-  address?: string | null;
+  eventEndDate?: string | null;
+  zone?: GuestZone | null;
   children: React.ReactNode;
 }) {
   const { locale } = useLocale();
@@ -74,8 +75,8 @@ export function WelcomeGate({
         partnerOne={partnerOne}
         partnerTwo={partnerTwo}
         eventDate={eventDate}
-        venueName={venueName}
-        address={address}
+        eventEndDate={eventEndDate}
+        zone={zone}
         onRespond={() => {
           if (token && !isDemo) {
             void getBrowserSupabase()

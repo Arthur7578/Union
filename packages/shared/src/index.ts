@@ -165,6 +165,9 @@ export type Invitation = {
     partner_one: string | null;
     partner_two: string | null;
     event_date: string | null;
+    /** Last day of a wedding that lasts more than one. Absent (or null) means a
+     *  single day: the server does not send it yet. */
+    event_end_date?: string | null;
     venue_name: string | null;
     address_visibility: "hidden" | "area" | "partial" | "full";
     /** Null when the couple has chosen to keep the venue fully hidden. */
