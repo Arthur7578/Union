@@ -11,6 +11,7 @@ import { OliveBranch } from "@/components/guest/OliveBranch";
 import { sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { looksLikeEmail } from "@/lib/emailSuggest";
 import { markGroupLinkArrival } from "@/lib/groupLinkArrival";
+import { markRsvpHandoff } from "@/lib/rsvpHandoff";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { useTurnstile } from "@/lib/turnstile";
@@ -177,6 +178,9 @@ export function JoinExperience({
   const redirectToGuest = useCallback(
     (token: string): View => {
       markGroupLinkArrival(token);
+      // They chose to respond on the faire-part: their invitation opens on
+      // the RSVP, not on the hub.
+      markRsvpHandoff(token);
       // They have just read the invitation, so their own link needn't repeat
       // it. Best-effort: failing to record it only means seeing it again.
       void getBrowserSupabase()

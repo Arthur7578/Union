@@ -161,7 +161,7 @@ export function TravelSection({ guestName }: { guestName: string }) {
         title={fr ? "Voyage & covoiturage" : "Travel & carsharing"}
         lead={
           fr
-            ? "Identifiez d'autres invités faisant des trajets similaires et coordonnez votre transport."
+            ? "Repère les invités qui font le même trajet que toi et partage la route."
             : "Meet other guests travelling your way, save on transport and share the ride."
         }
       />

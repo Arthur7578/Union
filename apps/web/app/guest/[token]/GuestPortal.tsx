@@ -11,11 +11,12 @@ import {
 import type { FormAnswers, GuestModuleKey } from "@union/shared";
 import { LocaleToggle } from "@/components/guest/LocaleToggle";
 import { OliveBranch } from "@/components/guest/OliveBranch";
-import { useReplayWelcome } from "@/components/guest/WelcomeGate";
+import { useReplayWelcome, useWelcomeResponses } from "@/components/guest/WelcomeGate";
 import { formatGuestAddress } from "@/lib/guestAddress";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { useLocale } from "@/lib/i18n/client";
 import { coupleText, coupleTextOr, rsvpDefaults } from "@/lib/i18n/text";
+import { takeRsvpHandoff } from "@/lib/rsvpHandoff";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { GUEST_DA_VARS } from "@/lib/theme";
 import { CustomFormFlow } from "./CustomFormFlow";
@@ -101,6 +102,13 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   // reconfirmation nudge — same answers, only the framing differs) or one of
   // the couple's own forms.
   const [rsvpOpen, setRsvpOpen] = useState<"primary" | "reconfirmation" | null>(null);
+  // Opened straight from "Respond to the invitation": the faire-part was the
+  // introduction, so the form starts at its first question.
+  const [rsvpFromWelcome, setRsvpFromWelcome] = useState(false);
+  const openRsvp = (context: "primary" | "reconfirmation") => {
+    setRsvpFromWelcome(false);
+    setRsvpOpen(context);
+  };
   const [openFormId, setOpenFormId] = useState<string | null>(null);
 
   // The guest's reply as last saved, so the hub shows it without a reload.
@@ -128,6 +136,26 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
       questions: normalizeQuestions(f.questions, DEFAULT_LOCALE),
     })),
   );
+
+  // "Respond to the invitation" — on the faire-part, or on the group link
+  // before being sent here — goes straight into the RSVP when there is one to
+  // answer. A guest who has already replied lands on the hub, their answer on
+  // show; so does anyone opening the link again later (the flag is one-shot).
+  const welcomeResponses = useWelcomeResponses();
+  const answerNow = reply.status === "pending" && moduleOn("forms");
+  useEffect(() => {
+    // Next frame: the hub paints once, then the form slides in over it. The
+    // flag is taken there too, so an effect React runs twice in development
+    // (and cancels once) doesn't spend it on the cancelled run.
+    const frame = requestAnimationFrame(() => {
+      if (!takeRsvpHandoff(token) || !answerNow) return;
+      setRsvpFromWelcome(true);
+      setRsvpOpen("primary");
+    });
+    return () => cancelAnimationFrame(frame);
+    // Only a new "respond" should open it, not a reply changing answerNow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [welcomeResponses, token]);
 
   const daysLeft = useDaysLeft(invitation.wedding.event_date);
   // A guest the couple has no email for is asked for one as part of the RSVP.
@@ -265,7 +293,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
           <button
             type="button"
             className={!primary || reply.status === "pending" ? "gh-btn" : "gh-btn gh-btn--ghost"}
-            onClick={() => setRsvpOpen(context)}
+            onClick={() => openRsvp(context)}
           >
             {!primary ? hub.confirm : reply.status === "pending" ? hub.reply : hub.edit}
           </button>
@@ -348,7 +376,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
         {moduleOn("forms") && (
           <div className="gh-hero-cta">
             {reply.status === "pending" ? (
-              <button type="button" className="gh-btn gh-btn--big" onClick={() => setRsvpOpen("primary")}>
+              <button type="button" className="gh-btn gh-btn--big" onClick={() => openRsvp("primary")}>
                 {hub.respond}
               </button>
             ) : (
@@ -356,7 +384,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
                 <span className={`gh-replied-status is-${reply.status}`}>
                   {reply.status === "attending" ? hub.coming : hub.notComing}
                 </span>
-                <button type="button" className="gh-link" onClick={() => setRsvpOpen("primary")}>
+                <button type="button" className="gh-link" onClick={() => openRsvp("primary")}>
                   {hub.editReply}
                 </button>
               </p>
@@ -453,6 +481,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
 
       {rsvpOpen && (
         <RsvpFlow
+          skipIntro={rsvpFromWelcome}
           token={token}
           isDemo={isDemo}
           title={rsvpOpen === "reconfirmation" ? reconfirmTitle : rsvpTitle}

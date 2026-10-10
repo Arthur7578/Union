@@ -215,9 +215,8 @@ describe("RsvpFlow", () => {
     };
     open({ replyEmail });
     enter();
-    await question("will you join us");
-    fireEvent.keyDown(window, { key: "b" });
 
+    // Asked first, before the answer itself.
     await question("Your email");
     expect(screen.getByText("So Maya & Daniel can send you the practical details.")).toBeInTheDocument();
     enter();
@@ -228,6 +227,33 @@ describe("RsvpFlow", () => {
 
     save.mockImplementation(() => Promise.resolve(true));
     enter();
-    expect(await question("A word for Maya & Daniel")).toBeInTheDocument();
+    expect(await question("Arthur, will you join us\\?")).toBeInTheDocument();
+  });
+
+  it("starts at the first question when opened from the faire-part", async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <RsvpFlow
+          token="tok"
+          isDemo={false}
+          title="Attendance RSVP"
+          subtitle="Let us know."
+          labelAttending="Attending"
+          labelDeclined="Declined"
+          guestFirstName="Arthur"
+          coupleNames="Maya & Daniel"
+          skipIntro
+          initial={pending}
+          companions={[]}
+          canAddPartner={false}
+          canAddKids={false}
+          onCompanionAdded={() => {}}
+          onSaved={() => {}}
+          onClose={() => {}}
+        />
+      </LocaleProvider>,
+    );
+    expect(screen.getByRole("heading", { name: /Arthur, will you join us\?/ })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Attendance RSVP" })).not.toBeInTheDocument();
   });
 });

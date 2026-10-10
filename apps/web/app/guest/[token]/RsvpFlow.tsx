@@ -107,6 +107,7 @@ export function RsvpFlow({
   guestFirstName,
   coupleNames,
   replyEmail,
+  skipIntro = false,
   initial,
   companions,
   canAddPartner,
@@ -125,6 +126,8 @@ export function RsvpFlow({
   coupleNames: string;
   /** The guest's email, asked here when the couple has none (see ReplyEmailField). */
   replyEmail?: ReplyEmail;
+  /** Start at the first question (opened from the faire-part's "respond"). */
+  skipIntro?: boolean;
   initial: RsvpReply;
   companions: Companion[];
   canAddPartner: boolean;
@@ -231,15 +234,60 @@ export function RsvpFlow({
   ];
   const coming = status === "attending";
 
-  const steps: FlowStep[] = [
-    {
+  // Asked first, before the answer itself, when the couple has no email for
+  // this guest (see ReplyEmailField); a group-link arrival must give one.
+  let emailStep: FlowStep | null = null;
+  if (replyEmail?.show) {
+    const suggestion = suggestEmailFix(replyEmail.email);
+    emailStep = {
+      key: "email",
+      title: t.replyEmail.label,
+      description: replyEmail.required ? t.replyEmail.hintRequired(coupleNames) : t.replyEmail.hintOptional(coupleNames),
+      body: (
+        <>
+          <FlowText
+            type="email"
+            value={replyEmail.email}
+            onChange={replyEmail.setEmail}
+            placeholder={t.replyEmail.placeholder}
+            label={t.replyEmail.label}
+            autoComplete="email"
+          />
+          {suggestion ? (
+            <div className="tf-links">
+              <button type="button" className="tf-link" onClick={() => replyEmail.setEmail(suggestion)}>
+                {t.replyEmail.suggestion(suggestion)}
+              </button>
+            </div>
+          ) : null}
+          {replyEmail.error ? (
+            <p className="tf-error" role="alert">
+              {replyEmail.error}
+            </p>
+          ) : null}
+        </>
+      ),
+      // Saved as given (unconfirmed) before the reply itself is sent; a
+      // required address that's missing or malformed keeps the guest here.
+      // Once saved this step leaves the list, so it names what comes next.
+      onNext: async () => ((await replyEmail.save()) ? "attend" : false),
+    };
+  }
+
+  const steps: FlowStep[] = [];
+  // From the faire-part's "respond", the faire-part was the introduction.
+  if (!skipIntro) {
+    steps.push({
       key: "intro",
       kind: "intro",
       before: <OliveBranch className="tf-ornament" />,
       title,
       description: subtitle,
       body: <p className="tf-meta">{flowCopy.duration(1)}</p>,
-    },
+    });
+  }
+  if (emailStep) steps.push(emailStep);
+  steps.push(
     {
       key: "attend",
       title: copy.attend(guestFirstName),
@@ -253,7 +301,7 @@ export function RsvpFlow({
       valid: status !== "pending",
       hideOk: status === "pending",
     },
-  ];
+  );
 
   if (coming) {
     steps.push({
@@ -362,42 +410,6 @@ export function RsvpFlow({
         });
       }
     }
-  }
-
-  if (replyEmail?.show) {
-    const suggestion = suggestEmailFix(replyEmail.email);
-    steps.push({
-      key: "email",
-      title: t.replyEmail.label,
-      description: replyEmail.required ? t.replyEmail.hintRequired(coupleNames) : t.replyEmail.hintOptional(coupleNames),
-      body: (
-        <>
-          <FlowText
-            type="email"
-            value={replyEmail.email}
-            onChange={replyEmail.setEmail}
-            placeholder={t.replyEmail.placeholder}
-            label={t.replyEmail.label}
-            autoComplete="email"
-          />
-          {suggestion ? (
-            <div className="tf-links">
-              <button type="button" className="tf-link" onClick={() => replyEmail.setEmail(suggestion)}>
-                {t.replyEmail.suggestion(suggestion)}
-              </button>
-            </div>
-          ) : null}
-          {replyEmail.error ? (
-            <p className="tf-error" role="alert">
-              {replyEmail.error}
-            </p>
-          ) : null}
-        </>
-      ),
-      // Saved as given (unconfirmed) before the reply itself is sent; a
-      // required address that's missing or malformed keeps the guest here.
-      onNext: async () => ((await replyEmail.save()) ? undefined : false),
-    });
   }
 
   steps.push(
