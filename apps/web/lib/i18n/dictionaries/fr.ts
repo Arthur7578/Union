@@ -1083,8 +1083,8 @@ export const fr: Dictionary = {
     formsTitle: "Vos réponses",
     formsIntro: (name: string) =>
       `${name}, les mariés te poseront quelques questions au fil des préparatifs.`,
-    statusPending: "En attente de ta réponse",
-    statusDone: "Répondu",
+    statusPending: "À compléter",
+    statusDone: "Complété",
     statusSoon: "Bientôt",
     statusClosed: "Fermé",
     reply: "Répondre",

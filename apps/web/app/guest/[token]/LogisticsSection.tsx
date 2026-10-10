@@ -66,59 +66,63 @@ export function LogisticsSection({
         }
       />
 
-      <article className="gh-card gh-card--arch gh-venue">
-        <p className="gh-kicker">{fr ? "Le lieu" : "The venue"}</p>
-        {venueName ? <h3 className="gh-caps">{venueName}</h3> : null}
-        {addressText ? (
-          <>
-            <p className="gh-sub">{addressText}</p>
-            <a
-              className="gh-link"
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressText)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {fr ? "Ouvrir dans Google Maps" : "Open in Google Maps"} →
-            </a>
-          </>
-        ) : (
-          <p className="gh-sub">
-            {fr
-              ? "L'adresse complète sera communiquée prochainement."
-              : "The full address will be shared closer to the date."}
+      <ul className="gh-list">
+        <li className="gh-card">
+          <h3 className="gh-card-title">{fr ? "Le lieu" : "The venue"}</h3>
+          {venueName ? <p className="gh-card-body">{venueName}</p> : null}
+          <p className="gh-card-meta">
+            {addressText ||
+              (fr
+                ? "L'adresse complète sera communiquée prochainement."
+                : "The full address will be shared closer to the date.")}
           </p>
-        )}
+          {addressText ? (
+            <div className="gh-card-actions">
+              <a
+                className="gh-link"
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressText)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {fr ? "Ouvrir dans Google Maps" : "Open in Google Maps"}
+              </a>
+            </div>
+          ) : null}
+        </li>
 
-        <div className="gh-rule" />
+        <li className="gh-card">
+          <h3 className="gh-card-title">{fr ? "Le déroulé" : "The day"}</h3>
+          <ol className="gh-schedule">
+            {schedule.map((item) => (
+              <li key={item.time}>
+                <span className="gh-time">{item.time}</span>
+                <span>
+                  <span className="gh-what">{item.title}</span>
+                  <span className="gh-note">{item.note}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </li>
+      </ul>
 
-        <p className="gh-kicker">{fr ? "Le déroulé" : "The day"}</p>
-        <ol className="gh-timeline">
-          {schedule.map((item) => (
-            <li key={item.time}>
-              <span className="gh-time">{item.time}</span>
-              <span className="gh-what">{item.title}</span>
-              <span className="gh-note">{item.note}</span>
-            </li>
-          ))}
-        </ol>
-      </article>
-
-      <h3 className="gh-subhead">{fr ? "Hébergements conseillés" : "Where to stay"}</h3>
-      <div className="gh-stays">
+      <h3 className="gh-subhead">{fr ? "Où dormir" : "Where to stay"}</h3>
+      <ul className="gh-list">
         {STAYS.map((stay) => (
-          <article key={stay.name} className="gh-stay">
-            <p className="gh-kicker">{stay.badge}</p>
-            <h4 className="gh-stay-name">{stay.name}</h4>
-            <p className="gh-stay-meta">
-              {stay.distance} · {stay.price} · {stay.rating}
+          <li key={stay.name} className="gh-card">
+            <h4 className="gh-card-title">{stay.name}</h4>
+            <p className="gh-card-meta">
+              {stay.type} · {stay.distance} · {stay.price} · {stay.rating}
             </p>
-            <p className="gh-stay-desc">{stay.desc}</p>
-            <a className="gh-link" href={stay.url} target="_blank" rel="noopener noreferrer">
-              {fr ? "Visiter le site" : "Visit website"} →
-            </a>
-          </article>
+            <p className="gh-card-body">{stay.desc}</p>
+            <div className="gh-card-actions">
+              <a className="gh-link" href={stay.url} target="_blank" rel="noopener noreferrer">
+                {fr ? "Visiter le site" : "Visit website"}
+              </a>
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </>
   );
 }

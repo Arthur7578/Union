@@ -1119,8 +1119,8 @@ export const en = {
     formsTitle: "Your replies",
     formsIntro: (name: string) =>
       `${name}, the couple will ask you a few questions as the big day approaches.`,
-    statusPending: "Awaiting your reply",
-    statusDone: "Answered",
+    statusPending: "To do",
+    statusDone: "Done",
     statusSoon: "Coming soon",
     statusClosed: "Closed",
     reply: "Reply",

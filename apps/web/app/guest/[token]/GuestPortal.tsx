@@ -21,6 +21,7 @@ import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { GUEST_DA_VARS } from "@/lib/theme";
 import { CustomFormFlow } from "./CustomFormFlow";
 import { FaqSection } from "./FaqSection";
+import { FormList, type FormItem } from "./FormList";
 import { LogisticsSection } from "./LogisticsSection";
 import { useReplyEmail } from "./ReplyEmailField";
 import { RsvpFlow, type RsvpReply } from "./RsvpFlow";
@@ -267,40 +268,51 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   const scrollTo = (key: GuestModuleKey) =>
     document.getElementById(sectionId(key))?.scrollIntoView({ behavior: "smooth", block: "start" });
 
-  const replyCard = (context: "primary" | "reconfirmation") => {
-    const primary = context === "primary";
-    return (
-      <article className={primary ? "gh-card gh-card--arch" : "gh-card gh-card--stripes"}>
-        <div className="gh-card-in">
-          <p className="gh-kicker">{primary ? "RSVP" : hub.finalCheck}</p>
-          <h3 className="gh-h3">{primary ? rsvpTitle : reconfirmTitle}</h3>
-          <p className="gh-sub">{primary ? rsvpSubtitle : reconfirmSubtitle}</p>
-          <ul className="gh-household">
-            <li className={`is-${reply.status}`}>
-              <span>{guestFullName}</span>
-              <span>{reply.status === "pending" ? "—" : statusLabel(reply.status)}</span>
-            </li>
-            {companions.map((c) => {
-              const status = reply.companions[c.id]?.rsvp_status ?? "pending";
-              return (
-                <li key={c.id} className={`is-${status}`}>
-                  <span>{[c.first_name, c.last_name].filter(Boolean).join(" ")}</span>
-                  <span>{status === "pending" ? "—" : statusLabel(status)}</span>
-                </li>
-              );
-            })}
-          </ul>
-          <button
-            type="button"
-            className={!primary || reply.status === "pending" ? "gh-btn" : "gh-btn gh-btn--ghost"}
-            onClick={() => openRsvp(context)}
-          >
-            {!primary ? hub.confirm : reply.status === "pending" ? hub.reply : hub.edit}
-          </button>
-        </div>
-      </article>
-    );
-  };
+  // The guest's household answer in one line ("Arthur : Présent, Guinevere :
+  // Absent"), leaving out anyone who hasn't been answered for yet.
+  const householdAnswer = [
+    { name: guestFirstName, status: reply.status },
+    ...companions.map((c) => ({ name: c.first_name, status: reply.companions[c.id]?.rsvp_status ?? "pending" })),
+  ]
+    .filter((p) => p.status !== "pending")
+    .map((p) => `${p.name}${locale === "fr" ? "\u00a0:" : ":"} ${statusLabel(p.status)}`)
+    .join(", ");
+
+  const formItems: FormItem[] = [
+    {
+      key: "rsvp",
+      title: rsvpTitle,
+      meta: reply.status === "pending" ? rsvpSubtitle : householdAnswer,
+      state: reply.status === "pending" ? "todo" : "done",
+      onOpen: () => openRsvp("primary"),
+    },
+    // No record says whether a guest has done the final check-in, so it
+    // stays "to do" for as long as the couple keeps it open.
+    ...(reconfirmationLive
+      ? [
+          {
+            key: "reconfirmation",
+            title: reconfirmTitle,
+            meta: reconfirmSubtitle,
+            state: "todo" as const,
+            onOpen: () => openRsvp("reconfirmation"),
+            actionLabel: hub.confirm,
+          },
+        ]
+      : []),
+    ...customForms.map((f): FormItem => {
+      const open = customFormState(f);
+      return {
+        key: f.id,
+        title: customFormHeading(f),
+        meta:
+          coupleText(f.guest_copy?.subtitle, locale) ??
+          (f.questions.length ? hub.questions(f.questions.length) : undefined),
+        state: open === "scheduled" ? "soon" : open === "closed" ? "closed" : f.answers ? "done" : "todo",
+        onOpen: open === "live" ? () => setOpenFormId(f.id) : undefined,
+      };
+    }),
+  ];
 
   return (
     <div className="gh" style={GUEST_DA_VARS as React.CSSProperties}>
@@ -404,43 +416,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
             {key === "forms" && (
               <>
                 <SectionHead title={hub.formsTitle} lead={hub.formsIntro(guestFirstName)} />
-                <div className="gh-cards">
-                  {replyCard("primary")}
-                  {reconfirmationLive && replyCard("reconfirmation")}
-                  {customForms.map((f) => {
-                    const state = customFormState(f);
-                    const answered = !!f.answers;
-                    return (
-                      <article key={f.id} className={`gh-card gh-card--notched${state === "scheduled" ? " is-muted" : ""}`}>
-                        <div className="gh-card-in">
-                          <p className="gh-kicker">
-                            {state === "scheduled"
-                              ? hub.statusSoon
-                              : state === "closed"
-                                ? hub.statusClosed
-                                : answered
-                                  ? hub.statusDone
-                                  : hub.statusPending}
-                          </p>
-                          <h3 className="gh-h3">{customFormHeading(f)}</h3>
-                          {coupleText(f.guest_copy?.subtitle, locale) ? (
-                            <p className="gh-sub">{coupleText(f.guest_copy?.subtitle, locale)}</p>
-                          ) : null}
-                          <p className="gh-meta">{hub.questions(f.questions.length)}</p>
-                          {state === "live" && (
-                            <button
-                              type="button"
-                              className={answered ? "gh-btn gh-btn--ghost" : "gh-btn"}
-                              onClick={() => setOpenFormId(f.id)}
-                            >
-                              {answered ? hub.edit : hub.reply}
-                            </button>
-                          )}
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
+                <FormList items={formItems} />
               </>
             )}
             {key === "travel" && <TravelSection guestName={guestFullName} />}
@@ -459,7 +435,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
         <footer className="gh-footer">
           <OliveBranch className="gh-branch" />
           <p className="gh-footer-script">{hub.footer}</p>
-          <p className="gh-caps">{coupleNames}</p>
+          <p className="gh-footer-names">{coupleNames}</p>
           {displayDate ? <p className="gh-place">{displayDate}</p> : null}
         </footer>
       </main>

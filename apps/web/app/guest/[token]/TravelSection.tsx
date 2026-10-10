@@ -167,57 +167,47 @@ export function TravelSection({ guestName }: { guestName: string }) {
       />
 
       <div className="gh-center">
-        <button type="button" className="gh-btn gh-btn--ghost" onClick={() => setSharing(true)}>
+        <button type="button" className="gh-btn" onClick={() => setSharing(true)}>
           {t.travelFlow.open}
         </button>
       </div>
 
-      <div className="gh-tickets">
-        {connections.length > 0 ? (
-          connections.map((match) => (
-            <article key={match.id} className="gh-ticket">
-              <div className="gh-ticket-head">
-                <h3 className="gh-ticket-name">{match.name}</h3>
-                <span className="gh-chip">{match.date}</span>
+      {connections.length > 0 ? (
+        <ul className="gh-list">
+          {connections.map((match) => (
+            <li key={match.id} className="gh-card">
+              <h3 className="gh-card-title">{match.name}</h3>
+              <p className="gh-card-meta">
+                {fr ? "Depuis" : "From"} {match.from} · {match.date}
+              </p>
+              <p className="gh-card-body">{match.notes}</p>
+              <p className="gh-card-meta">
+                {match.method}
+                {match.seatsAvailable > 0
+                  ? ` · ${match.seatsAvailable} ${fr ? "places disponibles" : "seats open"}`
+                  : ""}
+              </p>
+              <div className="gh-card-actions">
+                {match.requested ? (
+                  <p className="gh-status">{fr ? "Demande envoyée" : "Contact requested"}</p>
+                ) : (
+                  <button
+                    type="button"
+                    className="gh-btn gh-btn--small gh-btn--ghost"
+                    onClick={() => requestContact(match.id)}
+                  >
+                    {fr ? "Demander le contact" : "Request contact details"}
+                  </button>
+                )}
               </div>
-              <dl className="gh-facts">
-                <div>
-                  <dt>{fr ? "Depuis" : "From"}</dt>
-                  <dd>{match.from}</dd>
-                </div>
-                <div>
-                  <dt>{fr ? "Moyen" : "Method"}</dt>
-                  <dd>{match.method}</dd>
-                </div>
-              </dl>
-              <p className="gh-ticket-notes">{match.notes}</p>
-              {match.seatsAvailable > 0 && (
-                <p className="gh-seats">
-                  {match.seatsAvailable} {fr ? "places disponibles" : "seats open"}
-                </p>
-              )}
-              <button
-                type="button"
-                className={match.requested ? "gh-btn gh-btn--done" : "gh-btn gh-btn--small"}
-                disabled={match.requested}
-                onClick={() => requestContact(match.id)}
-              >
-                {match.requested
-                  ? fr
-                    ? "Demande envoyée"
-                    : "Contact requested"
-                  : fr
-                    ? "Demander le contact"
-                    : "Request contact details"}
-              </button>
-            </article>
-          ))
-        ) : (
-          <p className="gh-empty">
-            {fr ? "Aucun trajet partagé n'est disponible pour le moment." : "No shared travel options available yet."}
-          </p>
-        )}
-      </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="gh-empty">
+          {fr ? "Aucun trajet partagé n'est disponible pour le moment." : "No shared travel options available yet."}
+        </p>
+      )}
 
       {sharing && (
         <ShareTravelFlow
@@ -251,11 +241,10 @@ export function TravelSection({ guestName }: { guestName: string }) {
             aria-labelledby="gh-request-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <OliveBranch className="gh-dialog-branch" />
-            <h3 id="gh-request-title" className="gh-h3">
+            <h3 id="gh-request-title" className="gh-card-title">
               {fr ? "Demande envoyée" : "Request sent"}
             </h3>
-            <p className="gh-sub">
+            <p className="gh-card-body">
               {fr
                 ? "Une notification a été transmise à l'invité. S'il accepte, ses coordonnées s'afficheront ici."
                 : "The guest has been notified. If they accept sharing their details, they will be sent to your email."}
