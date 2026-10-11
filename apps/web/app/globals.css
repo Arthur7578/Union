@@ -1,18 +1,5 @@
-:root {
-  /* RSVP portal palette (kept for the public /rsvp flow) */
-  --bg: #faf5f1;
-  --surface: #fffcfa;
-  --surface-alt: #f3ebe4;
-  --text: #43353a;
-  --muted: #8a817c;
-  --border: #e7ded6;
-  --primary: #b07c82;
-  --primary-dark: #9a626a;
-  --success: #6e8a72;
-  --success-bg: #e7efe6;
-  --danger: #c0553b;
-  --danger-bg: #f7e6e1;
-}
+/* Colours come from lib/theme.ts (CSS_VARS), which app/layout.tsx sets on
+   <html> — so no colour literals in this file; lib/theme.test.ts enforces it. */
 
 * {
   box-sizing: border-box;
@@ -70,11 +57,11 @@ select,
 }
 
 a {
-  color: #9a626a;
+  color: var(--primary-dark);
   text-decoration: none;
 }
 a:hover {
-  color: #b07c82;
+  color: var(--primary);
 }
 
 button {
@@ -100,7 +87,7 @@ button {
 .u-app {
   min-height: 100vh; /* fallback for older browsers */
   min-height: 100dvh; /* dynamic viewport — no jump when the URL bar hides */
-  background: linear-gradient(180deg, #f2ece5 0%, #e7ddd3 100%);
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
   background-attachment: fixed;
 }
 
@@ -114,10 +101,10 @@ button {
   left: 0;
   right: 0;
   z-index: 40;
-  background: rgba(250, 245, 241, 0.92);
+  background: var(--tabbar-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(67, 53, 58, 0.06);
+  border-top: 1px solid var(--tabbar-line);
   padding: 9px 8px calc(14px + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: flex-end;
@@ -152,8 +139,8 @@ button {
     bottom: 0;
     width: 248px;
     padding: 30px 18px 22px;
-    background: rgba(250, 245, 241, 0.7);
-    border-right: 1px solid rgba(67, 53, 58, 0.08);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-line);
     z-index: 40;
   }
   .u-shell {
@@ -173,19 +160,19 @@ button {
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #bbaca5;
+  color: var(--label);
 }
 .u-section-label {
   font-weight: 600;
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #bbaca5;
+  color: var(--label);
 }
 .u-link {
   font-weight: 600;
   font-size: 14px;
-  color: #9a626a;
+  color: var(--primary-dark);
   cursor: pointer;
   background: none;
   border: none;
@@ -229,7 +216,7 @@ select {
   padding: 32px;
   width: 100%;
   max-width: 480px;
-  box-shadow: 0 12px 40px rgba(43, 39, 36, 0.06);
+  box-shadow: 0 12px 40px var(--card-shadow);
 }
 
 .brand {
@@ -316,7 +303,7 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(176, 124, 130, 0.16);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 textarea {
@@ -364,7 +351,7 @@ textarea {
   border: none;
   border-radius: 14px;
   background: var(--primary);
-  color: #fff;
+  color: var(--white);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;

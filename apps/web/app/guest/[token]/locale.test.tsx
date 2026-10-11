@@ -19,6 +19,7 @@ const request = vi.hoisted(() => ({
   cookie: undefined as string | undefined,
   acceptLanguage: null as string | null,
   invitation: null as Invitation | null,
+  rsvpFormsError: false,
 }));
 
 vi.mock("next/headers", async () => {
@@ -47,6 +48,15 @@ vi.mock("@/lib/supabase", () => ({
       if (fn === "get_invitation") {
         return Promise.resolve({ data: request.invitation, error: null });
       }
+      if (fn === "get_invitation_rsvp_forms") {
+        if (request.rsvpFormsError) {
+          return Promise.resolve({ data: null, error: new Error("RPC unavailable") });
+        }
+        return Promise.resolve({
+          data: { primary: null, reconfirmation: null },
+          error: null,
+        });
+      }
       if (fn === "get_guest_email_status") {
         return Promise.resolve({ data: { email_missing: false }, error: null });
       }
@@ -61,7 +71,6 @@ vi.mock("@/lib/supabase", () => ({
 // The guest UI itself is irrelevant here and drags in the browser: stub it.
 vi.mock("./GuestPortal", () => ({ GuestPortal: () => null }));
 vi.mock("./GuestEmailGate", () => ({ GuestEmailGate: () => null }));
-vi.mock("./GuestIdentityGate", () => ({ GuestIdentityGate: () => null }));
 
 function invitation(signals: {
   weddingDefault?: string | null;
@@ -113,6 +122,7 @@ describe("the language a guest's invitation opens in", () => {
     request.cookie = undefined;
     request.acceptLanguage = null;
     request.invitation = null;
+    request.rsvpFormsError = false;
   });
 
   it("honours the switcher this browser used, over everything else", async () => {
@@ -188,6 +198,13 @@ describe("the language a guest's invitation opens in", () => {
       organiserOverride: "de",
       weddingDefault: "fr",
     });
+
+    expect(await openInvitation()).toBe("fr");
+  });
+
+  it("still opens a valid invitation when RSVP follow-up questions fail to load", async () => {
+    request.invitation = invitation({ weddingDefault: "fr" });
+    request.rsvpFormsError = true;
 
     expect(await openInvitation()).toBe("fr");
   });

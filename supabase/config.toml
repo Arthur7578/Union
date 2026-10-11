@@ -1,5 +1,10 @@
 project_id = "jriyeblycrzpozjuexvr"
 
+# CAPTCHA protection (Cloudflare Turnstile) is switched on for the hosted project
+# in the dashboard — Authentication → Bot and Abuse Protection — so it is
+# deliberately not enabled here: local development and the CI database job don't
+# need it. See "Bot protection on sign-up" in the README.
+
 # Regular passwordless sign-in sends a numeric code. Existing users who are
 # invited as co-organisers also go through Supabase's magic-link template
 # (the dedicated invite template only creates new Auth users). Those calls

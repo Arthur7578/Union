@@ -1,62 +1,151 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { LAST_EMAIL_KEY, sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
-import { writeActiveGuestIdentity } from "@/lib/guestIdentity";
+import { guestLinkPath } from "@union/shared";
+import { DaRoot } from "@/components/guest/DaRoot";
+import { Flow, useFlow, type FlowStep } from "@/components/guest/flow/Flow";
+import { FlowText } from "@/components/guest/flow/fields";
+import { LocaleToggle } from "@/components/guest/LocaleToggle";
+import { OliveBranch } from "@/components/guest/OliveBranch";
+import { sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
+import { looksLikeEmail } from "@/lib/emailSuggest";
+import { markGroupLinkArrival } from "@/lib/groupLinkArrival";
+import { markRsvpHandoff } from "@/lib/rsvpHandoff";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { useTurnstile } from "@/lib/turnstile";
 import type { JoinWeddingPreview } from "./page";
 
+/**
+ * The group link, after the welcome: a guest finds their own invitation by
+ * name. Their first name, then their last name only when several guests
+ * share that first name. In secure mode they then confirm an email with a
+ * code (the one the couple entered, or their own, which then secures the
+ * invitation); in light mode the name alone opens it.
+ *
+ * Everyone starts at the name, even on a device already signed in: it may be
+ * someone else's (a shared computer, a family tablet). When the account
+ * signed in here already holds the invitation for that name, the code step
+ * is skipped.
+ *
+ * Asked one question at a time, like every guest form: each step answers
+ * which one comes next, from the server's reply to it.
+ */
+
 type View =
-  | "checking"
-  | "contact_form"
-  | "first_name"
-  | "email_code"
-  | "no_match"
+  | "name"
+  | "last_name"
+  | "email"
+  | "code"
+  | "not_found"
+  | "ambiguous"
+  | "already_secured"
   | "redirecting";
 
-type DisambiguationSource = "contact" | "authenticated" | null;
-
-interface ContactLookupResult {
+interface FindResult {
   status:
     | "match"
+    | "needs_last_name"
     | "ambiguous"
-    | "otp_required"
-    | "email_required"
+    | "not_found"
+    | "invalid_link"
+    | "rate_limited";
+  mode?: "secure" | "light";
+  token?: string;
+  guest_id?: string;
+}
+
+interface CheckEmailResult {
+  status:
+    | "ok"
+    | "email_mismatch"
+    | "already_secured"
+    | "invalid_email"
+    | "not_found"
+    | "invalid_link"
+    | "rate_limited";
+}
+
+interface SecureResult {
+  status:
+    | "verified"
+    | "not_authenticated"
+    | "email_not_confirmed"
+    | "email_mismatch"
+    | "already_secured"
     | "not_found"
     | "invalid_link";
   token?: string;
+  guest_id?: string;
+  first_name?: string;
+  last_name?: string | null;
 }
 
-interface GuestAccessOption {
+interface AccessOption {
   guest_id: string;
   first_name: string;
   last_name: string | null;
 }
 
-interface GuestAccessOptionsResult {
+interface AccessOptionsResult {
   status: "ok" | "not_authenticated";
-  matches?: GuestAccessOption[];
+  matches?: AccessOption[];
 }
 
-interface ClaimGuestAccessResult {
-  status:
-    | "verified"
-    | "not_authenticated"
-    | "not_found"
-    | "already_claimed"
-    | "not_available";
-  token?: string;
+/** An error worded for the guest: shown as is, never replaced by a generic one. */
+class GuestFacingError extends Error {}
+
+/** A link under a step's answer that resets the form and goes back to a step. */
+function BackTo({ to, label, onReset }: { to: View; label: string; onReset?: () => void }) {
+  const flow = useFlow();
+  return (
+    <button
+      type="button"
+      className="tf-link"
+      onClick={() => {
+        onReset?.();
+        flow.goTo(to);
+      }}
+    >
+      {label}
+    </button>
+  );
 }
 
-function readLastEmail(): string {
-  try {
-    return window.localStorage.getItem(LAST_EMAIL_KEY) ?? "";
-  } catch {
-    return "";
-  }
+/** "Resend code", without leaving the step unless the server says otherwise. */
+function Resend({ label, onResend }: { label: string; onResend: () => Promise<View> }) {
+  const flow = useFlow();
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  return (
+    <>
+      <button
+        type="button"
+        className="tf-link"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setFailure(null);
+          try {
+            const next = await onResend();
+            if (next !== "code") flow.goTo(next);
+          } catch (reason) {
+            setFailure(reason instanceof Error ? reason.message : null);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {label}
+      </button>
+      {failure ? (
+        <p className="tf-error" role="alert">
+          {failure}
+        </p>
+      ) : null}
+    </>
+  );
 }
 
 export function JoinExperience({
@@ -66,528 +155,332 @@ export function JoinExperience({
   code: string;
   preview: JoinWeddingPreview;
 }) {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
+  const copy = t.guestJoin;
   const router = useRouter();
-  const otpMode = preview.guest_join_auth_mode === "otp";
-  const [view, setView] = useState<View>("checking");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [contact, setContact] = useState(() => (otpMode ? readLastEmail() : ""));
-  const [email, setEmail] = useState(() => (otpMode ? readLastEmail() : ""));
+  const [askLastName, setAskLastName] = useState(false);
   const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [guestId, setGuestId] = useState<string | null>(null);
+  // Not prefilled from this device's last sign-in: on a shared device that
+  // is someone else's address.
+  const [email, setEmail] = useState("");
+  // Why the guest was sent back to the email step, if they were.
+  const [emailNotice, setEmailNotice] = useState<string | null>(null);
+  const [codeSent, setCodeSent] = useState(false);
   const [otp, setOtp] = useState("");
-  const [disambiguationSource, setDisambiguationSource] =
-    useState<DisambiguationSource>(null);
+  const { captcha, getCaptchaToken } = useTurnstile();
 
   const partners =
     [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") ||
     t.guests.theCouple;
 
-  const dateLabel = preview.event_date
-    ? new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        timeZone: "UTC",
-      }).format(new Date(`${preview.event_date}T00:00:00Z`))
-    : null;
-
   const redirectToGuest = useCallback(
-    (token: string) => {
-      setView("redirecting");
-      router.push(`/guest/${token}`);
+    (token: string): View => {
+      markGroupLinkArrival(token);
+      // They chose to respond on the faire-part: their invitation opens on
+      // the RSVP, not on the hub.
+      markRsvpHandoff(token);
+      // They have just read the invitation, so their own link needn't repeat
+      // it. Best-effort: failing to record it only means seeing it again.
+      void getBrowserSupabase()
+        .rpc("mark_welcome_seen", { p_token: token })
+        .then(undefined, () => {})
+        .then(() => router.push(guestLinkPath(token)));
+      return "redirecting";
     },
     [router],
   );
 
-  const claimAndContinue = useCallback(
-    async (match: GuestAccessOption) => {
-      setBusy(true);
-      setError(null);
-      try {
-        const supabase = getBrowserSupabase();
-        const { data, error: rpcError } = await supabase.rpc(
-          "claim_guest_access",
-          { p_guest_id: match.guest_id },
-        );
-        if (rpcError) throw rpcError;
-
-        const result = data as unknown as ClaimGuestAccessResult;
-        if (result.status !== "verified" || !result.token) {
-          throw new Error(t.guestJoin.accessUnavailable);
-        }
-
-        const { data: authData } = await supabase.auth.getSession();
-        if (authData.session) {
-          writeActiveGuestIdentity({
-            userId: authData.session.user.id,
-            guestId: match.guest_id,
-            guestName: [match.first_name, match.last_name]
-              .filter(Boolean)
-              .join(" "),
-          });
-        }
-        redirectToGuest(result.token);
-      } catch (reason) {
-        setError(
-          reason instanceof Error
-            ? reason.message
-            : t.guestJoin.genericError,
-        );
-        setBusy(false);
-      }
-    },
-    [redirectToGuest, t],
-  );
-
-  const loadAuthenticatedOptions = useCallback(
-    async (name?: string) => {
+  /**
+   * Opens the invitation for the signed-in account, if it may. Returns the
+   * outcome so each caller decides what a refusal means for it.
+   */
+  const secureWithSession = useCallback(
+    async (id: string): Promise<SecureResult["status"]> => {
       const supabase = getBrowserSupabase();
       const { data, error: rpcError } = await supabase.rpc(
-        "get_guest_access_options",
-        {
-          p_join_code: code,
-          p_first_name: name?.trim() || null,
-        },
+        "secure_guest_invitation",
+        { p_join_code: code, p_guest_id: id },
       );
       if (rpcError) throw rpcError;
-
-      const result = data as unknown as GuestAccessOptionsResult;
-      const found = result.matches ?? [];
-      if (result.status !== "ok" || found.length === 0) {
-        setView("no_match");
-        return;
+      const result = data as unknown as SecureResult;
+      if (result.status === "verified" && result.token) {
+        redirectToGuest(result.token);
       }
-      if (found.length > 1) {
-        if (name) {
-          setView("no_match");
-        } else {
-          setDisambiguationSource("authenticated");
-          setView("first_name");
-        }
-        return;
-      }
-      await claimAndContinue(found[0]);
+      return result.status;
     },
-    [claimAndContinue, code],
+    [code, redirectToGuest],
   );
 
-  useEffect(() => {
-    let active = true;
-
-    void getBrowserSupabase()
-      .auth.getSession()
-      .then(async ({ data }) => {
-        if (!active) return;
-        if (!data.session) {
-          setView("contact_form");
-          return;
-        }
-        try {
-          await loadAuthenticatedOptions();
-        } catch {
-          if (active) setView("contact_form");
-        }
+  const findByName = async (withLastName: boolean): Promise<View> => {
+    let result: FindResult;
+    try {
+      const supabase = getBrowserSupabase();
+      const { data, error: rpcError } = await supabase.rpc("find_guest_for_join", {
+        p_join_code: code,
+        p_first_name: firstName.trim(),
+        p_last_name: withLastName ? lastName.trim() : null,
       });
-
-    return () => {
-      active = false;
-    };
-  }, [loadAuthenticatedOptions, otpMode]);
-
-  const requestEmailCode = async (address = email) => {
-    const cleanEmail = address.trim();
-    if (!cleanEmail) return;
-    setBusy(true);
-    setError(null);
-    try {
-      setEmail(cleanEmail);
-      await sendEmailOtp(cleanEmail);
-      setOtp("");
-      setView("email_code");
-    } catch {
-      setError(t.guestJoin.sendCodeError);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const resolveContact = async (name?: string) => {
-    const cleanContact = contact.trim();
-    if (!cleanContact) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const supabase = getBrowserSupabase();
-      const { data, error: rpcError } = await supabase.rpc(
-        "find_guest_by_contact",
-        {
-          p_join_code: code,
-          p_contact: cleanContact,
-          p_first_name: name?.trim() || null,
-        },
-      );
       if (rpcError) throw rpcError;
+      result = data as unknown as FindResult;
 
-      const result = data as unknown as ContactLookupResult;
-      if (result.status === "match" && result.token) {
-        redirectToGuest(result.token);
-        return;
+      if (result.status === "match") {
+        if (result.mode === "light" && result.token) return redirectToGuest(result.token);
+        if (result.guest_id) {
+          setGuestId(result.guest_id);
+          // No code when this device's account already holds this very
+          // invitation. Anything else goes through the email step, so a
+          // signed-in visitor typing someone else's name can never attach
+          // their own email to that guest's invitation.
+          const { data: auth } = await supabase.auth.getSession();
+          if (auth.session) {
+            const { data: own } = await supabase.rpc("get_guest_access_options", {
+              p_join_code: code,
+            });
+            const mine = ((own as unknown as AccessOptionsResult | null)?.matches ?? []).some(
+              (option) => option.guest_id === result.guest_id,
+            );
+            if (mine && (await secureWithSession(result.guest_id)) === "verified") return "redirecting";
+          }
+          setEmailNotice(null);
+          return "email";
+        }
       }
-      if (result.status === "ambiguous" && !name) {
-        setDisambiguationSource("contact");
-        setView("first_name");
-        return;
-      }
-      if (result.status === "otp_required") {
-        await requestEmailCode(cleanContact);
-        return;
-      }
-      if (result.status === "email_required") {
-        setError(t.guestJoin.emailRequired);
-        setView("contact_form");
-        return;
-      }
-      setView("no_match");
     } catch {
-      setError(t.guestJoin.genericError);
-    } finally {
-      setBusy(false);
+      throw new GuestFacingError(copy.genericError);
     }
-  };
-
-  const submitContact = (event: React.FormEvent) => {
-    event.preventDefault();
-    void resolveContact();
-  };
-
-  const submitFirstName = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!firstName.trim()) return;
-    if (disambiguationSource === "authenticated") {
-      setBusy(true);
-      setError(null);
-      void loadAuthenticatedOptions(firstName)
-        .catch(() => setError(t.guestJoin.genericError))
-        .finally(() => setBusy(false));
-    } else {
-      void resolveContact(firstName);
+    if (result.status === "needs_last_name") {
+      setAskLastName(true);
+      return "last_name";
     }
+    if (result.status === "ambiguous") return "ambiguous";
+    if (result.status === "rate_limited") throw new GuestFacingError(copy.rateLimited);
+    return "not_found";
   };
 
-  const submitOtp = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!otp.trim()) return;
-    setBusy(true);
-    setError(null);
+  const requestCode = async (): Promise<View> => {
+    const cleanEmail = email.trim();
+    if (!guestId) throw new GuestFacingError(copy.genericError);
+    if (!looksLikeEmail(cleanEmail)) throw new GuestFacingError(copy.invalidEmail);
+    let result: CheckEmailResult;
+    try {
+      const { data, error: rpcError } = await getBrowserSupabase().rpc("check_join_email", {
+        p_join_code: code,
+        p_guest_id: guestId,
+        p_email: cleanEmail,
+      });
+      if (rpcError) throw rpcError;
+      result = data as unknown as CheckEmailResult;
+    } catch {
+      throw new GuestFacingError(copy.genericError);
+    }
+    if (result.status === "already_secured") return "already_secured";
+    if (result.status !== "ok") {
+      throw new GuestFacingError(
+        result.status === "email_mismatch"
+          ? copy.emailMismatch(partners)
+          : result.status === "invalid_email"
+            ? copy.invalidEmail
+            : result.status === "rate_limited"
+              ? copy.rateLimited
+              : copy.genericError,
+      );
+    }
+    try {
+      await sendEmailOtp(cleanEmail, await getCaptchaToken());
+    } catch {
+      throw new GuestFacingError(copy.sendCodeError);
+    }
+    setOtp("");
+    setCodeSent(true);
+    return "code";
+  };
+
+  const submitCode = async (): Promise<View> => {
+    if (!guestId) throw new GuestFacingError(copy.genericError);
     try {
       await verifyEmailOtp(email, otp);
-      await loadAuthenticatedOptions(firstName || undefined);
     } catch {
-      setError(t.guestJoin.invalidCode);
-    } finally {
-      setBusy(false);
+      throw new GuestFacingError(copy.invalidCode);
     }
+    let status: SecureResult["status"];
+    try {
+      status = await secureWithSession(guestId);
+    } catch {
+      throw new GuestFacingError(copy.genericError);
+    }
+    if (status === "verified") return "redirecting";
+    if (status === "already_secured") return "already_secured";
+    if (status === "email_mismatch") {
+      setEmailNotice(copy.emailMismatch(partners));
+      return "email";
+    }
+    throw new GuestFacingError(copy.genericError);
   };
 
   const startOver = () => {
     setFirstName("");
+    setLastName("");
+    setAskLastName(false);
+    setGuestId(null);
+    setCodeSent(false);
     setOtp("");
-    setEmail("");
-    setDisambiguationSource(null);
-    setError(null);
-    setView("contact_form");
+    setEmailNotice(null);
   };
 
-  const renderContent = () => {
-    if (view === "checking" || view === "redirecting") {
-      return (
-        <div style={{ textAlign: "center", color: "#756b65", padding: "28px 0" }}>
-          {view === "checking"
-            ? t.guestJoin.checkingSession
-            : t.guestJoin.redirecting}
-        </div>
-      );
-    }
+  const withCaptcha = (body: React.ReactNode) => (
+    <>
+      {body}
+      {/* Every step that can send a code (first send, resend) renders the
+          challenge; it stays empty unless one needs a click. */}
+      {captcha ? <div className="tf-captcha">{captcha}</div> : null}
+    </>
+  );
 
-    if (view === "contact_form") {
-      return (
+  const steps: FlowStep[] = [
+    {
+      key: "name",
+      title: copy.title,
+      description: copy.nameSubtitle,
+      body: (
         <>
-          <h2 style={titleStyle}>{t.guestJoin.title}</h2>
-          <p style={bodyStyle}>
-            {otpMode
-              ? t.guestJoin.otpSubtitle
-              : t.guestJoin.contactSubtitle}
-          </p>
-          <form onSubmit={submitContact} style={{ display: "grid", gap: 16 }}>
-            <FieldLabel
-              label={
-                otpMode
-                  ? t.guestJoin.emailLabel
-                  : t.guestJoin.contactLabel
-              }
-            >
-              <input
-                type={otpMode ? "email" : "text"}
-                autoComplete={otpMode ? "email" : "username"}
-                value={contact}
-                onChange={(event) => setContact(event.target.value)}
-                placeholder={
-                  otpMode
-                    ? t.guestJoin.emailPlaceholder
-                    : t.guestJoin.contactPlaceholder
-                }
-                required
-                style={inputStyle}
-              />
-            </FieldLabel>
-            <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.guestJoin.searching : t.guestJoin.continueButton}
-            </button>
-          </form>
-          <p style={securityStyle}>
-            {otpMode
-              ? t.guestJoin.otpSecurityNote
-              : t.guestJoin.contactSecurityNote}
-          </p>
+          <FlowText
+            value={firstName}
+            onChange={setFirstName}
+            placeholder={copy.firstNameLabel}
+            label={copy.firstNameLabel}
+            autoComplete="given-name"
+          />
+          <p className="tf-note">{copy.securityNote}</p>
         </>
-      );
-    }
+      ),
+      valid: firstName.trim() !== "",
+      okLabel: copy.continueButton,
+      busyLabel: copy.searching,
+      onNext: () => findByName(false),
+    },
+  ];
 
-    if (view === "first_name") {
-      return (
+  if (askLastName) {
+    steps.push({
+      key: "last_name",
+      title: copy.lastNameTitle,
+      description: copy.lastNameSubtitle(firstName.trim()),
+      body: (
         <>
-          <h2 style={titleStyle}>{t.guestJoin.firstNameTitle}</h2>
-          <p style={bodyStyle}>{t.guestJoin.firstNameSubtitle}</p>
-          <form onSubmit={submitFirstName} style={{ display: "grid", gap: 16 }}>
-            <FieldLabel label={t.guestJoin.firstNameLabel}>
-              <input
-                autoComplete="given-name"
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                required
-                style={inputStyle}
-              />
-            </FieldLabel>
-            <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.guestJoin.searching : t.guestJoin.continueButton}
-            </button>
-          </form>
-          <button type="button" onClick={startOver} style={textButtonStyle}>
-            {t.guestJoin.useAnotherContact}
-          </button>
-        </>
-      );
-    }
-
-    if (view === "email_code") {
-      return (
-        <>
-          <h2 style={titleStyle}>{t.guestJoin.codeTitle}</h2>
-          <p style={bodyStyle}>{t.guestJoin.codeSent(email)}</p>
-          <form onSubmit={submitOtp} style={{ display: "grid", gap: 16 }}>
-            <FieldLabel label={t.guestJoin.codeLabel}>
-              <input
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={otp}
-                onChange={(event) => setOtp(event.target.value)}
-                placeholder={t.guestJoin.codePlaceholder}
-                required
-                style={{
-                  ...inputStyle,
-                  textAlign: "center",
-                  letterSpacing: "0.25em",
-                  fontSize: 20,
-                }}
-              />
-            </FieldLabel>
-            <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.guestJoin.verifying : t.guestJoin.verifyButton}
-            </button>
-          </form>
-          <div style={linkRowStyle}>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void requestEmailCode()}
-              style={textButtonStyle}
-            >
-              {t.guestJoin.resendButton}
-            </button>
-            <button type="button" onClick={startOver} style={textButtonStyle}>
-              {t.guestJoin.useAnotherContact}
-            </button>
+          <FlowText
+            value={lastName}
+            onChange={setLastName}
+            placeholder={copy.lastNameLabel}
+            label={copy.lastNameLabel}
+            autoComplete="family-name"
+          />
+          <div className="tf-links">
+            <BackTo to="name" label={copy.tryAgainButton} onReset={startOver} />
           </div>
         </>
-      );
-    }
+      ),
+      valid: lastName.trim() !== "",
+      okLabel: copy.continueButton,
+      busyLabel: copy.searching,
+      onNext: () => findByName(true),
+    });
+  }
 
-    return (
-      <>
-        <h2 style={titleStyle}>{t.guestJoin.noMatchTitle}</h2>
-        <p style={bodyStyle}>{t.guestJoin.noMatchBody(partners)}</p>
-        <button type="button" onClick={startOver} style={primaryButtonStyle}>
-          {t.guestJoin.tryAgainButton}
-        </button>
-      </>
-    );
-  };
-
-  return (
-    <main style={pageStyle}>
-      <div style={{ position: "absolute", top: 20, right: 20 }}>
-        <LanguageSwitcher />
-      </div>
-      <section style={cardStyle}>
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={kickerStyle}>{t.join.heroKicker}</div>
-          <h1 style={heroStyle}>{partners}</h1>
-          {(dateLabel || preview.venue_name) && (
-            <p style={{ ...bodyStyle, marginBottom: 0 }}>
-              {[dateLabel, preview.venue_name].filter(Boolean).join(" · ")}
+  if (guestId) {
+    steps.push({
+      key: "email",
+      title: copy.emailTitle,
+      description: copy.emailSubtitle,
+      body: withCaptcha(
+        <>
+          <FlowText
+            type="email"
+            value={email}
+            onChange={(v) => {
+              setEmail(v);
+              setEmailNotice(null);
+            }}
+            placeholder={copy.emailPlaceholder}
+            label={copy.emailLabel}
+            autoComplete="email"
+          />
+          {emailNotice ? (
+            <p className="tf-error" role="alert">
+              {emailNotice}
             </p>
-          )}
-        </div>
-        <div style={{ borderTop: "1px solid #eee8e1", paddingTop: 28 }}>
-          {error && <div style={errorStyle}>{error}</div>}
-          {renderContent()}
-        </div>
-      </section>
-    </main>
-  );
-}
+          ) : null}
+          <div className="tf-links">
+            <BackTo to="name" label={copy.someoneElse} onReset={startOver} />
+          </div>
+        </>,
+      ),
+      valid: email.trim() !== "",
+      okLabel: copy.sendCodeButton,
+      busyLabel: copy.sending,
+      onNext: requestCode,
+    });
+  }
 
-function FieldLabel({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+  if (codeSent) {
+    steps.push({
+      key: "code",
+      title: copy.codeTitle,
+      description: copy.codeSent(email.trim()),
+      body: withCaptcha(
+        <>
+          <FlowText
+            value={otp}
+            onChange={setOtp}
+            placeholder={copy.codePlaceholder}
+            label={copy.codeLabel}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            className="tf-code"
+          />
+          <div className="tf-links">
+            <Resend label={copy.resendButton} onResend={requestCode} />
+            <BackTo to="email" label={copy.changeEmail} />
+          </div>
+        </>,
+      ),
+      valid: otp.trim() !== "",
+      okLabel: copy.verifyButton,
+      busyLabel: copy.verifying,
+      onNext: submitCode,
+    });
+  }
+
+  const ending = (key: View, title: string, body: string): FlowStep => ({
+    key,
+    kind: "end",
+    before: <OliveBranch className="tf-ornament" />,
+    title,
+    description: body,
+    okLabel: copy.tryAgainButton,
+    onNext: () => {
+      startOver();
+      return "name";
+    },
+  });
+
+  steps.push(
+    ending("not_found", copy.notFoundTitle, copy.notFoundBody(partners)),
+    ending("ambiguous", copy.ambiguousTitle, copy.ambiguousBody(partners)),
+    ending("already_secured", copy.alreadySecuredTitle, copy.alreadySecuredBody(partners)),
+    {
+      key: "redirecting",
+      kind: "end",
+      before: <OliveBranch className="tf-ornament" />,
+      title: copy.redirecting,
+      hideOk: true,
+    },
+  );
+
   return (
-    <label style={{ display: "grid", gap: 7, textAlign: "left" }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: "#4f4742" }}>
-        {label}
-      </span>
-      {children}
-    </label>
+    <DaRoot>
+      <Flow label={partners} steps={steps} topRight={<LocaleToggle />} />
+    </DaRoot>
   );
 }
-
-const pageStyle: React.CSSProperties = {
-  minHeight: "100vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "#f4f1ea",
-  padding: "80px 20px 32px",
-  color: "#2b2724",
-};
-
-const cardStyle: React.CSSProperties = {
-  width: "100%",
-  maxWidth: 480,
-  borderRadius: 24,
-  background: "#fff",
-  boxShadow: "0 18px 55px rgba(43, 39, 36, 0.08)",
-  padding: "38px 32px",
-  boxSizing: "border-box",
-};
-
-const kickerStyle: React.CSSProperties = {
-  color: "#9a7d66",
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  marginBottom: 10,
-};
-
-const heroStyle: React.CSSProperties = {
-  fontFamily: "var(--font-serif)",
-  fontSize: 38,
-  lineHeight: 1.05,
-  margin: "0 0 12px",
-  fontWeight: 600,
-};
-
-const titleStyle: React.CSSProperties = {
-  fontFamily: "var(--font-serif)",
-  fontSize: 29,
-  lineHeight: 1.15,
-  margin: "0 0 10px",
-  fontWeight: 600,
-  textAlign: "center",
-};
-
-const bodyStyle: React.CSSProperties = {
-  color: "#756b65",
-  fontSize: 15,
-  lineHeight: 1.55,
-  textAlign: "center",
-  margin: "0 0 22px",
-};
-
-const securityStyle: React.CSSProperties = {
-  color: "#968b84",
-  fontSize: 12,
-  lineHeight: 1.45,
-  textAlign: "center",
-  margin: "14px 0 6px",
-};
-
-const linkRowStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexWrap: "wrap",
-  gap: 12,
-  marginTop: 12,
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  minHeight: 50,
-  borderRadius: 12,
-  border: "1px solid #d8d0c8",
-  background: "#fff",
-  color: "#2b2724",
-  fontSize: 16,
-  padding: "0 14px",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  width: "100%",
-  minHeight: 50,
-  border: 0,
-  borderRadius: 999,
-  background: "#2b2724",
-  color: "#fff",
-  fontSize: 15,
-  fontWeight: 600,
-  cursor: "pointer",
-  padding: "0 20px",
-};
-
-const textButtonStyle: React.CSSProperties = {
-  border: 0,
-  background: "transparent",
-  color: "#6f655f",
-  fontSize: 14,
-  textDecoration: "underline",
-  cursor: "pointer",
-  padding: 4,
-};
-
-const errorStyle: React.CSSProperties = {
-  background: "#fff1ed",
-  border: "1px solid #f0c6b9",
-  color: "#8c3f2f",
-  padding: "11px 13px",
-  borderRadius: 10,
-  fontSize: 13,
-  marginBottom: 18,
-};

@@ -268,23 +268,3 @@ $$;
 
 revoke all on function public.get_invitation(uuid) from public;
 grant execute on function public.get_invitation(uuid) to anon, authenticated;
-
--- ---------- arthurcoste75@gmail.com's wedding ----------
--- The first real configuration of this feature, applied here so
--- the wedding it belongs to is set up the moment the migration
--- lands: forms on, the three modules with nothing behind them
--- off. Owned weddings only — a collaborator turning modules off
--- for someone else's wedding is not what was asked for. Written
--- as an upsert into the existing map so it survives a re-run and
--- doesn't discard a key added by a later module.
-update public.weddings w
-set guest_modules = coalesce(w.guest_modules, '{}'::jsonb) || jsonb_build_object(
-      'forms',     true,
-      'travel',    false,
-      'logistics', false,
-      'faq',       false
-    )
-where w.owner_id in (
-  select u.id from auth.users u
-  where lower(u.email) = 'arthurcoste75@gmail.com'
-);

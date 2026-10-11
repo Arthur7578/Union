@@ -8,7 +8,7 @@ import { UserJotIdentify } from "@/components/UserJotIdentify";
 import { Loading } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { useWedding } from "@/lib/wedding";
-import { supabaseConfigured } from "@/lib/supabaseClient";
+import { supabaseConfigured } from "@/lib/supabaseConfig";
 import { ConfigNotice } from "@/components/ConfigNotice";
 import { useT } from "@/lib/i18n/client";
 

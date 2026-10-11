@@ -35,6 +35,11 @@ jobs:
       - run: npm test
 
       - run: npm run build --workspace apps/web
+        env:
+          # The build refuses to run without Supabase credentials. Placeholders
+          # are enough: building never contacts Supabase.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-publishable-key
 
   database:
     runs-on: ubuntu-latest
@@ -50,3 +55,49 @@ jobs:
       - run: supabase start
 
       - run: supabase test db
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+
+      # Only what the app uses: the database, auth and the REST API.
+      - run: supabase start -x realtime,storage-api,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,studio,postgres-meta
+
+      - name: Point the tests at the local Supabase
+        run: |
+          supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY|DB_URL)=' > supabase.env
+          set -a; . ./supabase.env; set +a
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f apps/web/e2e/support/grants.sql
+          {
+            echo "E2E_SUPABASE_URL=$API_URL"
+            echo "E2E_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "E2E_SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+
+      - run: npm run e2e --workspace apps/web
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 7

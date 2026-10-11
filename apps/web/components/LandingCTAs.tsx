@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { useT } from "@/lib/i18n/client";
 
@@ -60,10 +60,10 @@ export function LandingCTAs({ to }: { to: string }) {
     padding: "0 26px",
     borderRadius: 15,
     background: T.accent,
-    color: "#fff",
+    color: T.white,
     fontWeight: 600,
     fontSize: 16,
-    boxShadow: "0 6px 16px rgba(67,53,58,.16)",
+    boxShadow: `0 6px 16px ${alpha(T.ink, 0.16)}`,
   };
   const secondary: React.CSSProperties = {
     minHeight: 50,

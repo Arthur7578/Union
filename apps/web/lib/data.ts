@@ -8,11 +8,13 @@ import {
   toLocalizedText,
 } from "@union/shared";
 import { DEFAULT_LOCALE } from "./i18n";
+import { defaultPrimaryRsvpQuestions } from "./rsvpQuestions";
 import type {
   ActivityLogEntry,
   Collaborator,
   Form,
   FormGuestCopy,
+  FormResponse,
   FormStatus,
   Guest,
   GuestGroup,
@@ -73,7 +75,6 @@ export async function createWedding(
     | "id"
     | "created_at"
     | "join_code"
-    | "allow_name_fallback"
     | "guest_join_auth_mode"
     | "rsvp_form_questions"
     | "ceremony_rows"
@@ -134,7 +135,7 @@ export async function createWedding(
     kind: "rsvp",
     title: "RSVP",
     published: true,
-    questions: [],
+    questions: defaultPrimaryRsvpQuestions(),
   });
   if (formError) throw formError;
   return data;
@@ -238,22 +239,6 @@ export async function fetchGuests(weddingId: string): Promise<GuestWithRsvp[]> {
     rsvps: Array.isArray(g.rsvps) ? (g.rsvps[0] ?? null) : (g.rsvps ?? null),
     groups: unionGroups(g.guest_group, g.guest_group_members, allGroups),
   }));
-}
-
-export async function fetchGuestEmailCoverage(
-  weddingId: string,
-): Promise<{ withEmail: number; total: number }> {
-  const supabase = getBrowserSupabase();
-  const { data, error } = await supabase
-    .from("guests")
-    .select("email")
-    .eq("wedding_id", weddingId);
-  if (error) throw error;
-  return {
-    withEmail: (data ?? []).filter((guest) => Boolean(guest.email?.trim()))
-      .length,
-    total: data?.length ?? 0,
-  };
 }
 
 export async function fetchGuest(id: string): Promise<GuestWithRsvp | null> {
@@ -360,6 +345,19 @@ export async function addGuest(input: NewGuest): Promise<Guest> {
     input.guest_group,
   );
   return data;
+}
+
+/** Signs out whoever secured this guest's invitation through the group link
+ *  and removes an email the guest gave. An email the couple entered stays. */
+export async function resetGuestAccess(guestId: string): Promise<void> {
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase.rpc("reset_guest_access", {
+    p_guest_id: guestId,
+  });
+  if (error) throw error;
+  if ((data as { status?: string } | null)?.status !== "ok") {
+    throw new Error("reset_guest_access refused");
+  }
 }
 
 export async function updateGuest(
@@ -933,7 +931,17 @@ export async function addGuestRelationship(input: {
   const { error } = await supabase
     .from("guest_relationships")
     .upsert(rows, { onConflict: "from_guest,to_guest,kind" });
-  if (error) throw error;
+  if (error) {
+    if (
+      input.kind === "partner_of" &&
+      (error as { code?: string }).code === "23505"
+    ) {
+      throw new Error(
+        "Each guest can only have one partner. Remove the existing partner link first.",
+      );
+    }
+    throw error;
+  }
 }
 
 /**
@@ -1163,6 +1171,9 @@ export async function addForm(input: {
   questions?: RsvpQuestion[];
   opens_at?: string | null;
   closes_at?: string | null;
+  /** True for a form asked once per person — the guest answers for
+   *  themselves and for each relative they're bringing. */
+  per_person?: boolean;
 }): Promise<Form> {
   const supabase = getBrowserSupabase();
   const { data, error } = await supabase
@@ -1175,6 +1186,7 @@ export async function addForm(input: {
       questions: input.questions ?? [],
       opens_at: input.opens_at ?? null,
       closes_at: input.closes_at ?? null,
+      per_person: input.per_person ?? false,
     })
     .select("*")
     .single();
@@ -1194,7 +1206,9 @@ export async function updateForm(
       | "questions"
       | "sort_order"
       | "rsvp_copy"
+      | "rsvp_fields"
       | "guest_copy"
+      | "per_person"
     >
   >,
 ): Promise<Form> {
@@ -1230,6 +1244,109 @@ export async function addReconfirmationForm(weddingId: string): Promise<Form> {
     .single();
   if (error) throw error;
   return data;
+}
+
+/** One custom form and this guest's response to it, if they've given one.
+ *  Every custom form is returned whether answered or not — "they haven't
+ *  answered the meal form yet" is exactly what an organiser chasing a
+ *  headcount needs to see, and it can't be shown by rows that only exist once
+ *  somebody replies. */
+export type GuestFormAnswers = {
+  form: Form;
+  response: FormResponse | null;
+  /** Answers this guest gave *for* someone else — the children and partner
+   *  they answer for on a per-person form, the same way they reply to the
+   *  RSVP for them. Each relative's answers are their own row keyed by their
+   *  own guest id, so they also show on that person's page; they're repeated
+   *  here because "what is this household eating" is a question asked of the
+   *  person holding the invitation. */
+  relatives: Array<{ guestId: string; response: FormResponse }>;
+};
+
+/**
+ * Every form this wedding runs, paired with one guest's answers.
+ *
+ * Two queries rather than an embed: form_responses' RLS is written against
+ * the parent form, so a `forms(...)` embed from the response side returns the
+ * row while a `form_responses(...)` embed from the form side is filtered per
+ * guest — the shape that reads more naturally is the one that needs the
+ * client-side join to stay correct as forms come and go.
+ *
+ * RSVP-kind forms are included because their editable follow-up questions use
+ * the same form_responses model as custom forms. The caller places those
+ * answers beside the RSVP status and custom answers in their own section.
+ */
+export async function fetchGuestFormAnswers(
+  weddingId: string,
+  guestId: string,
+  relativeIds: string[] = [],
+): Promise<GuestFormAnswers[]> {
+  const supabase = getBrowserSupabase();
+  const { data: forms, error: formsError } = await supabase
+    .from("forms")
+    .select("*")
+    .eq("wedding_id", weddingId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (formsError) throw formsError;
+  const rows = forms ?? [];
+  if (rows.length === 0) return [];
+
+  // De-duplicated, and self first: a guest listed as their own relative
+  // would otherwise have their answers rendered twice on their own page.
+  const household = [guestId, ...relativeIds.filter((rid) => rid !== guestId)];
+  const { data: responses, error: responsesError } = await supabase
+    .from("form_responses")
+    .select("*")
+    .in("guest_id", Array.from(new Set(household)))
+    .in(
+      "form_id",
+      rows.map((f) => f.id),
+    );
+  if (responsesError) throw responsesError;
+
+  const byForm = new Map<string, FormResponse[]>();
+  for (const response of responses ?? []) {
+    const list = byForm.get(response.form_id);
+    if (list) list.push(response);
+    else byForm.set(response.form_id, [response]);
+  }
+
+  return rows.map((form) => {
+    const found = byForm.get(form.id) ?? [];
+    return {
+      form,
+      response: found.find((r) => r.guest_id === guestId) ?? null,
+      // Kept in the order the caller listed the relatives, which is the
+      // order they're shown elsewhere on the page.
+      relatives: relativeIds.flatMap((rid) => {
+        if (rid === guestId) return [];
+        const response = found.find((r) => r.guest_id === rid);
+        return response ? [{ guestId: rid, response }] : [];
+      }),
+    };
+  });
+}
+
+/** How many guests have answered each of these forms, keyed by form id.
+ *  Counted client-side from the response rows: it's one row per guest per
+ *  form, so the volume is a wedding's guest list, and it keeps the query a
+ *  plain RLS-scoped select rather than a view built for one number. */
+export async function fetchFormResponseCounts(
+  formIds: string[],
+): Promise<Record<string, number>> {
+  if (formIds.length === 0) return {};
+  const supabase = getBrowserSupabase();
+  const { data, error } = await supabase
+    .from("form_responses")
+    .select("form_id")
+    .in("form_id", formIds);
+  if (error) throw error;
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    counts[row.form_id] = (counts[row.form_id] ?? 0) + 1;
+  }
+  return counts;
 }
 
 /** The primary RSVP form can't be deleted — it's the one wired to the real guest
@@ -1274,12 +1391,15 @@ export async function fetchCollaborators(weddingId: string): Promise<Collaborato
  *  written, but the email that tells them about it can fail on its own. */
 export type InviteResult = {
   collaborator: CollaboratorWithProfile;
-  /** False when the row saved but no mail went out — `reason` says why. */
+  /** False when the row saved but no mail went out. */
   delivered: boolean;
   /** "invited" = brand-new account, "existing" = they already had one and got
    *  a sign-in mail instead (signing in is what accepts the invite). */
   kind?: "invited" | "existing";
-  reason?: string;
+  /** Set only when the mail failed for a reason the inviter can act on:
+   *  "rate_limited" means wait a few minutes and invite again. Any other
+   *  failure is left unnamed; its detail is in the server log. */
+  failure?: "rate_limited";
 };
 
 /**
@@ -1298,6 +1418,7 @@ export type InviteResult = {
 export async function inviteCollaborator(
   weddingId: string,
   email: string,
+  captchaToken?: string,
 ): Promise<InviteResult> {
   const supabase = getBrowserSupabase();
   const {
@@ -1312,7 +1433,11 @@ export async function inviteCollaborator(
       "content-type": "application/json",
       authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ weddingId, email: email.trim().toLowerCase() }),
+    body: JSON.stringify({
+      weddingId,
+      email: email.trim().toLowerCase(),
+      captchaToken,
+    }),
   });
   const payload = await res.json().catch(() => ({}));
 
@@ -1328,7 +1453,7 @@ export async function inviteCollaborator(
     collaborator: payload.collaborator as CollaboratorWithProfile,
     delivered: payload.delivered === true,
     kind: payload.kind,
-    reason: typeof payload.reason === "string" ? payload.reason : undefined,
+    failure: payload.failure === "rate_limited" ? "rate_limited" : undefined,
   };
 }
 

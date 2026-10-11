@@ -9,6 +9,7 @@ import { Button, Loading } from "@/components/ui";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useAuth, LAST_EMAIL_KEY } from "@/lib/auth";
 import { useT } from "@/lib/i18n/client";
+import { CaptchaError, useTurnstile } from "@/lib/turnstile";
 
 export default function SignInPage() {
   const t = useT();
@@ -24,6 +25,7 @@ export default function SignInPage() {
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const codeInputRef = useRef<HTMLInputElement>(null);
+  const { captcha, getCaptchaToken } = useTurnstile();
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -49,11 +51,15 @@ export default function SignInPage() {
     setError(null);
     setBusy(true);
     try {
-      await sendEmailOtp(email);
+      await sendEmailOtp(email, await getCaptchaToken());
       setCode("");
       setStep("code");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.signIn.errSend);
+      setError(
+        err instanceof Error && !(err instanceof CaptchaError)
+          ? err.message
+          : t.signIn.errSend,
+      );
     } finally {
       setBusy(false);
     }
@@ -77,10 +83,14 @@ export default function SignInPage() {
     setError(null);
     setBusy(true);
     try {
-      await sendEmailOtp(email);
+      await sendEmailOtp(email, await getCaptchaToken());
       setCode("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.signIn.errSend);
+      setError(
+        err instanceof Error && !(err instanceof CaptchaError)
+          ? err.message
+          : t.signIn.errSend,
+      );
     } finally {
       setBusy(false);
     }
@@ -210,6 +220,7 @@ export default function SignInPage() {
                 placeholder={t.signIn.emailPlaceholder}
               />
             </div>
+            {captcha}
             {error && <div className="error">{error}</div>}
             <Button type="submit" disabled={busy || !email} style={{ width: "100%" }}>
               {busy ? t.signIn.sending : t.signIn.sendCode}
@@ -238,6 +249,7 @@ export default function SignInPage() {
                 }}
               />
             </div>
+            {captcha}
             {error && <div className="error">{error}</div>}
             <Button
               type="submit"

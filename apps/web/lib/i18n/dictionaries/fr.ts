@@ -41,6 +41,11 @@ export const fr: Dictionary = {
     handle: "Je m'en charge",
     invite: "Inviter",
     adding: "Ajout…",
+    phoneCountry: "Pays",
+    phoneChooseCountry: "Choisir un pays",
+    phoneCountryMissing:
+      "Pays non renseigné. Choisissez-le pour que ce numéro soit reconnu de façon fiable.",
+    phoneInvalid: "Vérifiez ce numéro : il semble incomplet.",
   },
 
   landing: {
@@ -466,8 +471,10 @@ export const fr: Dictionary = {
     inviteDuplicate: "Déjà invité·e.",
     inviteSelf: "C'est votre propre adresse — vous faites déjà partie de l'équipe.",
     inviteSent: (email: string) => `Invitation envoyée à ${email}.`,
-    inviteSavedNotSent: (reason: string) =>
-      `Enregistré, mais l'e-mail n'a pas pu partir${reason ? ` — ${reason}` : "."} La personne rejoindra l'équipe automatiquement dès sa première connexion avec cette adresse.`,
+    inviteSavedNotSent:
+      "Enregistré, mais l'e-mail n'a pas pu partir. La personne rejoindra l'équipe automatiquement dès sa première connexion avec cette adresse.",
+    inviteSavedRateLimited:
+      "Enregistré, mais l'envoi d'e-mails est momentanément limité : celui-ci n'est pas parti. Invitez à nouveau cette personne dans quelques minutes, ou elle rejoindra l'équipe automatiquement dès sa première connexion avec cette adresse.",
     inviteError: "Impossible d'envoyer cette invitation — réessayez.",
     cancelInvite: "Annuler l'invitation",
     removeCoOrganiser: "Retirer",
@@ -692,8 +699,8 @@ export const fr: Dictionary = {
   rsvp: {
     invalidTitle: "Invitation introuvable",
     invalidBody:
-      "Ce lien est incorrect ou n'est plus valide. Demandez au couple un nouveau lien.",
-    joinPrompt: (couple: string) => `${couple} seraient ravis de vous compter parmi eux.`,
+      "Ce lien est incorrect ou n'est plus valide. Demande au couple un nouveau lien.",
+    joinPrompt: (couple: string) => `${couple} seraient ravis de te compter parmi eux.`,
     dateAt: (date: string, venue: string) => `${date} · ${venue}`,
     accept: "Oui, je serai là",
     decline: "Hélas, je ne pourrai pas venir",
@@ -704,156 +711,119 @@ export const fr: Dictionary = {
     submit: "Envoyer ma réponse",
     submitting: "Envoi…",
     thanksAccept: (couple: string) =>
-      `Merci ! ${couple} ont été prévenus de votre venue.`,
+      `Merci ! ${couple} ont été prévenus de ta venue.`,
     thanksDecline: (couple: string) =>
-      `Votre réponse a été envoyée. ${couple} regretteront votre absence.`,
+      `Ta réponse a été envoyée. ${couple} regretteront ton absence.`,
     update: "Modifier ma réponse",
   },
 
-  // Lien d'accès générique (/join/[code]) — le point d'entrée pour un
-  // groupe WhatsApp, où l'invité s'identifie par son nom plutôt que
-  // d'ouvrir un lien personnel.
+  // Le faire-part d'accueil qu'un invité découvre en premier, sur un lien personnel ou de groupe.
+  welcome: {
+    titleNamed: "tu as reçu une invitation",
+    titleAnon: ["Tu as reçu", "une invitation"],
+    to: (name: string) => `Pour ${name}`,
+    anon: "Faire-part",
+    kicker: "Le mariage",
+    lead: "Nous serions heureux de te compter parmi nous.",
+    hint: "Touche le sceau ou fais défiler",
+    open: "Ouvrir l'enveloppe",
+    flipCard: "Retourner le carton",
+    flipHint: "Touche le carton pour le retourner.",
+    skip: "Passer",
+    respond: "Répondre à l'invitation",
+    seeAgain: "Revoir l'invitation",
+  },
+
+  // Lien de groupe (/join/[code]) — le point d'entrée pour un groupe
+  // WhatsApp, où l'invité retrouve sa propre invitation par son nom.
   join: {
     invalidTitle: "Lien introuvable",
     invalidBody:
-      "Ce lien d'invitation est incorrect ou n'est plus valide. Demandez au couple un nouveau lien.",
+      "Ce lien d'invitation est incorrect ou n'est plus valide. Demande au couple un nouveau lien.",
     heroKicker: "Invitation de Mariage",
-    namePromptTitle: "Quel est votre nom ?",
-    namePromptSubtitle:
-      "Entrez votre nom tel que le couple l'a renseigné, et nous retrouverons votre invitation.",
-    firstNameLabel: "Prénom",
-    lastNameLabel: "Nom",
-    continueButton: "Retrouver mon invitation",
-    searching: "Recherche…",
-    confirmTitle: "C'est bien vous ?",
-    yesButton: "Oui, c'est moi",
-    noButton: "Non, réessayer",
-    contactTitle: "Une dernière vérification",
-    contactSubtitle:
-      "Plusieurs invités partagent ce nom. Indiquez le numéro de téléphone ou l'email utilisé sur votre invitation.",
-    contactLabel: "Téléphone ou email",
-    contactPlaceholder: "ex. 06 12 34 56 78 ou vous@email.com",
-    contactSubmit: "Confirmer",
-    notFoundTitle: "Nous ne vous trouvons pas",
-    notFoundBody: (couple: string) =>
-      `Nous n'avons pas pu faire correspondre ce nom à une invitation. Contactez ${couple} directement, ils vous aideront.`,
-    tryAgainButton: "Réessayer",
-    redirecting: "Direction votre invitation…",
-    errorGeneric: "Une erreur est survenue. Merci de réessayer.",
   },
 
   guestJoin: {
-    title: "Retrouver votre invitation",
-    contactSubtitle:
-      "Indiquez l'adresse e-mail ou le numéro de téléphone renseigné par le couple.",
-    otpSubtitle:
-      "Indiquez l'adresse e-mail de votre invitation. Nous vous enverrons un code de vérification.",
-    contactLabel: "E-mail ou numéro de téléphone",
-    contactPlaceholder: "vous@email.com ou 06 12 34 56 78",
-    emailLabel: "E-mail",
-    emailPlaceholder: "vous@email.com",
+    title: "Retrouver ton invitation",
+    nameSubtitle: "Indique ton prénom tel que le couple l'écrirait.",
+    firstNameLabel: "Prénom",
+    lastNameTitle: "Et ton nom ?",
+    lastNameSubtitle: (firstName: string) =>
+      `Plusieurs invités s'appellent ${firstName}. Ton nom nous indique quelle invitation est la tienne.`,
+    lastNameLabel: "Nom",
     continueButton: "Continuer",
     searching: "Recherche…",
-    contactSecurityNote:
-      "Vos coordonnées servent uniquement à retrouver votre invitation. Union n'affiche jamais de liste d'invités.",
-    otpSecurityNote:
-      "Ce mariage exige un code à usage unique avant d'ouvrir une invitation.",
-    firstNameTitle: "Quel est votre prénom ?",
-    firstNameSubtitle:
-      "Saisissez-le au plus proche. Cela nous aide à retrouver la bonne invitation.",
-    firstNameLabel: "Prénom",
-    codeTitle: "Consultez vos e-mails",
-    codeSent: (email: string) => `Nous avons envoyé un code de connexion à ${email}.`,
-    codeLabel: "Code de connexion",
+    securityNote: "Union n'affiche jamais la liste des invités.",
+    emailTitle: "Confirme que c'est toi",
+    emailSubtitle:
+      "Indique ton e-mail, nous t'envoyons un code. Tu n'en auras plus besoin sur cet appareil.",
+    emailLabel: "E-mail",
+    emailPlaceholder: "prenom@email.com",
+    sendCodeButton: "M'envoyer un code",
+    sending: "Envoi…",
+    codeTitle: "Consulte tes e-mails",
+    codeSent: (email: string) => `Nous t'avons envoyé un code à ${email}.`,
+    codeLabel: "Code",
     codePlaceholder: "12345678",
-    verifyButton: "Vérifier",
+    verifyButton: "Ouvrir mon invitation",
     verifying: "Vérification…",
     resendButton: "Renvoyer le code",
-    useAnotherContact: "Utiliser un autre e-mail ou téléphone",
-    emailRequired: "Ce mariage exige actuellement une adresse e-mail.",
+    changeEmail: "Utiliser un autre e-mail",
+    someoneElse: "Quelqu'un d'autre",
+    notFoundTitle: "Nous n'avons pas retrouvé ton invitation",
+    notFoundBody: (couple: string) =>
+      `Vérifie l'orthographe, ou essaie le prénom que ${couple} utiliseraient pour toi. Si cela ne fonctionne toujours pas, contacte-les.`,
+    ambiguousTitle: "Le couple doit nous aider",
+    ambiguousBody: (couple: string) =>
+      `Plusieurs invités portent exactement ce nom. Contacte ${couple} pour qu'ils t'envoient ton lien personnel.`,
+    alreadySecuredTitle: "Cette invitation est déjà utilisée",
+    alreadySecuredBody: (couple: string) =>
+      `Elle a été ouverte avec un autre e-mail. Si ce n'était pas toi, contacte ${couple} : ils peuvent la réinitialiser.`,
+    emailMismatch: (couple: string) =>
+      `${couple} ont un autre e-mail pour toi. Utilise celui-là, ou contacte-les.`,
+    invalidEmail: "Cette adresse e-mail ne semble pas valide.",
+    rateLimited: "Trop de tentatives. Patiente quelques minutes avant de réessayer.",
+    tryAgainButton: "Réessayer",
     invalidCode: "Ce code n'a pas fonctionné, ou il a expiré.",
     sendCodeError: "Impossible d'envoyer le code. Merci de réessayer.",
-    noMatchTitle: "Nous n'avons pas retrouvé votre invitation",
-    noMatchBody: (couple: string) =>
-      `Vérifiez les informations saisies ou contactez directement ${couple}.`,
-    tryAgainButton: "Réessayer",
-    accessUnavailable:
-      "Cette invitation n'est plus disponible pour ces coordonnées vérifiées.",
     genericError: "Une erreur est survenue. Merci de réessayer.",
-    checkingSession: "Vérification de votre compte Union…",
-    redirecting: "Direction votre invitation…",
+    redirecting: "Direction ton invitation…",
   },
 
-  guestEmailSetup: {
-    kicker: "Conservez l'accès à votre invitation",
-    title: "Ajoutez votre e-mail",
-    subtitle:
-      "Une adresse e-mail est nécessaire pour continuer. Nous allons la vérifier afin que vous seul puissiez l'utiliser pour vous reconnecter.",
-    emailLabel: "E-mail",
-    emailPlaceholder: "vous@email.com",
-    sendCode: "Envoyer le code de vérification",
-    sending: "Envoi…",
-    codeTitle: "Vérifiez votre e-mail",
-    codeSent: (email: string) => `Saisissez le code envoyé à ${email}.`,
-    codeLabel: "Code de vérification",
-    codePlaceholder: "12345678",
-    verify: "Vérifier et continuer",
-    verifying: "Vérification…",
-    resend: "Renvoyer le code",
-    changeEmail: "Utiliser un autre e-mail",
-    sendError: "Impossible d'envoyer le code. Merci de réessayer.",
-    verifyError: "Ce code n'a pas fonctionné, ou l'e-mail n'a pas pu être enregistré.",
+  // Demandé quand un invité répond, si le couple n'a pas son e-mail.
+  replyEmail: {
+    label: "Ton e-mail",
+    hintRequired: (couple: string) =>
+      `Pour que ${couple} puissent t'envoyer les infos pratiques.`,
+    hintOptional: (couple: string) =>
+      `Facultatif. Permet à ${couple} de t'envoyer les infos pratiques.`,
+    placeholder: "prenom@email.com",
+    required: "Indique ton e-mail pour que le couple puisse te joindre.",
+    invalid: "Cette adresse e-mail ne semble pas valide.",
+    suggestion: (email: string) => `Tu voulais dire ${email} ?`,
+    saveError: "Impossible d'enregistrer ton e-mail. Merci de réessayer.",
   },
 
-  // Connexion invité (/join/[code]) — Supabase Auth vérifie l'e-mail,
-  // puis les RPC authentifiés ne révèlent que les invitations associées.
-  joinOtp: {
-    title: "Retrouver votre invitation",
-    subtitle:
-      "Indiquez l'adresse e-mail renseignée par le couple sur votre invitation.",
-    phoneLabel: "Numéro de téléphone",
-    phonePlaceholder: "ex. +33 6 12 34 56 78",
-    continueButton: "Continuer",
-    searching: "Recherche…",
-    emailCollectTitle: "Consultez vos e-mails",
-    emailCollectSubtitle:
-      "Saisissez le code à usage unique envoyé par Union pour terminer la connexion.",
-    emailLabel: "Email",
-    emailPlaceholder: "vous@email.com",
-    sendCodeButton: "Envoyer le code",
-    codeSentTo: (email: string) => `Nous avons envoyé un code de connexion à ${email}.`,
-    codeLabel: "Code de connexion",
-    codePlaceholder: "12345678",
-    verifyButton: "Vérifier",
-    verifying: "Vérification…",
-    resendButton: "Renvoyer le code",
-    startOverButton: "Recommencer",
-    savedEmailNotice:
-      "Enregistré — vous pourrez vous connecter avec cet email seul la prochaine fois.",
-    organiserHintText:
-      "Ce contact est aussi lié à un compte organisateur sur Union.",
-    organiserHintLink: "Se connecter en tant qu'organisateur",
-    matchesTitle: "Choisissez votre invitation",
-    matchesSubtitle:
-      "Confirmez la personne pour laquelle vous répondez. Union ne choisit jamais automatiquement une identité d’invité.",
-    matchLine: (guestName: string) => `Continuer en tant que ${guestName}`,
-    invalidOrExpired: "Ce code n'a pas fonctionné, ou il a expiré.",
-    cooldown: "Merci de patienter un instant avant de redemander un code.",
-    tooManyRequests: "Trop de tentatives — réessayez un peu plus tard.",
-    genericError: "Une erreur est survenue. Merci de réessayer.",
-    accessUnavailable:
-      "Cette invitation n'est plus disponible pour cet e-mail vérifié.",
-    checkingSession: "Vérification de votre compte Union…",
-    securityNote:
-      "Union vérifie cet e-mail avec la même connexion sécurisée que celle des organisateurs.",
-    noMatchTitle: "Aucune invitation pour cet e-mail",
-    noMatchBody: (couple: string) =>
-      `Cet e-mail vérifié ne figure pas sur une invitation pour ${couple}. Essayez une autre adresse ou contactez le couple.`,
-    useAnotherEmail: "Utiliser un autre e-mail",
-    useEmailInstead: "J'ai déjà un email enregistré — l'utiliser plutôt",
-    useNameFallback: "Rechercher par nom à la place",
-    backButton: "Retour",
-    continueToInvitation: "Accéder à votre invitation",
+  // L'e-mail d'un invité sur sa fiche, côté organisateur.
+  guestEmailStatus: {
+    confirmed: "Confirmé",
+    organiserUnconfirmed: "Non confirmé · ajouté par vous",
+    guestUnconfirmed: "Non confirmé · donné par l'invité",
+    none: "Pas encore d'e-mail",
+    secured: "L'invitation de cet invité est sécurisée : depuis le lien de groupe, elle ne s'ouvre qu'après un code envoyé par e-mail.",
+    resetButton: "Réinitialiser l'accès",
+    resetConfirm: (name: string) =>
+      `Réinitialiser l'accès de ${name} ? La personne qui a sécurisé cette invitation via le lien de groupe la perd, et un e-mail donné par l'invité est retiré. Un e-mail que vous avez saisi est conservé.`,
+    resetDone:
+      "Accès réinitialisé. La prochaine personne qui confirme un e-mail depuis le lien de groupe sécurise cette invitation.",
+    resetLimit:
+      "Son lien personnel ne change pas : quiconque l'a déjà peut toujours ouvrir l'invitation.",
+    resetError: "Impossible de réinitialiser l'accès.",
+  },
+
+  guestNames: {
+    duplicateFirstName: (name: string) =>
+      `Vous avez déjà un invité qui s'appelle ${name}. Donnez un nom de famille aux deux pour que chacun retrouve sa propre invitation depuis le lien de groupe.`,
   },
 
   // Outil organisateur "Lien de groupe" — la page /guests/group-link.
@@ -867,19 +837,16 @@ export const fr: Dictionary = {
       `Bonjour à tous ! 👋\n\n${couple} seraient ravis que vous confirmiez votre présence :\n${link}`,
     howItWorksTitle: "Comment ça marche",
     howItWorksBody:
-      "Partagez ce lien dans une conversation WhatsApp, un e-mail groupé ou un chat familial. Par défaut, les invités retrouvent leur invitation avec l'e-mail ou le téléphone que vous avez renseigné ; Union demande le prénom uniquement si nécessaire et n'affiche jamais de liste d'invités.",
+      "Partagez ce lien dans un groupe WhatsApp, un e-mail groupé ou un chat familial. Les invités découvrent l'invitation, puis retrouvent la leur en tapant leur prénom, et leur nom seulement si plusieurs invités partagent ce prénom. Union n'affiche jamais la liste des invités, et seuls les invités déjà sur votre liste peuvent entrer.",
     authModeTitle: "Vérification des invités",
-    contactModeLabel: "Correspondance des coordonnées — recommandé",
-    contactModeHint:
-      "Les invités utilisent leur e-mail ou téléphone, puis leur prénom uniquement si plusieurs invitations partagent ces coordonnées. Aucun code n'est demandé sauf si l'e-mail a déjà été vérifié comme connexion Union.",
-    otpModeLabel: "Exiger un code de vérification",
-    otpModeHint:
-      "Les invités doivent vérifier l'e-mail de leur invitation. La vérification par téléphone pourra être ajoutée plus tard ; les invités sans e-mail ne peuvent pas encore utiliser ce mode.",
-    otpCoverage: (withEmail: number, total: number) =>
-      `${withEmail} invité${withEmail > 1 ? "s" : ""} sur ${total} ${total > 1 ? "ont" : "a"} actuellement un e-mail et ${total > 1 ? "peuvent" : "peut"} utiliser ce mode.`,
-    allowNameFallbackLabel: "Autoriser aussi une recherche simple par nom",
-    allowNameFallbackHint:
-      "Saute la vérification de l'e-mail — les invités peuvent se retrouver par leur seul nom. Moins sûr, mais zéro friction pour les invités qui préfèrent éviter le code.",
+    secureModeLabel: "Nom + code par e-mail — recommandé",
+    secureModeHint:
+      "Après leur nom, les invités confirment leur e-mail avec un code à usage unique. Si vous avez saisi un e-mail pour eux, ce doit être celui-là. Sinon, le premier e-mail confirmé sécurise l'invitation, et vous le verrez sur la fiche de l'invité. La fois suivante, cet appareil entre directement.",
+    lightModeLabel: "Nom seulement",
+    lightModeHint:
+      "Les invités entrent directement après avoir tapé leur nom, sans code. Le plus simple pour eux, mais toute personne ayant le lien et connaissant le nom d'un invité peut ouvrir et modifier son invitation. Les invités sans e-mail en donnent un quand ils répondent.",
+    personalLinksNote:
+      "Le lien personnel d'un invité (Copier le lien ou SMS sur sa fiche) ouvre toujours directement son invitation, dans les deux modes. Utilisez-le pour les invités que le lien de groupe mettrait en difficulté.",
   },
 
   offline: {
@@ -1107,11 +1074,110 @@ export const fr: Dictionary = {
     save: "Enregistrer le modèle",
     saved: "Enregistré",
   },
+  guestHub: {
+    demo: "Mode démo — tes réponses sont simulées.",
+    greeting: (name: string) => `Bonjour ${name},`,
+    inviteLine: "t'invitent à célébrer leur mariage",
+    countdown: (days: number) => (days === 1 ? "Demain" : `Dans ${days} jours`),
+    respond: "Répondre à l'invitation",
+    coming: "Tu seras des nôtres",
+    notComing: "Tu ne pourras pas venir",
+    maybe: "Tu ne sais pas encore",
+    editReply: "Modifier ma réponse",
+    discover: "Découvrir",
+    menu: "Menu",
+    sections: "Rubriques",
+    nav: { forms: "Réponses", travel: "Voyage", logistics: "Infos", faq: "FAQ" },
+    formsTitle: "Vos réponses",
+    formsIntro: (name: string) =>
+      `${name}, les mariés te poseront quelques questions au fil des préparatifs.`,
+    statusPending: "À compléter",
+    statusDone: "Complété",
+    statusSoon: "Bientôt",
+    statusClosed: "Fermé",
+    reply: "Répondre",
+    edit: "Modifier",
+    confirm: "Confirmer",
+    finalCheck: "Dernier point",
+    questions: (n: number) => `${n} question${n > 1 ? "s" : ""}`,
+    answeredFor: (n: number, total: number) => `Réponses pour ${n} sur ${total}`,
+    footer: "À très vite",
+  },
+
+  guestFlow: {
+    ok: "OK",
+    start: "Commencer",
+    send: "Envoyer",
+    pressEnter: "appuie sur Entrée ↵",
+    shiftEnter: "Maj ⇧ + Entrée ↵ pour aller à la ligne",
+    required: "Merci de répondre à cette question.",
+    error: "Une erreur est survenue. Merci de réessayer.",
+    close: "Fermer",
+    previous: "Question précédente",
+    next: "Question suivante",
+    typeHere: "Tape ta réponse ici…",
+    chooseMany: "Plusieurs choix possibles",
+    optional: "Facultatif",
+    forYou: "Pour toi",
+    forPerson: (name: string) => `Pour ${name}`,
+    duration: (minutes: number) => `Prend ${minutes} min`,
+    back: "Retour à l'invitation",
+    progress: (step: number, total: number) => `Question ${step} sur ${total}`,
+  },
+
+  rsvpFlow: {
+    attend: (name: string) => `${name}, seras-tu des nôtres ?`,
+    companion: (name: string) => `${name} nous rejoindra ?`,
+    addSomeone: "Quelqu'un d'autre t'accompagne ?",
+    addPartner: "Mon ou ma partenaire",
+    addChild: "Un enfant",
+    addNobody: "Non, c'est tout",
+    partnerName: "Comment s'appelle ton ou ta partenaire ?",
+    childName: "Comment s'appelle l'enfant ?",
+    firstName: "Prénom",
+    lastName: "Nom (facultatif)",
+    firstNameRequired: "Le prénom est requis.",
+    lookalike: "Ce nom ressemble à quelqu'un déjà sur la liste :",
+    addedBy: (name: string) => `ajouté par ${name}`,
+    addAnyway: "Non, ajouter quand même",
+    cancel: "Annuler",
+    thanksComing: (name: string) => `À très vite, ${name} !`,
+    thanksNotComing: (name: string) => `Merci, ${name}`,
+    comingBody: (couple: string) => `${couple} ont bien reçu ta réponse. Hâte de fêter ça avec toi.`,
+    notComingBody: (couple: string) => `${couple} ont bien reçu ta réponse. Tu leur manqueras.`,
+    thanksMaybe: (name: string) => `Merci, ${name}`,
+    maybeBody: (couple: string) => `${couple} ont bien reçu ta réponse. Modifie-la ici dès que tu sais.`,
+    firmAnswerNeeded: "Les mariés ont maintenant besoin d'une réponse ferme. Choisis-en une.",
+  },
+
+  formFlow: {
+    thanks: "Merci !",
+    thanksBody: "Tes réponses ont bien été transmises aux mariés.",
+  },
+
+  travelFlow: {
+    open: "Proposer un trajet",
+    intro: "Partage ton trajet",
+    introBody: "Les invités qui font la même route pourront te contacter et voyager avec toi.",
+    from: "D'où pars-tu ?",
+    fromPlaceholder: "Ex. Lyon, Paris Gare de Lyon…",
+    method: "Comment voyages-tu ?",
+    driving: "Avec ma voiture",
+    rental: "En voiture de location",
+    lookingForRide: "Je cherche une place",
+    seats: "Combien de places as-tu de libre ?",
+    notes: "Quelque chose à ajouter ?",
+    notesPlaceholder: "Ex. Départ vendredi après-midi, je peux m'arrêter en route.",
+    publish: "Publier",
+    thanks: "Ton trajet est publié",
+    thanksBody: "Les invités qui font la même route peuvent maintenant te demander tes coordonnées.",
+  },
+
   formDefaults: {
     rsvp: {
       primary: {
         title: "RSVP de Présence",
-        subtitle: "Confirmez votre venue et celle de vos proches.",
+        subtitle: "Confirme ta venue et celle de tes proches.",
         labelAttending: "Présent",
         labelMaybe: "Peut-être",
         labelDeclined: "Absent",

@@ -11,7 +11,11 @@ import type {
   RsvpBlockCopy,
   RsvpQuestion,
 } from "@union/shared";
-import { isAutoTranslated, setTextForLocale, textForLocale } from "@union/shared";
+import {
+  isAutoTranslated,
+  setTextForLocale,
+  textForLocale,
+} from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
   deleteForm,
@@ -36,10 +40,10 @@ import { BackHeader } from "@/components/BackHeader";
 import { Card, Chip, Button, Loading, Switch, StatusPill } from "@/components/ui";
 
 const KIND_LABEL: Record<RsvpQuestion["kind"], { label: string; bg: string; fg: string }> = {
-  single: { label: "Single choice", bg: "#EEE7F0", fg: "#7A6690" },
-  multi: { label: "Multiple choice", bg: "#E7EFE6", fg: "#5E7A63" },
-  short: { label: "Short text", bg: "#FBEEE2", fg: "#B07C48" },
-  comment: { label: "Open comment", bg: "#FBEEE2", fg: "#B07C48" },
+  single: { label: "Single choice", bg: T.violetBg, fg: T.violetInk },
+  multi: { label: "Multiple choice", bg: T.greenBg, fg: T.greenDeep },
+  short: { label: "Short text", bg: T.amberBg, fg: T.amberInk },
+  comment: { label: "Open comment", bg: T.amberBg, fg: T.amberInk },
 };
 
 function newId() {
@@ -167,7 +171,7 @@ function LanguageBar({
               style={{
                 border: `1px solid ${active ? T.accentInk : T.line3}`,
                 background: active ? T.accentInk : "transparent",
-                color: active ? "#fff" : T.muted2,
+                color: active ? T.white : T.muted2,
                 borderRadius: 20,
                 padding: "6px 13px",
                 fontSize: 12.5,
@@ -228,6 +232,10 @@ export default function FormBuilderPage() {
   const [translateHint, setTranslateHint] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [published, setPublished] = useState(false);
+  // Whether this custom form is asked once per person or once per invitation.
+  // A meal choice is per person; a song request isn't — so it's the
+  // organiser's call, not a default worth guessing at.
+  const [perPerson, setPerPerson] = useState(false);
   const [opensAt, setOpensAt] = useState("");
   const [closesAt, setClosesAt] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -252,6 +260,7 @@ export default function FormBuilderPage() {
         setGuestCopyState(formGuestCopy(f));
         setTitle(f.title);
         setPublished(f.published);
+        setPerPerson(f.per_person);
         setOpensAt(toDateInput(f.opens_at));
         setClosesAt(toDateInput(f.closes_at));
       })
@@ -417,6 +426,7 @@ export default function FormBuilderPage() {
       if (!accessToken) throw new Error("You're signed out.");
 
       const translations = await requestTranslations(
+        form.id,
         slots,
         editingLocale,
         target,
@@ -465,6 +475,9 @@ export default function FormBuilderPage() {
         ...(form.kind === "rsvp"
           ? { rsvp_copy: rsvpCopyState }
           : { guest_copy: guestCopyState }),
+        // The RSVP block is per person by construction, so this only ever
+        // applies to a custom form.
+        ...(form.kind === "custom" ? { per_person: perPerson } : {}),
       });
       setForm(updated);
       setDirty(false);
@@ -508,7 +521,7 @@ export default function FormBuilderPage() {
             ? "This name is how you find the form. Guests see the headline you write below — or this name, if you leave it blank."
             : "The name and schedule are for you — guests never see them."
         }
-        tone={{ bg: T.sandBg, border: "rgba(169,154,144,.35)", fg: T.sand }}
+        tone={{ bg: T.sandBg, border: alpha(T.sand, 0.35), fg: T.sand }}
       >
         <Card style={{ padding: "13px 15px" }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: T.faint, marginBottom: 5 }}>
@@ -532,7 +545,7 @@ export default function FormBuilderPage() {
               minHeight: 40,
               border: `1px solid ${T.line3}`,
               borderRadius: 10,
-              background: "#F7F1EC",
+              background: T.cream,
             }}
           />
         </Card>
@@ -651,12 +664,14 @@ export default function FormBuilderPage() {
         </SectionBlock>
       )}
 
-      {!(form.kind === "rsvp" && form.purpose === "reconfirmation") && (
-        <>
       {/* ---------------- Guest-facing questions ---------------- */}
       <SectionBlock
-        kicker="What guests see"
-        hint="Every question is yours to shape — title, type, required or not, and its choices."
+        kicker={form.kind === "rsvp" ? "Questions after the reply" : "What guests see"}
+        hint={
+          form.kind === "rsvp"
+            ? "Add only what you need. Guests answer these questions for themselves and for each partner or child who is coming."
+            : "Every question is yours to shape — title, type, required or not, and its choices."
+        }
         tone={{ bg: T.accentSoft, border: T.accentBorder, fg: T.accentInk }}
       >
         {questions.map((q, idx) => {
@@ -723,9 +738,9 @@ export default function FormBuilderPage() {
                         height: 16,
                         flexShrink: 0,
                         borderRadius: 5,
-                        border: `1.5px solid ${q.required ? T.accentInk : "rgba(67,53,58,.28)"}`,
+                        border: `1.5px solid ${q.required ? T.accentInk : alpha(T.ink, 0.28)}`,
                         background: q.required ? T.accentInk : "transparent",
-                        color: "#fff",
+                        color: T.white,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -765,7 +780,7 @@ export default function FormBuilderPage() {
                   minHeight: 40,
                   border: `1px solid ${T.line3}`,
                   borderRadius: 10,
-                  background: "#F7F1EC",
+                  background: T.cream,
                 }}
               />
 
@@ -784,9 +799,9 @@ export default function FormBuilderPage() {
                           padding: "6px 12px",
                           fontSize: 13,
                           color: T.ink,
-                          border: "1px solid rgba(67,53,58,.08)",
+                          border: `1px solid ${alpha(T.ink, 0.08)}`,
                           borderRadius: 10,
-                          background: "#F7F1EC",
+                          background: T.cream,
                         }}
                       />
                       {isAutoTranslated(opt.label, editingLocale) && <AutoBadge />}
@@ -836,8 +851,8 @@ export default function FormBuilderPage() {
                   style={{
                     marginTop: 11,
                     borderRadius: 12,
-                    background: "#F7F1EC",
-                    border: "1px solid rgba(67,53,58,.08)",
+                    background: T.cream,
+                    border: `1px solid ${alpha(T.ink, 0.08)}`,
                     padding: "11px 13px",
                     fontSize: 13,
                     color: T.label,
@@ -851,7 +866,7 @@ export default function FormBuilderPage() {
               <button
                 onClick={() => removeQuestion(q.id)}
                 className="u-link"
-                style={{ color: "#C0553B", fontSize: 12, marginTop: 10 }}
+                style={{ color: T.danger, fontSize: 12, marginTop: 10 }}
                 type="button"
               >
                 Remove question
@@ -885,22 +900,13 @@ export default function FormBuilderPage() {
           </div>
         </Card>
 
-        {form.kind === "rsvp" && (
-          <div style={{ fontSize: 12, color: T.muted2, lineHeight: 1.5, padding: "0 2px" }}>
-            These are extra planning notes for you — the attend/decline reply,
-            dietary notes and its wording are handled by the RSVP block above,
-            wired straight to the real guest flow.
-          </div>
-        )}
       </SectionBlock>
-      </>
-      )}
 
       {/* ---------------- Access & rights ---------------- */}
       <SectionBlock
         kicker="Access & rights"
         hint="Who can reach this form, and what they're allowed to do once they're in it."
-        tone={{ bg: T.blueBg, border: "rgba(92,100,138,.28)", fg: T.blueInk }}
+        tone={{ bg: T.blueBg, border: alpha(T.blueInk, 0.28), fg: T.blueInk }}
       >
         <Card style={{ padding: "13px 15px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -922,6 +928,31 @@ export default function FormBuilderPage() {
             </div>
           </div>
         </Card>
+
+        {form.kind === "custom" && (
+          <Card style={{ padding: "13px 15px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Switch
+                on={perPerson}
+                onChange={() => {
+                  setPerPerson((v) => !v);
+                  markDirty();
+                }}
+                label="Guests answer for relatives"
+              />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink }}>
+                  {perPerson ? "One response per person" : "One response per invitation"}
+                </div>
+                <div style={{ fontSize: 12, color: T.faint, marginTop: 1, lineHeight: 1.45 }}>
+                  {perPerson
+                    ? "The invitation holder completes this form for themselves and for each partner or child they're bringing."
+                    : "The invitation holder submits one set of answers for the whole group."}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {form.kind === "rsvp" && form.purpose === "primary" && wedding && (
           <>
@@ -950,7 +981,7 @@ export default function FormBuilderPage() {
             onClick={remove}
             disabled={deleting}
             className="u-link"
-            style={{ color: "#C0553B", fontSize: 13 }}
+            style={{ color: T.danger, fontSize: 13 }}
             type="button"
           >
             {deleting ? "Deleting…" : "Delete this form"}
@@ -1040,7 +1071,7 @@ function MaybeAnswerRight({
         )}
       </div>
 
-      {err && <div style={{ color: "#C0553B", fontSize: 12, marginTop: 8 }}>{err}</div>}
+      {err && <div style={{ color: T.danger, fontSize: 12, marginTop: 8 }}>{err}</div>}
     </Card>
   );
 }
@@ -1113,7 +1144,7 @@ function ExtraGuestsRights({
         </Link>
       </div>
 
-      {err && <div style={{ color: "#C0553B", fontSize: 12, marginTop: 8 }}>{err}</div>}
+      {err && <div style={{ color: T.danger, fontSize: 12, marginTop: 8 }}>{err}</div>}
     </Card>
   );
 }
@@ -1131,8 +1162,8 @@ function AutoBadge() {
         fontWeight: 700,
         letterSpacing: "0.04em",
         textTransform: "uppercase",
-        color: "#B07C48",
-        background: "#FBEEE2",
+        color: T.amberInk,
+        background: T.amberBg,
         borderRadius: 6,
         padding: "3px 6px",
       }}
@@ -1199,7 +1230,7 @@ function CopyField({
           color: T.ink,
           border: `1px solid ${T.line3}`,
           borderRadius: 10,
-          background: "#F7F1EC",
+          background: T.cream,
         }}
       />
     </Card>

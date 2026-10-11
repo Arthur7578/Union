@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
+import { guestLinkPath } from "@union/shared";
 
-// Always redirect dynamically to the brand-new guest experience page
+// Legacy spelling of the guest link. Nothing emits /rsvp/<token> any more, but
+// links sent before the move are still in guests' inboxes and messages, so it
+// keeps redirecting to the guest page.
 export const dynamic = "force-dynamic";
 
 export default async function RsvpRedirectPage({
@@ -10,6 +13,5 @@ export default async function RsvpRedirectPage({
 }) {
   const { token } = await params;
 
-  // Cleanly redirect the guest to the premium, immersive Guest Experience
-  redirect(`/guest/${token}`);
+  redirect(guestLinkPath(token));
 }

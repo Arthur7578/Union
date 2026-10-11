@@ -8,7 +8,6 @@ import React, {
   useState,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { clearActiveGuestIdentity } from "./guestIdentity";
 import { getBrowserSupabase } from "./supabaseClient";
 import {
   clearActiveWedding,
@@ -24,14 +23,22 @@ export const LAST_EMAIL_KEY = "union.lastEmail";
  * Send an 8-digit sign-in code to `email`. Standalone (not tied to React
  * context) so it can be used from any component regardless of provider
  * placement.
+ *
+ * `captchaToken` is the Turnstile token from `useTurnstile()`. Supabase only
+ * checks it once CAPTCHA protection is enabled for the project, and ignores it
+ * otherwise, so it is safe to pass whenever one is available.
  */
-export async function sendEmailOtp(email: string): Promise<void> {
+export async function sendEmailOtp(
+  email: string,
+  captchaToken?: string,
+): Promise<void> {
   const supabase = getBrowserSupabase();
   const clean = email.trim();
   const { error } = await supabase.auth.signInWithOtp({
     email: clean,
     options: {
       shouldCreateUser: true,
+      captchaToken,
     },
   });
   if (error) throw error;
@@ -75,7 +82,7 @@ export async function acceptPendingInvites(): Promise<void> {
 type AuthContextValue = {
   session: Session | null;
   loading: boolean;
-  sendEmailOtp: (email: string) => Promise<void>;
+  sendEmailOtp: (email: string, captchaToken?: string) => Promise<void>;
   verifyEmailOtp: (email: string, token: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -151,7 +158,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
         clearActiveWedding();
-        clearActiveGuestIdentity();
       },
     }),
     [session, loading],

@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { BackHeader } from "@/components/BackHeader";
 import { DemoBanner } from "@/components/SampleBadge";
 import { Card, Button } from "@/components/ui";
@@ -43,9 +43,9 @@ export default function SearchActivePage() {
       <div
         style={{
           borderRadius: 24,
-          background: "linear-gradient(158deg,#F8EDEA 0%,#F2E1E0 100%)",
+          background: T.heroGradient,
           padding: 20,
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
+          boxShadow: `inset 0 1px 0 ${alpha(T.white, 0.7)}`,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -77,7 +77,7 @@ export default function SearchActivePage() {
           marginTop: 18,
           padding: 18,
           border: `1px solid ${T.accentBorder}`,
-          boxShadow: "0 10px 26px rgba(67,53,58,.06)",
+          boxShadow: `0 10px 26px ${alpha(T.ink, 0.06)}`,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -129,7 +129,7 @@ export default function SearchActivePage() {
             top: 6,
             bottom: 16,
             width: 2,
-            background: "rgba(67,53,58,.08)",
+            background: alpha(T.ink, 0.08),
           }}
         />
         {s.timeline.map((step, i) => (
@@ -192,5 +192,5 @@ function Stat({
 }
 
 function VLine() {
-  return <div style={{ width: 1, background: "rgba(67,53,58,.1)" }} />;
+  return <div style={{ width: 1, background: alpha(T.ink, 0.1) }} />;
 }

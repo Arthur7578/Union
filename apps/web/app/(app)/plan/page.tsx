@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { PageHeader, Card, SectionLabel, Button, Chip, UnionNote } from "@/components/ui";
 import { DemoBanner } from "@/components/SampleBadge";
 import { getSample } from "@/lib/sample";
@@ -44,7 +44,7 @@ export default function PlanPage() {
                 ? `1px solid ${T.accentBorder}`
                 : `1px solid ${T.line}`,
               boxShadow: item.primary
-                ? "0 8px 20px rgba(67,53,58,.06)"
+                ? `0 8px 20px ${alpha(T.ink, 0.06)}`
                 : "none",
             }}
           >
@@ -138,7 +138,7 @@ export default function PlanPage() {
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: "#C7BAB2",
+                background: T.taupe,
               }}
             />
             <span style={{ fontWeight: 500, fontSize: 14, color: T.muted }}>

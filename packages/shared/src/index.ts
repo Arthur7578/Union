@@ -34,6 +34,7 @@ export type {
   GuestModules,
   StoredGuestModules,
 } from "./guestModules";
+export { guestLinkPath, guestLinkUrl } from "./guestLink";
 export {
   RSVP_ANSWERS,
   isRsvpAnswerAllowed,
@@ -72,6 +73,18 @@ export type {
   Enums,
 } from "./database.types";
 export { Constants } from "./database.types";
+export {
+  PHONE_COUNTRIES,
+  dialCode,
+  guessPhoneCountry,
+  isPhoneCountry,
+  isValidPhone,
+  parseStoredPhone,
+  toStoredPhone,
+  type ParsedPhone,
+  type PhoneCountry,
+} from "./phone";
+
 
 // Convenience row aliases used across apps.
 import type { Tables, Enums } from "./database.types";
@@ -82,7 +95,9 @@ export type Wedding = Tables<"weddings">;
 export type Guest = Tables<"guests">;
 export type Rsvp = Tables<"rsvps">;
 export type RsvpStatus = Enums<"rsvp_status">;
-export type GuestJoinAuthMode = Enums<"guest_join_auth_mode">;
+/** How guests open their invitation from the group link: name + email code,
+ *  or name only. */
+export type GuestJoinAuthMode = "secure" | "light";
 export type GuestGroup = Tables<"guest_groups">;
 export type RoomBlock = Tables<"room_blocks">;
 export type SeatingTable = Tables<"seating_tables">;
@@ -206,6 +221,8 @@ export type Invitation = {
     /** The language this guest picked in their own invitation, if they ever
      *  did. Top of the ranking — nothing overrides a deliberate choice. */
     chosen_locale?: string | null;
+    /** When this guest first opened the invitation welcome; null until they do. */
+    welcome_seen_at?: string | null;
   };
   companions: Array<{
     id: string;

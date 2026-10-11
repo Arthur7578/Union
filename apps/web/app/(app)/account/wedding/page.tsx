@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Wedding } from "@union/shared";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { useWedding } from "@/lib/wedding";
 import { updateWedding, deleteWedding } from "@/lib/data";
@@ -170,9 +170,9 @@ function WeddingSettingsForm({
       <div
         style={{
           borderRadius: 22,
-          background: "linear-gradient(158deg,#F8EDEA 0%,#F2E1E0 100%)",
+          background: T.heroGradient,
           padding: "20px 18px",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,.7)",
+          boxShadow: `inset 0 1px 0 ${alpha(T.white, 0.7)}`,
           textAlign: "center",
         }}
       >
@@ -389,7 +389,7 @@ function WeddingSettingsForm({
               borderRadius: 18,
               background: T.surfaceAlt,
               border: `1px solid ${T.line}`,
-              color: "#B0664E",
+              color: T.danger,
               fontWeight: 600,
               fontSize: 14.5,
               cursor: "pointer",
@@ -466,7 +466,7 @@ function DeleteConfirmModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(30,22,25,.42)",
+        background: alpha(T.scrim, 0.42),
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -483,7 +483,7 @@ function DeleteConfirmModal({
           padding: 22,
           width: "100%",
           maxWidth: 440,
-          boxShadow: "0 30px 60px rgba(30,22,25,.28)",
+          boxShadow: `0 30px 60px ${alpha(T.scrim, 0.28)}`,
         }}
       >
         <div
@@ -547,12 +547,12 @@ function DeleteConfirmModal({
               minHeight: 46,
               borderRadius: 14,
               border: "none",
-              background: canConfirm ? "#B0664E" : "rgba(176,102,78,.35)",
-              color: "#fff",
+              background: canConfirm ? T.danger : alpha(T.danger, 0.35),
+              color: T.white,
               fontWeight: 600,
               fontSize: 15,
               cursor: canConfirm && !deleting ? "pointer" : "default",
-              boxShadow: canConfirm ? "0 6px 16px rgba(176,102,78,.24)" : "none",
+              boxShadow: canConfirm ? `0 6px 16px ${alpha(T.danger, 0.24)}` : "none",
               opacity: deleting ? 0.6 : 1,
             }}
           >

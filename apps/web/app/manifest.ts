@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { T } from "@/lib/theme";
 
 /**
  * Web App Manifest — served at /manifest.webmanifest.
@@ -16,8 +17,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#F2ECE5",
-    theme_color: "#F2ECE5",
+    background_color: T.bgTop,
+    theme_color: T.bgTop,
     categories: ["lifestyle", "productivity"],
     icons: [
       {

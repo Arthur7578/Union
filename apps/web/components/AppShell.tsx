@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { useWedding } from "@/lib/wedding";
@@ -20,8 +20,8 @@ import {
   Spark,
 } from "./icons";
 
-const ON = "#43353A";
-const OFF = "#C1B4AD";
+const ON = T.ink;
+const OFF = T.taupe;
 
 type Tab = {
   key: NavKey;
@@ -240,17 +240,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: "0 7px 16px rgba(67,53,58,.24)",
+                    boxShadow: `0 7px 16px ${alpha(T.ink, 0.24)}`,
                     marginTop: -9,
                   }}
                 >
-                  <Spark size={22} color="#fff" />
+                  <Spark size={22} color={T.white} />
                 </span>
                 <span
                   style={{
                     fontWeight: 600,
                     fontSize: 10,
-                    color: isActive ? ON : "#BBACA5",
+                    color: isActive ? ON : T.label,
                   }}
                 >
                   {dict.nav[tab.key]}

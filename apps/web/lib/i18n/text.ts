@@ -56,3 +56,31 @@ export function rsvpDefaults(locale: Locale, purpose: RsvpPurpose) {
 
 export { DEFAULT_LOCALE, LOCALES };
 export type { Locale };
+
+/** The wording one RSVP block shows a guest: the couple's own copy in the
+ *  guest's language where they have written some, else Union's default for
+ *  that language. Wording is the only thing a couple can change about a reply
+ *  button — which status it submits is fixed in code — so a missing or empty
+ *  label never leaves a button blank. */
+export function rsvpWording(
+  form:
+    | {
+        title?: StoredText;
+        subtitle?: StoredText;
+        label_attending?: StoredText;
+        label_maybe?: StoredText;
+        label_declined?: StoredText;
+      }
+    | null
+    | undefined,
+  locale: Locale,
+) {
+  const defaults = rsvpDefaults(locale, "primary");
+  return {
+    title: coupleTextOr(form?.title, locale, defaults.title),
+    subtitle: coupleTextOr(form?.subtitle, locale, defaults.subtitle),
+    labelAttending: coupleTextOr(form?.label_attending, locale, defaults.labelAttending),
+    labelMaybe: coupleTextOr(form?.label_maybe, locale, defaults.labelMaybe),
+    labelDeclined: coupleTextOr(form?.label_declined, locale, defaults.labelDeclined),
+  };
+}

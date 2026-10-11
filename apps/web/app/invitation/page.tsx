@@ -8,7 +8,7 @@ import { Button, Loading } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { formatShortDate } from "@/lib/format";
 import { useLocale } from "@/lib/i18n/client";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 
 function weddingName(wedding: Wedding, fallback: string): string {
@@ -113,11 +113,11 @@ export default function InvitationPage() {
         {invitedWedding && (
           <section
             style={{
-              background: "linear-gradient(150deg,#F8EDEA 0%,#F1DFDE 100%)",
+              background: `linear-gradient(150deg,${T.blush} 0%,${T.accentPink} 100%)`,
               border: `1px solid ${T.line}`,
               borderRadius: 22,
               padding: 18,
-              boxShadow: "0 10px 26px rgba(67,53,58,.08)",
+              boxShadow: `0 10px 26px ${alpha(T.ink, 0.08)}`,
             }}
           >
             <div

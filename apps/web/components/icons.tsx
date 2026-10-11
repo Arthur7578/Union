@@ -1,9 +1,10 @@
 import React from "react";
+import { T, alpha } from "@/lib/theme";
 
 type IconProps = { size?: number; color?: string; stroke?: string };
 
 /** The Union four-point spark (brand mark). Filled. */
-export function Spark({ size = 18, color = "#B07C82" }: IconProps) {
+export function Spark({ size = 18, color = T.accent }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
       <path
@@ -14,7 +15,7 @@ export function Spark({ size = 18, color = "#B07C82" }: IconProps) {
   );
 }
 
-export function TodayIcon({ size = 24, stroke = "#43353A" }: IconProps) {
+export function TodayIcon({ size = 24, stroke = T.ink }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
@@ -28,7 +29,7 @@ export function TodayIcon({ size = 24, stroke = "#43353A" }: IconProps) {
   );
 }
 
-export function VendorsIcon({ size = 24, stroke = "#43353A" }: IconProps) {
+export function VendorsIcon({ size = 24, stroke = T.ink }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
       <rect x="3.5" y="5" width="17" height="6" rx="2" stroke={stroke} strokeWidth="1.8" />
@@ -37,7 +38,7 @@ export function VendorsIcon({ size = 24, stroke = "#43353A" }: IconProps) {
   );
 }
 
-export function GuestsIcon({ size = 24, stroke = "#43353A" }: IconProps) {
+export function GuestsIcon({ size = 24, stroke = T.ink }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="9" cy="8" r="3.1" stroke={stroke} strokeWidth="1.8" />
@@ -57,7 +58,7 @@ export function GuestsIcon({ size = 24, stroke = "#43353A" }: IconProps) {
   );
 }
 
-export function PlanIcon({ size = 24, stroke = "#43353A" }: IconProps) {
+export function PlanIcon({ size = 24, stroke = T.ink }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
       <rect x="4" y="5.5" width="16" height="14.5" rx="3" stroke={stroke} strokeWidth="1.8" />
@@ -71,7 +72,7 @@ export function PlanIcon({ size = 24, stroke = "#43353A" }: IconProps) {
   );
 }
 
-export function ChevronLeft({ size = 16, stroke = "#6E5E62" }: IconProps) {
+export function ChevronLeft({ size = 16, stroke = T.muted }: IconProps) {
   return (
     <svg width={(size * 10) / 16} height={size} viewBox="0 0 10 16" aria-hidden>
       <path
@@ -86,7 +87,7 @@ export function ChevronLeft({ size = 16, stroke = "#6E5E62" }: IconProps) {
   );
 }
 
-export function ChevronRight({ size = 14, stroke = "rgba(60,60,67,0.3)" }: IconProps) {
+export function ChevronRight({ size = 14, stroke = alpha(T.ink, 0.3) }: IconProps) {
   return (
     <svg width={(size * 8) / 14} height={size} viewBox="0 0 8 14" aria-hidden>
       <path
@@ -101,7 +102,7 @@ export function ChevronRight({ size = 14, stroke = "rgba(60,60,67,0.3)" }: IconP
   );
 }
 
-export function Check({ size = 13, stroke = "#6E8A72" }: IconProps) {
+export function Check({ size = 13, stroke = T.greenInk }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 14 14" aria-hidden>
       <path
@@ -116,7 +117,7 @@ export function Check({ size = 13, stroke = "#6E8A72" }: IconProps) {
   );
 }
 
-export function UpArrow({ size = 18, stroke = "#fff" }: IconProps) {
+export function UpArrow({ size = 18, stroke = T.white }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
       <path

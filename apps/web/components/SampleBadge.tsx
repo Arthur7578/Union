@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { T } from "@/lib/theme";
+import { T, alpha } from "@/lib/theme";
 import { useT } from "@/lib/i18n/client";
 
 /**
@@ -55,8 +55,8 @@ export function DemoBanner({ children }: { children?: React.ReactNode }) {
         display: "flex",
         alignItems: "center",
         gap: 10,
-        background: "rgba(92,100,138,0.08)",
-        border: "1px solid rgba(92,100,138,0.22)",
+        background: alpha(T.blueInk, 0.08),
+        border: `1px solid ${alpha(T.blueInk, 0.22)}`,
         color: T.ink2,
         borderRadius: 16,
         padding: "11px 14px",
