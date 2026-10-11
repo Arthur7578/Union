@@ -69,6 +69,8 @@
 .fp-root .flipper::before{content:"";position:absolute;inset:9px 8px 6px;
   box-shadow:0 3px 4px rgba(52,44,30,.28),0 12px 18px -4px rgba(52,44,30,.24),0 30px 50px -16px rgba(52,44,30,calc(.18 + .22 * var(--lift,0)))}
 .fp-root .side{position:absolute;inset:0;background:var(--img-card) center/100% 100% no-repeat;display:flex;flex-direction:column;align-items:center;text-align:center}
+/* .side's display:flex would otherwise beat the hidden attribute, leaving the (opaque) back painted over the front */
+.fp-root .side[hidden]{display:none}
 .fp-root .recto{justify-content:center;gap:1.05em;padding:6% 9%}
 .fp-root .recto::after{content:"";position:absolute;inset:0;pointer-events:none;background:#2A281C;opacity:var(--dim,0);
   -webkit-mask:var(--img-card) center/100% 100% no-repeat;mask:var(--img-card) center/100% 100% no-repeat}
@@ -91,6 +93,14 @@
 .fp-root .days .w{color:var(--ink-soft);line-height:1.3}
 .fp-root .foot{margin:0;font-size:.88em;line-height:1.5;color:var(--ink-soft)}
 .fp-root .foot strong{font-weight:600;color:var(--ink)}
+
+/* the card's typefaces are the stationery's: Exmouth for the names, EB Garamond for every other line
+   (the rest of the sequence keeps its own). Falls back to the sequence's serif where they aren't loaded. */
+.fp-root .card{--card-script:var(--font-guest-script,var(--serif)),var(--serif);--card-serif:var(--font-guest-serif,var(--serif)),var(--serif);
+  font-variant-numeric:lining-nums}
+.fp-root .card .kicker,.fp-root .card .to,.fp-root .card .when,.fp-root .card .where,.fp-root .card .lead,.fp-root .card .foot{font-family:var(--card-serif);font-weight:400}
+.fp-root .card .names{font-family:var(--card-script);font-weight:400;font-size:3em;letter-spacing:0;text-transform:none;line-height:1;padding-left:0}
+.fp-root .card .names b{font-family:var(--card-script);font-style:normal;font-size:.5em;line-height:1.15}
 
 .fp-root .cta{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:8px;
   background:linear-gradient(180deg,rgba(235,228,221,0),var(--paper) 42%);opacity:0;pointer-events:none}

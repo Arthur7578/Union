@@ -10,11 +10,11 @@ Three client pages are each one giant component with a lot of local state. Nothi
 
 Instead, **whenever a task already requires changing one of these files, extract the part you are touching** into a child component or a custom hook, in the same change. Keep it small and behavior-preserving, and run lint, typecheck, tests and build before pushing.
 
-Sizes measured on 2026-10-03 (GuestPortal re-measured 2026-10-05):
+Sizes measured on 2026-10-03 (GuestPortal re-measured on 2026-10-09):
 
 | File | Lines | `useState` calls | Notes |
 | --- | --- | --- | --- |
-| `apps/web/app/guest/[token]/GuestPortal.tsx` | ~1865 | 31 | Guest-facing, most state. Best first candidate. The reply email lives in `ReplyEmailField.tsx`. |
+| `apps/web/app/guest/[token]/GuestPortal.tsx` | ~500 | 11 | Split on 2026-10-09: RSVP, custom forms and each section now live in sibling files (`RsvpFlow`, `CustomFormFlow`, `TravelSection`, …). The reply email's state lives in `ReplyEmailField.tsx`. What's left is the hub shell and the forms section. |
 | `apps/web/app/(app)/guests/seating/page.tsx` | ~1965 | 22 | One `SeatingPage` function of ~1800 lines. |
 | `apps/web/app/(app)/guests/groups/page.tsx` | ~1707 | 20 | One `GroupsPage` function of ~1370 lines. |
 

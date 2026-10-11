@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLocale } from "@/lib/i18n/client";
 import { T, alpha } from "@/lib/theme";
+import { sprig } from "./olive";
 import "./FairePartEnvelope.css";
 
 interface FairePartEnvelopeProps {
@@ -24,25 +25,6 @@ const clamp = (v: number) => Math.max(0, Math.min(1, v));
 const seg = (p: number, a: number, b: number) => clamp((p - a) / (b - a));
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-/** Olive sprig: leaves placed along a curved stem (SVG markup from numbers only). */
-function sprig(x0: number, y0: number, x1: number, y1: number, n: number, len: number, bend: number) {
-  const cx = (x0 + x1) / 2 + bend;
-  const cy = (y0 + y1) / 2 - bend;
-  let s = `<path d="M${x0} ${y0} Q${cx} ${cy} ${x1} ${y1}" fill="none" stroke="currentColor" stroke-width="${len * 0.07}" stroke-linecap="round"/>`;
-  for (let i = 1; i <= n; i++) {
-    const t = i / (n + 0.4);
-    const u = 1 - t;
-    const x = u * u * x0 + 2 * u * t * cx + t * t * x1;
-    const y = u * u * y0 + 2 * u * t * cy + t * t * y1;
-    const ang = (Math.atan2(2 * u * (cy - y0) + 2 * t * (y1 - cy), 2 * u * (cx - x0) + 2 * t * (x1 - cx)) * 180) / Math.PI;
-    const side = i % 2 ? 1 : -1;
-    const l = len * (1 - t * 0.35);
-    const a = ang + side * 42;
-    s += `<ellipse cx="${l * 0.5}" cy="0" rx="${l * 0.5}" ry="${l * 0.16}" fill="currentColor" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${a.toFixed(1)})"/>`;
-  }
-  return s;
-}
 
 const SPRIG = sprig(6, 18, 54, 8, 5, 11, 4);
 const SHADE_A = sprig(200, 0, 40, 150, 9, 46, 30) + sprig(190, 10, 110, 190, 7, 40, -20);

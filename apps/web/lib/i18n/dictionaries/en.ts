@@ -1101,6 +1101,108 @@ export const en = {
     save: "Save template",
     saved: "Saved",
   },
+  // The signed-in guest hub (/guest/[token]) — the stationery-styled page a
+  // guest lands on after the welcome and identity steps.
+  guestHub: {
+    demo: "Demo mode — your replies are simulated.",
+    greeting: (name: string) => `Dear ${name},`,
+    inviteLine: "invite you to celebrate their wedding",
+    countdown: (days: number) => (days === 1 ? "Tomorrow" : `In ${days} days`),
+    respond: "Respond to the invitation",
+    coming: "You'll be with us",
+    notComing: "You won't be able to make it",
+    editReply: "Change my reply",
+    discover: "Discover",
+    menu: "Menu",
+    sections: "Sections",
+    nav: { forms: "Replies", travel: "Travel", logistics: "Details", faq: "FAQ" },
+    formsTitle: "Your replies",
+    formsIntro: (name: string) =>
+      `${name}, the couple will ask you a few questions as the big day approaches.`,
+    statusPending: "To do",
+    statusDone: "Done",
+    statusSoon: "Coming soon",
+    statusClosed: "Closed",
+    reply: "Reply",
+    edit: "Edit",
+    confirm: "Confirm",
+    finalCheck: "Final check-in",
+    questions: (n: number) => `${n} question${n === 1 ? "" : "s"}`,
+    footer: "See you soon",
+  },
+
+  // The question-by-question form chrome shared by every guest form.
+  guestFlow: {
+    ok: "OK",
+    start: "Start",
+    send: "Send",
+    pressEnter: "press Enter ↵",
+    shiftEnter: "Shift ⇧ + Enter ↵ for a new line",
+    required: "Please answer this question.",
+    error: "Something went wrong. Please try again.",
+    close: "Close",
+    previous: "Previous question",
+    next: "Next question",
+    typeHere: "Type your answer here…",
+    chooseMany: "Choose as many as you like",
+    optional: "Optional",
+    duration: (minutes: number) => `Takes ${minutes} min`,
+    back: "Back to the invitation",
+    progress: (step: number, total: number) => `Question ${step} of ${total}`,
+  },
+
+  // The RSVP, asked one question at a time.
+  rsvpFlow: {
+    attend: (name: string) => `${name}, will you join us?`,
+    diet: "Any allergies or dietary needs?",
+    dietHint: "Leave it blank if there's nothing to note.",
+    companion: (name: string) => `Will ${name} join us?`,
+    companionDiet: (name: string) => `Any allergies or dietary needs for ${name}?`,
+    addSomeone: "Is anyone else coming with you?",
+    addPartner: "My partner",
+    addChild: "A child",
+    addNobody: "No, that's everyone",
+    partnerName: "What's your partner's name?",
+    childName: "What's the child's name?",
+    firstName: "First name",
+    lastName: "Last name (optional)",
+    firstNameRequired: "First name is required.",
+    lookalike: "This name looks like someone already on the list:",
+    addedBy: (name: string) => `added by ${name}`,
+    addAnyway: "No, add as new",
+    cancel: "Cancel",
+    message: (couple: string) => `A word for ${couple}?`,
+    thanksComing: (name: string) => `See you soon, ${name}!`,
+    thanksNotComing: (name: string) => `Thank you, ${name}`,
+    comingBody: (couple: string) => `${couple} have your reply. We can't wait to celebrate with you.`,
+    notComingBody: (couple: string) => `${couple} have your reply. You'll be missed.`,
+  },
+
+  // A couple's own form, asked one question at a time.
+  formFlow: {
+    thanks: "Thank you!",
+    thanksBody: "Your answers have been sent to the couple.",
+  },
+
+  // "Share my travel" on the travel board, asked one question at a time.
+  travelFlow: {
+    open: "Share my travel",
+    intro: "Share your travel",
+    introBody: "Other guests coming your way can get in touch and travel with you.",
+    from: "Where are you leaving from?",
+    fromPlaceholder: "e.g. Lyon, Paris Gare de Lyon…",
+    method: "How are you travelling?",
+    driving: "With my own car",
+    rental: "In a rental car",
+    lookingForRide: "I'm looking for a ride",
+    seats: "How many seats do you have free?",
+    notes: "Anything to add?",
+    notesPlaceholder: "e.g. Leaving Friday afternoon, happy to stop along the way.",
+    publish: "Publish",
+    thanks: "Your trip is on the board",
+    thanksBody: "Guests travelling the same way can now ask you for your details.",
+  },
+
   // System defaults for the RSVP block's guest-facing wording — what a guest
   // reads when the couple hasn't written their own. Lives here rather than in
   // a component so the form builder's placeholders and preview show exactly

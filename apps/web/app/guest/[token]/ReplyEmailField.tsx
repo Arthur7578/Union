@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { looksLikeEmail, suggestEmailFix } from "@/lib/emailSuggest";
+import { looksLikeEmail } from "@/lib/emailSuggest";
 import { arrivedThroughGroupLink } from "@/lib/groupLinkArrival";
 import { useLocale } from "@/lib/i18n/client";
-import { T } from "@/lib/theme";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 
 const noopSubscribe = () => () => {};
@@ -16,7 +15,8 @@ const noopSubscribe = () => () => {};
  * couple hands out to guests who'd struggle (older guests, children).
  *
  * The address is saved as given by the guest, unconfirmed. It can't replace
- * one already on file: only the couple can change that.
+ * one already on file: only the couple can change that. The RSVP asks for it
+ * as one of its questions (RsvpFlow).
  */
 export function useReplyEmail({
   token,
@@ -84,55 +84,3 @@ export function useReplyEmail({
 }
 
 export type ReplyEmail = ReturnType<typeof useReplyEmail>;
-
-export function ReplyEmailField({
-  state,
-  couple,
-}: {
-  state: ReplyEmail;
-  couple: string;
-}) {
-  const { t } = useLocale();
-  if (!state.show) return null;
-  const suggestion = suggestEmailFix(state.email);
-
-  return (
-    <div className="field">
-      <label htmlFor="reply-email">✉️ {t.replyEmail.label}</label>
-      <input
-        id="reply-email"
-        type="email"
-        autoComplete="email"
-        value={state.email}
-        onChange={(e) => state.setEmail(e.target.value)}
-        placeholder={t.replyEmail.placeholder}
-        required={state.required}
-      />
-      {suggestion && (
-        <button
-          type="button"
-          onClick={() => state.setEmail(suggestion)}
-          style={{
-            background: "none",
-            border: "none",
-            padding: "6px 0 0",
-            color: "var(--accent)",
-            fontSize: "13px",
-            textDecoration: "underline",
-            cursor: "pointer",
-          }}
-        >
-          {t.replyEmail.suggestion(suggestion)}
-        </button>
-      )}
-      <p style={{ color: "var(--muted)", fontSize: "12px", margin: "6px 0 0" }}>
-        {state.required ? t.replyEmail.hintRequired(couple) : t.replyEmail.hintOptional(couple)}
-      </p>
-      {state.error && (
-        <p role="alert" style={{ color: T.danger, fontSize: "13px", margin: "6px 0 0" }}>
-          {state.error}
-        </p>
-      )}
-    </div>
-  );
-}

@@ -1,0 +1,180 @@
+/* The signed-in guest hub, in the wedding's stationery. One memorable thing,
+   the invitation under its arch at the top; everything below it is quiet and
+   built from the same few parts:
+   - type: Exmouth only for the couple's names and section titles, EB Garamond
+     for everything else;
+   - colour: paper, ink, and olive as the one accent (sage for hairlines);
+   - one card (.gh-card) for every item: forms, trips, the venue, stays.
+   Colours come from GUEST_DA_VARS (lib/theme) and fonts from
+   components/guest/fonts — this sheet defines neither. */
+
+.gh{
+  --script:var(--font-guest-script),"Snell Roundhand","Apple Chancery",cursive;
+  --serif:var(--font-guest-serif),"EB Garamond",Garamond,Georgia,serif;
+  --top:56px;
+  position:relative;isolation:isolate;min-height:100vh;min-height:100svh;
+  background:var(--da-paper);color:var(--da-ink);
+  font-family:var(--serif);font-size:18px;line-height:1.55;
+  font-variant-numeric:lining-nums;
+  -webkit-font-smoothing:antialiased;
+}
+.gh *{box-sizing:border-box}
+:where(.gh) button{font:inherit;color:inherit}
+.gh::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;opacity:.35;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .27 0 0 0 0 .29 0 0 0 0 .21 0 0 0 .14 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E")}
+.gh :focus-visible{outline:2px solid var(--da-olive);outline-offset:3px;border-radius:4px}
+
+
+/* type */
+.gh-h2{margin:0;font-family:var(--script);font-weight:400;font-size:clamp(42px,10.5vw,56px);line-height:1.05;color:var(--da-olive-deep)}
+.gh-lead{margin:10px auto 0;max-width:30em;font-size:18px;font-style:italic;color:var(--da-ink-soft);text-wrap:pretty}
+.gh-link{border:0;background:none;padding:2px 0;cursor:pointer;font:inherit;font-size:16px;
+  color:var(--da-olive-deep);text-decoration:underline;text-decoration-color:var(--da-sage);text-underline-offset:4px;transition:text-decoration-color .2s}
+.gh-link:hover{text-decoration-color:var(--da-olive)}
+
+/* buttons: one filled action per block, the others outlined */
+.gh-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid var(--da-olive);border-radius:999px;
+  padding:12px 26px;cursor:pointer;background:var(--da-olive);font-size:13px;letter-spacing:.16em;text-transform:uppercase;
+  padding-left:calc(26px + .16em);white-space:nowrap;transition:background .2s,transform .15s}
+.gh .gh-btn{color:var(--da-on-olive)}
+.gh-btn:hover{background:var(--da-olive-deep)}
+.gh-btn:active{transform:scale(.98)}
+.gh-btn--big{padding:16px 30px;padding-left:calc(30px + .16em)}
+.gh .gh-btn--ghost{background:transparent;color:var(--da-olive-deep)}
+.gh-btn--ghost:hover{background:var(--da-sage-pale)}
+.gh-btn--small{padding:9px 18px;padding-left:calc(18px + .16em);font-size:12px}
+
+/* demo band + top bar */
+.gh-demo{background:var(--da-olive);color:var(--da-on-olive);text-align:center;padding:7px 16px;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.gh-top{position:sticky;top:0;z-index:50;height:calc(var(--top) + env(safe-area-inset-top,0px));
+  padding:env(safe-area-inset-top,0px) 16px 0;display:flex;align-items:center;justify-content:space-between;
+  background:var(--da-glass);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);
+  border-bottom:1px solid var(--da-line-soft)}
+.gh-mono{display:inline-flex;align-items:center;gap:12px;font-size:17px;letter-spacing:.2em;color:var(--da-olive-deep)}
+.gh-mono i{display:block;width:1px;height:18px;background:var(--da-sage)}
+.gh-top-actions{display:flex;align-items:center;gap:6px}
+.gh-menu{position:relative}
+.gh-menu-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--da-line);background:transparent;cursor:pointer;display:grid;place-items:center;transition:background .2s}
+.gh-menu-btn:hover,.gh-menu-btn[aria-expanded="true"]{background:var(--da-card)}
+.gh-menu-btn svg{width:18px;height:18px;fill:none;stroke:var(--da-ink);stroke-width:1.3;stroke-linecap:round}
+.gh-menu-pop{position:absolute;right:0;top:48px;min-width:230px;padding:6px;border-radius:8px;background:var(--da-card);
+  border:1px solid var(--da-line);box-shadow:0 18px 40px -18px var(--da-shadow);animation:gh-pop .22s cubic-bezier(.16,1,.3,1) both}
+.gh-menu-pop button{display:block;width:100%;text-align:left;border:0;background:none;cursor:pointer;padding:11px 12px;border-radius:5px;font-size:17px;color:var(--da-ink)}
+.gh-menu-pop button:hover{background:var(--da-sage-pale)}
+.gh-menu-pop button:disabled{opacity:.6;cursor:wait}
+@keyframes gh-pop{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+
+/* hero: the invitation itself, under an arch */
+.gh-hero{min-height:calc(100vh - var(--top));min-height:calc(100svh - var(--top));display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:24px;padding:24px 16px 28px;text-align:center}
+.gh-hero.has-nav{padding-bottom:84px}
+.gh-arch{position:relative;width:min(100%,430px);padding:58px 22px 32px;background:var(--da-card);
+  border:1px solid var(--da-line);border-radius:999px 999px 6px 6px;box-shadow:0 30px 60px -40px var(--da-shadow);
+  animation:gh-rise 1s cubic-bezier(.16,1,.3,1) both}
+.gh-arch::before{content:"";position:absolute;inset:9px;border:1px solid var(--da-sage);border-radius:inherit;pointer-events:none;opacity:.8}
+.gh-branch{display:block;width:138px;height:auto;margin:0 auto 12px;color:var(--da-sage-deep)}
+.gh-greet{margin:0 0 6px;font-style:italic;font-size:19px;color:var(--da-ink-soft)}
+.gh-names{margin:0;font-family:var(--script);font-weight:400;font-size:clamp(50px,14vw,80px);line-height:.95;color:var(--da-olive-deep)}
+.gh-names span{display:block;animation:gh-rise 1.1s cubic-bezier(.16,1,.3,1) both}
+.gh-names span:nth-child(2){animation-delay:.12s}
+.gh-names span:nth-child(3){animation-delay:.24s}
+.gh-amp{font-size:.46em;line-height:1.1;color:var(--da-sage-deep)}
+.gh-invite{margin:16px 0 0;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--da-ink-soft);padding-left:.26em;line-height:1.8}
+.gh-date{margin:14px 0 0;font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:var(--da-ink);padding-left:.2em;line-height:1.7}
+.gh-place{margin:6px 0 0;font-style:italic;font-size:18px;color:var(--da-ink-soft)}
+.gh-count{display:inline-flex;align-items:center;gap:12px;margin:22px 0 0;font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--da-olive)}
+.gh-count::before,.gh-count::after{content:"";width:26px;height:1px;background:var(--da-sage)}
+.gh-hero-cta{animation:gh-rise 1s .35s cubic-bezier(.16,1,.3,1) both}
+.gh-replied{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px}
+.gh-replied-status{font-family:var(--script);font-size:34px;line-height:1.1;color:var(--da-olive-deep)}
+.gh-replied-status.is-declined{color:var(--da-ink-soft)}
+.gh-discover{display:flex;flex-direction:column;align-items:center;gap:10px;border:0;background:none;cursor:pointer;
+  font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--da-ink-soft);padding:6px 6px 0 calc(6px + .3em)}
+.gh-discover i{display:block;width:1px;height:34px;background:currentColor;opacity:.6;transform-origin:top;animation:gh-drip 2.2s cubic-bezier(.6,0,.2,1) infinite}
+@keyframes gh-drip{0%{transform:scaleY(0);opacity:0}35%{opacity:.6}70%{transform:scaleY(1);opacity:.6}100%{transform:scaleY(1);opacity:0}}
+@keyframes gh-rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+
+/* sections */
+.gh-main{padding-bottom:40px}
+.gh-main.has-nav{padding-bottom:110px}
+.gh-section{max-width:600px;margin:0 auto;padding:64px 16px 8px;scroll-margin-top:var(--top)}
+.gh-head{text-align:center;margin-bottom:28px}
+.gh-center{text-align:center;margin-bottom:20px}
+.gh-subhead{margin:36px 0 14px;font-weight:400;font-size:22px;color:var(--da-ink)}
+.gh-empty{text-align:center;font-style:italic;color:var(--da-ink-soft);padding:24px 0}
+
+/* the one card */
+.gh-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.gh-card{background:var(--da-card);border:1px solid var(--da-line-soft);border-radius:12px;padding:18px 20px}
+.gh-card-title{margin:0;font-weight:400;font-size:21px;line-height:1.25;color:var(--da-ink)}
+.gh-card-meta{margin:4px 0 0;font-size:16px;font-style:italic;color:var(--da-ink-soft)}
+.gh-card-body{margin:8px 0 0;font-size:17px}
+.gh-card-actions{margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.gh-status{margin:8px 0 0;font-size:14px;color:var(--da-ink-soft)}
+
+/* forms: a checklist, the same card for each */
+.gh-task{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:14px}
+.gh-task > .gh-task-icon{align-self:start;margin-top:1px}
+.gh-task-text{min-width:0}
+.gh-task-icon{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--da-sage-deep);color:var(--da-on-olive)}
+.gh-task-icon svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.gh-task.is-todo .gh-status{color:var(--da-olive-deep)}
+.gh-task.is-done .gh-task-icon{background:var(--da-olive);border-color:var(--da-olive)}
+.gh-task.is-soon .gh-task-icon{border-style:dashed;border-color:var(--da-faint)}
+.gh-task.is-closed .gh-task-icon{border-color:var(--da-faint);color:var(--da-faint)}
+.gh-task.is-soon .gh-card-title,.gh-task.is-closed .gh-card-title{color:var(--da-ink-soft)}
+@media (max-width:480px){
+  .gh-task{grid-template-columns:auto 1fr;row-gap:12px}
+  .gh-task > .gh-btn{grid-column:2;justify-self:start}
+}
+
+/* the day's schedule */
+.gh-schedule{list-style:none;margin:12px 0 0;padding:0}
+.gh-schedule li{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--da-line-soft)}
+.gh-schedule li:first-child{border-top:0;padding-top:4px}
+.gh-time{font-size:16px;color:var(--da-olive-deep)}
+.gh-what{display:block;font-size:17px}
+.gh-note{display:block;font-size:15px;font-style:italic;color:var(--da-ink-soft)}
+
+/* faq */
+.gh-faq{text-align:left;border-top:1px solid var(--da-line)}
+.gh-faq-item{border-bottom:1px solid var(--da-line)}
+.gh-faq-item summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 2px;cursor:pointer;font-size:20px}
+.gh-faq-item summary::-webkit-details-marker{display:none}
+.gh-faq-item svg{flex:none;width:16px;height:16px;fill:none;stroke:var(--da-olive);stroke-width:1.3;stroke-linecap:round;transition:transform .3s}
+.gh-faq-item[open] svg{transform:rotate(45deg)}
+.gh-faq-item p{margin:0;padding:0 2px 22px;font-size:17px;color:var(--da-ink-soft);animation:gh-rise .4s cubic-bezier(.16,1,.3,1) both}
+
+/* footer */
+.gh-footer{text-align:center;padding:88px 16px 24px}
+.gh-footer .gh-branch{width:120px}
+.gh-footer-script{margin:0 0 6px;font-family:var(--script);font-size:50px;line-height:1.1;color:var(--da-olive-deep)}
+.gh-footer-names{margin:0;font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:var(--da-ink)}
+
+/* section bar */
+.gh-nav{position:fixed;z-index:60;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  display:flex;gap:2px;padding:5px;max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none;
+  border-radius:999px;background:var(--da-glass);border:1px solid var(--da-line);
+  backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);box-shadow:0 14px 30px -18px var(--da-shadow)}
+.gh-nav button{flex:none;border:0;background:transparent;cursor:pointer;border-radius:999px;padding:9px 14px 9px calc(14px + .16em);
+  font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--da-ink-soft);transition:background .25s,color .25s}
+.gh-nav button:hover{color:var(--da-olive-deep)}
+.gh .gh-nav button[aria-current="true"]{background:var(--da-olive);color:var(--da-on-olive)}
+
+/* small dialog (travel contact request) */
+.gh-dialog-scrim{position:fixed;inset:0;z-index:1100;display:grid;place-items:center;padding:20px;background:var(--da-scrim);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:gh-fade .2s ease both}
+.gh-dialog{width:min(100%,400px);padding:24px;background:var(--da-card);border-radius:12px;border:1px solid var(--da-line);
+  box-shadow:0 30px 60px -30px var(--da-shadow);animation:gh-rise .3s cubic-bezier(.16,1,.3,1) both}
+.gh-dialog .gh-card-body{margin:8px 0 20px}
+@keyframes gh-fade{from{opacity:0}to{opacity:1}}
+
+@media (min-width:760px){
+  .gh-top{padding-inline:28px}
+  .gh-arch{padding:84px 40px 48px}
+  .gh-section{padding-top:88px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .gh *,.gh *::before,.gh *::after{animation:none !important;transition:none !important}
+}
