@@ -51,6 +51,7 @@ import { GroupPicker, type GroupChip } from "@/components/GroupPicker";
 import { NewRelativeForm } from "@/components/NewRelativeForm";
 import { RelationshipCombobox } from "@/components/RelationshipCombobox";
 import { SmsInviteModal } from "@/components/SmsInviteModal";
+import { GuestEmailStatus } from "@/components/GuestEmailStatus";
 import { DEFAULT_SMS_TEMPLATE, resolveSmsTemplate } from "@/lib/sms";
 import { DEFAULT_LOCALE, getDictionary, isLocale, type Locale } from "@/lib/i18n";
 import { useLocale } from "@/lib/i18n/client";
@@ -691,6 +692,12 @@ export default function GuestDetailPage() {
   const showLegacyDietaryNote =
     legacyDietaryNote.length > 0 &&
     !primaryStoredAnswers?.["union-rsvp-dietary"];
+  // Same for the note: replies sent before the RSVP asked its questions
+  // through the form keep theirs in rsvps.message.
+  const legacyNote = guest.rsvps?.message?.trim() ?? "";
+  const showLegacyNote =
+    legacyNote.length > 0 &&
+    !primaryStoredAnswers?.["union-rsvp-note"];
 
   return (
     <main className="u-main">
@@ -1001,6 +1008,12 @@ export default function GuestDetailPage() {
           <div style={{ borderTop: `1px solid ${T.line}`, marginTop: 16, paddingTop: 14 }}>
             <div style={{ fontSize: 11.5, color: T.faint }}>Dietary restrictions or allergies</div>
             <div style={{ fontSize: 14, color: T.ink2 }}>{legacyDietaryNote}</div>
+          </div>
+        )}
+        {showLegacyNote && (
+          <div style={{ borderTop: `1px solid ${T.line}`, marginTop: 16, paddingTop: 14 }}>
+            <div style={{ fontSize: 11.5, color: T.faint }}>A note from them</div>
+            <div style={{ fontSize: 14, color: T.ink2 }}>{legacyNote}</div>
           </div>
         )}
         <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
@@ -1408,6 +1421,16 @@ export default function GuestDetailPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+          />
+          <GuestEmailStatus
+            guest={guest}
+            onReset={async () => {
+              const fresh = await fetchGuest(guest.id);
+              if (fresh) {
+                setGuest(fresh);
+                setEmail(fresh.email ?? "");
+              }
+            }}
           />
         </div>
         <div className="field">

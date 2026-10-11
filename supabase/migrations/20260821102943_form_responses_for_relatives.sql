@@ -1,3 +1,7 @@
+-- Recorded from the live database's migration history (supabase_migrations.schema_migrations,
+-- version 20260821102943). It had been applied there without being committed; this file
+-- brings the repo back in line so a fresh database matches production.
+
 -- ============================================================
 -- Answering a form for the people you're bringing
 --

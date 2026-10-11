@@ -279,8 +279,11 @@ export type Database = {
           ceremony_row: number | null
           ceremony_side: string | null
           chosen_locale: string | null
+          welcome_seen_at: string | null
           created_at: string
           email: string | null
+          email_source: string | null
+          email_confirmed_at: string | null
           first_name: string
           guest_group: string | null
           id: string
@@ -305,8 +308,11 @@ export type Database = {
           ceremony_row?: number | null
           ceremony_side?: string | null
           chosen_locale?: string | null
+          welcome_seen_at?: string | null
           created_at?: string
           email?: string | null
+          email_source?: string | null
+          email_confirmed_at?: string | null
           first_name: string
           guest_group?: string | null
           id?: string
@@ -331,8 +337,11 @@ export type Database = {
           ceremony_row?: number | null
           ceremony_side?: string | null
           chosen_locale?: string | null
+          welcome_seen_at?: string | null
           created_at?: string
           email?: string | null
+          email_source?: string | null
+          email_confirmed_at?: string | null
           first_name?: string
           guest_group?: string | null
           id?: string
@@ -624,7 +633,6 @@ export type Database = {
           address_visibility: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children: boolean
           allow_guests_add_partner: boolean
-          allow_name_fallback: boolean
           autonomy: string
           ceremony_reserved_rows: number
           ceremony_rows: number
@@ -632,7 +640,7 @@ export type Database = {
           default_locale: string
           event_date: string | null
           guest_count_target: number | null
-          guest_join_auth_mode: Database["public"]["Enums"]["guest_join_auth_mode"]
+          guest_join_auth_mode: string
           guest_modules: Json
           id: string
           join_code: string
@@ -657,7 +665,6 @@ export type Database = {
           address_visibility?: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
-          allow_name_fallback?: boolean
           autonomy?: string
           ceremony_reserved_rows?: number
           ceremony_rows?: number
@@ -665,7 +672,7 @@ export type Database = {
           default_locale?: string
           event_date?: string | null
           guest_count_target?: number | null
-          guest_join_auth_mode?: Database["public"]["Enums"]["guest_join_auth_mode"]
+          guest_join_auth_mode?: string
           guest_modules?: Json
           id?: string
           join_code?: string
@@ -690,7 +697,6 @@ export type Database = {
           address_visibility?: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
-          allow_name_fallback?: boolean
           autonomy?: string
           ceremony_reserved_rows?: number
           ceremony_rows?: number
@@ -698,7 +704,7 @@ export type Database = {
           default_locale?: string
           event_date?: string | null
           guest_count_target?: number | null
-          guest_join_auth_mode?: Database["public"]["Enums"]["guest_join_auth_mode"]
+          guest_join_auth_mode?: string
           guest_modules?: Json
           id?: string
           join_code?: string
@@ -812,25 +818,25 @@ export type Database = {
         }
       }
       find_duplicate_groups: { Args: { p_wedding_id: string }; Returns: Json }
-      find_guest_by_name: {
+      find_guest_for_join: {
         Args: {
-          p_contact?: string | null
           p_first_name: string
           p_join_code: string
           p_last_name?: string | null
         }
         Returns: Json
       }
-      find_guest_by_contact: {
-        Args: {
-          p_contact: string
-          p_first_name?: string | null
-          p_join_code: string
-        }
+      check_join_email: {
+        Args: { p_email: string; p_guest_id: string; p_join_code: string }
         Returns: Json
       }
+      secure_guest_invitation: {
+        Args: { p_guest_id: string; p_join_code: string }
+        Returns: Json
+      }
+      set_guest_email: { Args: { p_email: string; p_token: string }; Returns: Json }
+      reset_guest_access: { Args: { p_guest_id: string }; Returns: Json }
       claim_guest_access: { Args: { p_guest_id: string }; Returns: Json }
-      complete_guest_email_setup: { Args: { p_token: string }; Returns: Json }
       get_guest_access_options: {
         Args: { p_first_name?: string | null; p_join_code?: string | null }
         Returns: Json
@@ -878,6 +884,10 @@ export type Database = {
         }
         Returns: Json
       }
+      mark_welcome_seen: {
+        Args: { p_token: string }
+        Returns: Json
+      }
       set_guest_locale: {
         Args: { p_locale: string | null; p_token: string }
         Returns: Json
@@ -917,7 +927,6 @@ export type Database = {
     }
     Enums: {
       address_visibility: "hidden" | "area" | "partial" | "full"
-      guest_join_auth_mode: "contact" | "otp"
       guest_relationship_kind: "parent_of" | "partner_of"
       rsvp_status: "pending" | "attending" | "declined"
     }
@@ -1048,7 +1057,6 @@ export const Constants = {
   public: {
     Enums: {
       address_visibility: ["hidden", "area", "partial", "full"],
-      guest_join_auth_mode: ["contact", "otp"],
       guest_relationship_kind: ["parent_of", "partner_of"],
       rsvp_status: ["pending", "attending", "declined"],
     },

@@ -1,4 +1,7 @@
--- Applied migration version: 20260823155007.
+-- Recorded from the live database's migration history (supabase_migrations.schema_migrations,
+-- version 20260823155007). It had been applied there without being committed; this file
+-- brings the repo back in line so a fresh database matches production.
+
 -- RSVP status changes and editable RSVP-form answers used to be separate RPC
 -- calls. A closed form could reject the answers after the status had already
 -- committed. This endpoint owns the whole household submission so PostgreSQL
