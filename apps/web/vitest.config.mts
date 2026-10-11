@@ -12,6 +12,8 @@ export default defineConfig({
     alias: [{ find: /^@\//, replacement: appRoot }],
   },
   test: {
+    // Playwright specs live in e2e/ and run with `npm run test:e2e`.
+    exclude: ["**/node_modules/**", "e2e/**"],
     // Server components are awaited and inspected as element trees rather
     // than rendered, so no DOM is needed.
     environment: "node",

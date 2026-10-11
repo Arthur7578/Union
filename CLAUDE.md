@@ -4,6 +4,10 @@
 
 When the user asks to keep an idea for later, open a GitHub issue and give the user the issue link. Call it an issue, not a pull request.
 
+## End-to-end tests (Playwright)
+
+Browser tests live in `apps/web/e2e/` and run with `npm run test:e2e --workspace apps/web` (CI job `e2e`). They start `next dev` with placeholder Supabase credentials, so they only cover pages that never need data: the `demo` guest link (`/guest/demo`), sign-in and offline. Run `npx playwright install chromium` once locally, or set `E2E_CHROMIUM_PATH` to an existing Chromium. Running them makes `next dev` rewrite `apps/web/next-env.d.ts`; don't commit that change. Before extracting code out of one of the pages below, add a spec for the part you touch when the demo link can reach it.
+
 ## Opportunistic refactors (tech debt)
 
 Three client pages are each one giant component with a lot of local state. Nothing is broken and CI is green, so this is not urgent. Do not split them as a drive-by or in a dedicated refactor: they have no UI tests, so a big restructure is risky.
