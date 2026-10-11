@@ -73,10 +73,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: apps/web
 
-      # The specs only cover pages that never need data (the `demo` guest
-      # link, sign-in, offline), so the config's placeholder Supabase
-      # credentials are enough. Journeys needing a real database come with
-      # seeded data.
+      # No database needed: the specs run against placeholder Supabase
+      # credentials and an in-memory fake (apps/web/e2e/support).
       - run: npm run test:e2e --workspace apps/web
 
       - uses: actions/upload-artifact@v4

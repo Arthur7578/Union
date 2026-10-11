@@ -6,7 +6,15 @@ When the user asks to keep an idea for later, open a GitHub issue and give the u
 
 ## End-to-end tests (Playwright)
 
-Browser tests live in `apps/web/e2e/` and run with `npm run test:e2e --workspace apps/web` (CI job `e2e`). They start `next dev` with placeholder Supabase credentials, so they only cover pages that never need data: the `demo` guest link (`/guest/demo`), sign-in and offline. Run `npx playwright install chromium` once locally, or set `E2E_CHROMIUM_PATH` to an existing Chromium. Running them makes `next dev` rewrite `apps/web/next-env.d.ts`; don't commit that change. Before extracting code out of one of the pages below, add a spec for the part you touch when the demo link can reach it.
+Browser tests live in `apps/web/e2e/` and run with `npm run test:e2e --workspace apps/web` (CI job `e2e`). They start `next dev` with placeholder Supabase credentials and never contact a real database:
+
+- Public pages and the guest portal need no data: the `demo` guest link (`/guest/demo`), sign-in and offline.
+- Organiser pages (`seating`, `groups`, and any `(app)` page) run against `e2e/support/fakeSupabase.ts`, an in-memory stand-in for Supabase served through Playwright's network interception. Import `test` and `expect` from `e2e/support/organiser.ts`: it signs the browser in as the organiser of `WEDDING_FIXTURE` and gives each spec its own database, so a spec can check what a click wrote (`supabase.tables.guests`, …). The fake speaks a small PostgREST subset; if a page asks for something it does not model, the spec fails and lists the request in `supabase.unhandled`. Extend the fake or the fixture rather than loosening that check.
+- Row-level security, constraints and RPCs are not modelled; that stays with `supabase/tests/database`.
+
+Run `npx playwright install chromium` once locally, or set `E2E_CHROMIUM_PATH` to an existing Chromium. Running the specs makes `next dev` rewrite `apps/web/next-env.d.ts`; don't commit that change.
+
+`seating` and `groups` are covered, so run `e2e/seating.spec.ts` and `e2e/groups.spec.ts` before and after extracting code from them (see below). `GuestPortal` is covered through the demo link.
 
 ## Opportunistic refactors (tech debt)
 
