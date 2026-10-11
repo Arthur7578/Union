@@ -1128,6 +1128,7 @@ export const en = {
     confirm: "Confirm",
     finalCheck: "Final check-in",
     questions: (n: number) => `${n} question${n === 1 ? "" : "s"}`,
+    answeredFor: (n: number, total: number) => `Answered for ${n} of ${total}`,
     footer: "See you soon",
   },
 
@@ -1146,6 +1147,8 @@ export const en = {
     typeHere: "Type your answer here…",
     chooseMany: "Choose as many as you like",
     optional: "Optional",
+    forYou: "For you",
+    forPerson: (name: string) => `For ${name}`,
     duration: (minutes: number) => `Takes ${minutes} min`,
     back: "Back to the invitation",
     progress: (step: number, total: number) => `Question ${step} of ${total}`,
@@ -1154,10 +1157,7 @@ export const en = {
   // The RSVP, asked one question at a time.
   rsvpFlow: {
     attend: (name: string) => `${name}, will you join us?`,
-    diet: "Any allergies or dietary needs?",
-    dietHint: "Leave it blank if there's nothing to note.",
     companion: (name: string) => `Will ${name} join us?`,
-    companionDiet: (name: string) => `Any allergies or dietary needs for ${name}?`,
     addSomeone: "Is anyone else coming with you?",
     addPartner: "My partner",
     addChild: "A child",
@@ -1171,7 +1171,6 @@ export const en = {
     addedBy: (name: string) => `added by ${name}`,
     addAnyway: "No, add as new",
     cancel: "Cancel",
-    message: (couple: string) => `A word for ${couple}?`,
     thanksComing: (name: string) => `See you soon, ${name}!`,
     thanksNotComing: (name: string) => `Thank you, ${name}`,
     comingBody: (couple: string) => `${couple} have your reply. We can't wait to celebrate with you.`,

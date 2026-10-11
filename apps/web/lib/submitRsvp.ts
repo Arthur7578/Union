@@ -1,18 +1,20 @@
+import type { FormAnswers } from "@union/shared";
+
 export type AnsweredRsvpStatus = "attending" | "declined";
 export type RsvpStatus = AnsweredRsvpStatus | "pending";
 
-export interface PrimaryRsvpArgs {
+export interface SubmitRsvpResponseArgs {
   p_token: string;
+  p_form_id: string | null;
   p_status: AnsweredRsvpStatus;
-  p_dietary_notes: string | undefined;
-  p_message: string | undefined;
-}
-
-export interface CompanionRsvpArgs {
-  p_token: string;
-  p_companion_guest_id: string;
-  p_status: AnsweredRsvpStatus;
-  p_dietary_notes: string | undefined;
+  p_companions: Array<{
+    guest_id: string;
+    status: AnsweredRsvpStatus;
+  }>;
+  p_answers: Array<{
+    guest_id: string;
+    answers: FormAnswers;
+  }>;
 }
 
 interface RpcResult {
@@ -20,8 +22,7 @@ interface RpcResult {
 }
 
 export interface RsvpRpcClient {
-  submitPrimary(args: PrimaryRsvpArgs): PromiseLike<RpcResult>;
-  submitCompanion(args: CompanionRsvpArgs): PromiseLike<RpcResult>;
+  submitResponse(args: SubmitRsvpResponseArgs): PromiseLike<RpcResult>;
 }
 
 export interface Companion {
@@ -30,44 +31,40 @@ export interface Companion {
 
 export interface CompanionRsvp {
   rsvp_status: RsvpStatus;
-  dietary_notes: string;
 }
 
 export interface SubmitGuestRsvpInput {
   token: string;
+  formId: string | null;
   primaryStatus: AnsweredRsvpStatus;
-  primaryDietary: string;
-  primaryMessage: string;
   companions: Companion[];
   companionsRsvp: Record<string, CompanionRsvp>;
+  responses: Array<{ guestId: string; answers: FormAnswers }>;
 }
 
-function optionalTrimmed(value: string): string | undefined {
-  return value.trim() || undefined;
-}
-
+/** Submit the household's RSVP statuses and the active RSVP form answers in
+ * one database transaction. The RPC owns the transaction boundary; one
+ * rejected closed form or delegated response therefore leaves no status
+ * changes behind. */
 export async function submitGuestRsvp(
   client: RsvpRpcClient,
   input: SubmitGuestRsvpInput,
 ): Promise<void> {
-  const { error: primaryError } = await client.submitPrimary({
-    p_token: input.token,
-    p_status: input.primaryStatus,
-    p_dietary_notes: optionalTrimmed(input.primaryDietary),
-    p_message: optionalTrimmed(input.primaryMessage),
+  const companions = input.companions.flatMap((companion) => {
+    const state = input.companionsRsvp[companion.id];
+    if (!state || state.rsvp_status === "pending") return [];
+    return [{ guest_id: companion.id, status: state.rsvp_status }];
   });
-  if (primaryError) throw primaryError;
 
-  for (const companion of input.companions) {
-    const companionState = input.companionsRsvp[companion.id];
-    if (!companionState || companionState.rsvp_status === "pending") continue;
-
-    const { error: companionError } = await client.submitCompanion({
-      p_token: input.token,
-      p_companion_guest_id: companion.id,
-      p_status: companionState.rsvp_status,
-      p_dietary_notes: optionalTrimmed(companionState.dietary_notes),
-    });
-    if (companionError) throw companionError;
-  }
+  const { error } = await client.submitResponse({
+    p_token: input.token,
+    p_form_id: input.formId,
+    p_status: input.primaryStatus,
+    p_companions: companions,
+    p_answers: input.responses.map((response) => ({
+      guest_id: response.guestId,
+      answers: response.answers,
+    })),
+  });
+  if (error) throw error;
 }

@@ -3,18 +3,18 @@
 import { useState } from "react";
 import type { FormAnswers, RsvpQuestion } from "@union/shared";
 import { Flow, type FlowStep } from "@/components/guest/flow/Flow";
-import { FlowChoices, FlowLongText, FlowText } from "@/components/guest/flow/fields";
 import { OliveBranch } from "@/components/guest/OliveBranch";
 import { useLocale } from "@/lib/i18n/client";
-import { coupleText } from "@/lib/i18n/text";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
+import { questionStep, sendFromLastStep } from "./questionStep";
 
-const answered = (value: FormAnswers[string] | undefined) =>
-  Array.isArray(value) ? value.length > 0 : !!value && !!value.trim();
+/** Someone a form is answered for: the guest, or a relative they're bringing. */
+export type Respondent = { id: string; name: string };
 
 /**
- * A couple's own form, one question at a time. Answers are stored as option
- * ids, so a choice reads back as picked whatever language it was made in.
+ * A couple's own form, one question at a time. A form the couple asks once
+ * per person goes through every question for each person the guest answers
+ * for — themselves first, then each relative who is coming.
  */
 export function CustomFormFlow({
   token,
@@ -23,6 +23,8 @@ export function CustomFormFlow({
   heading,
   subtitle,
   questions,
+  guestId,
+  respondents,
   initial,
   onSaved,
   onClose,
@@ -34,24 +36,37 @@ export function CustomFormFlow({
   /** The couple's line of context, if they wrote one. */
   subtitle?: string;
   questions: RsvpQuestion[];
-  initial: FormAnswers;
-  onSaved: (answers: FormAnswers) => void;
+  guestId: string;
+  /** Just the guest, unless the couple asks this form once per person. */
+  respondents: Respondent[];
+  /** Answers already on record, keyed by the person they're for. */
+  initial: Record<string, FormAnswers>;
+  onSaved: (answers: Record<string, FormAnswers>) => void;
   onClose: () => void;
 }) {
   const { t, locale } = useLocale();
   const copy = t.guestFlow;
-  const [draft, setDraft] = useState<FormAnswers>(initial);
+  const [drafts, setDrafts] = useState<Record<string, FormAnswers>>(initial);
 
+  // One response per person. Sending for everyone, even someone left blank,
+  // is deliberate: an all-optional form sent back empty is "nothing to
+  // declare" and stops nagging the household.
   const send = async () => {
     if (!isDemo) {
-      const { error } = await getBrowserSupabase().rpc("submit_form_response", {
-        p_token: token,
-        p_form_id: formId,
-        p_answers: draft,
-      });
-      if (error) throw error;
+      const supabase = getBrowserSupabase();
+      for (const person of respondents) {
+        const { error } = await supabase.rpc("submit_form_response", {
+          p_token: token,
+          p_form_id: formId,
+          p_answers: drafts[person.id] ?? {},
+          // Omitted for the guest themself, so a form answered once per
+          // invitation goes through exactly the call it always did.
+          ...(person.id === guestId ? {} : { p_for_guest_id: person.id }),
+        });
+        if (error) throw error;
+      }
     }
-    onSaved(draft);
+    onSaved(Object.fromEntries(respondents.map((p) => [p.id, drafts[p.id] ?? {}])));
   };
 
   const steps: FlowStep[] = [
@@ -68,46 +83,25 @@ export function CustomFormFlow({
     },
   ];
 
-  questions.forEach((q, i) => {
-    const value = draft[q.id];
-    const text = typeof value === "string" ? value : "";
-    const last = i === questions.length - 1;
-    const set = (v: string | string[]) => setDraft((prev) => ({ ...prev, [q.id]: v }));
-    const options = (q.options ?? []).map((o) => ({ id: o.id, label: coupleText(o.label, locale) ?? "" }));
-
-    let body: React.ReactNode = null;
-    if (q.kind === "single") {
-      body = <FlowChoices options={options} value={typeof value === "string" ? value : null} onChange={set} advance={!last} />;
-    } else if (q.kind === "multi") {
-      body = (
-        <FlowChoices
-          multiple
-          options={options}
-          value={Array.isArray(value) ? value : []}
-          onChange={(id) => {
-            const list = Array.isArray(draft[q.id]) ? (draft[q.id] as string[]) : [];
-            set(list.includes(id) ? list.filter((o) => o !== id) : [...list, id]);
-          }}
-        />
+  const several = respondents.length > 1;
+  const total = respondents.length * questions.length;
+  respondents.forEach((person, p) => {
+    questions.forEach((q, i) => {
+      steps.push(
+        questionStep({
+          key: `${person.id}-${q.id}`,
+          question: q,
+          answers: drafts[person.id] ?? {},
+          onChange: (next) => setDrafts((prev) => ({ ...prev, [person.id]: next })),
+          locale,
+          copy,
+          person: several ? (person.id === guestId ? copy.forYou : copy.forPerson(person.name)) : undefined,
+          last: p * questions.length + i === total - 1,
+        }),
       );
-    } else if (q.kind === "short") {
-      body = <FlowText value={text} onChange={set} />;
-    } else {
-      body = <FlowLongText value={text} onChange={set} />;
-    }
-
-    steps.push({
-      key: q.id,
-      title: coupleText(q.title, locale) ?? "",
-      description: [q.kind === "multi" ? copy.chooseMany : null, q.required ? null : copy.optional]
-        .filter(Boolean)
-        .join(" · ") || undefined,
-      body,
-      valid: !q.required || answered(value),
-      okLabel: last ? copy.send : undefined,
-      onNext: last ? send : undefined,
     });
   });
+  if (questions.length) sendFromLastStep(steps, send, copy.send);
 
   steps.push({
     key: "end",

@@ -1092,6 +1092,7 @@ export const fr: Dictionary = {
     confirm: "Confirmer",
     finalCheck: "Dernier point",
     questions: (n: number) => `${n} question${n > 1 ? "s" : ""}`,
+    answeredFor: (n: number, total: number) => `Réponses pour ${n} sur ${total}`,
     footer: "À très vite",
   },
 
@@ -1109,6 +1110,8 @@ export const fr: Dictionary = {
     typeHere: "Tape ta réponse ici…",
     chooseMany: "Plusieurs choix possibles",
     optional: "Facultatif",
+    forYou: "Pour toi",
+    forPerson: (name: string) => `Pour ${name}`,
     duration: (minutes: number) => `Prend ${minutes} min`,
     back: "Retour à l'invitation",
     progress: (step: number, total: number) => `Question ${step} sur ${total}`,
@@ -1116,10 +1119,7 @@ export const fr: Dictionary = {
 
   rsvpFlow: {
     attend: (name: string) => `${name}, seras-tu des nôtres ?`,
-    diet: "Une allergie, un régime particulier ?",
-    dietHint: "Laisse vide s'il n'y a rien à signaler.",
     companion: (name: string) => `${name} nous rejoindra ?`,
-    companionDiet: (name: string) => `Une allergie ou un régime pour ${name} ?`,
     addSomeone: "Quelqu'un d'autre t'accompagne ?",
     addPartner: "Mon ou ma partenaire",
     addChild: "Un enfant",
@@ -1133,7 +1133,6 @@ export const fr: Dictionary = {
     addedBy: (name: string) => `ajouté par ${name}`,
     addAnyway: "Non, ajouter quand même",
     cancel: "Annuler",
-    message: (couple: string) => `Un mot pour ${couple} ?`,
     thanksComing: (name: string) => `À très vite, ${name} !`,
     thanksNotComing: (name: string) => `Merci, ${name}`,
     comingBody: (couple: string) => `${couple} ont bien reçu ta réponse. Hâte de fêter ça avec toi.`,

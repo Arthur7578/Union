@@ -19,7 +19,9 @@ vi.mock("@/lib/supabaseClient", () => ({
   getBrowserSupabase: () => ({ rpc: harness.rpc }),
 }));
 
-import { RsvpFlow, type Companion, type RsvpReply } from "./RsvpFlow";
+import type { RsvpQuestion } from "@union/shared";
+import { defaultPrimaryRsvpQuestions } from "@/lib/rsvpQuestions";
+import { RsvpFlow, type Companion, type RsvpAnswers, type RsvpReply } from "./RsvpFlow";
 import type { ReplyEmail } from "./ReplyEmailField";
 
 const guinevere: Companion = {
@@ -32,12 +34,15 @@ const guinevere: Companion = {
   dietary_notes: null,
 };
 
-const pending: RsvpReply = { status: "pending", dietary: "", message: "", companions: {} };
+const pending: RsvpReply = { status: "pending", companions: {} };
 
 function open(
   opts: {
     companions?: Companion[];
-    onSaved?: (r: RsvpReply) => void;
+    questions?: RsvpQuestion[];
+    formId?: string | null;
+    initialAnswers?: RsvpAnswers;
+    onSaved?: (r: RsvpReply, answers: RsvpAnswers) => void;
     onClose?: () => void;
     replyEmail?: ReplyEmail;
   } = {},
@@ -47,6 +52,9 @@ function open(
       <RsvpFlow
         token="tok"
         isDemo={false}
+        formId={opts.formId === undefined ? "form-1" : opts.formId}
+        questions={opts.questions ?? defaultPrimaryRsvpQuestions()}
+        guestId="g-1"
         title="Attendance RSVP"
         subtitle="Let us know."
         labelAttending="Attending"
@@ -55,6 +63,7 @@ function open(
         coupleNames="Maya & Daniel"
         replyEmail={opts.replyEmail}
         initial={pending}
+        initialAnswers={opts.initialAnswers ?? {}}
         companions={opts.companions ?? []}
         canAddPartner={false}
         canAddKids={false}
@@ -112,59 +121,137 @@ describe("RsvpFlow", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Please answer this question.");
   });
 
-  it("goes straight to the note for a guest who declines, and sends it", async () => {
+  it("asks a guest who declines the couple's questions, but not about their diet", async () => {
     const onSaved = vi.fn();
     open({ companions: [guinevere], onSaved });
     enter();
     await question("will you join us");
     fireEvent.keyDown(window, { key: "b" }); // B = Declined
 
-    const note = await question("A word for Maya & Daniel\\?");
+    const note = await question("Anything else you would like us to know\\?");
     expect(note).toBeInTheDocument();
     expect(screen.queryByText(/dietary/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Guinevere/)).not.toBeInTheDocument();
     expect(harness.rpc).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "So sorry!" } });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
 
     expect(await question("Thank you, Arthur")).toBeInTheDocument();
-    expect(harness.rpc).toHaveBeenCalledWith("submit_rsvp", {
+    expect(harness.rpc).toHaveBeenCalledTimes(1);
+    expect(harness.rpc).toHaveBeenCalledWith("submit_rsvp_response", {
       p_token: "tok",
+      p_form_id: "form-1",
       p_status: "declined",
-      p_dietary_notes: undefined,
-      p_message: "So sorry!",
+      p_companions: [],
+      p_answers: [{ guest_id: "g-1", answers: { "union-rsvp-note": "So sorry!" } }],
     });
-    expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ status: "declined", message: "So sorry!" }));
+    expect(onSaved).toHaveBeenCalledWith(
+      { status: "declined", companions: {} },
+      { "g-1": { "union-rsvp-note": "So sorry!" } },
+    );
   });
 
-  it("asks a coming guest about their diet and each companion", async () => {
+  it("asks the couple's questions for the guest and each companion who comes, and sends it all at once", async () => {
     open({ companions: [guinevere] });
     enter();
     await question("will you join us");
     fireEvent.click(screen.getByRole("button", { name: /Attending/ }));
 
-    await question("Any allergies or dietary needs\\?");
+    await question("Any dietary restrictions or allergies\\?");
+    expect(screen.getByText(/For you/)).toBeInTheDocument();
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "Vegetarian" } });
+    enter();
+    await question("Anything else");
     enter();
 
     await question("Will Guinevere join us\\?");
     fireEvent.keyDown(window, { key: "a" });
-    await question("dietary needs for Guinevere");
+    await question("Any dietary restrictions");
+    expect(screen.getByText(/For Guinevere/)).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "No nuts" } });
     enter();
-    await question("A word for");
+    await question("Anything else");
     enter();
 
     await question("See you soon, Arthur!");
-    expect(harness.rpc).toHaveBeenCalledWith("submit_rsvp", expect.objectContaining({
-      p_status: "attending",
-      p_dietary_notes: "Vegetarian",
-    }));
-    expect(harness.rpc).toHaveBeenCalledWith("submit_companion_rsvp", {
+    expect(harness.rpc).toHaveBeenCalledTimes(1);
+    expect(harness.rpc).toHaveBeenCalledWith("submit_rsvp_response", {
       p_token: "tok",
-      p_companion_guest_id: "c-1",
+      p_form_id: "form-1",
       p_status: "attending",
-      p_dietary_notes: undefined,
+      p_companions: [{ guest_id: "c-1", status: "attending" }],
+      p_answers: [
+        { guest_id: "g-1", answers: { "union-rsvp-dietary": "Vegetarian" } },
+        { guest_id: "c-1", answers: { "union-rsvp-dietary": "No nuts" } },
+      ],
     });
+  });
+
+  it("reopens on the answers already sent", async () => {
+    open({ initialAnswers: { "g-1": { "union-rsvp-dietary": "Vegan" } } });
+    enter();
+    await question("will you join us");
+    fireEvent.click(screen.getByRole("button", { name: /Attending/ }));
+    await question("Any dietary restrictions");
+    expect(screen.getByRole("textbox")).toHaveValue("Vegan");
+  });
+
+  it("won't send until a question the couple made required is answered", async () => {
+    const questions: RsvpQuestion[] = [
+      {
+        id: "meal",
+        kind: "single",
+        title: { en: "Fish or meat?" },
+        required: true,
+        options: [
+          { id: "fish", label: { en: "Fish" } },
+          { id: "meat", label: { en: "Meat" } },
+        ],
+      },
+    ];
+    open({ questions });
+    enter();
+    await question("will you join us");
+    fireEvent.click(screen.getByRole("button", { name: /Attending/ }));
+    await question("Fish or meat\\?");
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Please answer this question.");
+    expect(harness.rpc).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /Meat/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await question("See you soon, Arthur!");
+    expect(harness.rpc).toHaveBeenCalledWith(
+      "submit_rsvp_response",
+      expect.objectContaining({ p_answers: [{ guest_id: "g-1", answers: { meal: "meat" } }] }),
+    );
+  });
+
+  it("sends the answer alone when the couple asks no questions", async () => {
+    open({ questions: [] });
+    enter();
+    await question("will you join us");
+    fireEvent.keyDown(window, { key: "b" });
+    expect(await question("Thank you, Arthur")).toBeInTheDocument();
+    expect(harness.rpc).toHaveBeenCalledWith(
+      "submit_rsvp_response",
+      expect.objectContaining({ p_status: "declined", p_answers: [] }),
+    );
+  });
+
+  it("still sends the reply, without answers, when the RSVP form couldn't be loaded", async () => {
+    open({ formId: null });
+    enter();
+    await question("will you join us");
+    fireEvent.keyDown(window, { key: "b" });
+    await question("Anything else");
+    enter();
+    await question("Thank you, Arthur");
+    expect(harness.rpc).toHaveBeenCalledWith(
+      "submit_rsvp_response",
+      expect.objectContaining({ p_form_id: null, p_answers: [] }),
+    );
   });
 
   it("keeps the guest on the last step, with a message, when sending fails", async () => {
@@ -173,10 +260,10 @@ describe("RsvpFlow", () => {
     enter();
     await question("will you join us");
     fireEvent.keyDown(window, { key: "b" });
-    await question("A word for");
+    await question("Anything else");
     enter();
     expect(await screen.findByRole("alert")).toHaveTextContent("Something went wrong");
-    expect(screen.getByRole("heading", { name: /A word for/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Anything else/ })).toBeInTheDocument();
   });
 
   it("does not move on when Shift+Enter breaks a line in the note", async () => {
@@ -184,7 +271,7 @@ describe("RsvpFlow", () => {
     enter();
     await question("will you join us");
     fireEvent.keyDown(window, { key: "b" });
-    await question("A word for");
+    await question("Anything else");
     fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter", shiftKey: true });
     await new Promise((r) => setTimeout(r, 400));
     expect(harness.rpc).not.toHaveBeenCalled();
@@ -196,7 +283,7 @@ describe("RsvpFlow", () => {
     enter();
     await question("will you join us");
     fireEvent.keyDown(window, { key: "b" });
-    await question("A word for");
+    await question("Anything else");
     enter();
     await question("Thank you, Arthur");
     fireEvent.click(screen.getByRole("button", { name: "Back to the invitation" }));
@@ -243,7 +330,11 @@ describe("RsvpFlow", () => {
           guestFirstName="Arthur"
           coupleNames="Maya & Daniel"
           skipIntro
+          formId="form-1"
+          questions={[]}
+          guestId="g-1"
           initial={pending}
+          initialAnswers={{}}
           companions={[]}
           canAddPartner={false}
           canAddKids={false}

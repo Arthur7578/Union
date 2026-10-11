@@ -2,7 +2,23 @@
 -- portal already hides its add-partner control after the first relationship;
 -- this index makes the same rule authoritative for every write path and
 -- closes the race between concurrent RSVP submissions.
-create unique index guest_relationships_one_partner_per_guest
+do $$
+begin
+  if exists (
+    select 1
+    from public.guest_relationships
+    where kind = 'partner_of'
+    group by from_guest
+    having count(*) > 1
+  ) then
+    raise exception using
+      errcode = '23505',
+      message = 'Cannot enforce one partner per guest until duplicate partner links are resolved';
+  end if;
+end;
+$$;
+
+create unique index if not exists guest_relationships_one_partner_per_guest
   on public.guest_relationships (from_guest)
   where kind = 'partner_of';
 

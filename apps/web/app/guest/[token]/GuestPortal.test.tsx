@@ -26,7 +26,15 @@ vi.mock("@/lib/supabaseClient", () => ({
 import { GuestPortal } from "./GuestPortal";
 import type { DBInvitation } from "./page";
 
-const invitation = (opts: { status?: "pending" | "attending"; modules?: Record<string, boolean> } = {}) =>
+const invitation = (
+  opts: {
+    status?: "pending" | "attending";
+    modules?: Record<string, boolean>;
+    companions?: unknown[];
+    customForms?: unknown[];
+    rsvpForm?: unknown;
+  } = {},
+) =>
   ({
     wedding: {
       partner_one: "Maya",
@@ -45,7 +53,9 @@ const invitation = (opts: { status?: "pending" | "attending"; modules?: Record<s
       dietary_notes: "",
       message: "",
     },
-    companions: [],
+    companions: opts.companions ?? [],
+    custom_forms: opts.customForms ?? [],
+    rsvp_form: opts.rsvpForm ?? null,
     permissions: { can_add_partner: false, can_add_kids: false, kids_remaining: 0 },
     self_merge_candidates: [],
   }) as unknown as DBInvitation;
@@ -89,5 +99,80 @@ describe("GuestPortal and the RSVP handoff", () => {
     hub(invitation({ modules: { forms: false } }));
     await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByRole("heading", { name: rsvpQuestion })).not.toBeInTheDocument();
+  });
+});
+
+describe("GuestPortal's forms checklist", () => {
+  const guinevere = {
+    id: "c-1",
+    first_name: "Guinevere",
+    last_name: null,
+    age_years: null,
+    relationship: "partner_of",
+    rsvp_status: "attending",
+    dietary_notes: null,
+  };
+  const dinner = (perPerson: boolean) => ({
+    id: "form-1",
+    title: "Dinner",
+    guest_copy: null,
+    questions: [],
+    published: true,
+    opens_at: null,
+    closes_at: null,
+    per_person: perPerson,
+    answers: {},
+    companion_answers: {},
+  });
+
+  it("shows how far a per-person form has got, and keeps it to do until everyone is answered for", async () => {
+    hub(invitation({ status: "attending", companions: [guinevere], customForms: [dinner(true)] }));
+    expect(await screen.findByText("Answered for 1 of 2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reply" })).toBeInTheDocument();
+  });
+
+  it("counts a form asked once per invitation as done once the guest has answered", async () => {
+    hub(invitation({ status: "attending", companions: [guinevere], customForms: [dinner(false)] }));
+    await screen.findByText("Dinner");
+    expect(screen.queryByText(/Answered for/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reply" })).not.toBeInTheDocument();
+  });
+});
+
+describe("GuestPortal and the RSVP's opening window", () => {
+  const rsvpForm = (window: { published?: boolean; opens_at?: string | null; closes_at?: string | null }) => ({
+    id: "rsvp-1",
+    title: null,
+    subtitle: null,
+    label_attending: null,
+    label_declined: null,
+    published: window.published ?? true,
+    opens_at: window.opens_at ?? null,
+    closes_at: window.closes_at ?? null,
+    questions: [],
+    answers: null,
+    companion_answers: null,
+  });
+
+  it("offers no reply once the couple has closed the RSVP", async () => {
+    markRsvpHandoff("tok");
+    hub(invitation({ rsvpForm: rsvpForm({ closes_at: "2000-01-01T00:00:00Z" }) }));
+    expect(await screen.findByText("Closed")).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByRole("button", { name: "Respond to the invitation" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: rsvpQuestion })).not.toBeInTheDocument();
+  });
+
+  it("keeps a guest's answer on show, without an edit link, after it closes", async () => {
+    hub(invitation({ status: "attending", rsvpForm: rsvpForm({ closes_at: "2000-01-01T00:00:00Z" }) }));
+    expect(await screen.findByText("You'll be with us")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Edit/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Change my reply" })).not.toBeInTheDocument();
+  });
+
+  it("says when the RSVP isn't open yet", async () => {
+    hub(invitation({ rsvpForm: rsvpForm({ opens_at: "2999-01-01T00:00:00Z" }) }));
+    expect(await screen.findByText("Coming soon")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Respond to the invitation" })).not.toBeInTheDocument();
   });
 });
