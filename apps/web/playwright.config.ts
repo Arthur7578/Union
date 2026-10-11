@@ -35,7 +35,11 @@ export default defineConfig({
     launchOptions: process.env.E2E_CHROMIUM_PATH ? { executablePath: process.env.E2E_CHROMIUM_PATH } : {},
   },
   webServer: {
-    command: `npm run build && npm run start -- -p ${port}`,
+    // CI builds in a step of its own (as the ci job does) and sets
+    // E2E_PREBUILT; locally the server builds first.
+    command: process.env.E2E_PREBUILT
+      ? `npm run start -- -p ${port}`
+      : `npm run build && npm run start -- -p ${port}`,
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,

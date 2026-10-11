@@ -91,7 +91,16 @@ jobs:
             echo "E2E_SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
           } >> "$GITHUB_ENV"
 
+      # Built the same way as in the ci job, but pointing at the local Supabase
+      # (NEXT_PUBLIC_ values are fixed at build time).
+      - run: npm run build --workspace apps/web
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.E2E_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ env.E2E_SUPABASE_ANON_KEY }}
+
       - run: npm run e2e --workspace apps/web
+        env:
+          E2E_PREBUILT: "1"
 
       - uses: actions/upload-artifact@v4
         if: failure()
