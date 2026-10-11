@@ -158,7 +158,12 @@ export default async function GuestExperiencePage({
         supabase.rpc("get_guest_email_status", { p_token: token }),
       ]);
 
-      if (!invitationResult.error && invitationResult.data) {
+      if (
+        !invitationResult.error &&
+        invitationResult.data &&
+        !emailStatusResult.error &&
+        emailStatusResult.data
+      ) {
         const base = invitationResult.data as unknown as DBInvitation;
         const rsvpForms = !rsvpFormsResult.error && rsvpFormsResult.data
           ? rsvpFormsResult.data as unknown as {
@@ -199,13 +204,9 @@ export default async function GuestExperiencePage({
                   }
                 : null,
         };
-        if (!emailStatusResult.error && emailStatusResult.data) {
-          emailMissing = Boolean(
-            (emailStatusResult.data as { email_missing?: boolean }).email_missing,
-          );
-        } else if (emailStatusResult.error) {
-          console.error("Failed to load guest email status:", emailStatusResult.error);
-        }
+        emailMissing = Boolean(
+          (emailStatusResult.data as { email_missing?: boolean }).email_missing,
+        );
       }
     } catch (e) {
       console.error("Failed to load invitation from Supabase:", e);
