@@ -45,6 +45,10 @@ function open(
     onSaved?: (r: RsvpReply, answers: RsvpAnswers) => void;
     onClose?: () => void;
     replyEmail?: ReplyEmail;
+    /** Whether the wedding offers "maybe" (off unless a test says so). */
+    allowMaybe?: boolean;
+    labelMaybe?: string;
+    initial?: RsvpReply;
   } = {},
 ) {
   return render(
@@ -58,11 +62,13 @@ function open(
         title="Attendance RSVP"
         subtitle="Let us know."
         labelAttending="Attending"
+        labelMaybe={opts.labelMaybe ?? "Not sure yet"}
         labelDeclined="Declined"
+        allowMaybe={opts.allowMaybe ?? false}
         guestFirstName="Arthur"
         coupleNames="Maya & Daniel"
         replyEmail={opts.replyEmail}
-        initial={pending}
+        initial={opts.initial ?? pending}
         initialAnswers={opts.initialAnswers ?? {}}
         companions={opts.companions ?? []}
         canAddPartner={false}
@@ -326,7 +332,9 @@ describe("RsvpFlow", () => {
           title="Attendance RSVP"
           subtitle="Let us know."
           labelAttending="Attending"
+          labelMaybe="Not sure yet"
           labelDeclined="Declined"
+          allowMaybe={false}
           guestFirstName="Arthur"
           coupleNames="Maya & Daniel"
           skipIntro
@@ -346,5 +354,131 @@ describe("RsvpFlow", () => {
     );
     expect(screen.getByRole("heading", { name: /Arthur, will you join us\?/ })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Attendance RSVP" })).not.toBeInTheDocument();
+  });
+});
+
+describe("RsvpFlow and the optional maybe answer", () => {
+  const buttons = () => screen.getAllByRole("button").map((b) => b.textContent ?? "");
+
+  it("offers only yes and no until the couple turns maybe on", async () => {
+    open({ allowMaybe: false });
+    enter();
+    await question("will you join us");
+
+    expect(screen.getByRole("button", { name: /Attending/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Declined/ })).toBeVisible();
+    expect(screen.queryByRole("button", { name: /Not sure yet/ })).not.toBeInTheDocument();
+  });
+
+  it("offers a third reply between yes and no, in the couple's own wording", async () => {
+    open({ allowMaybe: true, labelMaybe: "Hoping to!" });
+    enter();
+    await question("will you join us");
+
+    const order = buttons().filter((label) => /Attending|Hoping to!|Declined/.test(label));
+    expect(order.map((l) => l.replace(/^[A-Z]\s*/, ""))).toEqual(["Attending", "Hoping to!", "Declined"]);
+    expect(screen.queryByRole("button", { name: /Not sure yet/ })).not.toBeInTheDocument();
+  });
+
+  it("sends a maybe as a maybe, and still asks about diet and the companions", async () => {
+    // Asking again once a guest firms up is what makes people stop replying,
+    // so a guest who might come is asked everything one who is coming is.
+    const onSaved = vi.fn();
+    open({ allowMaybe: true, companions: [guinevere], onSaved });
+    enter();
+    await question("will you join us");
+    fireEvent.click(screen.getByRole("button", { name: /Not sure yet/ }));
+
+    await question("Any dietary restrictions or allergies\\?");
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Vegetarian" } });
+    enter();
+    await question("Anything else");
+    enter();
+
+    await question("Will Guinevere join us\\?");
+    fireEvent.click(screen.getByRole("button", { name: /Not sure yet/ }));
+    await question("Any dietary restrictions");
+    expect(screen.getByText(/For Guinevere/)).toBeInTheDocument();
+    enter();
+    await question("Anything else");
+    enter();
+
+    await question("Thank you, Arthur");
+    expect(screen.getByText(/Change it here as soon as you know/)).toBeInTheDocument();
+    expect(harness.rpc).toHaveBeenCalledTimes(1);
+    expect(harness.rpc).toHaveBeenCalledWith("submit_rsvp_response", {
+      p_token: "tok",
+      p_form_id: "form-1",
+      p_status: "maybe",
+      p_companions: [{ guest_id: "c-1", status: "maybe" }],
+      p_answers: [
+        { guest_id: "g-1", answers: { "union-rsvp-dietary": "Vegetarian" } },
+        { guest_id: "c-1", answers: {} },
+      ],
+    });
+    expect(onSaved).toHaveBeenCalledWith(
+      { status: "maybe", companions: { "c-1": { rsvp_status: "maybe" } } },
+      expect.anything(),
+    );
+  });
+
+  it("asks a guest to pick a firm answer when the couple turned maybe off after they gave one", async () => {
+    // Their reply stays on file untouched — converting it would invent a
+    // commitment — but the server won't take a maybe again, so the guest is
+    // asked for a yes or a no rather than being let through to an error.
+    open({ allowMaybe: false, initial: { status: "maybe", companions: {} } });
+    enter();
+    await question("will you join us");
+
+    expect(screen.getByText(/The couple now need a firm answer/)).toBeInTheDocument();
+    // Nothing is shown as picked, and there is no button to move on with.
+    expect(screen.queryByRole("button", { name: "OK" })).not.toBeInTheDocument();
+    enter();
+    expect(screen.getByRole("heading", { name: /will you join us/ })).toBeInTheDocument();
+    expect(harness.rpc).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /Attending/ }));
+    expect(await question("Any dietary restrictions")).toBeInTheDocument();
+  });
+
+  it("doesn't say a firm answer is needed to a guest who hasn't replied yet", async () => {
+    open({ allowMaybe: false });
+    enter();
+    await question("will you join us");
+    expect(screen.queryByText(/firm answer/)).not.toBeInTheDocument();
+  });
+
+  it("still saves a reply when a companion's old maybe is no longer accepted", async () => {
+    // The household goes in one transaction, and the server refuses a maybe
+    // the wedding no longer accepts. Re-sending Guinevere's old one would have
+    // failed the whole reply — Arthur's answer included — so it stays on file
+    // and only what the guest actually answered goes out.
+    open({
+      allowMaybe: false,
+      companions: [guinevere],
+      initial: { status: "attending", companions: { "c-1": { rsvp_status: "maybe" } } },
+    });
+    enter();
+    await question("will you join us");
+    enter(); // keeps the answer already given
+    await question("Any dietary restrictions");
+    enter();
+    await question("Anything else");
+    enter();
+
+    await question("Will Guinevere join us\\?"); // she isn't asked again, only offered
+    enter();
+    await question("Any dietary restrictions"); // she may still come, so she is still asked
+    expect(screen.getByText(/For Guinevere/)).toBeInTheDocument();
+    enter();
+    await question("Anything else");
+    enter();
+
+    await question("See you soon, Arthur!");
+    expect(harness.rpc).toHaveBeenCalledTimes(1);
+    expect(harness.rpc).toHaveBeenCalledWith(
+      "submit_rsvp_response",
+      expect.objectContaining({ p_status: "attending", p_companions: [] }),
+    );
   });
 });

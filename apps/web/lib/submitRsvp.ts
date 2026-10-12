@@ -1,7 +1,7 @@
-import type { FormAnswers } from "@union/shared";
+import { isRsvpAnswerAllowed } from "@union/shared";
+import type { AnsweredRsvpStatus, FormAnswers, RsvpStatus } from "@union/shared";
 
-export type AnsweredRsvpStatus = "attending" | "declined";
-export type RsvpStatus = AnsweredRsvpStatus | "pending";
+export type { AnsweredRsvpStatus, RsvpStatus };
 
 export interface SubmitRsvpResponseArgs {
   p_token: string;
@@ -40,6 +40,8 @@ export interface SubmitGuestRsvpInput {
   companions: Companion[];
   companionsRsvp: Record<string, CompanionRsvp>;
   responses: Array<{ guestId: string; answers: FormAnswers }>;
+  /** Whether this wedding accepts "maybe" (`weddings.allow_rsvp_maybe`). */
+  allowMaybe: boolean;
 }
 
 /** Submit the household's RSVP statuses and the active RSVP form answers in
@@ -52,7 +54,12 @@ export async function submitGuestRsvp(
 ): Promise<void> {
   const companions = input.companions.flatMap((companion) => {
     const state = input.companionsRsvp[companion.id];
-    if (!state || state.rsvp_status === "pending") return [];
+    // Only replies this wedding accepts go out. A companion still sitting at
+    // "maybe" after the couple turned the option off keeps that reply on file
+    // (it is never rewritten for them), but sending it again would make the
+    // server refuse it — and, since the whole household is one transaction,
+    // lose everything else the guest just answered with it.
+    if (!state || !isRsvpAnswerAllowed(state.rsvp_status, input.allowMaybe)) return [];
     return [{ guest_id: companion.id, status: state.rsvp_status }];
   });
 

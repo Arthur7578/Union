@@ -6,6 +6,7 @@ import {
   canAddChildren,
   canAddPartner as mayAddPartner,
   enabledGuestModules,
+  mayAttend,
   normalizeQuestions,
 } from "@union/shared";
 import type { FormAnswers, GuestModuleKey } from "@union/shared";
@@ -15,7 +16,7 @@ import { useReplayWelcome, useWelcomeResponses } from "@/components/guest/Welcom
 import { formatGuestAddress } from "@/lib/guestAddress";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { useLocale } from "@/lib/i18n/client";
-import { coupleText, coupleTextOr, rsvpDefaults } from "@/lib/i18n/text";
+import { coupleText, coupleTextOr, rsvpDefaults, rsvpWording } from "@/lib/i18n/text";
 import { takeRsvpHandoff } from "@/lib/rsvpHandoff";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { GUEST_DA_VARS } from "@/lib/theme";
@@ -242,11 +243,11 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   // written one, else Union's default copy in that language. Wording is the
   // *only* thing an override can change: which rsvp_status an answer submits
   // is fixed in code.
-  const primaryDefaults = rsvpDefaults(locale, "primary");
-  const rsvpTitle = coupleTextOr(invitation.rsvp_form?.title, locale, primaryDefaults.title);
-  const rsvpSubtitle = coupleTextOr(invitation.rsvp_form?.subtitle, locale, primaryDefaults.subtitle);
-  const labelAttending = coupleTextOr(invitation.rsvp_form?.label_attending, locale, primaryDefaults.labelAttending);
-  const labelDeclined = coupleTextOr(invitation.rsvp_form?.label_declined, locale, primaryDefaults.labelDeclined);
+  const { title: rsvpTitle, subtitle: rsvpSubtitle, labelAttending, labelMaybe, labelDeclined } =
+    rsvpWording(invitation.rsvp_form, locale);
+  // "Maybe" is the couple's decision. A server that doesn't send the flag (one
+  // older than the column) reads as off: the two-answer RSVP guests had before.
+  const allowMaybe = invitation.wedding.allow_rsvp_maybe === true;
 
   // The optional late "still coming?" touchpoint — shown only when the couple
   // has published it and it's within its window.
@@ -289,7 +290,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
     return [
       self,
       ...companions
-        .filter((c) => reply.companions[c.id]?.rsvp_status === "attending")
+        .filter((c) => mayAttend(reply.companions[c.id]?.rsvp_status))
         .map((c) => ({ id: c.id, name: c.first_name })),
     ];
   };
@@ -303,7 +304,9 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   const activeRsvpFormId = activeRsvpForm?.id || null;
 
   const statusLabel = (status: RsvpReply["status"]) =>
-    status === "attending" ? labelAttending : status === "declined" ? labelDeclined : hub.statusPending;
+    status === "pending"
+      ? hub.statusPending
+      : { attending: labelAttending, maybe: labelMaybe, declined: labelDeclined }[status];
 
   const scrollTo = (key: GuestModuleKey) =>
     document.getElementById(sectionId(key))?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -454,7 +457,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
             ) : (
               <p className="gh-replied">
                 <span className={`gh-replied-status is-${reply.status}`}>
-                  {reply.status === "attending" ? hub.coming : hub.notComing}
+                  {reply.status === "attending" ? hub.coming : reply.status === "maybe" ? hub.maybe : hub.notComing}
                 </span>
                 {rsvpLive ? (
                   <button type="button" className="gh-link" onClick={() => openRsvp("primary")}>
@@ -528,7 +531,9 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
           title={rsvpOpen === "reconfirmation" ? reconfirmTitle : rsvpTitle}
           subtitle={rsvpOpen === "reconfirmation" ? reconfirmSubtitle : rsvpSubtitle}
           labelAttending={labelAttending}
+          labelMaybe={labelMaybe}
           labelDeclined={labelDeclined}
+          allowMaybe={allowMaybe}
           guestFirstName={guestFirstName}
           coupleNames={coupleNames}
           replyEmail={replyEmail}

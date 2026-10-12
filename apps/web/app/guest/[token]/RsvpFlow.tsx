@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { FormAnswers, RsvpQuestion } from "@union/shared";
+import { isRsvpAnswerAllowed, mayAttend, rsvpAnswers as offeredAnswers } from "@union/shared";
+import type { AnsweredRsvpStatus, FormAnswers, RsvpQuestion } from "@union/shared";
 import { Flow, useFlow, type FlowStep } from "@/components/guest/flow/Flow";
 import { FlowChoices, FlowText } from "@/components/guest/flow/fields";
 import { OliveBranch } from "@/components/guest/OliveBranch";
@@ -112,7 +113,9 @@ export function RsvpFlow({
   title,
   subtitle,
   labelAttending,
+  labelMaybe,
   labelDeclined,
+  allowMaybe,
   guestFirstName,
   coupleNames,
   replyEmail,
@@ -136,7 +139,10 @@ export function RsvpFlow({
   title: string;
   subtitle: string;
   labelAttending: string;
+  labelMaybe: string;
   labelDeclined: string;
+  /** Whether this wedding offers "maybe" as an answer (`weddings.allow_rsvp_maybe`). */
+  allowMaybe: boolean;
   guestFirstName: string;
   coupleNames: string;
   /** The guest's email, asked here when the couple has none (see ReplyEmailField). */
@@ -222,8 +228,16 @@ export function RsvpFlow({
   };
 
   const coming = status === "attending";
+  // A guest who might come is asked what one who is coming is asked — the
+  // dietary question included — and answers for their companions too: asking
+  // again once they firm up is what makes people stop replying.
+  const mayCome = mayAttend(status);
+  // Whether what is picked is something this wedding accepts. Not the same as
+  // "something is picked": a stored "maybe" is still there after the couple
+  // turns the option off, and sending it again would be refused.
+  const answerable = isRsvpAnswerAllowed(status, allowMaybe);
   // Everyone the couple's questions are asked of, and which questions: all of
-  // them for each person who is coming; for a guest who declines, everything
+  // them for each person who may come; for a guest who declines, everything
   // but the dietary question, so they can still leave the couple a word.
   const respondents: Array<{ id: string; name: string; questions: RsvpQuestion[] }> =
     status === "pending"
@@ -232,17 +246,17 @@ export function RsvpFlow({
           {
             id: guestId,
             name: guestFirstName,
-            questions: coming ? questions : questions.filter((q) => q.id !== RSVP_DIETARY_QUESTION_ID),
+            questions: mayCome ? questions : questions.filter((q) => q.id !== RSVP_DIETARY_QUESTION_ID),
           },
-          ...(coming
+          ...(mayCome
             ? companions
-                .filter((c) => reply(c.id).rsvp_status === "attending")
+                .filter((c) => mayAttend(reply(c.id).rsvp_status))
                 .map((c) => ({ id: c.id, name: c.first_name, questions }))
             : []),
         ];
 
   const send = async (): Promise<void | false> => {
-    if (status === "pending") return false;
+    if (!isRsvpAnswerAllowed(status, allowMaybe)) return false;
     const asked = respondents.filter((r) => r.questions.length > 0);
     if (!isDemo) {
       const supabase = getBrowserSupabase();
@@ -252,6 +266,7 @@ export function RsvpFlow({
           token,
           formId,
           primaryStatus: status,
+          allowMaybe,
           companions,
           companionsRsvp: replies,
           responses: formId ? asked.map((r) => ({ guestId: r.id, answers: answers[r.id] ?? {} })) : [],
@@ -261,14 +276,17 @@ export function RsvpFlow({
     onSaved({ status, companions: replies }, answers);
   };
 
-  const answerOptions = [
-    { id: "attending", label: labelAttending },
-    { id: "declined", label: labelDeclined },
-  ];
+  // One lookup so a button's wording can never end up on a different answer.
+  const answerLabel: Record<AnsweredRsvpStatus, string> = {
+    attending: labelAttending,
+    maybe: labelMaybe,
+    declined: labelDeclined,
+  };
+  const answerOptions = offeredAnswers(allowMaybe).map((id) => ({ id, label: answerLabel[id] }));
   // Say whose answer each question is for whenever the guest may answer for
   // others too — decided up front, so their own questions are labelled even
   // before a companion has said they're coming.
-  const several = coming && companions.length > 0 && questions.length > 0;
+  const several = mayCome && companions.length > 0 && questions.length > 0;
   // A question step for one person; `last` is settled once every step is known.
   const questionsFor = (person: (typeof respondents)[number]) =>
     person.questions.map((q) => (last: boolean) =>
@@ -341,22 +359,24 @@ export function RsvpFlow({
     {
       key: "attend",
       title: copy.attend(guestFirstName),
+      // A stored "maybe" the couple no longer accepts: say why nothing is picked.
+      description: status === "maybe" && !answerable ? copy.firmAnswerNeeded : undefined,
       body: (
         <FlowChoices
           options={answerOptions}
-          value={status === "pending" ? null : status}
+          value={answerable ? status : null}
           onChange={(id) => setStatus(id as RsvpStatus)}
         />
       ),
-      valid: status !== "pending",
-      hideOk: status === "pending",
+      valid: answerable,
+      hideOk: !answerable,
     },
   );
 
   const self = respondents.find((r) => r.id === guestId);
   if (self) steps.push(...questionsFor(self));
 
-  if (coming) {
+  if (mayCome) {
     for (const c of companions) {
       const r = reply(c.id);
       steps.push({
@@ -454,8 +474,16 @@ export function RsvpFlow({
     key: "end",
     kind: "end",
     before: <OliveBranch className="tf-ornament" />,
-    title: coming ? copy.thanksComing(guestFirstName) : copy.thanksNotComing(guestFirstName),
-    description: coming ? copy.comingBody(coupleNames) : copy.notComingBody(coupleNames),
+    title: coming
+      ? copy.thanksComing(guestFirstName)
+      : status === "maybe"
+        ? copy.thanksMaybe(guestFirstName)
+        : copy.thanksNotComing(guestFirstName),
+    description: coming
+      ? copy.comingBody(coupleNames)
+      : status === "maybe"
+        ? copy.maybeBody(coupleNames)
+        : copy.notComingBody(coupleNames),
     okLabel: flowCopy.back,
     onNext: () => {
       onClose();

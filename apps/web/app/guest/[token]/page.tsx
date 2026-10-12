@@ -29,6 +29,9 @@ export type DBInvitation = Invitation & {
     title: LocalizedText | null;
     subtitle: LocalizedText | null;
     label_attending: LocalizedText | null;
+    /** Only read when the wedding has `allow_rsvp_maybe` on — the wording for
+     *  a button that isn't being shown is kept, not applied. */
+    label_maybe: LocalizedText | null;
     label_declined: LocalizedText | null;
     published: boolean;
     opens_at: string | null;
@@ -105,6 +108,9 @@ export default async function GuestExperiencePage({
           area: null,
           country: "United States",
         },
+        // The demo couple runs with "maybe" on, so the third reply button is
+        // part of what the demo actually demonstrates.
+        allow_rsvp_maybe: true,
       },
       guest: {
         id: "demo-guest-id",
@@ -139,6 +145,7 @@ export default async function GuestExperiencePage({
         title: null,
         subtitle: null,
         label_attending: null,
+        label_maybe: null,
         label_declined: null,
         published: true,
         opens_at: null,

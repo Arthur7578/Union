@@ -28,7 +28,9 @@ import type { DBInvitation } from "./page";
 
 const invitation = (
   opts: {
-    status?: "pending" | "attending";
+    status?: "pending" | "attending" | "maybe" | "declined";
+    allowMaybe?: boolean;
+    labelMaybe?: string;
     modules?: Record<string, boolean>;
     companions?: unknown[];
     customForms?: unknown[];
@@ -44,6 +46,7 @@ const invitation = (
       address_visibility: "hidden",
       address: null,
       guest_modules: opts.modules,
+      allow_rsvp_maybe: opts.allowMaybe,
     },
     guest: {
       id: "g-1",
@@ -55,7 +58,7 @@ const invitation = (
     },
     companions: opts.companions ?? [],
     custom_forms: opts.customForms ?? [],
-    rsvp_form: opts.rsvpForm ?? null,
+    rsvp_form: opts.labelMaybe ? { ...(opts.rsvpForm as object), label_maybe: { en: opts.labelMaybe } } : (opts.rsvpForm ?? null),
     permissions: { can_add_partner: false, can_add_kids: false, kids_remaining: 0 },
     self_merge_candidates: [],
   }) as unknown as DBInvitation;
@@ -99,6 +102,34 @@ describe("GuestPortal and the RSVP handoff", () => {
     hub(invitation({ modules: { forms: false } }));
     await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByRole("heading", { name: rsvpQuestion })).not.toBeInTheDocument();
+  });
+});
+
+describe("GuestPortal and a maybe reply", () => {
+  it("says a maybe is a maybe on the hub, not that the guest can't make it", async () => {
+    hub(invitation({ status: "maybe", allowMaybe: true }));
+    expect(await screen.findByText("You're not sure yet")).toBeInTheDocument();
+    expect(screen.queryByText("You won't be able to make it")).not.toBeInTheDocument();
+  });
+
+  it("still shows a maybe given before the couple turned the option off", async () => {
+    // Existing replies are never rewritten, so the hub keeps reporting it.
+    hub(invitation({ status: "maybe", allowMaybe: false }));
+    expect(await screen.findByText("You're not sure yet")).toBeInTheDocument();
+  });
+
+  it("offers the third reply in the RSVP only when the couple turned it on", async () => {
+    markRsvpHandoff("tok");
+    hub(invitation({ allowMaybe: true, labelMaybe: "Hoping to!" }));
+    expect(await screen.findByRole("heading", { name: rsvpQuestion })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Hoping to!/ })).toBeInTheDocument();
+  });
+
+  it("keeps the RSVP to yes and no when the flag is missing, as on a server older than the option", async () => {
+    markRsvpHandoff("tok");
+    hub(invitation());
+    expect(await screen.findByRole("heading", { name: rsvpQuestion })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Not sure yet/ })).not.toBeInTheDocument();
   });
 });
 
