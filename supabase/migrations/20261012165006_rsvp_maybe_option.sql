@@ -1,7 +1,7 @@
 -- ============================================================
 -- Union v1 · The "maybe" RSVP option, opt-in per wedding
 --
--- 20261011120000 widened public.rsvp_status with 'maybe'. This
+-- 20261012164927 widened public.rsvp_status with 'maybe'. This
 -- migration decides who gets to use it, and what happens when
 -- they do.
 --
