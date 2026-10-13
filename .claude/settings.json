@@ -17,7 +17,11 @@
       "mcp__Supabase__search_docs",
       "Bash(npm run lint)",
       "Bash(npm run typecheck)",
-      "Bash(npm run test)"
+      "Bash(npm run test)",
+      "Bash(npm test)",
+      "mcp__github__pull_request_read",
+      "mcp__github__get_job_logs",
+      "mcp__github__actions_list"
     ]
   }
 }
