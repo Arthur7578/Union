@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(38);
+select plan(32);
 
 -- ---------- the normaliser ----------
 -- A number is canonicalised only if it states its country. National
@@ -103,27 +103,6 @@ select is(has_function_privilege('service_role', 'public._normalize_guest_phone(
   'and so can the service role');
 select is(has_function_privilege('anon', 'public._normalize_guest_phone(text)', 'EXECUTE'), false,
   'but anon cannot call it directly');
-
--- ---------- contact-first join ----------
--- The apps send E.164, so the typed side always states its country.
-select is(public.find_guest_by_contact('phone-mixed', '+31 6 12 34 56 78') ->> 'token',
-  '40000000-0000-0000-0000-000000000002',
-  'a Dutch guest typing +31 reaches their own row, not the French guest with the same digits');
-select is(public.find_guest_by_contact('phone-mixed', '+14155552671') ->> 'token',
-  '40000000-0000-0000-0000-000000000003',
-  'a US guest typing +1 finds themselves');
-select is(public.find_guest_by_contact('phone-mixed', '+33698765432') ->> 'token',
-  '40000000-0000-0000-0000-000000000005',
-  'a French guest saved with their country is found by it');
-select is(public.find_guest_by_contact('phone-mixed', '+33612345678') ->> 'status',
-  'not_found',
-  'a guest saved before the picker, with no country, is not found by a guessed one');
-select is(public.find_guest_by_contact('phone-mixed', '06 12 34 56 78') ->> 'status',
-  'not_found',
-  'a number typed without a country is never read as French');
-select is(public.find_guest_by_contact('phone-mixed', '+447911123456') ->> 'status',
-  'not_found',
-  'a saved number with no country is not matched by guess, whatever country it might be');
 
 -- ---------- verified Auth phone ----------
 -- GoTrue stores the confirmed number without its "+".

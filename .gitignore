@@ -43,3 +43,7 @@ yarn-error.*
 
 # Contentsquare wizard
 .cs-wizard/
+
+# playwright
+apps/web/test-results/
+apps/web/playwright-report/

@@ -79,10 +79,12 @@ export const fr: Dictionary = {
     countdownDays: "jours restants",
     rsvpOverview: "Récapitulatif RSVP",
     attending: "Présents",
+    maybe: "Peut-être",
     awaiting: "En attente",
     declined: "Absents",
     invitedParties: "Foyers invités",
     confirmedHeadcount: "Total confirmé",
+    expectedHeadcount: "Total attendu",
   },
 
   guests: {
@@ -91,6 +93,7 @@ export const fr: Dictionary = {
     addGuest: "Ajouter un invité",
     status: {
       attending: "Vient",
+      maybe: "Pas encore sûr·e",
       declined: "Ne vient pas",
       pending: "En attente",
     },
