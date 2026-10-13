@@ -6,7 +6,9 @@ When the user asks to keep an idea for later, open a GitHub issue and give the u
 
 ## Database migrations
 
-Schema changes go through the `/new-migration <snake_case_name>` skill, which creates the timestamped file in `supabase/migrations/` and a matching pgTAP test in `supabase/tests/database/`. It is user-only, so you cannot run it. Whenever a task needs a migration, stop before writing any SQL and tell the user to run `/new-migration <name>`, suggesting a name. Do not hand-write migration files or apply anything to a remote project unless the user asks.
+Whenever a task needs a schema change, write the migration yourself, without being asked: a timestamped file in `supabase/migrations/` and a matching pgTAP test in `supabase/tests/database/`. Follow the conventions of the user's `/new-migration` skill (you cannot invoke it, it is user-only): `YYYYMMDDHHMMSS_<name>.sql` sorting after the latest migration, a header comment saying what changes and why, RLS and explicit policies on new tables, `search_path` set and `execute` granted narrowly on `security definer` functions, and a test covering the allowed and the denied path.
+
+Never apply a migration to a Supabase project (`apply_migration`, DDL through `execute_sql`, `merge_branch`) unless the user explicitly asks in that session. Writing the files is automatic; running them is the user's call. When you hand over, say that the migration has not been applied.
 
 ## Opportunistic refactors (tech debt)
 
