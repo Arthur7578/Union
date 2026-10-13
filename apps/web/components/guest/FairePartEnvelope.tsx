@@ -279,7 +279,7 @@ export function FairePartEnvelope({
                   </section>
                   <section className="side verso" data-id="verso" hidden>
                     <div className="verso-in">
-                      <p className="greet line">{hasName ? t.greetingNamed(guestName!) : t.greetingAnon}</p>
+                      {hasName ? <p className="greet line">{t.greetingNamed(guestName!)}</p> : null}
                       <p className="line">{t.moments}</p>
                       <p className="line">{t.invite(routeText, dates?.days ?? null)}</p>
                       <p className="line">

@@ -1,24 +1,29 @@
 import type { Invitation } from "@union/shared";
 
-/** The most precise place name a guest may read, and which kind it is. */
+/** The place for the faire-part: the couple's own phrase, or a name to build one from. */
 export interface GuestZone {
-  kind: "area" | "city";
+  /** "phrase": already worded by the couple ("dans le Var"); the others are names
+   *  the card puts a preposition in front of. */
+  kind: "phrase" | "area" | "city";
   name: string;
 }
 
 /**
- * The "zone" of the wedding for the faire-part ("En Provence"): the area, or
- * when there is none the city, and nothing when neither is disclosed. The
- * country alone is never enough, and the postal code and street are too
- * precise for a headline. Like `formatGuestAddress`, this follows the
- * visibility tier so a hidden address can never leak into the card.
+ * The "zone" of the wedding for the faire-part ("En Provence"): what the
+ * couple wrote for it, else the area, else the city, and nothing when none of
+ * them is disclosed. The country alone is never enough, and the postal code and
+ * street are too precise for a headline. Like `formatGuestAddress`, this
+ * follows the visibility tier so a hidden address can never leak into the card.
  */
 export function guestZone(
-  wedding: Pick<Invitation["wedding"], "address" | "address_visibility">,
+  wedding: Pick<Invitation["wedding"], "address" | "address_visibility" | "zone">,
 ): GuestZone | null {
+  const tier = wedding.address_visibility;
+  if (tier === "hidden") return null;
+  const phrase = wedding.zone?.trim();
+  if (phrase) return { kind: "phrase", name: phrase };
   const address = wedding.address;
   if (!address) return null;
-  const tier = wedding.address_visibility;
   const area = tier === "area" ? address.area?.trim() : "";
   if (area) return { kind: "area", name: area };
   const city = tier === "partial" || tier === "full" ? address.city?.trim() : "";

@@ -47,6 +47,7 @@ function WeddingSettingsForm({
   );
   const [addressCity, setAddressCity] = useState(wedding.address_city ?? "");
   const [addressArea, setAddressArea] = useState(wedding.address_area ?? "");
+  const [addressZone, setAddressZone] = useState(wedding.address_zone ?? "");
   const [addressCountry, setAddressCountry] = useState(
     wedding.address_country ?? "",
   );
@@ -116,6 +117,7 @@ function WeddingSettingsForm({
         address_postal_code: addressPostalCode.trim() || null,
         address_city: addressCity.trim() || null,
         address_area: addressArea.trim() || null,
+        address_zone: addressZone.trim() || null,
         address_country: addressCountry.trim() || null,
         address_visibility: addressVisibility,
         guest_count_target: guestTarget.trim() ? parseInt(guestTarget, 10) : null,
@@ -292,6 +294,20 @@ function WeddingSettingsForm({
           />
           <div style={{ fontSize: 12, color: T.faint, marginTop: 6 }}>
             {t.account.addressAreaHint}
+          </div>
+        </div>
+        <div className="field">
+          <label htmlFor="az">{t.account.addressZoneLabel}</label>
+          <input
+            id="az"
+            type="text"
+            value={addressZone}
+            onChange={(e) => setAddressZone(e.target.value)}
+            placeholder={t.account.addressZonePlaceholder}
+            maxLength={80}
+          />
+          <div style={{ fontSize: 12, color: T.faint, marginTop: 6 }}>
+            {t.account.addressZoneHint}
           </div>
         </div>
         <div className="field">

@@ -32,6 +32,7 @@ const wedding = (patch: Partial<Wedding> = {}): Wedding => ({
   address_line: null,
   address_postal_code: null,
   address_visibility: "hidden",
+  address_zone: null,
   allow_guests_add_children: true,
   allow_guests_add_partner: false,
   allow_rsvp_maybe: false,

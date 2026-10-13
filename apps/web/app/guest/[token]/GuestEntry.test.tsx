@@ -73,7 +73,7 @@ describe("GuestEntry", () => {
   it("shows the invitation, then the hub, with no identity step", async () => {
     entry({ seen: false });
 
-    expect(screen.getByText("Dear Claire,")).toBeInTheDocument();
+    expect(document.querySelector(".greet")).toHaveTextContent("Claire,");
     expect(screen.queryByText("the hub")).not.toBeInTheDocument();
 
     fireEvent.click(respond());

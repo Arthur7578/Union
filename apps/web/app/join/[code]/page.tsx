@@ -19,6 +19,8 @@ export interface JoinWeddingPreview {
   /** Last day of a multi-day wedding. Absent until the server sends it. */
   event_end_date?: string | null;
   venue_name: string | null;
+  /** The place as the couple words it ("en Provence"); absent until the server sends it. */
+  zone?: string | null;
   guest_join_auth_mode: GuestJoinAuthMode;
   /** The language this couple writes their guest-facing content in. Used as
    *  the floor for the page's language, behind anything the visitor's own
@@ -122,7 +124,7 @@ export default async function JoinPage({
         partnerTwo={preview.partner_two}
         eventDate={preview.event_date}
         eventEndDate={preview.event_end_date}
-        zone={guestZone({ address_visibility: preview.address_visibility, address: preview.address })}
+        zone={guestZone({ address_visibility: preview.address_visibility, address: preview.address, zone: preview.zone })}
       >
         <JoinExperience code={code} preview={preview} />
       </WelcomeGate>

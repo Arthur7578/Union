@@ -631,6 +631,7 @@ export type Database = {
           address_line: string | null
           address_postal_code: string | null
           address_visibility: Database["public"]["Enums"]["address_visibility"]
+          address_zone: string | null
           allow_guests_add_children: boolean
           allow_guests_add_partner: boolean
           allow_rsvp_maybe: boolean
@@ -664,6 +665,7 @@ export type Database = {
           address_line?: string | null
           address_postal_code?: string | null
           address_visibility?: Database["public"]["Enums"]["address_visibility"]
+          address_zone?: string | null
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
           allow_rsvp_maybe?: boolean
@@ -697,6 +699,7 @@ export type Database = {
           address_line?: string | null
           address_postal_code?: string | null
           address_visibility?: Database["public"]["Enums"]["address_visibility"]
+          address_zone?: string | null
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
           allow_rsvp_maybe?: boolean

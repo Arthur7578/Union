@@ -56,7 +56,7 @@ describe("GuestWelcome", () => {
     );
     expect(back().textContent).toBe(
       [
-        "Cher(e) Léa,",
+        "Léa,",
         "Il y a des moments que l'on a particulièrement envie de partager avec les personnes qui comptent pour nous.",
         "Nous serions très heureux de te retrouver en Provence, du 11 au 13 juin 2027, pour célébrer notre mariage et partager trois jours de fête, de joie et de beaux souvenirs.",
         "Nous espérons de tout cœur que tu pourras être des nôtres. Nous avons hâte de vivre ces beaux moments avec toi.",
@@ -66,10 +66,16 @@ describe("GuestWelcome", () => {
     );
   });
 
-  it("greets everyone on a group link, where no guest is named", () => {
+  it("opens straight on the text on a group link, where no guest is named", () => {
     welcome({}, "fr");
-    expect(back()).toHaveTextContent("Chers amis,");
-    expect(back()).not.toHaveTextContent("Cher(e)");
+    expect(document.querySelector(".greet")).toBeNull();
+    expect(back().firstElementChild).toHaveTextContent(/^Il y a des moments/);
+  });
+
+  it("uses the couple's own wording of the place, as it is", () => {
+    welcome({ eventDate: "2027-06-12", zone: { kind: "phrase", name: "dans le Var" } }, "fr");
+    expect(screen.getByText("Dans le Var ♡")).toBeInTheDocument();
+    expect(back()).toHaveTextContent("te retrouver dans le Var, le 12 juin 2027, pour célébrer");
   });
 
   it("leaves out what is not known, without leaving a gap in the sentence", () => {

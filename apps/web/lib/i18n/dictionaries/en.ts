@@ -615,6 +615,10 @@ export const en = {
     addressAreaLabel: "Area",
     addressAreaPlaceholder: "OR",
     addressAreaHint: "State, region, department, or anything else worth mentioning.",
+    addressZoneLabel: "Place on the invitation card",
+    addressZonePlaceholder: "in Provence",
+    addressZoneHint:
+      "Written as it reads in the sentence (\"in Provence\", \"in the Var\"): it appears on the card as \"In Provence ♡\". Left blank, the card uses the area, then the city. Not shown when the address is hidden.",
     addressCountryLabel: "Country",
     addressCountryPlaceholder: "United States",
     addressVisibilityLabel: "What guests see",
@@ -749,10 +753,10 @@ export const en = {
     titleAnon: ["You have received", "an invitation"],
     // Front of the card: names, then this line, then the dates and the zone.
     joy: "are delighted to invite you to celebrate their wedding",
-    inPlace: (_kind: "area" | "city", name: string) => `in ${name}`,
+    inPlace: (kind: "phrase" | "area" | "city", name: string) => (kind === "phrase" ? name : `in ${name}`),
     // Back of the card.
-    greetingNamed: (name: string) => `Dear ${name},`,
-    greetingAnon: "Dear friends,",
+    // Only for a guest named on a personal link; a group link opens straight on the text.
+    greetingNamed: (name: string) => `${name},`,
     moments: "There are moments we especially want to share with the people who matter to us.",
     // `route` is the already-phrased place and dates ("in Provence, from June 11 to 13, 2027,"), or
     // empty; `days` is how long the wedding lasts, or null when no date is known.

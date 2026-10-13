@@ -50,6 +50,7 @@ export async function createWedding(
     | "address_postal_code"
     | "address_city"
     | "address_area"
+    | "address_zone"
     | "address_country"
     | "address_visibility"
     | "default_locale"
@@ -71,6 +72,8 @@ export async function createWedding(
     address_postal_code?: string | null;
     address_city?: string | null;
     address_area?: string | null;
+    /** The place as the couple words it on the faire-part ("en Provence"). */
+    address_zone?: string | null;
     address_country?: string | null;
     address_visibility?: Wedding["address_visibility"];
     /** The language this couple's guest-facing content is written for. Left

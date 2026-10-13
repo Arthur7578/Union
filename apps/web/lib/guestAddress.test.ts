@@ -47,6 +47,28 @@ describe("formatGuestAddress", () => {
 });
 
 describe("guestZone", () => {
+  it("is the couple's own phrase first, whatever the tier", () => {
+    for (const tier of ["area", "partial", "full"] as const) {
+      expect(guestZone({ address_visibility: tier, address, zone: " dans le Var " })).toEqual({
+        kind: "phrase",
+        name: "dans le Var",
+      });
+    }
+  });
+
+  it("ignores a blank phrase and falls back to the area, then the city", () => {
+    expect(guestZone({ address_visibility: "area", address, zone: "  " })?.name).toBe("Provence");
+    expect(guestZone({ address_visibility: "partial", address, zone: null })?.name).toBe("Trets");
+  });
+
+  it("is nothing when hidden, even with a phrase", () => {
+    expect(guestZone({ address_visibility: "hidden", address: null, zone: "en Provence" })).toBeNull();
+  });
+
+  it("is the phrase even when no address is disclosed to build from", () => {
+    expect(guestZone({ address_visibility: "area", address: null, zone: "en Provence" })?.name).toBe("en Provence");
+  });
+
   // The RPC only sends the area at the area tier and the city at the
   // partial and full tiers; these are the payloads it produces.
   const areaTier = { ...address, line: null, postal_code: null, city: null };

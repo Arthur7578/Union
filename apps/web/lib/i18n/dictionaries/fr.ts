@@ -592,6 +592,10 @@ export const fr: Dictionary = {
     addressAreaLabel: "Région",
     addressAreaPlaceholder: "Oregon",
     addressAreaHint: "Région, département, état, ou toute autre précision utile.",
+    addressZoneLabel: "Lieu sur le carton d'invitation",
+    addressZonePlaceholder: "en Provence",
+    addressZoneHint:
+      "À écrire comme dans la phrase (« en Provence », « dans le Var ») : il apparaît sur le carton sous la forme « En Provence ♡ ». Laissé vide, le carton utilise la région, puis la ville. Non affiché si l'adresse est masquée.",
     addressCountryLabel: "Pays",
     addressCountryPlaceholder: "États-Unis",
     addressVisibilityLabel: "Ce que les invités voient",
@@ -723,10 +727,11 @@ export const fr: Dictionary = {
     titleAnon: ["Tu as reçu", "une invitation"],
     // Recto : les prénoms, puis cette ligne, puis les dates et la zone.
     joy: "ont la joie de t'inviter à célébrer leur mariage",
-    inPlace: (kind: "area" | "city", name: string) => `${kind === "area" ? "en" : "à"} ${name}`,
+    inPlace: (kind: "phrase" | "area" | "city", name: string) =>
+      kind === "phrase" ? name : `${kind === "area" ? "en" : "à"} ${name}`,
     // Verso.
-    greetingNamed: (name: string) => `Cher(e) ${name},`,
-    greetingAnon: "Chers amis,",
+    // Seulement pour un invité nommé (lien personnel) ; un lien de groupe commence directement par le texte.
+    greetingNamed: (name: string) => `${name},`,
     moments:
       "Il y a des moments que l'on a particulièrement envie de partager avec les personnes qui comptent pour nous.",
     // `route` est le lieu et les dates déjà tournés en phrase (« en Provence, du 11 au 13 juin 2027, »),

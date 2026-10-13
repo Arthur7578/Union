@@ -183,6 +183,9 @@ export type Invitation = {
      *  single day: the server does not send it yet. */
     event_end_date?: string | null;
     venue_name: string | null;
+    /** The place as the couple words it ("en Provence"); null when blank or the
+     *  address is hidden. Absent from a server older than the column. */
+    zone?: string | null;
     address_visibility: "hidden" | "area" | "partial" | "full";
     /** Null when the couple has chosen to keep the venue fully hidden. */
     address: {
