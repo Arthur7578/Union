@@ -216,6 +216,8 @@ export const en = {
       formsSub: "RSVP, and any forms you add",
       smsTemplateLabel: "SMS template",
       smsTemplateSub: "Sender + invite copy",
+      fairePartLabel: "Invitation card",
+      fairePartSub: "The text of the card",
       groupLinkLabel: "Group link",
       groupLinkSub: "One link for a WhatsApp group",
       modulesLabel: "Invitation modules",
@@ -615,10 +617,6 @@ export const en = {
     addressAreaLabel: "Area",
     addressAreaPlaceholder: "OR",
     addressAreaHint: "State, region, department, or anything else worth mentioning.",
-    addressZoneLabel: "Place on the invitation card",
-    addressZonePlaceholder: "in Provence",
-    addressZoneHint:
-      "Written as it reads in the sentence (\"in Provence\", \"in the Var\"): it appears on the card as \"In Provence ♡\". Left blank, the card uses the area, then the city. Not shown when the address is hidden.",
     addressCountryLabel: "Country",
     addressCountryPlaceholder: "United States",
     addressVisibilityLabel: "What guests see",
@@ -751,24 +749,25 @@ export const en = {
   welcome: {
     titleNamed: "you have received an invitation",
     titleAnon: ["You have received", "an invitation"],
-    // Front of the card: names, then this line, then the dates and the zone.
-    joy: "are delighted to invite you to celebrate their wedding",
-    inPlace: (kind: "phrase" | "area" | "city", name: string) => (kind === "phrase" ? name : `in ${name}`),
-    // Back of the card.
-    // Only for a guest named on a personal link; a group link opens straight on the text.
-    greetingNamed: (name: string) => `${name},`,
-    moments: "There are moments we especially want to share with the people who matter to us.",
-    // `route` is the already-phrased place and dates ("in Provence, from June 11 to 13, 2027,"), or
-    // empty; `days` is how long the wedding lasts, or null when no date is known.
-    invite: (route: string, days: number | null) => {
-      const words = ["", "a", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
-      const span =
-        days === null ? "moments" : days === 1 ? "a day" : `${words[days] || days} days`;
-      return `We would be so happy to see you${route ? ` ${route}` : ""} to celebrate our wedding and share ${span} of celebration, joy and beautiful memories.`;
+    // The card's default wording, one template per slot (see lib/fairePart.ts). The couple can
+    // replace any of them from the faire-part editor.
+    copy: {
+      front_intro: "are delighted to invite you to celebrate their wedding",
+      front_dates: "{{dates}}",
+      front_place: "[In {{area}} ♡][In {{city}} ♡]",
+      greeting: "{{guest_first_name}},",
+      moments: "There are moments we especially want to share with the people who matter to us.",
+      invite:
+        "We would be so happy to see you[ in {{area}},][ in {{city}},][ {{dates_spoken}},] to celebrate our wedding and share {{duration}} of celebration, joy and beautiful memories.",
+      hope: "We truly hope you will be able to join us. We can't wait to live these beautiful moments with you.",
+      closing: "With all our love,",
+      signature: "{{couple}}",
     },
-    hope: "We truly hope you will be able to join us.",
-    lookingForward: "We can't wait to live these beautiful moments with you.",
-    closing: "With all our love,",
+    // How long the wedding lasts, as the {{duration}} field reads; null when no date is known.
+    duration: (days: number | null) => {
+      const words = ["", "a", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+      return days === null ? "moments" : days === 1 ? "a day" : `${words[days] || days} days`;
+    },
     hint: "Tap the seal or scroll",
     open: "Open the envelope",
     flipCard: "Turn the card over",
@@ -1091,6 +1090,67 @@ export const en = {
         },
       ] as { text: string; sub: string; done: boolean }[],
     },
+  },
+
+  // Faire-part editor (organiser): the wording of the invitation card
+  fairePartEditor: {
+    title: "Invitation card",
+    subtitle: "The text of the card your guests open first, in each language. Anything you leave alone keeps the default wording.",
+    front: "Front of the card",
+    back: "Back of the card",
+    slots: {
+      front_intro: "Under your names",
+      front_dates: "Dates",
+      front_place: "Place",
+      greeting: "Greeting",
+      moments: "Opening",
+      invite: "Invitation",
+      hope: "Hope",
+      closing: "Sign-off",
+      signature: "Signature",
+    },
+    languageLabel: "Language you are writing",
+    translateTo: (language: string) => `Translate into ${language}`,
+    translating: "Translating…",
+    translateNothing: (language: string) => `Nothing to translate: every line you changed already has your own ${language} wording.`,
+    translateNoSource: (language: string) => `Change a line in ${language} first: lines left on their default wording already exist in both languages.`,
+    translateDone: (count: number, language: string) =>
+      `Filled ${count} ${language} line${count === 1 ? "" : "s"}. They are marked "Auto": read them, then save.`,
+    auto: "Auto",
+    reset: "Back to the default",
+    defaultWording: "Default wording",
+    unknownField: (names: string) => `Not a field: ${names}`,
+    fieldsTitle: "Fields",
+    fieldsHint: "Click a field to put it in the line you are writing. Each guest sees their own values.",
+    fieldsSyntax:
+      "{{city|area}} takes the first one that has a value. [ in {{area}}] is an optional part: it disappears if a field inside is empty. A line with an empty field outside brackets disappears whole.",
+    fields: {
+      guest_first_name: "The guest's first name (personal links only)",
+      partner_one: "First partner",
+      partner_two: "Second partner",
+      couple: "Both names",
+      dates: "Dates, short",
+      dates_spoken: "Dates, in a sentence",
+      duration: "How long it lasts",
+      venue: "Venue name",
+      area: "Area",
+      city: "City",
+      country: "Country",
+    },
+    previewTitle: "Preview",
+    previewFront: "Front",
+    previewBack: "Back",
+    previewAs: "Previewed as",
+    previewPersonal: "A guest with a personal link",
+    previewGroup: "A guest on the group link",
+    previewName: "Guest's first name",
+    previewNote: "With your wedding's real names, date and place, as far as your address visibility lets guests see them.",
+    save: "Save",
+    saving: "Saving…",
+    saved: "Saved",
+    saveError: "Couldn't save.",
+    translateError: "Couldn't translate the card.",
+    signedOut: "You're signed out.",
   },
 
   // SMS invitation template (settings page)

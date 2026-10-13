@@ -116,3 +116,10 @@
   .fp-root .arrive,.fp-root .shade,.fp-root .hint i,.fp-root .ping{animation:none}
   .fp-root .track{height:auto}
 }
+
+/* The organiser's preview: one side of the card laid out flat, outside the opening sequence. The wrapper is the
+   container the card's type scales with (the sequence sizes it from the stage instead). */
+.fp-root.fp-preview{background:transparent;container-type:inline-size}
+.fp-preview .card{position:relative;left:auto;top:auto;width:100%;height:auto;aspect-ratio:1/.685;margin:0;transform:none;
+  font-size:calc(100cqw / 26);box-shadow:0 2px 3px rgba(52,44,30,.22),0 14px 28px -10px rgba(52,44,30,.28)}
+.fp-preview .verso-in{transform:none}

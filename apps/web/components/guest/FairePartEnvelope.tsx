@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLocale } from "@/lib/i18n/client";
 import { T, alpha } from "@/lib/theme";
-import type { GuestZone } from "@/lib/guestAddress";
-import type { WeddingDateText } from "@/lib/weddingDates";
+import type { FairePartLines } from "@/lib/fairePart";
+import { FairePartFaces } from "./FairePartFaces";
 import { sprig } from "./olive";
 import "./FairePartEnvelope.css";
 
@@ -14,10 +14,8 @@ interface FairePartEnvelopeProps {
   guestName?: string | null;
   partnerOne?: string | null;
   partnerTwo?: string | null;
-  /** The wedding's dates, already written for the guest's language ("11 — 13 juin 2027"). */
-  dates?: WeddingDateText | null;
-  /** Where the wedding is, as far as the couple discloses it ("Provence", else the city). */
-  zone?: GuestZone | null;
+  /** What the card says, already written for this guest (see `fairePartLines`). */
+  lines: FairePartLines;
   onRespond: () => void;
 }
 
@@ -25,7 +23,6 @@ const clamp = (v: number) => Math.max(0, Math.min(1, v));
 const seg = (p: number, a: number, b: number) => clamp((p - a) / (b - a));
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 const SPRIG = sprig(6, 18, 54, 8, 5, 11, 4);
 const SHADE_A = sprig(200, 0, 40, 150, 9, 46, 30) + sprig(190, 10, 110, 190, 7, 40, -20);
@@ -40,20 +37,13 @@ export function FairePartEnvelope({
   guestName,
   partnerOne,
   partnerTwo,
-  dates,
-  zone,
+  lines,
   onRespond,
 }: FairePartEnvelopeProps) {
   const { t: dict } = useLocale();
   const t = dict.welcome;
   const rootRef = useRef<HTMLDivElement>(null);
   const hasName = Boolean(guestName);
-
-  // "en Provence, du 11 au 13 juin 2027," — whichever of the two is known.
-  const where = zone ? t.inPlace(zone.kind, zone.name) : null;
-  const route = [where, dates?.spoken].filter(Boolean);
-  const routeText = route.join(", ") + (route.length > 1 ? "," : "");
-  const signature = [partnerOne, partnerTwo].filter(Boolean).join(" & ");
 
   useEffect(() => {
     const root = rootRef.current;
@@ -65,7 +55,6 @@ export function FairePartEnvelope({
     const flipper = $("flipper"), cta = $("cta"), head = $("head"), hint = $("hint");
     const recto = $("recto"), verso = $("verso"), fIn = $("fIn"), fOut = $("fOut"), skip = $("skip");
     const envs = [...root.querySelectorAll<HTMLElement>(".env")];
-    const lines = [...verso.querySelectorAll<HTMLElement>(".line")];
 
     let L = { sh: 0, W: 0, H: 0, ch: 0, cardTop: 0, envTop: 0, s0: 1, yIn: 0, yUp: 0 };
     let target = 0, shown = 0, raf = 0, auto = 0, flipTo = 0, flipCur = 0;
@@ -123,7 +112,7 @@ export function FairePartEnvelope({
       flipper.style.filter = `brightness(${1 - 0.16 * Math.abs(Math.sin((a * Math.PI) / 180))})`;
       recto.hidden = back;
       verso.hidden = !back;
-      lines.forEach((el, i) => el.style.setProperty("--o", String(seg(p, 0.84 + i * 0.012, 0.91 + i * 0.012))));
+      [...verso.querySelectorAll<HTMLElement>(".line")].forEach((el, i) => el.style.setProperty("--o", String(seg(p, 0.84 + i * 0.012, 0.91 + i * 0.012))));
       flipper.classList.toggle("can", p > 0.98);
       flipper.tabIndex = p > 0.98 ? 0 : -1;
 
@@ -263,32 +252,7 @@ export function FairePartEnvelope({
 
               <article className="card" data-id="card">
                 <div className="flipper" data-id="flipper" role="button" tabIndex={-1} aria-label={t.flipCard}>
-                  <section className="side recto" data-id="recto">
-                    <div>
-                      <h2 className="names">
-                        {partnerOne}
-                        {partnerOne && partnerTwo ? <b>&amp;</b> : null}
-                        {partnerTwo}
-                      </h2>
-                      <p className="joy">{t.joy}</p>
-                    </div>
-                    <div>
-                      {dates ? <p className="when">{dates.short}</p> : null}
-                      {where ? <p className="where">{upperFirst(where)} ♡</p> : null}
-                    </div>
-                  </section>
-                  <section className="side verso" data-id="verso" hidden>
-                    <div className="verso-in">
-                      {hasName ? <p className="greet line">{t.greetingNamed(guestName!)}</p> : null}
-                      <p className="line">{t.moments}</p>
-                      <p className="line">{t.invite(routeText, dates?.days ?? null)}</p>
-                      <p className="line">
-                        {t.hope} {t.lookingForward}
-                      </p>
-                      <p className="line">{t.closing}</p>
-                      {signature ? <p className="sign line">{signature}</p> : null}
-                    </div>
-                  </section>
+                  <FairePartFaces partnerOne={partnerOne} partnerTwo={partnerTwo} lines={lines} />
                 </div>
               </article>
 

@@ -1,34 +1,25 @@
 import type { Invitation } from "@union/shared";
-
-/** The place for the faire-part: the couple's own phrase, or a name to build one from. */
-export interface GuestZone {
-  /** "phrase": already worded by the couple ("dans le Var"); the others are names
-   *  the card puts a preposition in front of. */
-  kind: "phrase" | "area" | "city";
-  name: string;
-}
+import type { GuestPlace } from "./fairePart";
 
 /**
- * The "zone" of the wedding for the faire-part ("En Provence"): what the
- * couple wrote for it, else the area, else the city, and nothing when none of
- * them is disclosed. The country alone is never enough, and the postal code and
- * street are too precise for a headline. Like `formatGuestAddress`, this
- * follows the visibility tier so a hidden address can never leak into the card.
+ * The parts of the address a faire-part may mention ({{venue}}, {{area}},
+ * {{city}}, {{country}}). Like `formatGuestAddress`, this follows the
+ * visibility tier, so a hidden address can never leak into the card and a
+ * tier never shows more than the couple chose. The street and postal code are
+ * too precise for a card and are not offered.
  */
-export function guestZone(
-  wedding: Pick<Invitation["wedding"], "address" | "address_visibility" | "zone">,
-): GuestZone | null {
+export function guestPlaceFields(
+  wedding: Pick<Invitation["wedding"], "address" | "address_visibility"> & { venue_name?: string | null },
+): GuestPlace {
   const tier = wedding.address_visibility;
-  if (tier === "hidden") return null;
-  const phrase = wedding.zone?.trim();
-  if (phrase) return { kind: "phrase", name: phrase };
   const address = wedding.address;
-  if (!address) return null;
-  const area = tier === "area" ? address.area?.trim() : "";
-  if (area) return { kind: "area", name: area };
-  const city = tier === "partial" || tier === "full" ? address.city?.trim() : "";
-  if (city) return { kind: "city", name: city };
-  return null;
+  const text = (v: string | null | undefined) => v?.trim() ?? "";
+  return {
+    venue: tier === "full" ? text(wedding.venue_name) : "",
+    area: address && tier === "area" ? text(address.area) : "",
+    city: address && (tier === "partial" || tier === "full") ? text(address.city) : "",
+    country: address && tier !== "hidden" ? text(address.country) : "",
+  };
 }
 
 /**

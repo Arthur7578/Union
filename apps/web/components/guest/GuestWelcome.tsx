@@ -1,9 +1,9 @@
 "use client";
 
+import type { FairePartCopy } from "@union/shared";
 import { FairePartEnvelope } from "@/components/guest/FairePartEnvelope";
-import type { GuestZone } from "@/lib/guestAddress";
+import { fairePartLines, type GuestPlace } from "@/lib/fairePart";
 import { useLocale } from "@/lib/i18n/client";
-import { weddingDateText } from "@/lib/weddingDates";
 
 interface GuestWelcomeProps {
   /** Only for a personal link; a group link greets no one by name. */
@@ -13,8 +13,10 @@ interface GuestWelcomeProps {
   eventDate?: string | null;
   /** Last day of a wedding that lasts more than one; absent for a single day. */
   eventEndDate?: string | null;
-  /** Exactly what the couple has chosen to disclose; see `guestZone`. */
-  zone?: GuestZone | null;
+  /** Exactly what the couple has chosen to disclose; see `guestPlaceFields`. */
+  place?: Partial<GuestPlace> | null;
+  /** The couple's own wording of the card, where they changed it. */
+  copy?: FairePartCopy | null;
   onRespond: () => void;
 }
 
@@ -25,17 +27,22 @@ export function GuestWelcome({
   partnerTwo,
   eventDate,
   eventEndDate,
-  zone,
+  place,
+  copy,
   onRespond,
 }: GuestWelcomeProps) {
   const { locale } = useLocale();
+  const lines = fairePartLines(
+    copy,
+    { guestFirstName: guestName, partnerOne, partnerTwo, eventDate, eventEndDate, place },
+    locale,
+  );
   return (
     <FairePartEnvelope
       guestName={guestName}
       partnerOne={partnerOne}
       partnerTwo={partnerTwo}
-      dates={weddingDateText(eventDate, eventEndDate, locale)}
-      zone={zone}
+      lines={lines}
       onRespond={onRespond}
     />
   );

@@ -4,8 +4,9 @@ import { getDictionary } from "@/lib/i18n";
 import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { JoinExperience } from "./JoinExperience";
+import { readFairePartCopy } from "@/lib/fairePart";
 import { WelcomeGate } from "@/components/guest/WelcomeGate";
-import { guestZone } from "@/lib/guestAddress";
+import { guestPlaceFields } from "@/lib/guestAddress";
 import type { GuestJoinAuthMode, Invitation } from "@union/shared";
 import { G, T, alpha } from "@/lib/theme";
 
@@ -19,8 +20,8 @@ export interface JoinWeddingPreview {
   /** Last day of a multi-day wedding. Absent until the server sends it. */
   event_end_date?: string | null;
   venue_name: string | null;
-  /** The place as the couple words it ("en Provence"); absent until the server sends it. */
-  zone?: string | null;
+  /** The couple's own wording of the faire-part; absent until the server sends it. */
+  faire_part_copy?: Invitation["wedding"]["faire_part_copy"];
   guest_join_auth_mode: GuestJoinAuthMode;
   /** The language this couple writes their guest-facing content in. Used as
    *  the floor for the page's language, behind anything the visitor's own
@@ -124,7 +125,12 @@ export default async function JoinPage({
         partnerTwo={preview.partner_two}
         eventDate={preview.event_date}
         eventEndDate={preview.event_end_date}
-        zone={guestZone({ address_visibility: preview.address_visibility, address: preview.address, zone: preview.zone })}
+        place={guestPlaceFields({
+          address_visibility: preview.address_visibility,
+          address: preview.address,
+          venue_name: preview.venue_name,
+        })}
+        copy={readFairePartCopy(preview.faire_part_copy)}
       >
         <JoinExperience code={code} preview={preview} />
       </WelcomeGate>
