@@ -4,6 +4,10 @@
 
 When the user asks to keep an idea for later, open a GitHub issue and give the user the issue link. Call it an issue, not a pull request.
 
+## Database migrations
+
+Schema changes go through the `/new-migration <snake_case_name>` skill, which creates the timestamped file in `supabase/migrations/` and a matching pgTAP test in `supabase/tests/database/`. It is user-only, so you cannot run it. Whenever a task needs a migration, stop before writing any SQL and tell the user to run `/new-migration <name>`, suggesting a name. Do not hand-write migration files or apply anything to a remote project unless the user asks.
+
 ## Opportunistic refactors (tech debt)
 
 Three client pages are each one giant component with a lot of local state. Nothing is broken and CI is green, so this is not urgent. Do not split them as a drive-by or in a dedicated refactor: they have no UI tests, so a big restructure is risky.
