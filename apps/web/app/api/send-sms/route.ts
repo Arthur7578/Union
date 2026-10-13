@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createUnionClient, guestLinkUrl } from "@union/shared";
+import { createUnionClient, guestLinkUrl, isValidE164 } from "@union/shared";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabaseConfig";
 
 export const runtime = "nodejs";
@@ -16,12 +16,6 @@ function sanitizeSender(input: string): string | null {
   if (/^\+?\d{6,15}$/.test(digitsOnly)) return digitsOnly;
   const alnum = raw.replace(/[^A-Za-z0-9 ]/g, "").trim().slice(0, 11);
   return alnum || null;
-}
-
-function sanitizeRecipient(input: string): string | null {
-  const trimmed = input.replace(/[\s()\-.]/g, "");
-  if (!/^\+?\d{6,15}$/.test(trimmed)) return null;
-  return trimmed.startsWith("+") ? trimmed : `+${trimmed}`;
 }
 
 function resolveTemplate(
@@ -181,17 +175,42 @@ export async function POST(request: Request) {
 
   const { data: guest, error: gErr } = await supabase
     .from("guests")
-    .select("id, wedding_id, first_name, phone, invite_token")
+    .select("id, wedding_id, first_name, phone, phone_e164, invite_token")
     .eq("id", guestId)
     .maybeSingle();
   if (gErr || !guest || guest.wedding_id !== weddingId) {
     return NextResponse.json({ error: "Guest not found." }, { status: 404 });
   }
 
-  const recipient = sanitizeRecipient(guest.phone ?? "");
+  // `phone_e164` is the database's canonical form of the stored number, the
+  // same value guest matching uses. It is set only for a number that states
+  // its country ("+" or "00"). A national-format number such as
+  // "06 12 34 56 78" has none, because the same digits belong to different
+  // countries. The recipient is never rebuilt from `phone`: prefixing "+"
+  // to it is how "+0612345678" got sent. `phone` is read only to tell the
+  // organiser which of the two problems this is.
+  const recipient = guest.phone_e164;
   if (!recipient) {
+    const hasNumber = Boolean((guest.phone ?? "").trim());
     return NextResponse.json(
-      { error: "This guest doesn't have a valid phone number." },
+      {
+        error: hasNumber
+          ? "This guest's phone number doesn't say which country it's in. Re-save this guest's phone number with its country, then try again."
+          : "This guest doesn't have a valid phone number.",
+      },
+      { status: 400 },
+    );
+  }
+  // The database only checks the shape of `phone_e164` ("+", then 8 to 15
+  // digits), and the phone field keeps an unfinished or wrong number rather
+  // than dropping it, so +10612345678 reaches here looking canonical. Don't
+  // spend a send, and a round trip to Brevo, on a number that isn't real.
+  if (!isValidE164(recipient)) {
+    return NextResponse.json(
+      {
+        error:
+          "This guest's phone number doesn't look complete or valid. Re-enter it in this guest's details and save, then try again.",
+      },
       { status: 400 },
     );
   }
