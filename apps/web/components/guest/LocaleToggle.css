@@ -1,0 +1,4 @@
+/* Colours from GUEST_DA_VARS on an ancestor. */
+.da-lang{display:flex}
+.da-lang button{border:0;background:none;cursor:pointer;padding:8px 7px;font:inherit;font-size:12px;letter-spacing:.2em;color:var(--da-faint);transition:color .2s}
+.da-lang button[aria-pressed="true"]{color:var(--da-olive-deep);text-decoration:underline;text-decoration-color:var(--da-sage);text-underline-offset:6px}

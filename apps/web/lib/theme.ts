@@ -119,6 +119,58 @@ export const G = {
   disabledInk: "#999999",
 } as const;
 
+/**
+ * The wedding's stationery — the art direction of the signed-in guest hub and
+ * its question-by-question forms. Ivory cotton paper, olive and sage ink, with
+ * lavender and dusty blue as the accents of the paper suite.
+ */
+export const P = {
+  paper: "#F6F3EC",
+  paperDeep: "#EEE9DD",
+  card: "#FBF9F4",
+  ink: "#454A37",
+  inkSoft: "#6B705E",
+  faint: "#8E9281",
+  olive: "#5D6A3E",
+  oliveDeep: "#48532F",
+  sage: "#A4AE8F",
+  sageDeep: "#7E8A67",
+  sagePale: "#E4E8DA",
+  lavender: "#B8B3D1",
+  lavenderPale: "#ECEAF3",
+  dustyBlue: "#8EA2C1",
+  ivory: "#EFE6D2",
+  onOlive: "#F6F3EC",
+  error: "#9A4B3A",
+} as const;
+
+/** P as CSS custom properties, set on the root of the guest hub so its
+ *  stylesheet can read colours without defining any. */
+export const GUEST_DA_VARS = {
+  "--da-paper": P.paper,
+  "--da-paper-deep": P.paperDeep,
+  "--da-card": P.card,
+  "--da-ink": P.ink,
+  "--da-ink-soft": P.inkSoft,
+  "--da-faint": P.faint,
+  "--da-olive": P.olive,
+  "--da-olive-deep": P.oliveDeep,
+  "--da-sage": P.sage,
+  "--da-sage-deep": P.sageDeep,
+  "--da-sage-pale": P.sagePale,
+  "--da-lavender": P.lavender,
+  "--da-lavender-pale": P.lavenderPale,
+  "--da-dusty-blue": P.dustyBlue,
+  "--da-ivory": P.ivory,
+  "--da-on-olive": P.onOlive,
+  "--da-error": P.error,
+  "--da-line": alpha(P.ink, 0.16),
+  "--da-line-soft": alpha(P.ink, 0.09),
+  "--da-shadow": alpha(P.oliveDeep, 0.14),
+  "--da-scrim": alpha(P.ink, 0.38),
+  "--da-glass": alpha(P.paper, 0.82),
+} as const;
+
 /** hex + alpha -> rgba() string (for accent tints computed at runtime). */
 export function alpha(hex: string, a: number): string {
   let h = hex.replace("#", "");

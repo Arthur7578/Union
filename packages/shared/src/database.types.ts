@@ -102,10 +102,12 @@ export type Database = {
           id: string
           kind: string
           opens_at: string | null
+          per_person: boolean
           published: boolean
           purpose: string
           questions: Json
           rsvp_copy: Json
+          rsvp_fields: Json
           sort_order: number
           title: string
           wedding_id: string
@@ -117,10 +119,12 @@ export type Database = {
           id?: string
           kind?: string
           opens_at?: string | null
+          per_person?: boolean
           published?: boolean
           purpose?: string
           questions?: Json
           rsvp_copy?: Json
+          rsvp_fields?: Json
           sort_order?: number
           title: string
           wedding_id: string
@@ -132,10 +136,12 @@ export type Database = {
           id?: string
           kind?: string
           opens_at?: string | null
+          per_person?: boolean
           published?: boolean
           purpose?: string
           questions?: Json
           rsvp_copy?: Json
+          rsvp_fields?: Json
           sort_order?: number
           title?: string
           wedding_id?: string
@@ -627,6 +633,7 @@ export type Database = {
           address_visibility: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children: boolean
           allow_guests_add_partner: boolean
+          allow_rsvp_maybe: boolean
           autonomy: string
           ceremony_reserved_rows: number
           ceremony_rows: number
@@ -659,6 +666,7 @@ export type Database = {
           address_visibility?: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
+          allow_rsvp_maybe?: boolean
           autonomy?: string
           ceremony_reserved_rows?: number
           ceremony_rows?: number
@@ -691,6 +699,7 @@ export type Database = {
           address_visibility?: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
+          allow_rsvp_maybe?: boolean
           autonomy?: string
           ceremony_reserved_rows?: number
           ceremony_rows?: number
@@ -837,6 +846,7 @@ export type Database = {
       }
       get_guest_email_status: { Args: { p_token: string }; Returns: Json }
       get_invitation: { Args: { p_token: string }; Returns: Json }
+      get_invitation_rsvp_forms: { Args: { p_token: string }; Returns: Json }
       get_wedding_by_join_code: { Args: { p_join_code: string }; Returns: Json }
       hide_duplicate_cluster: {
         Args: { p_guest_ids: string[]; p_wedding_id: string }
@@ -886,7 +896,12 @@ export type Database = {
         Returns: Json
       }
       submit_form_response: {
-        Args: { p_answers: Json; p_form_id: string; p_token: string }
+        Args: {
+          p_answers: Json
+          p_for_guest_id?: string
+          p_form_id: string
+          p_token: string
+        }
         Returns: Json
       }
       submit_rsvp: {
@@ -898,6 +913,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      submit_rsvp_response: {
+        Args: {
+          p_answers?: Json
+          p_companions?: Json
+          p_form_id: string | null
+          p_status: string
+          p_token: string
+        }
+        Returns: Json
+      }
       unhide_duplicate_cluster: {
         Args: { p_guest_ids: string[]; p_wedding_id: string }
         Returns: undefined
@@ -906,7 +931,7 @@ export type Database = {
     Enums: {
       address_visibility: "hidden" | "area" | "partial" | "full"
       guest_relationship_kind: "parent_of" | "partner_of"
-      rsvp_status: "pending" | "attending" | "declined"
+      rsvp_status: "pending" | "attending" | "maybe" | "declined"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1036,7 +1061,7 @@ export const Constants = {
     Enums: {
       address_visibility: ["hidden", "area", "partial", "full"],
       guest_relationship_kind: ["parent_of", "partner_of"],
-      rsvp_status: ["pending", "attending", "declined"],
+      rsvp_status: ["pending", "attending", "maybe", "declined"],
     },
   },
 } as const

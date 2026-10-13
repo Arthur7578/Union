@@ -3,15 +3,19 @@
 import React, { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guestLinkPath } from "@union/shared";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { DaRoot } from "@/components/guest/DaRoot";
+import { Flow, useFlow, type FlowStep } from "@/components/guest/flow/Flow";
+import { FlowText } from "@/components/guest/flow/fields";
+import { LocaleToggle } from "@/components/guest/LocaleToggle";
+import { OliveBranch } from "@/components/guest/OliveBranch";
 import { sendEmailOtp, verifyEmailOtp } from "@/lib/auth";
 import { looksLikeEmail } from "@/lib/emailSuggest";
 import { markGroupLinkArrival } from "@/lib/groupLinkArrival";
+import { markRsvpHandoff } from "@/lib/rsvpHandoff";
 import { useLocale } from "@/lib/i18n/client";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { useTurnstile } from "@/lib/turnstile";
 import type { JoinWeddingPreview } from "./page";
-import { G, T, alpha } from "@/lib/theme";
 
 /**
  * The group link, after the welcome: a guest finds their own invitation by
@@ -24,6 +28,9 @@ import { G, T, alpha } from "@/lib/theme";
  * someone else's (a shared computer, a family tablet). When the account
  * signed in here already holds the invitation for that name, the code step
  * is skipped.
+ *
+ * Asked one question at a time, like every guest form: each step answers
+ * which one comes next, from the server's reply to it.
  */
 
 type View =
@@ -86,6 +93,61 @@ interface AccessOptionsResult {
   matches?: AccessOption[];
 }
 
+/** An error worded for the guest: shown as is, never replaced by a generic one. */
+class GuestFacingError extends Error {}
+
+/** A link under a step's answer that resets the form and goes back to a step. */
+function BackTo({ to, label, onReset }: { to: View; label: string; onReset?: () => void }) {
+  const flow = useFlow();
+  return (
+    <button
+      type="button"
+      className="tf-link"
+      onClick={() => {
+        onReset?.();
+        flow.goTo(to);
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+/** "Resend code", without leaving the step unless the server says otherwise. */
+function Resend({ label, onResend }: { label: string; onResend: () => Promise<View> }) {
+  const flow = useFlow();
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  return (
+    <>
+      <button
+        type="button"
+        className="tf-link"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setFailure(null);
+          try {
+            const next = await onResend();
+            if (next !== "code") flow.goTo(next);
+          } catch (reason) {
+            setFailure(reason instanceof Error ? reason.message : null);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {label}
+      </button>
+      {failure ? (
+        <p className="tf-error" role="alert">
+          {failure}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export function JoinExperience({
   code,
   preview,
@@ -93,17 +155,19 @@ export function JoinExperience({
   code: string;
   preview: JoinWeddingPreview;
 }) {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
+  const copy = t.guestJoin;
   const router = useRouter();
-  const [view, setView] = useState<View>("name");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [askLastName, setAskLastName] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [guestId, setGuestId] = useState<string | null>(null);
   // Not prefilled from this device's last sign-in: on a shared device that
   // is someone else's address.
   const [email, setEmail] = useState("");
+  // Why the guest was sent back to the email step, if they were.
+  const [emailNotice, setEmailNotice] = useState<string | null>(null);
+  const [codeSent, setCodeSent] = useState(false);
   const [otp, setOtp] = useState("");
   const { captcha, getCaptchaToken } = useTurnstile();
 
@@ -111,25 +175,19 @@ export function JoinExperience({
     [preview.partner_one, preview.partner_two].filter(Boolean).join(" & ") ||
     t.guests.theCouple;
 
-  const dateLabel = preview.event_date
-    ? new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        timeZone: "UTC",
-      }).format(new Date(`${preview.event_date}T00:00:00Z`))
-    : null;
-
   const redirectToGuest = useCallback(
-    (token: string) => {
-      setView("redirecting");
+    (token: string): View => {
       markGroupLinkArrival(token);
+      // They chose to respond on the faire-part: their invitation opens on
+      // the RSVP, not on the hub.
+      markRsvpHandoff(token);
       // They have just read the invitation, so their own link needn't repeat
       // it. Best-effort: failing to record it only means seeing it again.
       void getBrowserSupabase()
         .rpc("mark_welcome_seen", { p_token: token })
         .then(undefined, () => {})
         .then(() => router.push(guestLinkPath(token)));
+      return "redirecting";
     },
     [router],
   );
@@ -155,10 +213,8 @@ export function JoinExperience({
     [code, redirectToGuest],
   );
 
-  const findByName = async (withLastName: boolean) => {
-    if (!firstName.trim() || (withLastName && !lastName.trim())) return;
-    setBusy(true);
-    setError(null);
+  const findByName = async (withLastName: boolean): Promise<View> => {
+    let result: FindResult;
     try {
       const supabase = getBrowserSupabase();
       const { data, error: rpcError } = await supabase.rpc("find_guest_for_join", {
@@ -167,13 +223,10 @@ export function JoinExperience({
         p_last_name: withLastName ? lastName.trim() : null,
       });
       if (rpcError) throw rpcError;
-      const result = data as unknown as FindResult;
+      result = data as unknown as FindResult;
 
       if (result.status === "match") {
-        if (result.mode === "light" && result.token) {
-          redirectToGuest(result.token);
-          return;
-        }
+        if (result.mode === "light" && result.token) return redirectToGuest(result.token);
         if (result.guest_id) {
           setGuestId(result.guest_id);
           // No code when this device's account already holds this very
@@ -188,442 +241,246 @@ export function JoinExperience({
             const mine = ((own as unknown as AccessOptionsResult | null)?.matches ?? []).some(
               (option) => option.guest_id === result.guest_id,
             );
-            if (mine && (await secureWithSession(result.guest_id)) === "verified") return;
+            if (mine && (await secureWithSession(result.guest_id)) === "verified") return "redirecting";
           }
-          setView("email");
-          return;
+          setEmailNotice(null);
+          return "email";
         }
       }
-      if (result.status === "needs_last_name") {
-        setView("last_name");
-        return;
-      }
-      if (result.status === "ambiguous") {
-        setView("ambiguous");
-        return;
-      }
-      if (result.status === "rate_limited") {
-        setError(t.guestJoin.rateLimited);
-        return;
-      }
-      setView("not_found");
     } catch {
-      setError(t.guestJoin.genericError);
-    } finally {
-      setBusy(false);
+      throw new GuestFacingError(copy.genericError);
     }
+    if (result.status === "needs_last_name") {
+      setAskLastName(true);
+      return "last_name";
+    }
+    if (result.status === "ambiguous") return "ambiguous";
+    if (result.status === "rate_limited") throw new GuestFacingError(copy.rateLimited);
+    return "not_found";
   };
 
-  const requestCode = async () => {
+  const requestCode = async (): Promise<View> => {
     const cleanEmail = email.trim();
-    if (!guestId || !cleanEmail) return;
-    if (!looksLikeEmail(cleanEmail)) {
-      setError(t.guestJoin.invalidEmail);
-      return;
-    }
-    setBusy(true);
-    setError(null);
+    if (!guestId) throw new GuestFacingError(copy.genericError);
+    if (!looksLikeEmail(cleanEmail)) throw new GuestFacingError(copy.invalidEmail);
+    let result: CheckEmailResult;
     try {
-      const supabase = getBrowserSupabase();
-      const { data, error: rpcError } = await supabase.rpc("check_join_email", {
+      const { data, error: rpcError } = await getBrowserSupabase().rpc("check_join_email", {
         p_join_code: code,
         p_guest_id: guestId,
         p_email: cleanEmail,
       });
       if (rpcError) throw rpcError;
-      const result = data as unknown as CheckEmailResult;
-      if (result.status === "already_secured") {
-        setView("already_secured");
-        return;
-      }
-      if (result.status !== "ok") {
-        setError(
-          result.status === "email_mismatch"
-            ? t.guestJoin.emailMismatch(partners)
-            : result.status === "invalid_email"
-              ? t.guestJoin.invalidEmail
-              : result.status === "rate_limited"
-                ? t.guestJoin.rateLimited
-                : t.guestJoin.genericError,
-        );
-        return;
-      }
-      try {
-        await sendEmailOtp(cleanEmail, await getCaptchaToken());
-      } catch {
-        setError(t.guestJoin.sendCodeError);
-        return;
-      }
-      setOtp("");
-      setView("code");
+      result = data as unknown as CheckEmailResult;
     } catch {
-      setError(t.guestJoin.genericError);
-    } finally {
-      setBusy(false);
+      throw new GuestFacingError(copy.genericError);
     }
+    if (result.status === "already_secured") return "already_secured";
+    if (result.status !== "ok") {
+      throw new GuestFacingError(
+        result.status === "email_mismatch"
+          ? copy.emailMismatch(partners)
+          : result.status === "invalid_email"
+            ? copy.invalidEmail
+            : result.status === "rate_limited"
+              ? copy.rateLimited
+              : copy.genericError,
+      );
+    }
+    try {
+      await sendEmailOtp(cleanEmail, await getCaptchaToken());
+    } catch {
+      throw new GuestFacingError(copy.sendCodeError);
+    }
+    setOtp("");
+    setCodeSent(true);
+    return "code";
   };
 
-  const submitCode = async () => {
-    if (!guestId || !otp.trim()) return;
-    setBusy(true);
-    setError(null);
+  const submitCode = async (): Promise<View> => {
+    if (!guestId) throw new GuestFacingError(copy.genericError);
     try {
-      try {
-        await verifyEmailOtp(email, otp);
-      } catch {
-        setError(t.guestJoin.invalidCode);
-        return;
-      }
-      const status = await secureWithSession(guestId);
-      if (status === "verified") return;
-      if (status === "already_secured") {
-        setView("already_secured");
-      } else if (status === "email_mismatch") {
-        setError(t.guestJoin.emailMismatch(partners));
-        setView("email");
-      } else {
-        setError(t.guestJoin.genericError);
-      }
+      await verifyEmailOtp(email, otp);
     } catch {
-      setError(t.guestJoin.genericError);
-    } finally {
-      setBusy(false);
+      throw new GuestFacingError(copy.invalidCode);
     }
+    let status: SecureResult["status"];
+    try {
+      status = await secureWithSession(guestId);
+    } catch {
+      throw new GuestFacingError(copy.genericError);
+    }
+    if (status === "verified") return "redirecting";
+    if (status === "already_secured") return "already_secured";
+    if (status === "email_mismatch") {
+      setEmailNotice(copy.emailMismatch(partners));
+      return "email";
+    }
+    throw new GuestFacingError(copy.genericError);
   };
 
   const startOver = () => {
     setFirstName("");
     setLastName("");
+    setAskLastName(false);
     setGuestId(null);
+    setCodeSent(false);
     setOtp("");
-    setError(null);
-    setView("name");
+    setEmailNotice(null);
   };
 
-  const onSubmit = (action: () => Promise<void>) => (event: React.FormEvent) => {
-    event.preventDefault();
-    void action();
-  };
+  const withCaptcha = (body: React.ReactNode) => (
+    <>
+      {body}
+      {/* Every step that can send a code (first send, resend) renders the
+          challenge; it stays empty unless one needs a click. */}
+      {captcha ? <div className="tf-captcha">{captcha}</div> : null}
+    </>
+  );
 
-  const renderContent = () => {
-    if (view === "redirecting") {
-      return (
-        <div style={{ textAlign: "center", color: G.muted2, padding: "28px 0" }}>
-          {t.guestJoin.redirecting}
-        </div>
-      );
-    }
-
-    if (view === "name" || view === "last_name") {
-      const askingLastName = view === "last_name";
-      return (
+  const steps: FlowStep[] = [
+    {
+      key: "name",
+      title: copy.title,
+      description: copy.nameSubtitle,
+      body: (
         <>
-          <h2 style={titleStyle}>
-            {askingLastName ? t.guestJoin.lastNameTitle : t.guestJoin.title}
-          </h2>
-          <p style={bodyStyle}>
-            {askingLastName
-              ? t.guestJoin.lastNameSubtitle(firstName.trim())
-              : t.guestJoin.nameSubtitle}
-          </p>
-          <form
-            onSubmit={onSubmit(() => findByName(askingLastName))}
-            style={{ display: "grid", gap: 16 }}
-          >
-            {askingLastName ? (
-              <FieldLabel label={t.guestJoin.lastNameLabel}>
-                <input
-                  autoComplete="family-name"
-                  value={lastName}
-                  onChange={(event) => setLastName(event.target.value)}
-                  required
-                  autoFocus
-                  style={inputStyle}
-                />
-              </FieldLabel>
-            ) : (
-              <FieldLabel label={t.guestJoin.firstNameLabel}>
-                <input
-                  autoComplete="given-name"
-                  value={firstName}
-                  onChange={(event) => setFirstName(event.target.value)}
-                  required
-                  style={inputStyle}
-                />
-              </FieldLabel>
-            )}
-            <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.guestJoin.searching : t.guestJoin.continueButton}
-            </button>
-          </form>
-          {askingLastName ? (
-            <div style={linkRowStyle}>
-              <button type="button" onClick={startOver} style={textButtonStyle}>
-                {t.guestJoin.tryAgainButton}
-              </button>
-            </div>
-          ) : (
-            <p style={securityStyle}>{t.guestJoin.securityNote}</p>
-          )}
+          <FlowText
+            value={firstName}
+            onChange={setFirstName}
+            placeholder={copy.firstNameLabel}
+            label={copy.firstNameLabel}
+            autoComplete="given-name"
+          />
+          <p className="tf-note">{copy.securityNote}</p>
         </>
-      );
-    }
+      ),
+      valid: firstName.trim() !== "",
+      okLabel: copy.continueButton,
+      busyLabel: copy.searching,
+      onNext: () => findByName(false),
+    },
+  ];
 
-    if (view === "email") {
-      return (
+  if (askLastName) {
+    steps.push({
+      key: "last_name",
+      title: copy.lastNameTitle,
+      description: copy.lastNameSubtitle(firstName.trim()),
+      body: (
         <>
-          <h2 style={titleStyle}>{t.guestJoin.emailTitle}</h2>
-          <p style={bodyStyle}>{t.guestJoin.emailSubtitle}</p>
-          <form onSubmit={onSubmit(requestCode)} style={{ display: "grid", gap: 16 }}>
-            <FieldLabel label={t.guestJoin.emailLabel}>
-              <input
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder={t.guestJoin.emailPlaceholder}
-                required
-                style={inputStyle}
-              />
-            </FieldLabel>
-            <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.guestJoin.sending : t.guestJoin.sendCodeButton}
-            </button>
-          </form>
-          <div style={linkRowStyle}>
-            <button type="button" onClick={startOver} style={textButtonStyle}>
-              {t.guestJoin.someoneElse}
-            </button>
+          <FlowText
+            value={lastName}
+            onChange={setLastName}
+            placeholder={copy.lastNameLabel}
+            label={copy.lastNameLabel}
+            autoComplete="family-name"
+          />
+          <div className="tf-links">
+            <BackTo to="name" label={copy.tryAgainButton} onReset={startOver} />
           </div>
         </>
-      );
-    }
+      ),
+      valid: lastName.trim() !== "",
+      okLabel: copy.continueButton,
+      busyLabel: copy.searching,
+      onNext: () => findByName(true),
+    });
+  }
 
-    if (view === "code") {
-      return (
+  if (guestId) {
+    steps.push({
+      key: "email",
+      title: copy.emailTitle,
+      description: copy.emailSubtitle,
+      body: withCaptcha(
         <>
-          <h2 style={titleStyle}>{t.guestJoin.codeTitle}</h2>
-          <p style={bodyStyle}>{t.guestJoin.codeSent(email.trim())}</p>
-          <form onSubmit={onSubmit(submitCode)} style={{ display: "grid", gap: 16 }}>
-            <FieldLabel label={t.guestJoin.codeLabel}>
-              <input
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={otp}
-                onChange={(event) => setOtp(event.target.value)}
-                placeholder={t.guestJoin.codePlaceholder}
-                required
-                style={{
-                  ...inputStyle,
-                  textAlign: "center",
-                  letterSpacing: "0.25em",
-                  fontSize: 20,
-                }}
-              />
-            </FieldLabel>
-            <button disabled={busy} style={primaryButtonStyle}>
-              {busy ? t.guestJoin.verifying : t.guestJoin.verifyButton}
-            </button>
-          </form>
-          <div style={linkRowStyle}>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void requestCode()}
-              style={textButtonStyle}
-            >
-              {t.guestJoin.resendButton}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setError(null);
-                setView("email");
-              }}
-              style={textButtonStyle}
-            >
-              {t.guestJoin.changeEmail}
-            </button>
-          </div>
-        </>
-      );
-    }
-
-    const [title, body] =
-      view === "ambiguous"
-        ? [t.guestJoin.ambiguousTitle, t.guestJoin.ambiguousBody(partners)]
-        : view === "already_secured"
-          ? [t.guestJoin.alreadySecuredTitle, t.guestJoin.alreadySecuredBody(partners)]
-          : [t.guestJoin.notFoundTitle, t.guestJoin.notFoundBody(partners)];
-
-    return (
-      <>
-        <h2 style={titleStyle}>{title}</h2>
-        <p style={bodyStyle}>{body}</p>
-        <button type="button" onClick={startOver} style={primaryButtonStyle}>
-          {t.guestJoin.tryAgainButton}
-        </button>
-      </>
-    );
-  };
-
-  return (
-    <main style={pageStyle}>
-      <div style={{ position: "absolute", top: 20, right: 20 }}>
-        <LanguageSwitcher />
-      </div>
-      <section style={cardStyle}>
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={kickerStyle}>{t.join.heroKicker}</div>
-          <h1 style={heroStyle}>{partners}</h1>
-          {(dateLabel || preview.venue_name) && (
-            <p style={{ ...bodyStyle, marginBottom: 0 }}>
-              {[dateLabel, preview.venue_name].filter(Boolean).join(" · ")}
+          <FlowText
+            type="email"
+            value={email}
+            onChange={(v) => {
+              setEmail(v);
+              setEmailNotice(null);
+            }}
+            placeholder={copy.emailPlaceholder}
+            label={copy.emailLabel}
+            autoComplete="email"
+          />
+          {emailNotice ? (
+            <p className="tf-error" role="alert">
+              {emailNotice}
             </p>
-          )}
-        </div>
-        <div style={{ borderTop: `1px solid ${T.sandBg}`, paddingTop: 28 }}>
-          {error && <div style={errorStyle}>{error}</div>}
-          {renderContent()}
-          {/* Every view that can send a code (first send, resend) shares this
-              one mount point; it stays empty unless a challenge needs a click. */}
-          {captcha}
-        </div>
-      </section>
-    </main>
-  );
-}
+          ) : null}
+          <div className="tf-links">
+            <BackTo to="name" label={copy.someoneElse} onReset={startOver} />
+          </div>
+        </>,
+      ),
+      valid: email.trim() !== "",
+      okLabel: copy.sendCodeButton,
+      busyLabel: copy.sending,
+      onNext: requestCode,
+    });
+  }
 
-function FieldLabel({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+  if (codeSent) {
+    steps.push({
+      key: "code",
+      title: copy.codeTitle,
+      description: copy.codeSent(email.trim()),
+      body: withCaptcha(
+        <>
+          <FlowText
+            value={otp}
+            onChange={setOtp}
+            placeholder={copy.codePlaceholder}
+            label={copy.codeLabel}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            className="tf-code"
+          />
+          <div className="tf-links">
+            <Resend label={copy.resendButton} onResend={requestCode} />
+            <BackTo to="email" label={copy.changeEmail} />
+          </div>
+        </>,
+      ),
+      valid: otp.trim() !== "",
+      okLabel: copy.verifyButton,
+      busyLabel: copy.verifying,
+      onNext: submitCode,
+    });
+  }
+
+  const ending = (key: View, title: string, body: string): FlowStep => ({
+    key,
+    kind: "end",
+    before: <OliveBranch className="tf-ornament" />,
+    title,
+    description: body,
+    okLabel: copy.tryAgainButton,
+    onNext: () => {
+      startOver();
+      return "name";
+    },
+  });
+
+  steps.push(
+    ending("not_found", copy.notFoundTitle, copy.notFoundBody(partners)),
+    ending("ambiguous", copy.ambiguousTitle, copy.ambiguousBody(partners)),
+    ending("already_secured", copy.alreadySecuredTitle, copy.alreadySecuredBody(partners)),
+    {
+      key: "redirecting",
+      kind: "end",
+      before: <OliveBranch className="tf-ornament" />,
+      title: copy.redirecting,
+      hideOk: true,
+    },
+  );
+
   return (
-    <label style={{ display: "grid", gap: 7, textAlign: "left" }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: G.ink2 }}>
-        {label}
-      </span>
-      {children}
-    </label>
+    <DaRoot>
+      <Flow label={partners} steps={steps} topRight={<LocaleToggle />} />
+    </DaRoot>
   );
 }
-
-const pageStyle: React.CSSProperties = {
-  minHeight: "100vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: G.bg,
-  padding: "80px 20px 32px",
-  color: G.ink,
-};
-
-const cardStyle: React.CSSProperties = {
-  width: "100%",
-  maxWidth: 480,
-  borderRadius: 24,
-  background: T.white,
-  boxShadow: `0 18px 55px ${alpha(G.ink, 0.08)}`,
-  padding: "38px 32px",
-  boxSizing: "border-box",
-};
-
-const kickerStyle: React.CSSProperties = {
-  color: G.gold,
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  marginBottom: 10,
-};
-
-const heroStyle: React.CSSProperties = {
-  fontFamily: "var(--font-serif)",
-  fontSize: 38,
-  lineHeight: 1.05,
-  margin: "0 0 12px",
-  fontWeight: 600,
-};
-
-const titleStyle: React.CSSProperties = {
-  fontFamily: "var(--font-serif)",
-  fontSize: 29,
-  lineHeight: 1.15,
-  margin: "0 0 10px",
-  fontWeight: 600,
-  textAlign: "center",
-};
-
-const bodyStyle: React.CSSProperties = {
-  color: G.muted2,
-  fontSize: 15,
-  lineHeight: 1.55,
-  textAlign: "center",
-  margin: "0 0 22px",
-};
-
-const securityStyle: React.CSSProperties = {
-  color: G.faint,
-  fontSize: 12,
-  lineHeight: 1.45,
-  textAlign: "center",
-  margin: "14px 0 6px",
-};
-
-const linkRowStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexWrap: "wrap",
-  gap: 12,
-  marginTop: 12,
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  minHeight: 50,
-  borderRadius: 12,
-  border: `1px solid ${G.borderInput}`,
-  background: T.white,
-  color: G.ink,
-  fontSize: 16,
-  padding: "0 14px",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  width: "100%",
-  minHeight: 50,
-  border: 0,
-  borderRadius: 999,
-  background: G.ink,
-  color: T.white,
-  fontSize: 15,
-  fontWeight: 600,
-  cursor: "pointer",
-  padding: "0 20px",
-};
-
-const textButtonStyle: React.CSSProperties = {
-  border: 0,
-  background: "transparent",
-  color: G.muted3,
-  fontSize: 14,
-  textDecoration: "underline",
-  cursor: "pointer",
-  padding: 4,
-};
-
-const errorStyle: React.CSSProperties = {
-  background: G.errBg,
-  border: `1px solid ${G.errBorder}`,
-  color: G.errInk,
-  padding: "11px 13px",
-  borderRadius: 10,
-  fontSize: 13,
-  marginBottom: 18,
-};

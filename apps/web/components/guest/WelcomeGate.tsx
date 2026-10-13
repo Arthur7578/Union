@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { GuestWelcome } from "@/components/guest/GuestWelcome";
 import type { GuestZone } from "@/lib/guestAddress";
 import { useLocale } from "@/lib/i18n/client";
+import { markRsvpHandoff } from "@/lib/rsvpHandoff";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 
 const ReplayWelcome = createContext<(() => void) | null>(null);
@@ -11,6 +12,17 @@ const ReplayWelcome = createContext<(() => void) | null>(null);
 /** Lets the guest hub offer "see the invitation again". Null outside a WelcomeGate. */
 export function useReplayWelcome() {
   return useContext(ReplayWelcome);
+}
+
+const Responses = createContext(0);
+
+/**
+ * How many times "Respond to the invitation" has been chosen since the page
+ * opened. The hub watches it to open the RSVP straight away (with the
+ * handoff in lib/rsvpHandoff), including after a replay of the welcome.
+ */
+export function useWelcomeResponses() {
+  return useContext(Responses);
 }
 
 /**
@@ -55,6 +67,10 @@ export function WelcomeGate({
 
   const [override, setOverride] = useState<"welcome" | "done" | null>(null);
   const state = override ?? (seen ? "done" : "welcome");
+  const [responses, setResponses] = useState(0);
+  // Once shown, the hub stays mounted (hidden) while the welcome is replayed,
+  // so what the guest did there — a reply just sent — survives the replay.
+  const [entered, setEntered] = useState(state === "done");
 
   const replay = useCallback(() => setOverride("welcome"), []);
 
@@ -68,8 +84,8 @@ export function WelcomeGate({
       .then(undefined, () => {});
   }, [locale, token, isDemo]);
 
-  if (state === "welcome") {
-    return (
+  const welcome =
+    state === "welcome" ? (
       <GuestWelcome
         guestName={guestName}
         partnerOne={partnerOne}
@@ -83,11 +99,24 @@ export function WelcomeGate({
               .rpc("mark_welcome_seen", { p_token: token })
               .then(undefined, () => {});
           }
+          if (token) markRsvpHandoff(token);
           window.scrollTo(0, 0);
           setOverride("done");
+          setEntered(true);
+          setResponses((n) => n + 1);
         }}
       />
-    );
-  }
-  return <ReplayWelcome.Provider value={replay}>{children}</ReplayWelcome.Provider>;
+    ) : null;
+
+  if (!entered) return welcome;
+  return (
+    <>
+      {welcome}
+      <div hidden={state === "welcome"}>
+        <Responses.Provider value={responses}>
+          <ReplayWelcome.Provider value={replay}>{children}</ReplayWelcome.Provider>
+        </Responses.Provider>
+      </div>
+    </>
+  );
 }

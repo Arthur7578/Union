@@ -11,7 +11,11 @@ import type {
   RsvpBlockCopy,
   RsvpQuestion,
 } from "@union/shared";
-import { isAutoTranslated, setTextForLocale, textForLocale } from "@union/shared";
+import {
+  isAutoTranslated,
+  setTextForLocale,
+  textForLocale,
+} from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import {
   deleteForm,
@@ -228,6 +232,10 @@ export default function FormBuilderPage() {
   const [translateHint, setTranslateHint] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [published, setPublished] = useState(false);
+  // Whether this custom form is asked once per person or once per invitation.
+  // A meal choice is per person; a song request isn't — so it's the
+  // organiser's call, not a default worth guessing at.
+  const [perPerson, setPerPerson] = useState(false);
   const [opensAt, setOpensAt] = useState("");
   const [closesAt, setClosesAt] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -252,6 +260,7 @@ export default function FormBuilderPage() {
         setGuestCopyState(formGuestCopy(f));
         setTitle(f.title);
         setPublished(f.published);
+        setPerPerson(f.per_person);
         setOpensAt(toDateInput(f.opens_at));
         setClosesAt(toDateInput(f.closes_at));
       })
@@ -466,6 +475,9 @@ export default function FormBuilderPage() {
         ...(form.kind === "rsvp"
           ? { rsvp_copy: rsvpCopyState }
           : { guest_copy: guestCopyState }),
+        // The RSVP block is per person by construction, so this only ever
+        // applies to a custom form.
+        ...(form.kind === "custom" ? { per_person: perPerson } : {}),
       });
       setForm(updated);
       setDirty(false);
@@ -608,6 +620,7 @@ export default function FormBuilderPage() {
           purpose={form.purpose === "reconfirmation" ? "reconfirmation" : "primary"}
           copy={rsvpCopyState}
           locale={editingLocale}
+          allowMaybe={wedding.allow_rsvp_maybe}
           onChange={(next) => {
             setRsvpCopyState(next);
             markDirty();
@@ -651,12 +664,14 @@ export default function FormBuilderPage() {
         </SectionBlock>
       )}
 
-      {!(form.kind === "rsvp" && form.purpose === "reconfirmation") && (
-        <>
       {/* ---------------- Guest-facing questions ---------------- */}
       <SectionBlock
-        kicker="What guests see"
-        hint="Every question is yours to shape — title, type, required or not, and its choices."
+        kicker={form.kind === "rsvp" ? "Questions after the reply" : "What guests see"}
+        hint={
+          form.kind === "rsvp"
+            ? "Add only what you need. Guests answer these questions for themselves and for each partner or child who is coming."
+            : "Every question is yours to shape — title, type, required or not, and its choices."
+        }
         tone={{ bg: T.accentSoft, border: T.accentBorder, fg: T.accentInk }}
       >
         {questions.map((q, idx) => {
@@ -885,16 +900,7 @@ export default function FormBuilderPage() {
           </div>
         </Card>
 
-        {form.kind === "rsvp" && (
-          <div style={{ fontSize: 12, color: T.muted2, lineHeight: 1.5, padding: "0 2px" }}>
-            These are extra planning notes for you — the attend/decline reply,
-            dietary notes and its wording are handled by the RSVP block above,
-            wired straight to the real guest flow.
-          </div>
-        )}
       </SectionBlock>
-      </>
-      )}
 
       {/* ---------------- Access & rights ---------------- */}
       <SectionBlock
@@ -923,8 +929,36 @@ export default function FormBuilderPage() {
           </div>
         </Card>
 
+        {form.kind === "custom" && (
+          <Card style={{ padding: "13px 15px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Switch
+                on={perPerson}
+                onChange={() => {
+                  setPerPerson((v) => !v);
+                  markDirty();
+                }}
+                label="Guests answer for relatives"
+              />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink }}>
+                  {perPerson ? "One response per person" : "One response per invitation"}
+                </div>
+                <div style={{ fontSize: 12, color: T.faint, marginTop: 1, lineHeight: 1.45 }}>
+                  {perPerson
+                    ? "The invitation holder completes this form for themselves and for each partner or child they're bringing."
+                    : "The invitation holder submits one set of answers for the whole group."}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {form.kind === "rsvp" && form.purpose === "primary" && wedding && (
-          <ExtraGuestsRights wedding={wedding} refresh={refresh} />
+          <>
+            <MaybeAnswerRight wedding={wedding} refresh={refresh} />
+            <ExtraGuestsRights wedding={wedding} refresh={refresh} />
+          </>
         )}
       </SectionBlock>
 
@@ -955,6 +989,90 @@ export default function FormBuilderPage() {
         </div>
       )}
     </main>
+  );
+}
+
+/** The third reply.
+ *
+ *  Off by default, because a third answer changes what a headcount means: a
+ *  couple whose caterer needs a firm number by a date would rather chase an
+ *  unsure guest than bank an unsure yes. A couple running a destination
+ *  weekend has the opposite problem — forcing yes/no eight months out gets
+ *  them answers that are guesses, revised later as a silent status flip that
+ *  carries no hint the guest was ever unsure.
+ *
+ *  Saves immediately rather than waiting for the form's Save button: it is a
+ *  wedding setting rather than form content, which is the same reason
+ *  ExtraGuestsRights below saves on the spot. */
+function MaybeAnswerRight({
+  wedding,
+  refresh,
+}: {
+  wedding: NonNullable<ReturnType<typeof useWedding>["wedding"]>;
+  refresh: () => Promise<void> | void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const on = wedding.allow_rsvp_maybe;
+
+  const toggle = async () => {
+    if (saving) return;
+    setSaving(true);
+    setErr(null);
+    try {
+      await updateWedding(wedding.id, { allow_rsvp_maybe: !on });
+      await refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't save.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card style={{ padding: "13px 15px" }}>
+      <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink }}>
+        A “maybe” answer
+      </div>
+      <div style={{ fontSize: 12, color: T.faint, marginTop: 3, lineHeight: 1.45 }}>
+        With this on, guests get a third reply for “I don&apos;t know yet”
+        instead of having to guess. You see those guests as their own count, so
+        your headcount reads as a range rather than one number you can&apos;t
+        trust.
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, opacity: saving ? 0.6 : 1 }}>
+        <Switch
+          on={on}
+          onChange={toggle}
+          label="Guests may answer “maybe”"
+        />
+        <span style={{ fontSize: 13, color: T.ink }}>
+          Guests may answer &ldquo;maybe&rdquo;
+        </span>
+      </div>
+
+      <div style={{ fontSize: 11.5, color: T.faint, marginTop: 10, lineHeight: 1.45 }}>
+        {on ? (
+          <>
+            Reword the button above, under the RSVP block. A late{" "}
+            <Link href="/guests/forms" className="u-link" style={{ color: T.accentInk }}>
+              reconfirmation form
+            </Link>{" "}
+            is the usual way to turn maybes into firm answers near the day.
+          </>
+        ) : (
+          <>
+            Turning this off stops new &ldquo;maybe&rdquo; replies. It never
+            rewrites ones already given — those guests stay as maybes until
+            they answer again, since converting them would invent a commitment
+            they never made.
+          </>
+        )}
+      </div>
+
+      {err && <div style={{ color: T.danger, fontSize: 12, marginTop: 8 }}>{err}</div>}
+    </Card>
   );
 }
 
@@ -1130,18 +1248,25 @@ function RsvpWordingEditor({
   purpose,
   copy,
   locale,
+  allowMaybe,
   onChange,
 }: {
   purpose: "primary" | "reconfirmation";
   copy: RsvpBlockCopy;
   /** The language being written and previewed. */
   locale: Locale;
+  /** Whether this wedding offers "maybe" — the third label and the third
+   *  preview button appear only when there's a button to reword. Wording
+   *  already written stays stored either way, so switching the option back on
+   *  brings the couple's own phrasing with it. */
+  allowMaybe: boolean;
   onChange: (next: RsvpBlockCopy) => void;
 }) {
   const defaults = rsvpDefaults(locale, purpose);
   const title = textForLocale(copy.title, locale);
   const subtitle = textForLocale(copy.subtitle, locale);
   const attending = textForLocale(copy.label_attending, locale);
+  const maybe = textForLocale(copy.label_maybe, locale);
   const declined = textForLocale(copy.label_declined, locale);
 
   /** Every slot writes through here so a hand edit always lands in the
@@ -1154,8 +1279,10 @@ function RsvpWordingEditor({
       kicker={purpose === "primary" ? "RSVP block · what guests see" : "Reconfirmation block · what guests see"}
       hint={
         purpose === "primary"
-          ? "Reword the headline and the two reply buttons — the reply itself (and everything it triggers) stays wired to the real RSVP."
-          : "Reword the framing for this late check-in. It reuses the same Attending / Declined buttons as the main RSVP."
+          ? allowMaybe
+            ? "Reword the headline and the three reply buttons — the reply itself (and everything it triggers) stays wired to the real RSVP."
+            : "Reword the headline and the two reply buttons — the reply itself (and everything it triggers) stays wired to the real RSVP."
+          : "Reword the framing for this late check-in. It reuses the main RSVP's reply buttons."
       }
       tone={{ bg: T.accentSoft, border: T.accentBorder, fg: T.accentInk }}
     >
@@ -1184,6 +1311,16 @@ function RsvpWordingEditor({
             auto={isAutoTranslated(copy.label_attending, locale)}
             onChange={(v) => write("label_attending", v)}
           />
+          {allowMaybe && (
+            <CopyField
+              caption={`Label on the button meaning “not sure yet” · ${localeName(locale)} — locked to that meaning, only this text is yours`}
+              dot={{ bg: T.blueBg, fg: T.blueInk, symbol: "~" }}
+              value={maybe}
+              placeholder={defaults.labelMaybe}
+              auto={isAutoTranslated(copy.label_maybe, locale)}
+              onChange={(v) => write("label_maybe", v)}
+            />
+          )}
           <CopyField
             caption={`Label on the button meaning “not coming” · ${localeName(locale)} — locked to that meaning, only this text is yours`}
             dot={{ bg: T.roseBg, fg: T.rose, symbol: "✕" }}
@@ -1225,6 +1362,23 @@ function RsvpWordingEditor({
               >
                 ✓ {attending.trim() || defaults.labelAttending}
               </span>
+              {allowMaybe && (
+                <span
+                  style={{
+                    flex: 1,
+                    textAlign: "center",
+                    borderRadius: 10,
+                    padding: "8px 10px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    background: T.blueBg,
+                    color: T.blueInk,
+                    border: `1px solid ${alpha(T.blueInk, 0.28)}`,
+                  }}
+                >
+                  ~ {maybe.trim() || defaults.labelMaybe}
+                </span>
+              )}
               <span
                 style={{
                   flex: 1,

@@ -159,10 +159,13 @@ export const en = {
     review: "Review",
     yourGuests: "Your guests",
     guestStatsComing: "Coming",
+    guestStatsMaybe: "Maybe",
     guestStatsWaiting: "Waiting",
     guestStatsCant: "Can't",
     guestStatsSummary: (parties: number, invited: number) =>
       `${parties} parties · ${invited} invited`,
+    guestStatsSummaryRange: (parties: number, firm: number, ceiling: number) =>
+      `${parties} parties · ${firm}–${ceiling} expected`,
     openGuests: "Open guests →",
     unionHandling: "Union is handling",
     justClosed: "Just closed",
@@ -195,8 +198,11 @@ export const en = {
     searchPlaceholder: "Search by name, email, group…",
     filterAll: "All",
     filterComing: "Coming",
+    filterMaybe: "Maybe",
     filterWaiting: "Waiting",
     filterCant: "Can't",
+    headcountRange: (firm: number, ceiling: number) =>
+      `Plan for ${firm}–${ceiling}: ${firm} confirmed, up to ${ceiling} if every maybe comes.`,
     loadingList: "Loading your guests…",
     planningTools: "Planning tools",
     tools: {
@@ -498,6 +504,7 @@ export const en = {
     activityEmpty: "Nothing yet — what you and Union do together will show up here.",
     activityGuestAdded: (name: string) => `added ${name} as a guest`,
     activityRsvpAttending: "RSVP'd yes",
+    activityRsvpMaybe: "RSVP'd maybe",
     activityRsvpDeclined: "RSVP'd no",
     activityCollaboratorInvited: (email: string) =>
       `invited ${email} to plan together`,
@@ -1115,6 +1122,111 @@ export const en = {
     save: "Save template",
     saved: "Saved",
   },
+  // The signed-in guest hub (/guest/[token]) — the stationery-styled page a
+  // guest lands on after the welcome and identity steps.
+  guestHub: {
+    demo: "Demo mode — your replies are simulated.",
+    greeting: (name: string) => `Dear ${name},`,
+    inviteLine: "invite you to celebrate their wedding",
+    countdown: (days: number) => (days === 1 ? "Tomorrow" : `In ${days} days`),
+    respond: "Respond to the invitation",
+    coming: "You'll be with us",
+    notComing: "You won't be able to make it",
+    maybe: "You're not sure yet",
+    editReply: "Change my reply",
+    discover: "Discover",
+    menu: "Menu",
+    sections: "Sections",
+    nav: { forms: "Replies", travel: "Travel", logistics: "Details", faq: "FAQ" },
+    formsTitle: "Your replies",
+    formsIntro: (name: string) =>
+      `${name}, the couple will ask you a few questions as the big day approaches.`,
+    statusPending: "To do",
+    statusDone: "Done",
+    statusSoon: "Coming soon",
+    statusClosed: "Closed",
+    reply: "Reply",
+    edit: "Edit",
+    confirm: "Confirm",
+    finalCheck: "Final check-in",
+    questions: (n: number) => `${n} question${n === 1 ? "" : "s"}`,
+    answeredFor: (n: number, total: number) => `Answered for ${n} of ${total}`,
+    footer: "See you soon",
+  },
+
+  // The question-by-question form chrome shared by every guest form.
+  guestFlow: {
+    ok: "OK",
+    start: "Start",
+    send: "Send",
+    pressEnter: "press Enter ↵",
+    shiftEnter: "Shift ⇧ + Enter ↵ for a new line",
+    required: "Please answer this question.",
+    error: "Something went wrong. Please try again.",
+    close: "Close",
+    previous: "Previous question",
+    next: "Next question",
+    typeHere: "Type your answer here…",
+    chooseMany: "Choose as many as you like",
+    optional: "Optional",
+    forYou: "For you",
+    forPerson: (name: string) => `For ${name}`,
+    duration: (minutes: number) => `Takes ${minutes} min`,
+    back: "Back to the invitation",
+    progress: (step: number, total: number) => `Question ${step} of ${total}`,
+  },
+
+  // The RSVP, asked one question at a time.
+  rsvpFlow: {
+    attend: (name: string) => `${name}, will you join us?`,
+    companion: (name: string) => `Will ${name} join us?`,
+    addSomeone: "Is anyone else coming with you?",
+    addPartner: "My partner",
+    addChild: "A child",
+    addNobody: "No, that's everyone",
+    partnerName: "What's your partner's name?",
+    childName: "What's the child's name?",
+    firstName: "First name",
+    lastName: "Last name (optional)",
+    firstNameRequired: "First name is required.",
+    lookalike: "This name looks like someone already on the list:",
+    addedBy: (name: string) => `added by ${name}`,
+    addAnyway: "No, add as new",
+    cancel: "Cancel",
+    thanksComing: (name: string) => `See you soon, ${name}!`,
+    thanksNotComing: (name: string) => `Thank you, ${name}`,
+    comingBody: (couple: string) => `${couple} have your reply. We can't wait to celebrate with you.`,
+    notComingBody: (couple: string) => `${couple} have your reply. You'll be missed.`,
+    thanksMaybe: (name: string) => `Thank you, ${name}`,
+    maybeBody: (couple: string) => `${couple} have your reply. Change it here as soon as you know.`,
+    firmAnswerNeeded: "The couple now need a firm answer. Please pick one.",
+  },
+
+  // A couple's own form, asked one question at a time.
+  formFlow: {
+    thanks: "Thank you!",
+    thanksBody: "Your answers have been sent to the couple.",
+  },
+
+  // "Share my travel" on the travel board, asked one question at a time.
+  travelFlow: {
+    open: "Share my travel",
+    intro: "Share your travel",
+    introBody: "Other guests coming your way can get in touch and travel with you.",
+    from: "Where are you leaving from?",
+    fromPlaceholder: "e.g. Lyon, Paris Gare de Lyon…",
+    method: "How are you travelling?",
+    driving: "With my own car",
+    rental: "In a rental car",
+    lookingForRide: "I'm looking for a ride",
+    seats: "How many seats do you have free?",
+    notes: "Anything to add?",
+    notesPlaceholder: "e.g. Leaving Friday afternoon, happy to stop along the way.",
+    publish: "Publish",
+    thanks: "Your trip is on the board",
+    thanksBody: "Guests travelling the same way can now ask you for your details.",
+  },
+
   // System defaults for the RSVP block's guest-facing wording — what a guest
   // reads when the couple hasn't written their own. Lives here rather than in
   // a component so the form builder's placeholders and preview show exactly
@@ -1125,6 +1237,7 @@ export const en = {
         title: "Attendance RSVP",
         subtitle: "Let us know if you and your companions will join us.",
         labelAttending: "Attending",
+        labelMaybe: "Not sure yet",
         labelDeclined: "Declined",
       },
       reconfirmation: {
