@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLocale } from "@/lib/i18n/client";
 import { T, alpha } from "@/lib/theme";
+import type { FairePartLines } from "@/lib/fairePart";
+import { FairePartFaces } from "./FairePartFaces";
 import { sprig } from "./olive";
 import "./FairePartEnvelope.css";
 
@@ -12,12 +14,8 @@ interface FairePartEnvelopeProps {
   guestName?: string | null;
   partnerOne?: string | null;
   partnerTwo?: string | null;
-  /** Already formatted, e.g. "12 juin 2027". */
-  weddingDate?: string | null;
-  /** Short place line shown on the front of the card. */
-  place?: string | null;
-  /** Venue name and address, shown on the back of the card. */
-  venue?: string | null;
+  /** What the card says, already written for this guest (see `fairePartLines`). */
+  lines: FairePartLines;
   onRespond: () => void;
 }
 
@@ -39,9 +37,7 @@ export function FairePartEnvelope({
   guestName,
   partnerOne,
   partnerTwo,
-  weddingDate,
-  place,
-  venue,
+  lines,
   onRespond,
 }: FairePartEnvelopeProps) {
   const { t: dict } = useLocale();
@@ -59,7 +55,6 @@ export function FairePartEnvelope({
     const flipper = $("flipper"), cta = $("cta"), head = $("head"), hint = $("hint");
     const recto = $("recto"), verso = $("verso"), fIn = $("fIn"), fOut = $("fOut"), skip = $("skip");
     const envs = [...root.querySelectorAll<HTMLElement>(".env")];
-    const lines = [...verso.querySelectorAll<HTMLElement>(".line")];
 
     let L = { sh: 0, W: 0, H: 0, ch: 0, cardTop: 0, envTop: 0, s0: 1, yIn: 0, yUp: 0 };
     let target = 0, shown = 0, raf = 0, auto = 0, flipTo = 0, flipCur = 0;
@@ -117,7 +112,7 @@ export function FairePartEnvelope({
       flipper.style.filter = `brightness(${1 - 0.16 * Math.abs(Math.sin((a * Math.PI) / 180))})`;
       recto.hidden = back;
       verso.hidden = !back;
-      lines.forEach((el, i) => el.style.setProperty("--o", String(seg(p, 0.84 + i * 0.02, 0.91 + i * 0.02))));
+      [...verso.querySelectorAll<HTMLElement>(".line")].forEach((el, i) => el.style.setProperty("--o", String(seg(p, 0.84 + i * 0.012, 0.91 + i * 0.012))));
       flipper.classList.toggle("can", p > 0.98);
       flipper.tabIndex = p > 0.98 ? 0 : -1;
 
@@ -257,27 +252,7 @@ export function FairePartEnvelope({
 
               <article className="card" data-id="card">
                 <div className="flipper" data-id="flipper" role="button" tabIndex={-1} aria-label={t.flipCard}>
-                  <section className="side recto" data-id="recto">
-                    <div>
-                      <p className="to">{hasName ? t.to(guestName!) : t.anon}</p>
-                      <h2 className="names">
-                        {partnerOne}
-                        {partnerOne && partnerTwo ? <b>&amp;</b> : null}
-                        {partnerTwo}
-                      </h2>
-                    </div>
-                    <div>
-                      {weddingDate ? <p className="when">{weddingDate}</p> : null}
-                      {place ? <p className="where">{place}</p> : null}
-                    </div>
-                  </section>
-                  <section className="side verso" data-id="verso" hidden>
-                    <div className="verso-in">
-                      <p className="kicker line">{t.kicker}</p>
-                      <p className="lead line">{t.lead}</p>
-                      {venue ? <p className="foot line">{venue}</p> : null}
-                    </div>
-                  </section>
+                  <FairePartFaces partnerOne={partnerOne} partnerTwo={partnerTwo} lines={lines} />
                 </div>
               </article>
 
