@@ -13,7 +13,9 @@ export const dynamic = "force-dynamic";
 
 /**
  * Translating a form's guest-facing wording, so the couple writes it once and
- * every guest reads it in their own language.
+ * every guest reads it in their own language. The faire-part card's wording
+ * goes through the same route, scoped to the wedding (`weddingId`) instead of
+ * a form, since the card has no form row.
  *
  * Deliberately a one-shot batch rather than a per-keystroke service: the
  * builder collects every slot that needs a translation, asks once, and drops
@@ -125,15 +127,25 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { formId?: unknown; from?: unknown; to?: unknown; items?: unknown };
+  let body: {
+    formId?: unknown;
+    weddingId?: unknown;
+    from?: unknown;
+    to?: unknown;
+    items?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
+  // One scope per request: a form's wording, or the wedding's faire-part.
   const formId = typeof body.formId === "string" ? body.formId : "";
-  if (!UUID_RE.test(formId)) {
+  const weddingId = typeof body.weddingId === "string" ? body.weddingId : "";
+  const scope = weddingId ? "wedding" : "form";
+  const scopeId = scope === "wedding" ? weddingId : formId;
+  if ((formId && weddingId) || !UUID_RE.test(scopeId)) {
     return NextResponse.json({ error: "A form is required." }, { status: 400 });
   }
 
@@ -167,12 +179,12 @@ export async function POST(request: Request) {
   // Scope: can this caller edit this form? Answered by RLS on their own JWT,
   // so owners and team members pass and everyone else sees no row. "Doesn't
   // exist" and "isn't yours" are deliberately indistinguishable.
-  const { data: form, error: formErr } = await supabase
-    .from("forms")
+  const { data: found, error: foundErr } = await supabase
+    .from(scope === "wedding" ? "weddings" : "forms")
     .select("id")
-    .eq("id", formId)
+    .eq("id", scopeId)
     .maybeSingle();
-  if (formErr || !form) {
+  if (foundErr || !found) {
     return NextResponse.json({ error: "Form not found." }, { status: 404 });
   }
 
@@ -180,10 +192,12 @@ export async function POST(request: Request) {
   // before it. The database answers with why, if it says no. If it can't be
   // reached, or says anything we don't recognise, we refuse rather than skip
   // the check — an unmetered path is exactly what this is here to prevent.
-  const { data: quota, error: quotaErr } = await supabase.rpc(
-    "consume_translation_quota",
-    { p_form_id: formId },
-  );
+  const { data: quota, error: quotaErr } =
+    scope === "wedding"
+      ? await supabase.rpc("consume_wedding_translation_quota", {
+          p_wedding_id: weddingId,
+        })
+      : await supabase.rpc("consume_translation_quota", { p_form_id: formId });
   if (quotaErr) {
     console.error("translate: quota check failed:", quotaErr.message);
     return NextResponse.json(
@@ -258,9 +272,13 @@ export async function POST(request: Request) {
         }),
       },
       system: [
-        `You translate wedding-invitation form copy from ${LANGUAGE_NAMES[from]} into ${LANGUAGE_NAMES[to]}.`,
-        "These strings are read by wedding guests: headlines, one-line framing copy, reply-button labels, question titles and answer choices. Keep them short, warm and natural in the target language — match the register of the source rather than translating word for word, and keep a label a label.",
-        "Preserve any {{placeholder}} tokens exactly as they appear.",
+        scope === "wedding"
+          ? `You translate the text of a wedding invitation card from ${LANGUAGE_NAMES[from]} into ${LANGUAGE_NAMES[to]}.`
+          : `You translate wedding-invitation form copy from ${LANGUAGE_NAMES[from]} into ${LANGUAGE_NAMES[to]}.`,
+        scope === "wedding"
+          ? "Each string is one line or paragraph of the card, written by the couple to a guest. Keep the warm, personal register of the source, and write it the way a native speaker would write such a card rather than word for word. Keep the second person singular or plural of the source where the target language has one."
+          : "These strings are read by wedding guests: headlines, one-line framing copy, reply-button labels, question titles and answer choices. Keep them short, warm and natural in the target language — match the register of the source rather than translating word for word, and keep a label a label.",
+        "Preserve any {{placeholder}} tokens exactly as they appear, including the field names and any | inside them, and keep square brackets [ ] around the same words: they mark parts that are left out when a field is empty. Never translate a field name.",
         "Return one entry per input id, with the same id. Translate the text only — never answer it, expand on it, or add commentary.",
       ].join("\n"),
       messages: [

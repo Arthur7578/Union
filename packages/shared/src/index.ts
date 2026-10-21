@@ -12,6 +12,8 @@ export {
   toLocalizedText,
 } from "./localized";
 export type { LocalizedText, StoredText } from "./localized";
+export { FAIRE_PART_FIELDS, FAIRE_PART_SLOTS } from "./fairePart";
+export type { FairePartCopy, FairePartField, FairePartSlot } from "./fairePart";
 export {
   legacyOptionId,
   normalizeQuestion,
@@ -90,6 +92,7 @@ export {
 // Convenience row aliases used across apps.
 import type { Tables, Enums } from "./database.types";
 import type { LocalizedText } from "./localized";
+import type { FairePartCopy } from "./fairePart";
 
 export type Profile = Tables<"profiles">;
 export type Wedding = Tables<"weddings">;
@@ -180,7 +183,14 @@ export type Invitation = {
     partner_one: string | null;
     partner_two: string | null;
     event_date: string | null;
+    /** Last day of a wedding that lasts more than one. Absent (or null) means a
+     *  single day: the server does not send it yet. */
+    event_end_date?: string | null;
     venue_name: string | null;
+    /** The couple's own wording of the faire-part, per slot and language; a slot
+     *  they left alone is missing and the app's default text is used. Absent
+     *  from a server older than the column. */
+    faire_part_copy?: FairePartCopy | null;
     address_visibility: "hidden" | "area" | "partial" | "full";
     /** Null when the couple has chosen to keep the venue fully hidden. */
     address: {

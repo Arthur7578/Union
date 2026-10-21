@@ -138,24 +138,42 @@ export async function requestTranslations(
   to: Locale,
   accessToken: string,
 ): Promise<Record<string, string>> {
+  return postTranslations({ formId }, slots, from, to, accessToken, "Couldn't translate this form.");
+}
+
+/** Same, for the wedding's faire-part wording rather than one of its forms. */
+export async function requestWeddingTranslations(
+  weddingId: string,
+  slots: TranslatableSlot[],
+  from: Locale,
+  to: Locale,
+  accessToken: string,
+): Promise<Record<string, string>> {
+  return postTranslations({ weddingId }, slots, from, to, accessToken, "Couldn't translate the card.");
+}
+
+async function postTranslations(
+  scope: { formId: string } | { weddingId: string },
+  slots: TranslatableSlot[],
+  from: Locale,
+  to: Locale,
+  accessToken: string,
+  fallbackError: string,
+): Promise<Record<string, string>> {
   const res = await fetch("/api/translate", {
     method: "POST",
     headers: {
       "content-type": "application/json",
       authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ formId, from, to, items: slots }),
+    body: JSON.stringify({ ...scope, from, to, items: slots }),
   });
   const payload = (await res.json().catch(() => ({}))) as {
     translations?: Record<string, string>;
     error?: string;
   };
   if (!res.ok) {
-    throw new Error(
-      typeof payload.error === "string"
-        ? payload.error
-        : "Couldn't translate this form.",
-    );
+    throw new Error(typeof payload.error === "string" ? payload.error : fallbackError);
   }
   return payload.translations ?? {};
 }
