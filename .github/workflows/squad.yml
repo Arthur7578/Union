@@ -1,0 +1,251 @@
+name: Squad
+
+# Automated product squad. Arthur drives it from GitHub with labels and
+# comments; see docs/squad/README.md.
+#
+#   label `squad`, or a comment starting with `/squad` (the rest of the
+#   comment is passed on as context) → strategist (or, on a `bug`, the fix)
+#   `/go` on the issue             → next stage (design, then build)
+#   `/revise <text>` on the issue  → redo the current stage with his comment
+#   `/stop` on the issue           → stop
+#   `/fix <text>` on the squad PR  → developer + review loop again
+
+on:
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Issue number
+        required: true
+      stage:
+        description: Stage to run
+        required: true
+        type: choice
+        options: [strategy, design, build-feature, build-bug, build-fix]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: squad-${{ github.event.issue.number || inputs.issue }}
+  cancel-in-progress: false
+
+jobs:
+  route:
+    # Public repo: only the owner can start the squad (it spends API credit
+    # and reads issue text as instructions).
+    # The squad comments with the owner's token: its own comments carry a
+    # marker and are ignored.
+    if: github.event.sender.login == github.repository_owner && (github.event_name != 'issue_comment' || (contains(github.event.comment.body, '/') && !contains(github.event.comment.body, '<!-- union-squad -->')))
+    runs-on: ubuntu-latest
+    outputs:
+      stage: ${{ steps.route.outputs.stage }}
+      mode: ${{ steps.route.outputs.mode }}
+      issue: ${{ steps.route.outputs.issue }}
+    steps:
+      - id: route
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_ISSUE: ${{ inputs.issue }}
+          INPUT_STAGE: ${{ inputs.stage }}
+        run: |
+          set -euo pipefail
+          ev="$GITHUB_EVENT_PATH"
+          stage=none; mode=""; issue=""
+          # GitHub label names are case-insensitive: `Squad` counts as `squad`.
+          has() { jq -e --arg l "$1" '[.issue.labels[]?.name | ascii_downcase] | index($l | ascii_downcase) != null' "$ev" > /dev/null; }
+
+          case "$GITHUB_EVENT_NAME" in
+            workflow_dispatch)
+              issue="$INPUT_ISSUE"
+              case "$INPUT_STAGE" in build-*) stage=build; mode="${INPUT_STAGE#build-}" ;; *) stage="$INPUT_STAGE" ;; esac ;;
+            issues)
+              issue=$(jq -r .issue.number "$ev")
+              if [[ "$(jq -r '.label.name | ascii_downcase' "$ev")" == "squad" ]]; then
+                if has bug; then stage=build; mode=bug; else stage=strategy; fi
+              fi ;;
+            issue_comment)
+              # The command can be on any line, e.g. after a quoted passage.
+              cmd=$(jq -r '[.comment.body | split("\n")[] | capture("^\\s*(?<c>/(squad|go|revise|stop|fix))(\\s|$)") | .c] | first // ""' "$ev")
+              if [[ "$(jq -r '.issue.pull_request != null' "$ev")" == "true" ]]; then
+                head=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/$(jq -r .issue.number "$ev")" --jq .head.ref)
+                if [[ "$cmd" == "/fix" && "$head" =~ ^squad/([0-9]+)$ ]]; then
+                  issue="${BASH_REMATCH[1]}"; stage=build; mode=fix
+                fi
+              elif [[ "$cmd" == "/squad" ]] && ! has squad; then
+                issue=$(jq -r .issue.number "$ev")
+                if has bug; then stage=build; mode=bug; else stage=strategy; fi
+              elif has squad; then
+                issue=$(jq -r .issue.number "$ev")
+                case "$cmd" in
+                  /go)     if has squad:gate-strategy; then stage=design
+                           elif has squad:gate-design; then stage=build; mode=feature; fi ;;
+                  /revise) if has squad:gate-strategy; then stage=strategy
+                           elif has squad:gate-design; then stage=design; fi ;;
+                  /stop)   stage=stop ;;
+                esac
+              fi ;;
+          esac
+          echo "stage=$stage mode=$mode issue=$issue"
+          { echo "stage=$stage"; echo "mode=$mode"; echo "issue=$issue"; } >> "$GITHUB_OUTPUT"
+
+  stop:
+    needs: route
+    if: needs.route.outputs.stage == 'stop'
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE: ${{ needs.route.outputs.issue }}
+        run: |
+          gh label create squad:stopped --color cccccc --force > /dev/null 2>&1 || true
+          gh issue edit "$ISSUE" --add-label squad:stopped --remove-label squad:gate-strategy,squad:gate-design,squad:working > /dev/null 2>&1 || true
+          gh issue comment "$ISSUE" --body "<!-- union-squad -->⏹️ Squad arrêtée sur cette issue. Remets le label \`squad\` pour repartir de zéro."
+
+  run:
+    needs: route
+    if: contains(fromJSON('["strategy","design","build"]'), needs.route.outputs.stage)
+    # Stages that use Mobbin run one at a time across all issues: two runs
+    # renewing the same Mobbin token at once would spend it twice.
+    concurrency:
+      group: ${{ needs.route.outputs.stage == 'build' && format('squad-build-{0}', needs.route.outputs.issue) || 'squad-mobbin' }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      ISSUE: ${{ needs.route.outputs.issue }}
+      STAGE: ${{ needs.route.outputs.stage }}
+      MODE: ${{ needs.route.outputs.mode }}
+      SQUAD_MODEL: ${{ vars.SQUAD_MODEL || 'opus' }}
+      SQUAD_EFFORT: ${{ vars.SQUAD_EFFORT || 'high' }}
+      SQUAD_BUDGET_USD: ${{ vars.SQUAD_BUDGET_USD || '8' }}
+      SQUAD_DEV_BUDGET_USD: ${{ vars.SQUAD_DEV_BUDGET_USD || '20' }}
+      SQUAD_MAX_ROUNDS: ${{ vars.SQUAD_MAX_ROUNDS || '5' }}
+      REVIEWER_MODEL: ${{ vars.REVIEWER_MODEL || 'openai/gpt-5.6-sol' }}
+      REVIEWER_EFFORT: ${{ vars.REVIEWER_EFFORT || 'high' }}
+      OPENROUTER_BASE_URL: ${{ vars.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1' }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Scratch folder for the roles (outside the repo)
+        run: echo "SQUAD_DIR=${RUNNER_TEMP}/squad-run" >> "$GITHUB_ENV"
+
+      - name: Mark the issue as in progress
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          gh label create squad:working --color fbca04 --force > /dev/null 2>&1 || true
+          # Also adds `squad` when the run was started by a /squad comment.
+          # Labels added with GITHUB_TOKEN do not start another run.
+          gh issue edit "$ISSUE" --add-label squad,squad:working > /dev/null || true
+          if [[ -n "$COMMENT_ID" ]]; then
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/comments/${COMMENT_ID}/reactions" -f content=eyes > /dev/null || true
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # The roles must not be able to push: credentials are only used in
+          # the publish step.
+          persist-credentials: false
+
+      - name: Check out the squad branch
+        run: |
+          git config user.name "union-squad[bot]"
+          git config user.email "union-squad@users.noreply.github.com"
+          if git ls-remote --exit-code origin "refs/heads/squad/${ISSUE}" > /dev/null; then
+            git fetch -q origin "squad/${ISSUE}"
+            git checkout -q -B "squad/${ISSUE}" FETCH_HEAD
+            git merge -q --no-edit origin/main || { git merge --abort; echo "::warning::main does not merge cleanly into squad/${ISSUE}; continuing on the branch as is"; }
+          else
+            git checkout -q -b "squad/${ISSUE}" origin/main
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code && claude --version
+
+      - if: env.STAGE == 'build'
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      - if: env.STAGE == 'build'
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+
+      - name: Gather the issue, its images and Arthur's comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OWNER: ${{ github.repository_owner }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: bash .github/squad/gather-issue.sh
+
+      - name: Trust the workspace for Claude Code
+        # Without this, Claude Code ignores the project settings in .claude/.
+        run: |
+          jq -n --arg dir "$GITHUB_WORKSPACE" '{projects: {($dir): {hasTrustDialogAccepted: true}}}' > "$HOME/.claude.json"
+
+      - name: Run the stage
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # Mobbin for the strategist, designer and PM (see lib.sh): the token
+          # is renewed and written back with SQUAD_GH_TOKEN.
+          MOBBIN_OAUTH: ${{ secrets.MOBBIN_OAUTH }}
+          SQUAD_GH_TOKEN: ${{ secrets.SQUAD_GH_TOKEN }}
+        run: |
+          if [[ -z "$ANTHROPIC_API_KEY" ]]; then
+            echo "::error::The Actions secret ANTHROPIC_API_KEY is missing or empty (Settings → Secrets and variables → Actions → Secrets, exact name)."
+            exit 1
+          fi
+          if [[ "$STAGE" == "build" && -z "$OPENROUTER_API_KEY" ]]; then
+            echo "::error::The Actions secret OPENROUTER_API_KEY is missing or empty: the external reviewer cannot run."
+            exit 1
+          fi
+          case "$STAGE" in
+            strategy) bash .github/squad/stage-strategy.sh ;;
+            design)   bash .github/squad/stage-design.sh ;;
+            build)    bash .github/squad/stage-build.sh "$MODE" ;;
+          esac
+
+      - name: Publish (push, PR, comment, labels)
+        env:
+          # A token other than GITHUB_TOKEN is needed for the push to trigger
+          # CI and Vercel. Without SQUAD_GH_TOKEN the squad still works, but CI
+          # will not run on its commits until someone pushes.
+          GH_TOKEN: ${{ secrets.SQUAD_GH_TOKEN || github.token }}
+        run: |
+          case "$STAGE" in build) bash .github/squad/publish.sh build ;; *) bash .github/squad/publish.sh "$STAGE" ;; esac
+
+      - name: Report a failed run
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create squad:needs-human --color d93f0b --force > /dev/null 2>&1 || true
+          gh issue edit "$ISSUE" --add-label squad:needs-human --remove-label squad:working > /dev/null 2>&1 || true
+          gh issue comment "$ISSUE" --body "<!-- union-squad -->❌ Le run de la squad (étape \`${STAGE}\`) a échoué avant la fin. [Logs](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}). Relance avec la même commande une fois le problème réglé."
+
+      - name: Keep every role's output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: squad-${{ env.ISSUE }}-${{ env.STAGE }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.SQUAD_DIR }}
+            !${{ env.SQUAD_DIR }}/supabase*.env
+          retention-days: 14
+          if-no-files-found: ignore

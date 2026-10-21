@@ -45,6 +45,7 @@ export {
   rsvpAnswers,
 } from "./rsvpAnswers";
 export type { AnsweredRsvpStatus, RsvpRollup } from "./rsvpAnswers";
+export { rsvpCardLine } from "./rsvpCardLine";
 export {
   MAX_CHILDREN_CAP,
   buildGuestPermissionsPatch,
