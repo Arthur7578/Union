@@ -18,6 +18,8 @@ export type SeedGuest = {
   relation?: "partner_of" | "parent_of";
   /** An RSVP already on record for them. */
   rsvp?: "attending" | "declined";
+  /** Leave the invitation welcome (the faire-part card) unseen, so their link opens on it. */
+  welcomeSeen?: boolean;
 };
 
 export type Seeded = {
@@ -54,6 +56,8 @@ export async function seedWedding(opts: {
    *  `{ label_declined: { en: "Can't make it" } }`. */
   rsvpCopy?: Record<string, Record<string, string>>;
   customForms?: Array<{ key: string; title: string; perPerson: boolean; questions: Question[] }>;
+  /** More columns for the wedding row, e.g. its date or the address it discloses. */
+  wedding?: Record<string, unknown>;
   household: SeedGuest[];
 }): Promise<Seeded> {
   const { url, anonKey } = e2eEnv();
@@ -75,6 +79,7 @@ export async function seedWedding(opts: {
       owner_id: user.id,
       partner_one: "Maya",
       partner_two: "Daniel",
+      ...opts.wedding,
     }),
   );
 
@@ -119,7 +124,9 @@ export async function seedWedding(opts: {
       }),
     );
     // As the guest's own link does once they've opened the welcome.
-    must(await db.rpc("mark_welcome_seen", { p_token: guests[g.key].token }));
+    if (g.welcomeSeen !== false) {
+      must(await db.rpc("mark_welcome_seen", { p_token: guests[g.key].token }));
+    }
     if (g.rsvp) {
       must(await db.from("rsvps").insert({ guest_id: guests[g.key].id, status: g.rsvp }));
     }
@@ -148,6 +155,13 @@ export async function signInAsOwner(page: Page, seeded: Seeded) {
     ([key, value]) => window.localStorage.setItem(key, value),
     [storageKey, JSON.stringify(seeded.ownerSession)] as const,
   );
+}
+
+/** The couple's own wording of the faire-part as stored on the wedding. */
+export async function fairePartCopy(seeded: Seeded) {
+  const { data, error } = await seeded.owner.from("weddings").select("faire_part_copy").eq("id", seeded.weddingId).single();
+  if (error) throw error;
+  return data.faire_part_copy as Record<string, unknown>;
 }
 
 /** The answers on record for one guest of one form, or null. */
