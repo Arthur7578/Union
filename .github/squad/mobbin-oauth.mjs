@@ -12,6 +12,7 @@
  *   node mobbin-oauth.mjs start                 → stdout: pending JSON; stderr: the URL to open
  *   node mobbin-oauth.mjs finish <callback-url> → reads MOBBIN_OAUTH_PENDING; stdout: state JSON
  *   node mobbin-oauth.mjs refresh               → reads MOBBIN_OAUTH (state JSON); stdout: new state JSON
+ *   node mobbin-oauth.mjs check                 → refresh, then call the MCP server once; stdout: new state JSON
  *
  * State JSON: { client_id, token_endpoint, refresh_token, access_token, expires_at }
  */
@@ -114,6 +115,10 @@ const commands = {
     process.stdout.write(JSON.stringify({ client_id: pending.client_id, token_endpoint: pending.token_endpoint, ...tokens }));
   },
 
+  async check() {
+    await commands.refresh();
+  },
+
   async refresh() {
     const state = JSON.parse(process.env.MOBBIN_OAUTH || "null");
     if (!state?.refresh_token) throw new Error("MOBBIN_OAUTH is empty: run the Mobbin login workflow");
@@ -122,9 +127,33 @@ const commands = {
       refresh_token: state.refresh_token,
       client_id: state.client_id,
     });
-    process.stdout.write(JSON.stringify({ client_id: state.client_id, token_endpoint: state.token_endpoint, ...tokens }));
+    const next = { client_id: state.client_id, token_endpoint: state.token_endpoint, ...tokens };
+    // Print the new state before anything else can fail: the old refresh
+    // token is already spent, so the caller must be able to save this one.
+    process.stdout.write(JSON.stringify(next));
+    if (command === "check") await initialize(next.access_token);
   },
 };
+
+// One MCP handshake, to prove the token opens Mobbin's server.
+async function initialize(accessToken) {
+  const response = await fetch("https://api.mobbin.com/mcp", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "union-squad", version: "1" } },
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new Error(`Mobbin MCP answered ${response.status}: ${(await response.text()).slice(0, 200)}`);
+}
 
 const [command, ...args] = process.argv.slice(2);
 if (!commands[command]) {

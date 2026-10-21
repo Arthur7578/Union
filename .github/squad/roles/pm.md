@@ -8,7 +8,9 @@ until it can, or mark it `manual` and say why.
 
 Apply the `product-designer` skill, **Mode B block 9 (acceptance criteria)**,
 and block 2 (success) from the strategist's success signal. The criteria must
-cover the states and edge cases in `design.md`.
+cover the states and edge cases in `design.md`. Mobbin is available to you
+too (see the common rules), mainly to check how real products word errors,
+empty states and confirmations.
 
 ## What to do
 

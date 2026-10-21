@@ -49,6 +49,10 @@ if [[ -n "$pr" ]]; then
   if [[ "$action" == "draft" && "$is_draft" == "false" ]]; then gh pr ready "$pr" --undo; fi
 fi
 
+if [[ -s "$SQUAD_DIR/notes.md" ]]; then
+  { echo; echo "### Notes du run"; sort -u "$SQUAD_DIR/notes.md"; } >> "$SQUAD_DIR/comment.md"
+fi
+
 run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 printf '\n\n<sub>[Logs et sorties de chaque rôle](%s)</sub>\n<!-- union-squad -->\n' "$run_url" >> "$SQUAD_DIR/comment.md"
 

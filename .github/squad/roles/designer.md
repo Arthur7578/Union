@@ -17,10 +17,10 @@ microcopy, AI tells to avoid). For anything that moves (transitions, the
 envelope, gestures), also apply `animate` and `emil-design-eng`: exact
 durations and curves, and a reduced-motion version.
 
-If `docs/specs/$ISSUE/benchmark.md` exists, it is a Mobbin benchmark Arthur ran
-outside the squad: use it for the "Options" block and cite only what it
-contains. You have no Mobbin access; without that file, describe options
-without naming real products.
+Use Mobbin (see the common rules) before the "Options" and "Parcours" blocks
+and before building the prototype: 2 to 3 structurally different approaches
+seen in real products, and the step count of comparable journeys. Read
+`docs/specs/$ISSUE/benchmark.md` first if the strategist already searched.
 
 ## Two modes
 

@@ -65,7 +65,7 @@ Labels posés par la squad : `squad:working` (en cours), `squad:gate-strategy` e
 ## Mise en place
 
 1. **Secrets Actions** (fait) : `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`.
-2. **Secret `SQUAD_GH_TOKEN`** (à faire, fortement recommandé). Sans lui, les commits de la squad ne déclenchent ni la CI ni la preview Vercel, car GitHub ne relance pas de workflow sur un push fait avec le jeton par défaut. Crée un *fine-grained personal access token* (sur ordinateur : https://github.com/settings/personal-access-tokens/new) limité au repo `union`, avec les permissions *Contents*, *Issues*, *Pull requests* et *Workflows* en lecture/écriture, et ajoute-le en secret Actions.
+2. **Secret `SQUAD_GH_TOKEN`** (à faire, fortement recommandé). Sans lui, les commits de la squad ne déclenchent ni la CI ni la preview Vercel, car GitHub ne relance pas de workflow sur un push fait avec le jeton par défaut. Crée un *fine-grained personal access token* (sur ordinateur : https://github.com/settings/personal-access-tokens/new) limité au repo `union`, avec les permissions *Contents*, *Issues*, *Pull requests*, *Workflows* et *Secrets* en lecture/écriture, et ajoute-le en secret Actions.
 3. **Variables Actions** (facultatives, *Settings → Secrets and variables → Actions → Variables*) :
 
    | Variable | Défaut | Rôle |
@@ -80,6 +80,19 @@ Labels posés par la squad : `squad:working` (en cours), `squad:gate-strategy` e
    | `SQUAD_DEV_BUDGET_USD` | `20` | Idem pour le développeur |
 
 4. Les coûts : chaque commentaire final donne le coût Claude estimé du run. La clé API est facturée à l'usage, séparément de l'abonnement Claude.
+
+## Mobbin
+
+Le strategist, le designer et le PM utilisent Mobbin eux-mêmes (avant le développement), avec ton compte, quand des exemples réels changeraient leur réponse. Ce qu'ils retiennent est écrit dans `docs/specs/<issue>/benchmark.md`, avec un lien vers chaque écran.
+
+**Connexion (une fois, 2 minutes)**
+
+1. Ajoute la permission *Secrets* (lecture et écriture) à ton jeton `SQUAD_GH_TOKEN` : la connexion Mobbin change à chaque renouvellement et le workflow réécrit lui-même le secret `MOBBIN_OAUTH`.
+2. Onglet **Actions** → **Mobbin login** → **Run workflow** → **start**. Ouvre le lien affiché dans le résumé du run, connecte-toi à Mobbin, autorise.
+3. Le navigateur arrive sur une page qui ne charge pas (`http://localhost:53682/callback?...`) : copie toute l'adresse.
+4. **Run workflow** → **finish**, colle l'adresse dans **callback_url**.
+
+**Entretien** : chaque lundi, le workflow renouvelle la connexion. Si Mobbin la refuse, une issue « Mobbin : reconnexion nécessaire » s'ouvre ; en attendant, les agents travaillent sans Mobbin et le signalent. Les étapes qui utilisent Mobbin (stratégie, design) passent une à la fois, toutes issues confondues, pour ne jamais renouveler la connexion deux fois en même temps.
 
 ## Écrire une bonne issue
 

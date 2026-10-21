@@ -49,12 +49,30 @@ answers, so these rules override any step of a skill:
   depth; the files you write, their names and shapes, and the language rules
   above come from your role. Do not produce the skill's chat-style deliverable
   in addition.
-- **Tools you do not have are skipped, not faked.** No Mobbin, no web search
-  unless your role allows it, no Figma, no design canvas, no artifacts. Never
-  cite a real app's screen or pattern as a reference unless it comes from a
-  file in `docs/specs/$ISSUE/` (for example `benchmark.md`).
+- **Tools you do not have are skipped, not faked.** No web search unless your
+  role allows it, no Figma, no design canvas, no artifacts. Never cite a real
+  app's screen or pattern unless you saw it yourself through a tool in this
+  run, or it is written in `docs/specs/$ISSUE/`.
 - When a skill suggests loading another skill that is not in `.claude/skills/`,
   carry on without it.
+
+## Mobbin (strategist, designer, PM, before development)
+
+When the tools `mcp__Mobbin__search_screens`, `mcp__Mobbin__search_flows` and
+`mcp__Mobbin__search_sections` are available, they are Arthur's Mobbin
+account: real screens and journeys from shipped apps. Use them yourself,
+whenever real examples would change your answer, as many times as you need,
+following the `mobbin-benchmark` skill (when to search, which tool, how to
+write queries, how to read results). Union's guest screens are mobile web:
+query `platform: "ios"` for phone patterns (the closest match Mobbin has) and
+`web` for the couple's desktop screens. Look at the images, keep only strong
+matches, and cite each screen you rely on with its `mobbin_url`, tagged
+`[Mobbin]`. Write what you kept to `docs/specs/$ISSUE/benchmark.md` (append a
+section with your role's name), so the next roles can build on it instead of
+searching again.
+
+If the tools are missing or fail, say so in one line in your summary and carry
+on without naming real products.
 
 ## Repo rules
 
