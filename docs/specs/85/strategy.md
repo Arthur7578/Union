@@ -1,11 +1,29 @@
 # Issue #85 — Strategy
 
-**Verdict: go.** A small copy fix on the guest hub. It is cheap, easy to undo, and makes the most common screen a guest sees after replying read more naturally. The only real decision is what "solo" means. It is settled below so the designer and PM do not have to guess.
+**Verdict: go** (confirmed after checking the screenshot, see "Revision 2"). A small copy fix on the guest hub. It is cheap, easy to undo, and makes the most common screen a guest sees after replying read more naturally. The only real decision is what "solo" means. It is settled below so the designer and PM do not have to guess.
+
+## Revision 2 — screenshot checked (answers Arthur's `/revise`)
+
+Arthur asked me to check the screenshot. I opened it (`attachments/img-01.png`). It shows:
+
+- Section title **« Vos réponses »** with the subtitle « Yyyy, les mariés te poseront quelques questions au fil des préparatifs. » [Certain] These are `hub.formsTitle` and the forms intro in `fr.ts:1091-1093`.
+- One card, **« Votre présence »**, with a check-mark badge, the line **« Yyyy : Je ne pourrai pas venir »**, the state **« Complété »** (`hub.statusDone`, `fr.ts:1095`) and a **« Modifier »** button.
+
+So yes: **it is the RSVP card in the hub's forms section, in the "done" state.** A1 is confirmed. The line is `householdAnswer` (`GuestPortal.tsx:314-321`), shown as the card's `meta` (`GuestPortal.tsx:331`). The verdict stays **go**, and the scope stays on that line.
+
+Two things in the screenshot that the first pass did not know, and that change the framing a little:
+
+1. **The couple uses their own wording.** « Votre présence » is not Union's default title (« RSVP de Présence ») and « Je ne pourrai pas venir » is not the default declined label (« Absent ») ([Certain], `fr.ts:1179-1183`). Both come from the couple's custom copy, through `rsvpWording` (`GuestPortal.tsx:246`). So the fix has to work with **any** label, not only the defaults. It does: the change only drops `<name> : ` in front, and it never touches the label.
+2. **The label is a first-person sentence.** « Yyyy : Je ne pourrai pas venir » mixes the guest's name in the third person with « je ». Shown alone, « Je ne pourrai pas venir » reads as the guest's own words, which is exactly the point of the issue. This makes the case for the fix stronger than the first pass said. It also makes R1 less of a worry when the couple has custom labels; R1 is still open for the default labels (« Présent » / « Absent »).
+
+The name is also already shown just above, in the section subtitle (« Yyyy, les mariés… ») [Certain]. Repeating it in the card two lines below adds nothing for a solo guest.
+
+What the screenshot cannot tell me: whether Yyyy has a companion who has not replied. With the chosen definition of solo (A2, which Arthur confirmed in an earlier comment), that case keeps the name. The tests must cover both cases.
 
 ## Assumptions to check
 
-- **[Assumption] A1 — what the screenshot shows.** I cannot open the image in the issue (it is hosted on GitHub, and this role does not talk to GitHub). From the title and the code, I take it to show the RSVP card in the hub's forms section, in the "done" state, with the line `Arthur : Présent`. That line is built in `apps/web/app/guest/[token]/GuestPortal.tsx:314-321` (`householdAnswer`) and shown as the card's `meta` (`GuestPortal.tsx:331`, rendered by `FormList.tsx:59`). [Certain] the code builds `<first name> : <label>` for every person who has replied, including a guest who is alone. [Likely] this is the line in the screenshot, since no other "answered" summary in the guest app puts a name before the answer.
-- **[Assumption] A2 — "solo" means the invitation has no companions** (`invitation.companions` is empty). It does *not* mean "only one person has replied so far". See "Definition of solo" for why.
+- **A1 — what the screenshot shows.** Confirmed: see "Revision 2" above.
+- **A2 — "solo" means the invitation has no companions** (`invitation.companions` is empty). It does *not* mean "only one person has replied so far". See "Definition of solo" for why. Arthur confirmed this reading in an issue comment.
 
 ## Problem
 
@@ -46,7 +64,8 @@ What follows from (a): if a solo guest adds a partner or child during the RSVP (
 
 **In**
 - The RSVP card's summary line in the guest hub (`householdAnswer`), primary RSVP, both locales (fr / en).
-- On a solo invitation: show the status label alone, with no name and no separator (`Présent`, `Peut-être`, `Absent`, or the couple's custom labels).
+- On a solo invitation: show the status label alone, with no name and no separator (`Présent`, `Peut-être`, `Absent`, or the couple's custom labels such as `Je ne pourrai pas venir`).
+- The tests use at least one custom label (as in the screenshot), not only the defaults.
 - The named format stays exactly as it is for invitations with companions.
 - A unit test of the line in both cases, and a Playwright check at phone size of the solo case (required by `CLAUDE.md`: this changes `apps/web/app/**`).
 
@@ -62,7 +81,7 @@ What follows from (a): if a solo guest adds a partner or child during the RSVP (
 
 | # | Risk | Probability × impact | Mitigation |
 |---|---|---|---|
-| R1 | Without a name in front, the bare default label `Présent` reads more like an adjective about the guest, so a woman invited alone may notice the masculine form. With `Arthur : Présent` it read as a status field. | Medium × low | [Guessing] about how readers react. The designer should look at the bare label on a phone. If it jars, the cheapest fix stays inside this scope: reuse the hub's own tutoiement wording for a solo guest instead of the bare label. Changing the default labels is out of scope. |
+| R1 | Without a name in front, the bare default label `Présent` reads more like an adjective about the guest, so a woman invited alone may notice the masculine form. With `Arthur : Présent` it read as a status field. | Medium × low | [Guessing] about how readers react. The designer should look at the bare label on a phone. If it jars, the cheapest fix stays inside this scope: reuse the hub's own tutoiement wording for a solo guest instead of the bare label. Changing the default labels is out of scope. Revision 2: this only concerns Union's default labels. When the couple wrote their own labels (as in the screenshot), show them as written: the fallback must never replace the couple's wording. |
 | R2 | Too wide a definition of solo (reading b) hides a companion who has not replied. | Low (decided above) × medium | Reading (a), plus a test for "has companions, only the guest has replied → name kept". |
 | R3 | The household line has no test today ([Certain]: nothing in `GuestPortal.test.tsx` or `e2e/guest-forms.spec.ts` checks `householdAnswer`), so the change could break the household case without anyone noticing. | Medium × low | Tests cover both cases, as listed under "Scope / In". |
 
@@ -77,8 +96,9 @@ Deadline (June 2027): no impact. This is a few hours of work and easy to undo. G
 ## Open questions (do not block the next stage)
 
 - Q1 (designer): after looking at the bare label at phone size, is it enough, or should a solo guest see the tutoiement wording? See R1.
-- Q2 (Arthur): does the screenshot match A1? If it shows a different screen, this scope is wrong and the issue should come back.
+- Q2 (Arthur): answered. The screenshot matches A1 (see "Revision 2").
+- Q3 (out of scope, noted only): in the screenshot the card title says « Votre » (vous) while the subtitle says « te » (tu). The title is the couple's own text, so it is their choice, not a Union bug. No action here.
 
 ## What would change my mind
 
-If the screenshot shows a screen other than the hub's RSVP card (for example a recap inside the reply flow), the scope above is aimed at the wrong place and the verdict becomes "reformulate".
+The screenshot check removed the main doubt. Only one thing would still change the verdict: if Arthur meant that a guest with companions should also lose the name when they are the only one who has replied (reading b). He confirmed reading (a), so this is settled unless he says otherwise.
