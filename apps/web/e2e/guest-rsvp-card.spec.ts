@@ -9,12 +9,12 @@ import { seedWedding } from "./support/seed";
 
 test.use({ viewport: { width: 390, height: 844 } });
 
+/** The RSVP card: the checklist item whose heading is the RSVP's title. */
+const rsvpCard = (page: Page) =>
+  page.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3, name: "Attendance RSVP" }) });
+
 /** The RSVP card's one-line answer. */
-const rsvpLine = (page: Page) =>
-  page
-    .getByRole("listitem")
-    .filter({ has: page.getByRole("heading", { level: 3, name: "Attendance RSVP" }) })
-    .locator(".gh-card-meta");
+const rsvpLine = (page: Page) => rsvpCard(page).locator(".gh-card-meta");
 
 test("a guest invited alone sees their answer, not their name", async ({ page }) => {
   const seeded = await seedWedding({
@@ -26,7 +26,7 @@ test("a guest invited alone sees their answer, not their name", async ({ page })
   });
   await page.goto(`/guest/${seeded.guests.lea.token}`);
   await expect(rsvpLine(page)).toHaveText(/^Attending$/);
-  const card = page.getByRole("listitem").filter({ has: rsvpLine(page) });
+  const card = rsvpCard(page);
   await expect(card).not.toContainText("Lea");
   await expect(card).not.toContainText("Pat");
 });
