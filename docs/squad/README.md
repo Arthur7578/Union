@@ -71,7 +71,7 @@ Labels posés par la squad : `squad:working` (en cours), `squad:gate-strategy` e
    |---|---|---|
    | `SQUAD_MODEL` | `opus` | Modèle Claude de tous les rôles (alias ou ID complet ; `fable` si ton compte y a accès) |
    | `SQUAD_EFFORT` | `high` | Niveau de réflexion (`medium`, `high`, `xhigh`, `max`) |
-   | `REVIEWER_MODEL` | `openai/gpt-5.5` | Modèle OpenRouter du senior reviewer. Vérifie l'ID exact sur openrouter.ai |
+   | `REVIEWER_MODEL` | `openai/gpt-5.5` | Modèle OpenRouter du senior reviewer (ID vérifié le 21/10/2026) |
    | `SQUAD_MAX_ROUNDS` | `5` | Tours maximum de la boucle de revue |
    | `SQUAD_BUDGET_USD` | `8` | Plafond de dépense par run d'un rôle (garde-fou anti-emballement, pas un budget) |
    | `SQUAD_DEV_BUDGET_USD` | `20` | Idem pour le développeur |
