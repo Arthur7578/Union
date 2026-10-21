@@ -50,6 +50,9 @@ function must<T>(result: { data: T; error: unknown }): T {
  */
 export async function seedWedding(opts: {
   rsvpQuestions?: Question[];
+  /** The couple's own RSVP wording (forms.rsvp_copy), e.g.
+   *  `{ label_declined: { en: "Can't make it" } }`. */
+  rsvpCopy?: Record<string, Record<string, string>>;
   customForms?: Array<{ key: string; title: string; perPerson: boolean; questions: Question[] }>;
   household: SeedGuest[];
 }): Promise<Seeded> {
@@ -85,6 +88,7 @@ export async function seedWedding(opts: {
       title: "RSVP",
       published: true,
       questions: opts.rsvpQuestions ?? [],
+      ...(opts.rsvpCopy ? { rsvp_copy: opts.rsvpCopy } : {}),
     }),
   );
   for (const f of opts.customForms ?? []) {
