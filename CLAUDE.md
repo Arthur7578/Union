@@ -12,7 +12,15 @@ Never apply a migration to a Supabase project (`apply_migration`, DDL through `e
 
 ## Product surface
 
-Web mobile is the main surface: guests and couples use Union on their phone first, desktop second. The native Expo app in `apps/mobile` is on hold; do not change it unless asked.
+Web mobile is the main surface: guests and couples use Union on their phone first, desktop second.
+
+The native Expo app in `apps/mobile` is on hold, not abandoned: it must stay ready to restart. So:
+
+- Do not build features in `apps/mobile` unless asked.
+- Keep the shared layer shared. Logic that does not depend on the web (data rules, validation, wording lookups, phone numbers, guest links, permissions) goes in `packages/shared`, not in `apps/web`, so the native app can reuse it later.
+- Keep `apps/mobile` compiling. It imports `@union/shared`, and CI runs lint and typecheck on every workspace: if a change to `packages/shared` breaks the mobile app, fix the call sites in `apps/mobile` in the same change (a type or import fix, not a feature).
+- After a schema change, regenerate `packages/shared/src/database.types.ts` from the local stack (`supabase gen types typescript --local > packages/shared/src/database.types.ts`) so both apps see the same database.
+- Do not remove `apps/mobile` from the workspaces or from CI.
 
 ## Tests
 
