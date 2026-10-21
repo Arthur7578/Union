@@ -194,11 +194,24 @@ jobs:
           # The text after /go, /revise or /fix becomes this run's feedback.
           printf '%s' "$COMMENT_BODY" | sed -E '1s#^/(squad|go|revise|fix)[[:space:]]*##' > "$SQUAD_DIR/feedback.md"
 
+      - name: Trust the workspace for Claude Code
+        # Without this, Claude Code ignores the project settings in .claude/.
+        run: |
+          jq -n --arg dir "$GITHUB_WORKSPACE" '{projects: {($dir): {hasTrustDialogAccepted: true}}}' > "$HOME/.claude.json"
+
       - name: Run the stage
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
+          if [[ -z "$ANTHROPIC_API_KEY" ]]; then
+            echo "::error::The Actions secret ANTHROPIC_API_KEY is missing or empty (Settings → Secrets and variables → Actions → Secrets, exact name)."
+            exit 1
+          fi
+          if [[ "$STAGE" == "build" && -z "$OPENROUTER_API_KEY" ]]; then
+            echo "::error::The Actions secret OPENROUTER_API_KEY is missing or empty: the external reviewer cannot run."
+            exit 1
+          fi
           case "$STAGE" in
             strategy) bash .github/squad/stage-strategy.sh ;;
             design)   bash .github/squad/stage-design.sh ;;

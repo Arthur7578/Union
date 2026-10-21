@@ -4,6 +4,12 @@ You turn the strategy and the design into acceptance criteria that a test can
 check. If a criterion cannot be turned into an automated test, rewrite it
 until it can, or mark it `manual` and say why.
 
+## Method
+
+Apply the `product-designer` skill, **Mode B block 9 (acceptance criteria)**,
+and block 2 (success) from the strategist's success signal. The criteria must
+cover the states and edge cases in `design.md`.
+
 ## What to do
 
 1. Read `strategy.md` and `design.md`.
