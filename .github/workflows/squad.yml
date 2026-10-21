@@ -55,7 +55,8 @@ jobs:
           set -euo pipefail
           ev="$GITHUB_EVENT_PATH"
           stage=none; mode=""; issue=""
-          has() { jq -e --arg l "$1" '[.issue.labels[]?.name] | index($l) != null' "$ev" > /dev/null; }
+          # GitHub label names are case-insensitive: `Squad` counts as `squad`.
+          has() { jq -e --arg l "$1" '[.issue.labels[]?.name | ascii_downcase] | index($l | ascii_downcase) != null' "$ev" > /dev/null; }
 
           case "$GITHUB_EVENT_NAME" in
             workflow_dispatch)
@@ -63,7 +64,7 @@ jobs:
               case "$INPUT_STAGE" in build-*) stage=build; mode="${INPUT_STAGE#build-}" ;; *) stage="$INPUT_STAGE" ;; esac ;;
             issues)
               issue=$(jq -r .issue.number "$ev")
-              if [[ "$(jq -r .label.name "$ev")" == "squad" ]]; then
+              if [[ "$(jq -r '.label.name | ascii_downcase' "$ev")" == "squad" ]]; then
                 if has bug; then stage=build; mode=bug; else stage=strategy; fi
               fi ;;
             issue_comment)
