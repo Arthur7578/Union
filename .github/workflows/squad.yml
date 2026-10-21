@@ -3,7 +3,7 @@ name: Squad
 # Automated product squad. Arthur drives it from GitHub with labels and
 # comments; see docs/squad/README.md.
 #
-#   label `squad`, or a comment starting with `@squad` (the rest of the
+#   label `squad`, or a comment starting with `/squad` (the rest of the
 #   comment is passed on as context) → strategist (or, on a `bug`, the fix)
 #   `/go` on the issue             → next stage (design, then build)
 #   `/revise <text>` on the issue  → redo the current stage with his comment
@@ -39,7 +39,7 @@ jobs:
   route:
     # Public repo: only the owner can start the squad (it spends API credit
     # and reads issue text as instructions).
-    if: github.event.sender.login == github.repository_owner && (github.event_name != 'issue_comment' || startsWith(github.event.comment.body, '/') || startsWith(github.event.comment.body, '@squad'))
+    if: github.event.sender.login == github.repository_owner && (github.event_name != 'issue_comment' || startsWith(github.event.comment.body, '/'))
     runs-on: ubuntu-latest
     outputs:
       stage: ${{ steps.route.outputs.stage }}
@@ -73,7 +73,7 @@ jobs:
                 if [[ "$cmd" == "/fix" && "$head" =~ ^squad/([0-9]+)$ ]]; then
                   issue="${BASH_REMATCH[1]}"; stage=build; mode=fix
                 fi
-              elif [[ "$cmd" == "@squad" ]] && ! has squad; then
+              elif [[ "$cmd" == "/squad" ]] && ! has squad; then
                 issue=$(jq -r .issue.number "$ev")
                 if has bug; then stage=build; mode=bug; else stage=strategy; fi
               elif has squad; then
@@ -131,7 +131,7 @@ jobs:
           COMMENT_ID: ${{ github.event.comment.id }}
         run: |
           gh label create squad:working --color fbca04 --force > /dev/null 2>&1 || true
-          # Also adds `squad` when the run was started by an @squad comment.
+          # Also adds `squad` when the run was started by a /squad comment.
           # Labels added with GITHUB_TOKEN do not start another run.
           gh issue edit "$ISSUE" --add-label squad,squad:working > /dev/null || true
           if [[ -n "$COMMENT_ID" ]]; then
@@ -190,7 +190,7 @@ jobs:
             ([.comments[] | select(.author.login == $owner) | "\n---\n\(.body)"] | join("\n"))
           ' "$SQUAD_DIR/issue.json" > "$SQUAD_DIR/issue.md"
           # The text after /go, /revise or /fix becomes this run's feedback.
-          printf '%s' "$COMMENT_BODY" | sed -E '1s#^(/(go|revise|fix)|@squad)[[:space:]]*##' > "$SQUAD_DIR/feedback.md"
+          printf '%s' "$COMMENT_BODY" | sed -E '1s#^/(squad|go|revise|fix)[[:space:]]*##' > "$SQUAD_DIR/feedback.md"
 
       - name: Run the stage
         env:

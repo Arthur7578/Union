@@ -5,7 +5,7 @@ Une équipe d'agents qui prend une issue GitHub et la mène jusqu'à une PR test
 ## Le déroulé
 
 ```
-Issue + label `squad` (ou commentaire `@squad …`)
+Issue + label `squad` (ou commentaire `/squad …`)
    │
    ▼
 1. Product Strategist ── go / reformuler / no-go
@@ -45,7 +45,7 @@ Un **bug** (issue avec les labels `bug` puis `squad`) saute les étapes 1 et 2 :
 | Où | Quoi | Effet |
 |---|---|---|
 | Issue | ajouter le label `squad` | Lance la stratégie (ou le correctif si l'issue a déjà `bug`) |
-| Issue | commenter `@squad <contexte facultatif>` | Pareil, et ton texte est transmis au strategist ; le label `squad` est posé automatiquement |
+| Issue | commenter `/squad <contexte facultatif>` | Pareil, et ton texte est transmis au strategist ; le label `squad` est posé automatiquement |
 | Issue | `/go` (+ texte facultatif) | Passe à l'étape suivante ; ton texte est transmis aux agents |
 | Issue | `/revise <ce qui ne va pas>` | Refait l'étape en cours avec ton retour |
 | Issue | `/stop` | Arrête la squad sur l'issue |
