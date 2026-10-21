@@ -50,12 +50,12 @@ if [[ -n "$pr" ]]; then
 fi
 
 run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-printf '\n\n<sub>[Logs et sorties de chaque rôle](%s)</sub>\n' "$run_url" >> "$SQUAD_DIR/comment.md"
+printf '\n\n<sub>[Logs et sorties de chaque rôle](%s)</sub>\n<!-- union-squad -->\n' "$run_url" >> "$SQUAD_DIR/comment.md"
 
 if [[ "$STAGE" == "build" && -n "$pr" ]]; then
   gh pr comment "$pr" --body-file "$SQUAD_DIR/comment.md"
   status_line=$(head -1 "$SQUAD_DIR/comment.md" | sed 's/^## //')
-  gh issue comment "$ISSUE" --body "${status_line} → #${pr}"
+  gh issue comment "$ISSUE" --body "${status_line} → #${pr} <!-- union-squad -->"
 else
   gh issue comment "$ISSUE" --body-file "$SQUAD_DIR/comment.md"
 fi

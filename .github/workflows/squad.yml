@@ -39,7 +39,9 @@ jobs:
   route:
     # Public repo: only the owner can start the squad (it spends API credit
     # and reads issue text as instructions).
-    if: github.event.sender.login == github.repository_owner && (github.event_name != 'issue_comment' || startsWith(github.event.comment.body, '/'))
+    # The squad comments with the owner's token: its own comments carry a
+    # marker and are ignored.
+    if: github.event.sender.login == github.repository_owner && (github.event_name != 'issue_comment' || (contains(github.event.comment.body, '/') && !contains(github.event.comment.body, '<!-- union-squad -->')))
     runs-on: ubuntu-latest
     outputs:
       stage: ${{ steps.route.outputs.stage }}
@@ -68,7 +70,8 @@ jobs:
                 if has bug; then stage=build; mode=bug; else stage=strategy; fi
               fi ;;
             issue_comment)
-              cmd=$(jq -r '.comment.body | split("\n")[0] | split(" ")[0]' "$ev")
+              # The command can be on any line, e.g. after a quoted passage.
+              cmd=$(jq -r '[.comment.body | split("\n")[] | capture("^\\s*(?<c>/(squad|go|revise|stop|fix))(\\s|$)") | .c] | first // ""' "$ev")
               if [[ "$(jq -r '.issue.pull_request != null' "$ev")" == "true" ]]; then
                 head=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/$(jq -r .issue.number "$ev")" --jq .head.ref)
                 if [[ "$cmd" == "/fix" && "$head" =~ ^squad/([0-9]+)$ ]]; then
@@ -103,7 +106,7 @@ jobs:
         run: |
           gh label create squad:stopped --color cccccc --force > /dev/null 2>&1 || true
           gh issue edit "$ISSUE" --add-label squad:stopped --remove-label squad:gate-strategy,squad:gate-design,squad:working > /dev/null 2>&1 || true
-          gh issue comment "$ISSUE" --body "⏹️ Squad arrêtée sur cette issue. Remets le label \`squad\` pour repartir de zéro."
+          gh issue comment "$ISSUE" --body "<!-- union-squad -->⏹️ Squad arrêtée sur cette issue. Remets le label \`squad\` pour repartir de zéro."
 
   run:
     needs: route
@@ -178,21 +181,12 @@ jobs:
         run: npx playwright install --with-deps chromium
         working-directory: apps/web
 
-      - name: Gather the issue and Arthur's comment
+      - name: Gather the issue, its images and Arthur's comment
         env:
           GH_TOKEN: ${{ github.token }}
           OWNER: ${{ github.repository_owner }}
           COMMENT_BODY: ${{ github.event.comment.body }}
-        run: |
-          mkdir -p "$SQUAD_DIR"
-          gh issue view "$ISSUE" --json title,body,labels,comments > "$SQUAD_DIR/issue.json"
-          # Only the owner's words count as instructions (public repo).
-          jq -r --arg owner "$OWNER" '
-            "# Issue #\(env.ISSUE): \(.title)\n\n\(.body // "")\n\n## Comments by \($owner)\n" +
-            ([.comments[] | select(.author.login == $owner) | "\n---\n\(.body)"] | join("\n"))
-          ' "$SQUAD_DIR/issue.json" > "$SQUAD_DIR/issue.md"
-          # The text after /go, /revise or /fix becomes this run's feedback.
-          printf '%s' "$COMMENT_BODY" | sed -E '1s#^/(squad|go|revise|fix)[[:space:]]*##' > "$SQUAD_DIR/feedback.md"
+        run: bash .github/squad/gather-issue.sh
 
       - name: Trust the workspace for Claude Code
         # Without this, Claude Code ignores the project settings in .claude/.
@@ -234,7 +228,7 @@ jobs:
         run: |
           gh label create squad:needs-human --color d93f0b --force > /dev/null 2>&1 || true
           gh issue edit "$ISSUE" --add-label squad:needs-human --remove-label squad:working > /dev/null 2>&1 || true
-          gh issue comment "$ISSUE" --body "❌ Le run de la squad (étape \`${STAGE}\`) a échoué avant la fin. [Logs](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}). Relance avec la même commande une fois le problème réglé."
+          gh issue comment "$ISSUE" --body "<!-- union-squad -->❌ Le run de la squad (étape \`${STAGE}\`) a échoué avant la fin. [Logs](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}). Relance avec la même commande une fois le problème réglé."
 
       - name: Keep every role's output
         if: always()
