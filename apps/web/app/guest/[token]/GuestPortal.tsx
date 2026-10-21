@@ -8,6 +8,7 @@ import {
   enabledGuestModules,
   mayAttend,
   normalizeQuestions,
+  rsvpCardLine,
 } from "@union/shared";
 import type { FormAnswers, GuestModuleKey } from "@union/shared";
 import { LocaleToggle } from "@/components/guest/LocaleToggle";
@@ -303,23 +304,24 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   const activeRsvpForm = rsvpOpen === "reconfirmation" ? reconfirmation : (invitation.rsvp_form ?? null);
   const activeRsvpFormId = activeRsvpForm?.id || null;
 
-  const statusLabel = (status: RsvpReply["status"]) =>
-    status === "pending"
-      ? hub.statusPending
-      : { attending: labelAttending, maybe: labelMaybe, declined: labelDeclined }[status];
 
   const scrollTo = (key: GuestModuleKey) =>
     document.getElementById(sectionId(key))?.scrollIntoView({ behavior: "smooth", block: "start" });
 
-  // The guest's household answer in one line ("Arthur : Présent, Guinevere :
-  // Absent"), leaving out anyone who hasn't been answered for yet.
-  const householdAnswer = [
-    { name: guestFirstName, status: reply.status },
-    ...companions.map((c) => ({ name: c.first_name, status: reply.companions[c.id]?.rsvp_status ?? "pending" })),
-  ]
-    .filter((p) => p.status !== "pending")
-    .map((p) => `${p.name}${locale === "fr" ? "\u00a0:" : ":"} ${statusLabel(p.status)}`)
-    .join(", ");
+  // The guest's answer in one line: their own answer when invited alone, one
+  // name per person for a household ("Arthur : Présent, Guinevere : Absent").
+  const replyLine =
+    reply.status === "pending"
+      ? rsvpSubtitle
+      : rsvpCardLine({
+          guest: { name: guestFirstName, status: reply.status },
+          companions: companions.map((c) => ({
+            name: c.first_name,
+            status: reply.companions[c.id]?.rsvp_status ?? "pending",
+          })),
+          label: (status) => ({ attending: labelAttending, maybe: labelMaybe, declined: labelDeclined })[status],
+          locale,
+        });
 
   const formItems: FormItem[] = [
     ...(rsvpWindow === "hidden"
@@ -328,7 +330,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
           {
             key: "rsvp",
             title: rsvpTitle,
-            meta: reply.status === "pending" ? rsvpSubtitle : householdAnswer,
+            meta: replyLine,
             state:
               rsvpWindow === "scheduled"
                 ? ("soon" as const)
