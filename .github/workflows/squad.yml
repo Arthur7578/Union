@@ -111,6 +111,11 @@ jobs:
   run:
     needs: route
     if: contains(fromJSON('["strategy","design","build"]'), needs.route.outputs.stage)
+    # Stages that use Mobbin run one at a time across all issues: two runs
+    # renewing the same Mobbin token at once would spend it twice.
+    concurrency:
+      group: ${{ needs.route.outputs.stage == 'build' && format('squad-build-{0}', needs.route.outputs.issue) || 'squad-mobbin' }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 300
     env:
@@ -197,6 +202,10 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # Mobbin for the strategist, designer and PM (see lib.sh): the token
+          # is renewed and written back with SQUAD_GH_TOKEN.
+          MOBBIN_OAUTH: ${{ secrets.MOBBIN_OAUTH }}
+          SQUAD_GH_TOKEN: ${{ secrets.SQUAD_GH_TOKEN }}
         run: |
           if [[ -z "$ANTHROPIC_API_KEY" ]]; then
             echo "::error::The Actions secret ANTHROPIC_API_KEY is missing or empty (Settings → Secrets and variables → Actions → Secrets, exact name)."
