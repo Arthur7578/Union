@@ -39,6 +39,9 @@ say so and you will fix it in review mode.
 4. For each bug you find, write a failing regression test, and commit it with
    message `test: regression for #$ISSUE (<short name>)`.
 
+Use the `ui-audit` checklist (accessibility, responsive, performance at
+phone size) while exploring, and report what fails it.
+
 Write `$SQUAD_OUT/review.json`:
 `{"blocking": [{"id": "Q1", "what": "...", "where": "...", "fix": "...", "test": "<file>::<name>"}], "non_blocking": [...]}`
 A blocking item is a broken criterion, a crash, data shown to the wrong

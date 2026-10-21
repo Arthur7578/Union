@@ -52,9 +52,23 @@ run_role() {
         --dangerously-skip-permissions \
         --max-budget-usd "$budget" \
         --output-format json \
-        > "$out/run.json" 2> "$out/stderr.log" ) || echo "::warning::role ${label} exited with an error (see artifact ${out##*/})"
+        > "$out/run.json" 2> "$out/stderr.log" ) || true
   jq -r '"cost $" + ((.total_cost_usd // 0) | tostring) + ", turns " + ((.num_turns // 0) | tostring)' "$out/run.json" 2>/dev/null || true
   endlog
+  # A role that could not run at all (no API key, API down: no output, no
+  # spend) stops the stage, since an empty verdict would mislead Arthur. A
+  # role that ran and then hit a limit (budget, turns) only warns: its files
+  # are partial, and the next role or the review loop will see it.
+  local reason
+  reason=$(jq -r '.result // "no output"' "$out/run.json" 2>/dev/null || echo "no output")
+  if ! jq -e '.is_error != true' "$out/run.json" > /dev/null 2>&1; then
+    if jq -e '(.total_cost_usd // 0) > 0' "$out/run.json" > /dev/null 2>&1; then
+      echo "::warning::role ${label} stopped early: ${reason:0:300}"
+    else
+      echo "::error::role ${label} could not run: ${reason:0:300} (stderr: $(head -c 300 "$out/stderr.log" 2>/dev/null))"
+      exit 1
+    fi
+  fi
   echo "$out" > "$SQUAD_DIR/last_out"
 }
 

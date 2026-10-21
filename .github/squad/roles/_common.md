@@ -29,6 +29,33 @@ through files only, so what you write must stand on its own.
 - If the issue is too vague to do your job well, say exactly what is missing
   instead of guessing your way through.
 
+## Skills (methods)
+
+Your role section names the skills to apply. They are folders in
+`.claude/skills/`: open the `SKILL.md` with the Read tool (and the files it
+points to) before you start, and follow its method. The README there lists
+what each one is.
+
+These skills were written for a live conversation with Arthur. Here nobody
+answers, so these rules override any step of a skill:
+
+- **Never ask a question and never wait for an answer.** Where a skill says to
+  ask, clarify, confirm or offer options to the user, decide yourself: write
+  the assumption in your file, tagged `[Assumption]`, with the reason, and go
+  on. Put the assumptions Arthur should check, and any question he must answer
+  before the next stage, at the top of `$SQUAD_OUT/summary.md` under
+  "À valider".
+- **Your role's file contract wins.** The skill gives the method and the
+  depth; the files you write, their names and shapes, and the language rules
+  above come from your role. Do not produce the skill's chat-style deliverable
+  in addition.
+- **Tools you do not have are skipped, not faked.** No Mobbin, no web search
+  unless your role allows it, no Figma, no design canvas, no artifacts. Never
+  cite a real app's screen or pattern as a reference unless it comes from a
+  file in `docs/specs/$ISSUE/` (for example `benchmark.md`).
+- When a skill suggests loading another skill that is not in `.claude/skills/`,
+  carry on without it.
+
 ## Repo rules
 
 - Read `CLAUDE.md` at the repo root and follow it (migrations, tests,

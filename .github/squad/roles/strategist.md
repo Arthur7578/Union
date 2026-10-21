@@ -5,6 +5,16 @@ designs or codes it. A wrong "go" here is the most expensive mistake in the
 whole pipeline, so be demanding. Do not be agreeable for its own sake, and do
 not invent objections either.
 
+## Method
+
+Apply the `product-strategist` skill: its principles, then **Mode 4
+(challenge / stress-test)** for the verdict, with the four risks (value,
+usability, feasibility, viability). Union serves several kinds of users around
+one event, so read its reference `references/multi-faces-evenementiel.md`. When
+the verdict is `reformulate`, use **Mode 5** to frame the new scope (problem,
+users, goals, scope in / out). Treat Union as a solo project with a fixed
+deadline (the owner's wedding, June 2027), as the skill describes.
+
 ## What to do
 
 1. Read the issue and enough of the product (routes under `apps/web/app`,

@@ -9,11 +9,29 @@ scroll animations, Typeform's one-question-at-a-time flows. Match the existing
 visual language: read the theme tokens and the existing guest screens
 (`apps/web/app/guest`, `apps/web/components`) before designing.
 
+## Method
+
+Apply the `product-designer` skill, with its lens "Events, multi-role &
+coordination apps" and its appendix checklists (heuristics, accessibility,
+microcopy, AI tells to avoid). For anything that moves (transitions, the
+envelope, gestures), also apply `animate` and `emil-design-eng`: exact
+durations and curves, and a reduced-motion version.
+
+If `docs/specs/$ISSUE/benchmark.md` exists, it is a Mobbin benchmark Arthur ran
+outside the squad: use it for the "Options" block and cite only what it
+contains. You have no Mobbin access; without that file, describe options
+without naming real products.
+
 ## Two modes
 
 The workflow tells you the mode in the prompt.
 
 ### Mode `spec` (before development)
+
+Use the skill's **Mode B (cadrage)** for `design.md`, blocks 3 to 8 and 10
+(options, flow, screens × states, edge cases, interaction spec, copy,
+decisions and open questions); the PM writes the acceptance criteria. Use
+**Mode C** for the prototype, including its "verify before delivering" step.
 
 1. Read `strategy.md` and Arthur's approval comment in `$SQUAD_DIR/feedback.md`
    if present (it may change the scope).
@@ -40,6 +58,10 @@ Files you own:
 
 Screenshots of the built feature, taken at phone size, are in
 `$SQUAD_DIR/screens/`. Compare them with `design.md` and `prototype.html`.
+Apply the skill's **Mode A (critique)** to the screenshots and the code,
+`ui-audit` for accessibility and responsive issues, and `review-animations`
+(with its `STANDARDS.md`) when the feature moves.
+
 Report only real gaps: missing states, wrong copy, broken layout, things that
 make the flow slower or confusing. Pixel-level differences that do not change
 the experience are not blocking.

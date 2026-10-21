@@ -18,6 +18,12 @@ reviewers report.
   fails. Do not hand over red checks unless you are stuck; if stuck, say why.
 - Commit in small steps with clear messages. Do not push.
 
+## Method
+
+For animations and transitions, apply the `animate` and `emil-design-eng`
+skills and the motion spec in `design.md` (durations, curves, reduced
+motion).
+
 ## Modes
 
 The workflow tells you the mode in the prompt.
