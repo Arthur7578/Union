@@ -10,6 +10,25 @@ Whenever a task needs a schema change, write the migration yourself, without bei
 
 Never apply a migration to a Supabase project (`apply_migration`, DDL through `execute_sql`, `merge_branch`) unless the user explicitly asks in that session. Writing the files is automatic; running them is the user's call. When you hand over, say that the migration has not been applied.
 
+## Product surface
+
+Web mobile is the main surface: guests and couples use Union on their phone first, desktop second. The native Expo app in `apps/mobile` is on hold; do not change it unless asked.
+
+## Tests
+
+The test bank must follow the product, not lag behind it. These rules apply to every change, whether it comes from the squad or from a one-off session.
+
+- **A change to a screen comes with a browser test.** If you change what a user sees or does (`apps/web/app/**` or `apps/web/components/**`), add or update the Playwright test of that flow in `apps/web/e2e/`. CI enforces it (`test-discipline` workflow); the label `no-e2e` is only for changes that cannot affect behavior, with the reason written in the PR.
+- **Guest flows are tested at phone size**, since that is how guests use them.
+- **Every acceptance criterion has a test.** When a spec lists criteria (`docs/specs/<issue>/criteria.md`), each one maps to a test, and `docs/specs/<issue>/tests.md` says which.
+- **Never weaken a test to make it pass.** If a test is wrong, say why and fix the test in its own commit; do not edit an assertion to match buggy behavior.
+- **A bug fix starts with a test that reproduces the bug.**
+- Unit tests (vitest) for logic, pgTAP for the database (see above), Playwright for flows.
+
+## Squad pipeline
+
+Issues labelled `squad` go through an automated product squad (strategist → designer, PM, tech lead → tests first → developer → QA, external reviewer and designer review, in a loop). How it works and how to drive it: `docs/squad/README.md`. Its specs live in `docs/specs/<issue>/`; read them before changing a feature that has one.
+
 ## Opportunistic refactors (tech debt)
 
 Three client pages are each one giant component with a lot of local state. Nothing is broken and CI is green, so this is not urgent. Do not split them as a drive-by or in a dedicated refactor: they have no UI tests, so a big restructure is risky.

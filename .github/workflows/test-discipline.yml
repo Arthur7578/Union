@@ -1,0 +1,54 @@
+name: Test discipline
+
+# Two rules that keep the test bank in step with the product:
+# 1. A PR that changes what a user sees (pages or components of the web app)
+#    also changes or adds a browser test in apps/web/e2e. If a change really
+#    cannot affect behavior (a pure style token, a comment), add the label
+#    `no-e2e` and say why in the PR.
+# 2. A PR ready for review carries no squad prototype (apps/web/public/squad-proto).
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review, converted_to_draft]
+
+permissions:
+  contents: read
+
+jobs:
+  discipline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check the rules
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          NO_E2E: ${{ contains(github.event.pull_request.labels.*.name, 'no-e2e') }}
+        run: |
+          set -euo pipefail
+          changed=$(git diff --name-only "$BASE...$HEAD")
+          ui=$(echo "$changed" | grep -E '^apps/web/(app|components)/.*\.tsx$' | grep -vE '\.test\.tsx$' || true)
+          e2e=$(echo "$changed" | grep -E '^apps/web/e2e/' || true)
+          status=0
+
+          if [[ -n "$ui" && -z "$e2e" ]]; then
+            if [[ "$NO_E2E" == "true" ]]; then
+              echo "::notice::UI files changed without a browser test; allowed by the no-e2e label."
+            else
+              echo "::error::This PR changes screens but no browser test in apps/web/e2e. Add or update the test of the flow it touches, or add the label no-e2e with a reason."
+              echo "${ui//$'\n'/$'\n'  }"
+              status=1
+            fi
+          fi
+
+          if [[ "$DRAFT" != "true" ]] && git ls-tree -r --name-only "$HEAD" | grep -q '^apps/web/public/squad-proto/'; then
+            echo "::error::Remove apps/web/public/squad-proto/ before marking the PR ready: prototypes must not ship."
+            status=1
+          fi
+          exit $status
