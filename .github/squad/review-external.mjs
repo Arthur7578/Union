@@ -7,7 +7,7 @@
  * diff) and answers with JSON; it never touches the repo.
  *
  * Usage: node review-external.mjs <issue> <out.json>
- * Env:   OPENROUTER_API_KEY, REVIEWER_MODEL (default openai/gpt-5.6-luna),
+ * Env:   OPENROUTER_API_KEY, REVIEWER_MODEL (default openai/gpt-5.6-sol),
  *        REVIEWER_EFFORT (reasoning effort, default high),
  *        OPENROUTER_BASE_URL (default https://openrouter.ai/api/v1; set
  *        https://eu.openrouter.ai/api/v1 to keep prompts in the EU, which
@@ -23,7 +23,7 @@ if (!issue || !outPath) {
   process.exit(2);
 }
 
-const model = process.env.REVIEWER_MODEL || "openai/gpt-5.6-luna";
+const model = process.env.REVIEWER_MODEL || "openai/gpt-5.6-sol";
 const effort = process.env.REVIEWER_EFFORT || "high";
 const baseUrl = (process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1").replace(/\/+$/, "");
 const key = process.env.OPENROUTER_API_KEY;
