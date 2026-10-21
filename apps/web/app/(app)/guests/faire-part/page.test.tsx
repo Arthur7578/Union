@@ -114,6 +114,17 @@ describe("the faire-part editor", () => {
     expect(await screen.findByText("Enregistré")).toBeInTheDocument();
   });
 
+  it("still says Saved when the app reloads the wedding and remounts the editor", async () => {
+    page();
+    fireEvent.change(screen.getByLabelText("Salutation"), { target: { value: "Chère {{guest_first_name}}," } });
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(harness.updateWedding).toHaveBeenCalled());
+    cleanup();
+    harness.wedding = wedding({ faire_part_copy: { greeting: { fr: "Chère {{guest_first_name}}," } } as never });
+    page();
+    expect(screen.getByRole("status")).toHaveTextContent("Enregistré");
+  });
+
   it("goes back to the default when a line is cleared", () => {
     harness.wedding = wedding({ faire_part_copy: { closing: { fr: "Bises," } } as never });
     page();

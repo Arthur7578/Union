@@ -36,6 +36,14 @@ import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 
+/**
+ * When the last save went through. The app's layout swaps every page for a
+ * loading screen while the wedding reloads, which remounts the editor and
+ * drops its state, so "Saved" has to be remembered outside it.
+ */
+let lastSavedAt = 0;
+const SAVED_NOTE_MS = 6000;
+
 const FRONT: FairePartSlot[] = ["front_intro", "front_dates", "front_place"];
 const BACK: FairePartSlot[] = [
   "greeting",
@@ -91,7 +99,9 @@ function FairePartEditor({
   const [asGuest, setAsGuest] = useState<"personal" | "group">("personal");
   const [previewName, setPreviewName] = useState(locale === "fr" ? "Léa" : "Lea");
   const [busy, setBusy] = useState<"save" | "translate" | null>(null);
-  const [note, setNote] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(() =>
+    Date.now() - lastSavedAt < SAVED_NOTE_MS ? e.saved : null,
+  );
   const [error, setError] = useState<string | null>(null);
   const areas = useRef<Partial<Record<FairePartSlot, HTMLTextAreaElement | null>>>({});
 
@@ -158,6 +168,7 @@ function FairePartEditor({
     try {
       const next = compact(copy);
       await updateWedding(wedding.id, { faire_part_copy: next as Wedding["faire_part_copy"] });
+      lastSavedAt = Date.now();
       await refresh();
       setSaved(next);
       setCopy(next);
