@@ -5,7 +5,7 @@ Une équipe d'agents qui prend une issue GitHub et la mène jusqu'à une PR test
 ## Le déroulé
 
 ```
-Issue + label `squad`
+Issue + label `squad` (ou commentaire `@squad …`)
    │
    ▼
 1. Product Strategist ── go / reformuler / no-go
@@ -45,6 +45,7 @@ Un **bug** (issue avec les labels `bug` puis `squad`) saute les étapes 1 et 2 :
 | Où | Quoi | Effet |
 |---|---|---|
 | Issue | ajouter le label `squad` | Lance la stratégie (ou le correctif si l'issue a déjà `bug`) |
+| Issue | commenter `@squad <contexte facultatif>` | Pareil, et ton texte est transmis au strategist ; le label `squad` est posé automatiquement |
 | Issue | `/go` (+ texte facultatif) | Passe à l'étape suivante ; ton texte est transmis aux agents |
 | Issue | `/revise <ce qui ne va pas>` | Refait l'étape en cours avec ton retour |
 | Issue | `/stop` | Arrête la squad sur l'issue |
@@ -64,14 +65,15 @@ Labels posés par la squad : `squad:working` (en cours), `squad:gate-strategy` e
 ## Mise en place
 
 1. **Secrets Actions** (fait) : `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`.
-2. **Secret `SQUAD_GH_TOKEN`** (à faire, fortement recommandé). Sans lui, les commits de la squad ne déclenchent ni la CI ni la preview Vercel, car GitHub ne relance pas de workflow sur un push fait avec le jeton par défaut. Crée un *fine-grained personal access token* limité au repo `union`, avec les permissions *Contents*, *Issues* et *Pull requests* en lecture/écriture, et ajoute-le en secret Actions.
+2. **Secret `SQUAD_GH_TOKEN`** (à faire, fortement recommandé). Sans lui, les commits de la squad ne déclenchent ni la CI ni la preview Vercel, car GitHub ne relance pas de workflow sur un push fait avec le jeton par défaut. Crée un *fine-grained personal access token* (sur ordinateur : https://github.com/settings/personal-access-tokens/new) limité au repo `union`, avec les permissions *Contents*, *Issues*, *Pull requests* et *Workflows* en lecture/écriture, et ajoute-le en secret Actions.
 3. **Variables Actions** (facultatives, *Settings → Secrets and variables → Actions → Variables*) :
 
    | Variable | Défaut | Rôle |
    |---|---|---|
    | `SQUAD_MODEL` | `opus` | Modèle Claude de tous les rôles (alias ou ID complet ; `fable` si ton compte y a accès) |
    | `SQUAD_EFFORT` | `high` | Niveau de réflexion (`medium`, `high`, `xhigh`, `max`) |
-   | `REVIEWER_MODEL` | `openai/gpt-5.5` | Modèle OpenRouter du senior reviewer (ID vérifié le 21/10/2026) |
+   | `REVIEWER_MODEL` | `openai/gpt-5.6-sol` | Modèle OpenRouter du senior reviewer (ID vérifié le 21/10/2026) |
+   | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | Mettre `https://eu.openrouter.ai/api/v1` pour que le reviewer tourne en Europe (nécessite le plan OpenRouter Business, sinon les revues échouent) |
    | `SQUAD_MAX_ROUNDS` | `5` | Tours maximum de la boucle de revue |
    | `SQUAD_BUDGET_USD` | `8` | Plafond de dépense par run d'un rôle (garde-fou anti-emballement, pas un budget) |
    | `SQUAD_DEV_BUDGET_USD` | `20` | Idem pour le développeur |

@@ -160,7 +160,7 @@ cost=$(jq -s '[.[].total_cost_usd // 0] | add // 0 | . * 100 | round / 100' "$SQ
     echo "Arrêt après ${round} tour(s) avec des points bloquants ou des checks rouges. Détail ci-dessous et dans les logs du run."
   fi
   echo
-  echo "Tours : **${round}** · coût Claude estimé : **\$${cost}** · reviewer externe : \`${REVIEWER_MODEL:-openai/gpt-5.5}\`"
+  echo "Tours : **${round}** · coût Claude estimé : **\$${cost}** · reviewer externe : \`${REVIEWER_MODEL:-openai/gpt-5.6-sol}\`"
   echo
   cat "$SQUAD_DIR/comment.md"
   echo "### Journal"

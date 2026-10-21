@@ -5,7 +5,7 @@ source "$(dirname "$0")/lib.sh"
 
 task="Assess issue #${ISSUE} as the product strategist."
 if [[ -s "$SQUAD_DIR/feedback.md" ]]; then
-  task+=" Arthur asked for a revision of your previous assessment; his comment is in ${SQUAD_DIR}/feedback.md. Address it explicitly."
+  task+=" Arthur left a comment for you in ${SQUAD_DIR}/feedback.md (extra context, or a revision request if you assessed this issue before). Address it explicitly."
 fi
 
 run_role strategist strategist "${SQUAD_BUDGET_USD:-8}" "$task"

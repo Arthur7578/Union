@@ -8,19 +8,15 @@ When the user asks to keep an idea for later, open a GitHub issue and give the u
 
 Whenever a task needs a schema change, write the migration yourself, without being asked: a timestamped file in `supabase/migrations/` and a matching pgTAP test in `supabase/tests/database/`. Follow the conventions of the user's `/new-migration` skill (you cannot invoke it, it is user-only): `YYYYMMDDHHMMSS_<name>.sql` sorting after the latest migration, a header comment saying what changes and why, RLS and explicit policies on new tables, `search_path` set and `execute` granted narrowly on `security definer` functions, and a test covering the allowed and the denied path.
 
+After a schema change, regenerate the shared types: `supabase gen types typescript --local > packages/shared/src/database.types.ts`.
+
 Never apply a migration to a Supabase project (`apply_migration`, DDL through `execute_sql`, `merge_branch`) unless the user explicitly asks in that session. Writing the files is automatic; running them is the user's call. When you hand over, say that the migration has not been applied.
 
 ## Product surface
 
 Web mobile is the main surface: guests and couples use Union on their phone first, desktop second.
 
-The native Expo app in `apps/mobile` is on hold, not abandoned: it must stay ready to restart. So:
-
-- Do not build features in `apps/mobile` unless asked.
-- Keep the shared layer shared. Logic that does not depend on the web (data rules, validation, wording lookups, phone numbers, guest links, permissions) goes in `packages/shared`, not in `apps/web`, so the native app can reuse it later.
-- Keep `apps/mobile` compiling. It imports `@union/shared`, and CI runs lint and typecheck on every workspace: if a change to `packages/shared` breaks the mobile app, fix the call sites in `apps/mobile` in the same change (a type or import fix, not a feature).
-- After a schema change, regenerate `packages/shared/src/database.types.ts` from the local stack (`supabase gen types typescript --local > packages/shared/src/database.types.ts`) so both apps see the same database.
-- Do not remove `apps/mobile` from the workspaces or from CI.
+The native Expo app (`apps/mobile`) is on hold: no features there unless asked. Put logic that does not depend on the web in `packages/shared`, so the app can reuse it if it restarts. CI keeps the app compiling; if a shared change breaks it, fix the import or type in the same change.
 
 ## Tests
 

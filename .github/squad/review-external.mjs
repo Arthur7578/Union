@@ -7,7 +7,10 @@
  * diff) and answers with JSON; it never touches the repo.
  *
  * Usage: node review-external.mjs <issue> <out.json>
- * Env:   OPENROUTER_API_KEY, REVIEWER_MODEL (default openai/gpt-5.5)
+ * Env:   OPENROUTER_API_KEY, REVIEWER_MODEL (default openai/gpt-5.6-sol),
+ *        OPENROUTER_BASE_URL (default https://openrouter.ai/api/v1; set
+ *        https://eu.openrouter.ai/api/v1 to keep prompts in the EU, which
+ *        needs an OpenRouter Business plan)
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -19,7 +22,8 @@ if (!issue || !outPath) {
   process.exit(2);
 }
 
-const model = process.env.REVIEWER_MODEL || "openai/gpt-5.5";
+const model = process.env.REVIEWER_MODEL || "openai/gpt-5.6-sol";
+const baseUrl = (process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1").replace(/\/+$/, "");
 const key = process.env.OPENROUTER_API_KEY;
 const MAX_DIFF_CHARS = 250_000;
 
@@ -54,7 +58,7 @@ const user = [
 ].join("\n\n");
 
 try {
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
