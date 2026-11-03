@@ -97,6 +97,7 @@ export async function createWedding(
     | "address_visibility"
     | "default_locale"
     | "guest_modules"
+    | "faire_part_copy"
   > & {
     rsvp_form_questions?: Wedding["rsvp_form_questions"];
     ceremony_rows?: number;

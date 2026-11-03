@@ -211,6 +211,8 @@ export const fr: Dictionary = {
       formsLabel: "Formulaires",
       formsSub: "RSVP, et vos formulaires ajoutés",
       smsTemplateLabel: "Modèle SMS",
+      fairePartLabel: "Carton d'invitation",
+      fairePartSub: "Le texte du carton",
       smsTemplateSub: "Expéditeur + texte d'invitation",
       groupLinkLabel: "Lien de groupe",
       groupLinkSub: "Un seul lien pour un groupe WhatsApp",
@@ -721,10 +723,26 @@ export const fr: Dictionary = {
   welcome: {
     titleNamed: "tu as reçu une invitation",
     titleAnon: ["Tu as reçu", "une invitation"],
-    to: (name: string) => `Pour ${name}`,
-    anon: "Faire-part",
-    kicker: "Le mariage",
-    lead: "Nous serions heureux de te compter parmi nous.",
+    // Le texte par défaut du carton, un modèle par ligne (voir lib/fairePart.ts). Le couple peut
+    // remplacer chacun depuis l'éditeur du faire-part.
+    copy: {
+      front_intro: "ont la joie de t'inviter à célébrer leur mariage",
+      front_dates: "{{dates}}",
+      front_place: "[En {{area}} ♡][À {{city}} ♡]",
+      greeting: "{{guest_first_name}},",
+      moments:
+        "Il y a des moments que l'on a particulièrement envie de partager avec les personnes qui comptent pour nous.",
+      invite:
+        "Nous serions très heureux de te retrouver[ en {{area}},][ à {{city}},][ {{dates_spoken}},] pour célébrer notre mariage et partager {{duration}} de fête, de joie et de beaux souvenirs.",
+      hope: "Nous espérons de tout cœur que tu pourras être des nôtres. Nous avons hâte de vivre ces beaux moments avec toi.",
+      closing: "Avec toute notre affection,",
+      signature: "{{couple}}",
+    },
+    // La durée du mariage, telle que la lit le champ {{duration}} ; null si aucune date n'est connue.
+    duration: (days: number | null) => {
+      const words = ["", "une", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix"];
+      return days === null ? "des moments" : days === 1 ? "une journée" : `${words[days] || days} jours`;
+    },
     hint: "Touche le sceau ou fais défiler",
     open: "Ouvrir l'enveloppe",
     flipCard: "Retourner le carton",
@@ -1041,6 +1059,67 @@ export const fr: Dictionary = {
         },
       ],
     },
+  },
+
+  // Éditeur du faire-part (organisateur) : le texte du carton d'invitation
+  fairePartEditor: {
+    title: "Carton d'invitation",
+    subtitle: "Le texte du carton que tes invités ouvrent en premier, dans chaque langue. Ce que tu ne modifies pas garde le texte par défaut.",
+    front: "Recto du carton",
+    back: "Verso du carton",
+    slots: {
+      front_intro: "Sous vos prénoms",
+      front_dates: "Dates",
+      front_place: "Lieu",
+      greeting: "Salutation",
+      moments: "Introduction",
+      invite: "Invitation",
+      hope: "Espoir",
+      closing: "Formule de fin",
+      signature: "Signature",
+    },
+    languageLabel: "Langue que tu écris",
+    translateTo: (language: string) => `Traduire en ${language}`,
+    translating: "Traduction…",
+    translateNothing: (language: string) => `Rien à traduire : chaque ligne que tu as modifiée a déjà ton propre texte en ${language}.`,
+    translateNoSource: (language: string) => `Modifie d'abord une ligne en ${language} : celles qui gardent le texte par défaut existent déjà dans les deux langues.`,
+    translateDone: (count: number, language: string) =>
+      `${count} ligne${count === 1 ? "" : "s"} remplie${count === 1 ? "" : "s"} en ${language}. Elles sont marquées « Auto » : relis-les, puis enregistre.`,
+    auto: "Auto",
+    reset: "Revenir au texte par défaut",
+    defaultWording: "Texte par défaut",
+    unknownField: (names: string) => `Pas un champ : ${names}`,
+    fieldsTitle: "Champs",
+    fieldsHint: "Clique sur un champ pour l'insérer dans la ligne en cours. Chaque invité voit ses propres valeurs.",
+    fieldsSyntax:
+      "{{city|area}} prend le premier qui a une valeur. [ en {{area}}] est une partie facultative : elle disparaît si un champ à l'intérieur est vide. Une ligne dont un champ est vide, hors crochets, disparaît en entier.",
+    fields: {
+      guest_first_name: "Le prénom de l'invité (liens personnels seulement)",
+      partner_one: "Premier prénom",
+      partner_two: "Second prénom",
+      couple: "Les deux prénoms",
+      dates: "Dates, en court",
+      dates_spoken: "Dates, dans une phrase",
+      duration: "La durée",
+      venue: "Nom du lieu",
+      area: "Région",
+      city: "Ville",
+      country: "Pays",
+    },
+    previewTitle: "Aperçu",
+    previewFront: "Recto",
+    previewBack: "Verso",
+    previewAs: "Aperçu pour",
+    previewPersonal: "Un invité avec un lien personnel",
+    previewGroup: "Un invité sur le lien de groupe",
+    previewName: "Prénom de l'invité",
+    previewNote: "Avec les vrais prénoms, la date et le lieu de ton mariage, dans la limite de ce que ton niveau de visibilité de l'adresse laisse voir aux invités.",
+    save: "Enregistrer",
+    saving: "Enregistrement…",
+    saved: "Enregistré",
+    saveError: "Enregistrement impossible.",
+    translateError: "Traduction du carton impossible.",
+    signedOut: "Tu es déconnecté·e.",
   },
 
   smsTemplate: {

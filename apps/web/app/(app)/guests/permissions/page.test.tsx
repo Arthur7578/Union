@@ -41,6 +41,7 @@ const wedding = (patch: Partial<Wedding> = {}): Wedding => ({
   created_at: "2026-08-20T00:00:00.000Z",
   default_locale: "en",
   event_date: null,
+  faire_part_copy: {},
   guest_count_target: null,
   guest_join_auth_mode: "secure",
   guest_modules: {},

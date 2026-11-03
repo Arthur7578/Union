@@ -72,6 +72,11 @@ export default function GuestsPage() {
       sub: t.guests.tools.modulesSub,
     },
     {
+      href: "/guests/faire-part",
+      label: t.guests.tools.fairePartLabel,
+      sub: t.guests.tools.fairePartSub,
+    },
+    {
       href: "/guests/sms-template",
       label: t.guests.tools.smsTemplateLabel,
       sub: t.guests.tools.smsTemplateSub,

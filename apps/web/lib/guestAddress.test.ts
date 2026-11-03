@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatGuestAddress } from "./guestAddress";
+import { formatGuestAddress, guestPlaceFields } from "./guestAddress";
 
 /** Whatever the couple has chosen to disclose, and nothing more. */
 
@@ -43,5 +43,52 @@ describe("formatGuestAddress", () => {
         address: { ...address, city: null },
       }),
     ).toBe("(13530), France");
+  });
+});
+
+describe("guestPlaceFields", () => {
+  it("gives only the area and country at the area tier", () => {
+    expect(guestPlaceFields({ address_visibility: "area", address, venue_name: "Domaine" })).toEqual({
+      venue: "",
+      area: "Provence",
+      city: "",
+      country: "France",
+    });
+  });
+
+  it("gives the city, not the area, at the partial tier", () => {
+    expect(guestPlaceFields({ address_visibility: "partial", address })).toEqual({
+      venue: "",
+      area: "",
+      city: "Trets",
+      country: "France",
+    });
+  });
+
+  it("adds the venue name at the full tier", () => {
+    expect(guestPlaceFields({ address_visibility: "full", address, venue_name: " Domaine " })).toEqual({
+      venue: "Domaine",
+      area: "",
+      city: "Trets",
+      country: "France",
+    });
+  });
+
+  it("gives nothing when hidden, even if the payload carries an address", () => {
+    expect(guestPlaceFields({ address_visibility: "hidden", address, venue_name: "Domaine" })).toEqual({
+      venue: "",
+      area: "",
+      city: "",
+      country: "",
+    });
+  });
+
+  it("copes with no address at all", () => {
+    expect(guestPlaceFields({ address_visibility: "full", address: null })).toEqual({
+      venue: "",
+      area: "",
+      city: "",
+      country: "",
+    });
   });
 });
