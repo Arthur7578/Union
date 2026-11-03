@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  EMPTY_GUEST_PAGE,
   canAddChildren,
   canAddPartner as mayAddPartner,
   enabledGuestModules,
@@ -238,6 +239,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
       )
     : null;
   const addressText = formatGuestAddress(invitation.wedding);
+  const guestPage = invitation.guest_page ?? EMPTY_GUEST_PAGE;
   const place = invitation.wedding.venue_name || addressText;
 
   // RSVP wording — the couple's own copy in this guest's language if they've
@@ -488,13 +490,15 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
             )}
             {key === "travel" && <TravelSection guestName={guestFullName} />}
             {key === "logistics" && (
-              <LogisticsSection venueName={invitation.wedding.venue_name} addressText={addressText} />
+              <LogisticsSection
+                venueName={invitation.wedding.venue_name}
+                addressText={addressText}
+                eventDate={invitation.wedding.event_date}
+                content={guestPage}
+              />
             )}
             {key === "faq" && (
-              <FaqSection
-                formsLabel={moduleOn("forms") ? hub.nav.forms : null}
-                travelLabel={moduleOn("travel") ? hub.nav.travel : null}
-              />
+              <FaqSection content={guestPage} />
             )}
           </section>
         ))}
