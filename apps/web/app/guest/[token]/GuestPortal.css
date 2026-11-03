@@ -133,6 +133,7 @@
 .gh-schedule{list-style:none;margin:12px 0 0;padding:0}
 .gh-schedule li{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--da-line-soft)}
 .gh-schedule li:first-child{border-top:0;padding-top:4px}
+.gh-ways li{grid-template-columns:1fr}
 .gh-time{font-size:16px;color:var(--da-olive-deep)}
 .gh-what{display:block;font-size:17px}
 .gh-note{display:block;font-size:15px;font-style:italic;color:var(--da-ink-soft)}
