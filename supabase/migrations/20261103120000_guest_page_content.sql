@@ -32,7 +32,10 @@
 --
 -- Who sees what: the couple and their co-organisers read and write
 -- these tables through row level security (the same rule as room
--- blocks). Guests never read the tables: they go through
+-- blocks). Table privileges are granted here, not left to the
+-- project's defaults: a database built from the migrations alone
+-- (the local CLI, CI) gives the API roles none, and the hosted
+-- project's defaults already match these grants. Guests never read the tables: they go through
 -- get_guest_page, which returns only what their link may see. The
 -- shuttle is reserved for a household that said yes, the way the
 -- exact address already can be, and is withheld by the server, not
@@ -175,6 +178,7 @@ create policy "Guest page manageable by team members"
   with check ((select union_private.can_access_wedding(wedding_id)));
 
 revoke all on table public.guest_pages from anon;
+grant select, insert, update, delete on table public.guest_pages to authenticated;
 
 -- ---------- public.guest_page_moments ----------
 create table if not exists public.guest_page_moments (
@@ -214,6 +218,7 @@ create policy "Guest page moments manageable by team members"
   with check ((select union_private.can_access_wedding(wedding_id)));
 
 revoke all on table public.guest_page_moments from anon;
+grant select, insert, update, delete on table public.guest_page_moments to authenticated;
 
 -- ---------- public.guest_page_faq ----------
 create table if not exists public.guest_page_faq (
@@ -246,6 +251,7 @@ create policy "Guest page FAQ manageable by team members"
   with check ((select union_private.can_access_wedding(wedding_id)));
 
 revoke all on table public.guest_page_faq from anon;
+grant select, insert, update, delete on table public.guest_page_faq to authenticated;
 
 -- ---------- public.get_guest_page ----------
 -- What one guest link may read. Same token rule as get_invitation:
