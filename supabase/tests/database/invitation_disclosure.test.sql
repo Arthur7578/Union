@@ -168,12 +168,12 @@ select is(
 );
 
 update public.weddings
-   set guest_modules = '{"travel": false, "logistics": false}'
+   set guest_modules = '{"travel": false, "venue": false}'
  where id = '20000000-0000-0000-0000-000000000001';
 
 select is(
   public.get_invitation('40000000-0000-0000-0000-000000000001') #> '{wedding,guest_modules}',
-  '{"travel": false, "logistics": false}'::jsonb,
+  '{"travel": false, "venue": false}'::jsonb,
   'the invitation reports the modules the couple turned off'
 );
 

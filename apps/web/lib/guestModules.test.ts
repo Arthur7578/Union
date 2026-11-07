@@ -6,96 +6,66 @@ import {
   toStoredGuestModules,
 } from "@union/shared";
 
-describe("guest invitation modules", () => {
-  it("shows every module when the couple has changed nothing", () => {
-    // '{}' is what every wedding written before the column existed holds,
-    // so this is the "nothing changed, nothing lost" case.
-    expect(resolveGuestModules({})).toEqual({
-      forms: true,
-      travel: true,
-      logistics: true,
-      faq: true,
-    });
+const ALL_ON = {
+  word: true,
+  weekend: true,
+  venue: true,
+  travel: true,
+  dress: true,
+  faq: true,
+};
+
+describe("wedding page parts", () => {
+  it("shows every part when the couple has changed nothing", () => {
+    expect(resolveGuestModules({})).toEqual(ALL_ON);
   });
 
-  it("turns off only the modules explicitly set to false", () => {
-    expect(resolveGuestModules({ travel: false, logistics: false })).toEqual({
-      forms: true,
+  it("turns off only the parts explicitly set to false", () => {
+    expect(resolveGuestModules({ travel: false, dress: false })).toEqual({
+      ...ALL_ON,
       travel: false,
-      logistics: false,
-      faq: true,
+      dress: false,
     });
   });
 
   it("treats a stored true as on, same as an absent key", () => {
-    expect(resolveGuestModules({ forms: true, faq: false })).toEqual({
-      forms: true,
-      travel: true,
-      logistics: true,
-      faq: false,
-    });
+    expect(resolveGuestModules({ word: true, faq: false })).toEqual({ ...ALL_ON, faq: false });
   });
 
-  it("falls back to the full experience on a malformed value", () => {
-    // A bad row must never blank out a guest's invitation, so anything that
-    // isn't an explicit false for a known key leaves that module on.
-    const everything = {
-      forms: true,
-      travel: true,
-      logistics: true,
-      faq: true,
-    };
-    expect(resolveGuestModules(null)).toEqual(everything);
-    expect(resolveGuestModules(undefined)).toEqual(everything);
-    expect(resolveGuestModules("nope")).toEqual(everything);
-    expect(resolveGuestModules(["faq"])).toEqual(everything);
-    expect(resolveGuestModules({ faq: "no" })).toEqual(everything);
-    expect(resolveGuestModules({ faq: 0 })).toEqual(everything);
+  it("falls back to every part on for a malformed value", () => {
+    // A bad row must never blank out a guest's invitation.
+    expect(resolveGuestModules(null)).toEqual(ALL_ON);
+    expect(resolveGuestModules(undefined)).toEqual(ALL_ON);
+    expect(resolveGuestModules("nope")).toEqual(ALL_ON);
+    expect(resolveGuestModules(["faq"])).toEqual(ALL_ON);
+    expect(resolveGuestModules({ faq: "no" })).toEqual(ALL_ON);
+    expect(resolveGuestModules({ faq: 0 })).toEqual(ALL_ON);
   });
 
-  it("ignores keys that name no module", () => {
-    expect(resolveGuestModules({ gifts: false, travel: false })).toEqual({
-      forms: true,
+  it("ignores keys that name no part, including the hub's old ones", () => {
+    expect(resolveGuestModules({ gifts: false, logistics: false, forms: false, travel: false })).toEqual({
+      ...ALL_ON,
       travel: false,
-      logistics: true,
-      faq: true,
     });
   });
 
-  it("lists enabled modules in the order guests see them", () => {
+  it("lists the parts that are on in the order guests see them", () => {
     expect(enabledGuestModules({})).toEqual([...GUEST_MODULE_KEYS]);
-    expect(enabledGuestModules({ travel: false, forms: false })).toEqual([
-      "logistics",
-      "faq",
-    ]);
+    expect(enabledGuestModules({ travel: false, word: false })).toEqual(["weekend", "venue", "dress", "faq"]);
   });
 
-  it("stores only the off decisions, so a later module defaults to on", () => {
-    expect(
-      toStoredGuestModules({
-        forms: true,
-        travel: false,
-        logistics: false,
-        faq: false,
-      }),
-    ).toEqual({ travel: false, logistics: false, faq: false });
-    expect(
-      toStoredGuestModules({
-        forms: true,
-        travel: true,
-        logistics: true,
-        faq: true,
-      }),
-    ).toEqual({});
+  it("allows every part off: the page is then the faire-part and the reply", () => {
+    const off = Object.fromEntries(GUEST_MODULE_KEYS.map((k) => [k, false]));
+    expect(enabledGuestModules(off)).toEqual([]);
+  });
+
+  it("stores only the off decisions, so a later part defaults to on", () => {
+    expect(toStoredGuestModules({ ...ALL_ON, travel: false, faq: false })).toEqual({ travel: false, faq: false });
+    expect(toStoredGuestModules(ALL_ON)).toEqual({});
   });
 
   it("round-trips a couple's choice through storage", () => {
-    const chosen = {
-      forms: true,
-      travel: false,
-      logistics: false,
-      faq: false,
-    };
+    const chosen = { ...ALL_ON, weekend: false, dress: false };
     expect(resolveGuestModules(toStoredGuestModules(chosen))).toEqual(chosen);
   });
 });

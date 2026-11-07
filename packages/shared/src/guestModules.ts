@@ -1,43 +1,42 @@
 /**
- * Which modules a wedding's guest invitation shows.
+ * Which parts of the wedding page a guest sees.
  *
- * The guest portal is built from four modules — the forms the couple sends,
- * the travel/carpool board, the logistics and stays page, and the FAQ. Not
- * every wedding wants all four: a city hall ceremony with no room blocks and
- * no carpooling has nothing to put behind two of those tabs, and an empty tab
- * reads as a couple who forgot to fill it in.
+ * The page opens on the faire-part in its envelope and always ends with the
+ * reply (and the couple's other forms under it). Between the two, the couple
+ * turns parts on or off: their word, the weekend, the venue and getting
+ * there, carpooling, the dress code, their questions.
  *
  * Storage keeps only what the couple has changed, as a jsonb map on
  * `weddings.guest_modules`:
  *
  * ```json
- * { "travel": false, "logistics": false }
+ * { "travel": false, "dress": false }
  * ```
  *
- * An absent key means the module is **on**. That is deliberate in two
- * directions: every wedding written before this existed holds `{}` and so
- * renders exactly as it did, and a module added to the portal later is on for
- * everyone until somebody turns it off — new modules ship visible rather than
- * silently missing for every existing wedding.
+ * An absent key means the part is **on**: a part added later is on for
+ * everyone until somebody turns it off. A part being on shows nothing by
+ * itself: the guest page leaves out a part with nothing written in it.
  *
- * The database enforces the same shape (`_guest_modules_valid`), including the
- * rule that the last module can't be turned off. Readers here are permissive
- * anyway — an unknown key, a non-boolean, or a null column resolves to the
- * default rather than throwing, because a malformed row must never blank out a
- * guest's invitation.
+ * The database enforces the same shape (`_guest_modules_valid`, migration
+ * 20261107190000_wedding_page_parts). Every part may be off. Readers here are
+ * permissive anyway: an unknown key, a non-boolean, or a null column resolves
+ * to the default rather than throwing, because a malformed row must never
+ * blank out a guest's invitation.
  */
 
-/** Every module the guest portal can render, in the order guests see them. */
+/** Every part the wedding page can show, in the order guests see them. */
 export const GUEST_MODULE_KEYS = [
-  "forms",
+  "word",
+  "weekend",
+  "venue",
   "travel",
-  "logistics",
+  "dress",
   "faq",
 ] as const;
 
 export type GuestModuleKey = (typeof GUEST_MODULE_KEYS)[number];
 
-/** Fully resolved state: one explicit boolean per module, no absent keys. */
+/** Fully resolved state: one explicit boolean per part, no absent keys. */
 export type GuestModules = Record<GuestModuleKey, boolean>;
 
 /** What actually comes back from jsonb: the map, or nothing at all. */

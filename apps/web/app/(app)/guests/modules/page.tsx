@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   GUEST_MODULE_KEYS,
+  partHasContent,
   resolveGuestModules,
   toStoredGuestModules,
   type GuestModuleKey,
@@ -11,20 +13,27 @@ import {
 } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
-import { updateWedding } from "@/lib/data";
-import { useT } from "@/lib/i18n/client";
+import { fetchRoomBlocks, updateWedding } from "@/lib/data";
+import { fetchEditableGuestPage, type EditableGuestPage } from "@/lib/guestPageData";
+import { useLocale } from "@/lib/i18n/client";
 import { BackHeader } from "@/components/BackHeader";
 import { Button, SectionLabel, Switch, Loading } from "@/components/ui";
 
+/** Where each part's content is written, on the guest page content screen. */
+const EDIT_HREF: Partial<Record<GuestModuleKey, string>> = {
+  word: "/guests/page-content#pc-welcome",
+  weekend: "/guests/page-content#pc-weekend",
+  venue: "/guests/page-content#pc-travel",
+  dress: "/guests/page-content#pc-dress",
+  faq: "/guests/page-content#pc-faq",
+};
+
 /**
- * Which sections of the guest invitation this wedding shows.
- *
- * The guest portal renders four modules; a wedding with no room blocks and no
- * carpooling has nothing to put behind two of them, and an empty tab reads as
- * a couple who forgot to fill it in rather than a wedding that doesn't need
- * it. Turning one off here hides it for every guest of this wedding —
- * it's presentation only, so nothing a guest has already submitted is touched
- * and turning a module back on brings their answers back with it.
+ * The organiser's view of the wedding page: the faire-part opens it, the
+ * reply ends it, and in between a switch per part. Turning a part off hides
+ * it for every guest; it's presentation only, so nothing a guest has sent is
+ * touched. A part that is on but has nothing written in it is not shown to
+ * guests, and is marked as such here.
  */
 export default function GuestModulesPage() {
   const { wedding, refresh } = useWedding();
@@ -36,46 +45,109 @@ export default function GuestModulesPage() {
       </main>
     );
 
+  return <GuestModulesForm key={wedding.id} wedding={wedding} refresh={refresh} />;
+}
+
+const box: React.CSSProperties = {
+  borderRadius: 18,
+  background: T.surface,
+  border: `1px solid ${T.line}`,
+  overflow: "hidden",
+};
+
+function Row({
+  title,
+  sub,
+  status,
+  statusTone,
+  action,
+  last,
+}: {
+  title: string;
+  sub: string;
+  status?: string;
+  statusTone?: "on" | "off" | "warn";
+  action?: React.ReactNode;
+  last?: boolean;
+}) {
   return (
-    <GuestModulesForm key={wedding.id} wedding={wedding} refresh={refresh} />
+    <div
+      role="group"
+      aria-label={title}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "13px 15px",
+        borderBottom: last ? "none" : `1px solid ${T.line}`,
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>{title}</div>
+        <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>{sub}</div>
+        {status ? (
+          <div
+            style={{
+              fontSize: 11.5,
+              marginTop: 5,
+              fontWeight: 600,
+              color: statusTone === "on" ? T.green : statusTone === "warn" ? T.accentInk : T.faint,
+            }}
+          >
+            {status}
+          </div>
+        ) : null}
+      </div>
+      {action}
+    </div>
   );
 }
 
-function GuestModulesForm({
-  wedding,
-  refresh,
-}: {
-  wedding: Wedding;
-  refresh: () => Promise<void>;
-}) {
-  const t = useT();
-  const [modules, setModules] = useState<GuestModules>(() =>
-    resolveGuestModules(wedding.guest_modules),
-  );
+const editLink: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  minHeight: 44,
+  padding: "0 6px",
+  fontSize: 13,
+  fontWeight: 600,
+  color: T.accentInk,
+  textDecoration: "none",
+};
+
+function GuestModulesForm({ wedding, refresh }: { wedding: Wedding; refresh: () => Promise<void> }) {
+  const { t: dict, locale } = useLocale();
+  const t = dict.guests.modules;
+  const [modules, setModules] = useState<GuestModules>(() => resolveGuestModules(wedding.guest_modules));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const COPY: Record<GuestModuleKey, { label: string; sub: string }> = {
-    forms: { label: t.guests.modules.formsLabel, sub: t.guests.modules.formsSub },
-    travel: { label: t.guests.modules.travelLabel, sub: t.guests.modules.travelSub },
-    logistics: {
-      label: t.guests.modules.logisticsLabel,
-      sub: t.guests.modules.logisticsSub,
-    },
-    faq: { label: t.guests.modules.faqLabel, sub: t.guests.modules.faqSub },
-  };
+  // What is written in each part, to tell "ready" from "empty". Unknown while
+  // it loads, or if it fails: the switches work without it.
+  const [content, setContent] = useState<(EditableGuestPage & { stays: unknown[] }) | null>(null);
+  useEffect(() => {
+    let live = true;
+    Promise.all([fetchEditableGuestPage(wedding.id, wedding.default_locale || locale), fetchRoomBlocks(wedding.id)])
+      .then(([page, stays]) => live && setContent({ ...page, stays }))
+      .catch((e) => console.error("Failed to load guest page content:", e));
+    return () => {
+      live = false;
+    };
+  }, [wedding.id, wedding.default_locale, locale]);
 
-  const enabledCount = GUEST_MODULE_KEYS.filter((k) => modules[k]).length;
+  const hasContent = (key: GuestModuleKey) =>
+    content
+      ? partHasContent(key, {
+          page: content.page,
+          moments: content.moments,
+          faq: content.faq,
+          stays: content.stays,
+          venueName: wedding.venue_name,
+          address: wedding.address_city || wedding.address_area,
+        })
+      : null;
 
   const toggle = (key: GuestModuleKey) => {
-    // The last module can't go. The database refuses it too, but a guest-facing
-    // invitation with no sections at all is worth explaining here rather than
-    // surfacing as a constraint violation after a save.
-    if (modules[key] && enabledCount === 1) {
-      setError(t.guests.modules.lastOneError);
-      return;
-    }
     setError(null);
     setSaved(false);
     setModules((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -83,98 +155,85 @@ function GuestModulesForm({
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (enabledCount === 0) {
-      setError(t.guests.modules.lastOneError);
-      return;
-    }
     setBusy(true);
     setError(null);
     setSaved(false);
     try {
-      // Only the "off" decisions are stored, so a module added to the portal
-      // later starts out visible instead of silently missing.
-      await updateWedding(wedding.id, {
-        guest_modules: toStoredGuestModules(modules),
-      });
+      // Only the "off" decisions are stored, so a part added to the page
+      // later starts out on instead of silently missing.
+      await updateWedding(wedding.id, { guest_modules: toStoredGuestModules(modules) });
       await refresh();
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.guests.modules.saveError);
+      setError(err instanceof Error ? err.message : t.saveError);
     } finally {
       setBusy(false);
     }
   };
 
+  const status = (key: GuestModuleKey): { text: string; tone: "on" | "off" | "warn" } => {
+    if (!modules[key]) return { text: t.deactivated, tone: "off" };
+    const filled = hasContent(key);
+    if (key === "travel" || filled === null) return { text: t.activated, tone: "on" };
+    return filled ? { text: t.ready, tone: "on" } : { text: t.empty, tone: "warn" };
+  };
+
   return (
     <main className="u-main">
-      <BackHeader
-        title={t.guests.modules.title}
-        subtitle={t.guests.modules.subtitle}
-        fallback="/guests"
-      />
+      <BackHeader title={t.title} subtitle={t.subtitle} fallback="/guests" />
 
       <form onSubmit={save}>
-        <SectionLabel style={{ marginTop: 0 }}>
-          {t.guests.modules.sectionLabel}
-        </SectionLabel>
+        <SectionLabel style={{ marginTop: 0 }}>{t.openingLabel}</SectionLabel>
+        <div style={box}>
+          <Row title={t.openingTitle} sub={t.openingSub} status={t.always} statusTone="on" last />
+        </div>
 
-        <div
-          style={{
-            borderRadius: 18,
-            background: T.surface,
-            border: `1px solid ${T.line}`,
-            overflow: "hidden",
-          }}
-        >
-          {GUEST_MODULE_KEYS.map((key, i) => (
-            <div
-              key={key}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "13px 15px",
-                borderBottom:
-                  i === GUEST_MODULE_KEYS.length - 1
-                    ? "none"
-                    : `1px solid ${T.line}`,
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}
-                >
-                  {COPY[key].label}
-                </div>
-                <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
-                  {COPY[key].sub}
-                </div>
-                <div
-                  style={{
-                    fontSize: 11.5,
-                    marginTop: 5,
-                    fontWeight: 600,
-                    color: modules[key] ? T.green : T.faint,
-                  }}
-                >
-                  {modules[key]
-                    ? t.guests.modules.activated
-                    : t.guests.modules.deactivated}
-                </div>
-              </div>
-              <Switch
-                on={modules[key]}
-                onChange={() => toggle(key)}
-                label={COPY[key].label}
+        <SectionLabel>{t.partsLabel}</SectionLabel>
+        <div style={box} role="group" aria-label={t.partsLabel}>
+          {GUEST_MODULE_KEYS.map((key, i) => {
+            const s = status(key);
+            const href = EDIT_HREF[key];
+            return (
+              <Row
+                key={key}
+                title={t.parts[key].label}
+                sub={t.parts[key].sub}
+                status={s.text}
+                statusTone={s.tone}
+                last={i === GUEST_MODULE_KEYS.length - 1}
+                action={
+                  <>
+                    {href ? (
+                      <Link href={href} style={editLink} aria-label={`${t.edit} · ${t.parts[key].label}`}>
+                        {t.edit}
+                      </Link>
+                    ) : null}
+                    <Switch on={modules[key]} onChange={() => toggle(key)} label={t.parts[key].label} />
+                  </>
+                }
               />
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        <div style={{ fontSize: 12, color: T.faint, margin: "10px 4px 14px" }}>
-          {t.guests.modules.previewNote}
+        <SectionLabel>{t.replyLabel}</SectionLabel>
+        <div style={box}>
+          <Row
+            title={t.replyTitle}
+            sub={t.replySub}
+            status={t.always}
+            statusTone="on"
+            last
+            action={
+              <Link href="/guests/forms" style={editLink} aria-label={`${t.edit} · ${t.replyTitle}`}>
+                {t.edit}
+              </Link>
+            }
+          />
         </div>
+
+        <div style={{ fontSize: 12, color: T.faint, margin: "10px 4px 14px" }}>{t.previewNote}</div>
 
         {error && (
           <div className="error" style={{ marginBottom: 10 }}>
@@ -183,11 +242,7 @@ function GuestModulesForm({
         )}
 
         <Button type="submit" disabled={busy} style={{ width: "100%" }}>
-          {busy
-            ? t.guests.modules.saving
-            : saved
-              ? t.guests.modules.saved
-              : t.guests.modules.save}
+          {busy ? t.saving : saved ? t.saved : t.save}
         </Button>
       </form>
     </main>

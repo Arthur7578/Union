@@ -98,11 +98,10 @@ describe("GuestPortal and the RSVP handoff", () => {
     expect(screen.queryByRole("heading", { name: rsvpQuestion })).not.toBeInTheDocument();
   });
 
-  it("lands on the hub when the couple turned the RSVP off", async () => {
+  it("still opens the RSVP when an old map turned the forms off: the reply is always on the page", async () => {
     markRsvpHandoff("tok");
     hub(invitation({ modules: { forms: false } }));
-    await new Promise((r) => setTimeout(r, 50));
-    expect(screen.queryByRole("heading", { name: rsvpQuestion })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: rsvpQuestion })).toBeInTheDocument();
   });
 });
 

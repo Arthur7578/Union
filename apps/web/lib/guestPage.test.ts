@@ -5,6 +5,7 @@ import {
   momentDate,
   paragraphs,
   parseGuestPage,
+  partHasContent,
   suggestedChildrenAnswer,
   suggestedContactAnswer,
 } from "@union/shared";
@@ -121,5 +122,38 @@ describe("suggested answers", () => {
       en: "Léa Martin · 06 12 34 56 78",
     });
     expect(suggestedContactAnswer({ full_name: " ", phone: null })).toBeNull();
+  });
+});
+
+describe("whether a page part has something to show", () => {
+  const empty = { page: null, moments: [], faq: [], stays: [] };
+
+  it("counts nothing in an empty page, except carpooling", () => {
+    expect(partHasContent("word", empty)).toBe(false);
+    expect(partHasContent("weekend", empty)).toBe(false);
+    expect(partHasContent("venue", empty)).toBe(false);
+    expect(partHasContent("dress", empty)).toBe(false);
+    expect(partHasContent("faq", empty)).toBe(false);
+    expect(partHasContent("travel", empty)).toBe(true);
+  });
+
+  it("reads text in any language, and ignores blank text", () => {
+    expect(partHasContent("word", { ...empty, page: { welcome: { en: "Hello" } } })).toBe(true);
+    expect(partHasContent("word", { ...empty, page: { welcome: { fr: "  " } } })).toBe(false);
+  });
+
+  it("shows the venue from the settings alone, or from a way to come, or a stay", () => {
+    expect(partHasContent("venue", { ...empty, venueName: "Domaine des Oliviers" })).toBe(true);
+    expect(partHasContent("venue", { ...empty, page: { travel_train: "Gare d'Aix TGV" } })).toBe(true);
+    expect(partHasContent("venue", { ...empty, stays: [{}] })).toBe(true);
+  });
+
+  it("shows the dress code from a palette alone", () => {
+    expect(partHasContent("dress", { ...empty, page: { palette: [{ color: "#A4AE8F" }] } })).toBe(true);
+  });
+
+  it("shows the weekend and the questions once they hold one item", () => {
+    expect(partHasContent("weekend", { ...empty, moments: [{}] })).toBe(true);
+    expect(partHasContent("faq", { ...empty, faq: [{}] })).toBe(true);
   });
 });

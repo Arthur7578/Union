@@ -256,6 +256,7 @@ export {
   momentDate,
   paragraphs,
   parseGuestPage,
+  partHasContent,
   suggestedChildrenAnswer,
   suggestedContactAnswer,
 } from "./guestPage";
@@ -267,4 +268,5 @@ export type {
   GuestPageSwatch,
   GuestPageTexts,
   MomentDay,
+  PartContentInput,
 } from "./guestPage";

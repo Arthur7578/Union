@@ -11,7 +11,7 @@ import {
   normalizeQuestions,
   rsvpCardLine,
 } from "@union/shared";
-import type { FormAnswers, GuestModuleKey } from "@union/shared";
+import type { FormAnswers } from "@union/shared";
 import { LocaleToggle } from "@/components/guest/LocaleToggle";
 import { OliveBranch } from "@/components/guest/OliveBranch";
 import { useReplayWelcome, useWelcomeResponses } from "@/components/guest/WelcomeGate";
@@ -94,12 +94,22 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   // Which modules this wedding shows. The couple turns them off in
   // /guests/modules; a module they've turned off is never rendered here — not
   // as an empty section, not as a link that opens nothing.
-  const modules = enabledGuestModules(invitation.wedding.guest_modules);
-  const moduleOn = (key: GuestModuleKey) => modules.includes(key);
+  // Bridge from the page parts (20261107190000) to the hub's sections, until
+  // the wedding page replaces this hub: the forms are always on, the infos
+  // show while the weekend or the venue part is on.
+  type HubSection = "forms" | "travel" | "logistics" | "faq";
+  const parts = enabledGuestModules(invitation.wedding.guest_modules);
+  const modules: HubSection[] = [
+    "forms",
+    ...(parts.includes("travel") ? (["travel"] as const) : []),
+    ...(parts.includes("weekend") || parts.includes("venue") ? (["logistics"] as const) : []),
+    ...(parts.includes("faq") ? (["faq"] as const) : []),
+  ];
+  const moduleOn = (key: HubSection) => modules.includes(key);
   // A bar of one section is a button that goes nowhere: only show it when
   // there's somewhere else to go.
   const showNav = modules.length > 1;
-  const sectionId = (key: GuestModuleKey) => `gh-${key}`;
+  const sectionId = (key: HubSection) => `gh-${key}`;
   const activeSection = useActiveSection(modules.map(sectionId));
 
   // Which form is open, full screen: the RSVP (its first ask, or the later
@@ -307,7 +317,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   const activeRsvpFormId = activeRsvpForm?.id || null;
 
 
-  const scrollTo = (key: GuestModuleKey) =>
+  const scrollTo = (key: HubSection) =>
     document.getElementById(sectionId(key))?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   // The guest's answer in one line: their own answer when invited alone, one

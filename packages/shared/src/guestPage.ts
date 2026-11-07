@@ -10,6 +10,7 @@
  *
  * Kept free of anything web-specific so the native app can reuse it.
  */
+import { isTextEmpty } from "./localized";
 import type { LocalizedText, StoredText } from "./localized";
 
 /** The page texts. Every field is couple-written, localized text. */
@@ -207,4 +208,59 @@ export function suggestedContactAnswer(profile: { full_name: string | null; phon
   if (!name && !phone) return null;
   const who = [name, phone].filter(Boolean).join(" · ");
   return { fr: who, en: who };
+}
+
+/** What a page part needs to know whether it has anything to show. Shaped
+ *  loosely so both the guest's content and the organiser's editable copy fit. */
+export type PartContentInput = {
+  page: {
+    welcome?: StoredText;
+    travel_train?: StoredText;
+    travel_plane?: StoredText;
+    travel_car?: StoredText;
+    shuttle?: StoredText;
+    dress_code?: StoredText;
+    dress_text?: StoredText;
+    dress_note?: StoredText;
+    palette?: readonly unknown[];
+  } | null;
+  moments: readonly unknown[];
+  faq: readonly unknown[];
+  stays?: readonly unknown[];
+  /** From the wedding settings, as the guest is allowed to see them. */
+  venueName?: string | null;
+  address?: string | null;
+};
+
+const someText = (...values: StoredText[]) => values.some((v) => !isTextEmpty(v));
+
+/**
+ * Whether a part of the wedding page has something to show. A part that is
+ * on but empty is left out of the guest's page (no empty title), and the
+ * organiser sees it as "empty". Carpooling has no content of its own to
+ * check, so it always counts as having some.
+ */
+export function partHasContent(
+  part: "word" | "weekend" | "venue" | "travel" | "dress" | "faq",
+  input: PartContentInput,
+): boolean {
+  const p = input.page;
+  switch (part) {
+    case "word":
+      return someText(p?.welcome);
+    case "weekend":
+      return input.moments.length > 0;
+    case "venue":
+      return (
+        Boolean(input.venueName?.trim() || input.address?.trim()) ||
+        someText(p?.travel_train, p?.travel_plane, p?.travel_car, p?.shuttle) ||
+        (input.stays?.length ?? 0) > 0
+      );
+    case "travel":
+      return true;
+    case "dress":
+      return someText(p?.dress_code, p?.dress_text, p?.dress_note) || (p?.palette?.length ?? 0) > 0;
+    case "faq":
+      return input.faq.length > 0;
+  }
 }
