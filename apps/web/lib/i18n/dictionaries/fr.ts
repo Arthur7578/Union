@@ -827,6 +827,8 @@ export const fr: Dictionary = {
     flipHint: "Touche le carton pour le retourner.",
     skip: "Passer",
     respond: "Répondre à l'invitation",
+    continue: "Découvrir la suite",
+    respondNow: "Répondre directement",
     seeAgain: "Revoir l'invitation",
   },
 

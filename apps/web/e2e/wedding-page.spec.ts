@@ -139,3 +139,21 @@ test("every part off: the page is the faire-part's names and the reply", async (
   // One section: no bar of chips that goes nowhere.
   await expect(page.getByRole("navigation", { name: "Sections" })).toHaveCount(0);
 });
+
+test("from the faire-part, the rest of the page opens on its first part, without the RSVP", async ({ page }) => {
+  const seeded = await seedPage();
+  // A guest opening their link for the first time.
+  const { error } = await seeded.owner.from("guests").update({ welcome_seen_at: null }).eq("id", seeded.guests.lea.id);
+  if (error) throw error;
+  await page.goto(`/guest/${seeded.guests.lea.token}`);
+  // Reduced motion (as these tests run): the faire-part opens on its end.
+  await page.getByRole("button", { name: "See the rest" }).click();
+  await expect(section(page, "word")).toBeInViewport();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Reply · by May 12" })).toBeVisible();
+
+  // Seen once, the link opens on the page next time.
+  await page.reload();
+  await expect(section(page, "word")).toBeVisible();
+  await expect(page.getByRole("button", { name: "See the rest" })).toHaveCount(0);
+});

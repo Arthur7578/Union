@@ -4,6 +4,8 @@
    a scalloped card with a "received" stamp. Everything else stays quiet. */
 
 .wp-main{padding-bottom:120px}
+/* arriving from the faire-part: the first part rises onto the card's paper */
+.wp-main.is-arriving > .gh-section:first-child{animation:gh-rise .7s .05s cubic-bezier(.16,1,.3,1) both}
 
 /* section bar: chips under the top bar */
 .wp-chips{position:sticky;top:calc(var(--top) + env(safe-area-inset-top,0px));z-index:45;display:flex;gap:6px;

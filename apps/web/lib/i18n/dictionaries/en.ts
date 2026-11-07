@@ -853,6 +853,8 @@ export const en = {
     flipHint: "Tap the card to turn it over.",
     skip: "Skip",
     respond: "Respond to the invitation",
+    continue: "See the rest",
+    respondNow: "Reply right away",
     seeAgain: "See the invitation again",
   },
 

@@ -4,10 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   EMPTY_GUEST_PAGE,
-  partHasContent,
   canAddChildren,
   canAddPartner as mayAddPartner,
-  enabledGuestModules,
   mayAttend,
   normalizeQuestions,
   rsvpCardLine,
@@ -15,7 +13,7 @@ import {
 import type { AnsweredRsvpStatus, FormAnswers, GuestModuleKey } from "@union/shared";
 import { LocaleToggle } from "@/components/guest/LocaleToggle";
 import { OliveBranch } from "@/components/guest/OliveBranch";
-import { useReplayWelcome, useWelcomeResponses } from "@/components/guest/WelcomeGate";
+import { useReplayWelcome, useWelcomeContinues, useWelcomeResponses } from "@/components/guest/WelcomeGate";
 import { formatGuestAddress } from "@/lib/guestAddress";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { useLocale } from "@/lib/i18n/client";
@@ -37,6 +35,7 @@ import { RsvpFlow, type RsvpAnswers, type RsvpReply } from "./RsvpFlow";
 import { TravelSection } from "./TravelSection";
 import type { DBInvitation } from "./page";
 import { useActiveSection, useDaysLeft, useInView } from "./pageHooks";
+import { shownParts } from "./pageParts";
 import "./GuestPortal.css";
 import "./WeddingPage.css";
 
@@ -64,16 +63,9 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   const addressText = formatGuestAddress(invitation.wedding);
   const guestPage = invitation.guest_page ?? EMPTY_GUEST_PAGE;
 
-  // The parts of the page this wedding shows: the ones the couple left on in
-  // Guests › Guest experience, and only those with something in them, so a
-  // guest never meets an empty title. The reply comes last, always.
-  const parts = enabledGuestModules(invitation.wedding.guest_modules).filter((key) =>
-    partHasContent(key, {
-      ...guestPage,
-      venueName: invitation.wedding.venue_name,
-      address: addressText,
-    }),
-  );
+  // The parts the couple left on and wrote something in; the reply comes
+  // last, always.
+  const parts = shownParts(invitation);
   type PageSection = GuestModuleKey | "reply";
   const sectionId = (key: PageSection) => `gh-${key}`;
 
@@ -345,6 +337,20 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   const showNav = sections.length > 1;
   const activeSection = useActiveSection(sections.map(sectionId));
   const overlayOpen = Boolean(rsvpOpen || openForm);
+  // "See the rest" on the faire-part: the card grew into this page's paper,
+  // so the guest lands on its first part, which rises onto it.
+  const welcomeContinues = useWelcomeContinues();
+  const [arrived, setArrived] = useState(false);
+  useEffect(() => {
+    if (!welcomeContinues) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(sectionId(sections[0]))?.scrollIntoView({ block: "start" });
+      setArrived(true);
+    });
+    return () => cancelAnimationFrame(frame);
+    // Only a new "see the rest" should move the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [welcomeContinues]);
   // The chip of the section on screen stays in view in the bar.
   useEffect(() => {
     if (!activeSection) return;
@@ -453,7 +459,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
           ) : null}
         </section>
 
-        <main className="gh-main wp-main">
+        <main className={`gh-main wp-main${arrived ? " is-arriving" : ""}`}>
           {sections.map((key) => (
             <section
               key={key}

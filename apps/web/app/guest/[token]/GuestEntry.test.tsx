@@ -37,7 +37,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-const invitation = (seen: boolean): DBInvitation =>
+const invitation = (seen: boolean, modules?: Record<string, boolean>): DBInvitation =>
   ({
     wedding: {
       partner_one: "Maya",
@@ -46,6 +46,7 @@ const invitation = (seen: boolean): DBInvitation =>
       venue_name: null,
       address_visibility: "hidden",
       address: null,
+      guest_modules: modules,
     },
     guest: {
       id: "guest-1",
@@ -55,19 +56,21 @@ const invitation = (seen: boolean): DBInvitation =>
     },
   }) as unknown as Invitation as DBInvitation;
 
-const entry = (opts: { seen: boolean; emailMissing?: boolean; isDemo?: boolean }) =>
+const entry = (opts: { seen: boolean; emailMissing?: boolean; isDemo?: boolean; modules?: Record<string, boolean> }) =>
   render(
     <LocaleProvider initialLocale="en">
       <GuestEntry
         token="tok"
-        invitation={invitation(opts.seen)}
+        invitation={invitation(opts.seen, opts.modules)}
         isDemo={opts.isDemo ?? false}
         emailMissing={opts.emailMissing ?? false}
       />
     </LocaleProvider>,
   );
 
-const respond = () => screen.getByRole("button", { name: "Respond to the invitation" });
+// The carpool part is on and never empty, so this wedding has a page to read:
+// the faire-part offers the rest of it, and replying right away.
+const respond = () => screen.getByRole("button", { name: "Reply right away" });
 
 describe("GuestEntry", () => {
   it("shows the invitation, then the hub, with no identity step", async () => {
@@ -97,7 +100,21 @@ describe("GuestEntry", () => {
   it("skips the welcome for a guest whose invitation says they have seen it", async () => {
     entry({ seen: true });
 
-    expect(screen.queryByRole("button", { name: "Respond to the invitation" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reply right away" })).not.toBeInTheDocument();
+    expect(await screen.findByText("the hub")).toBeInTheDocument();
+  });
+
+  it("goes on to the page from the faire-part", async () => {
+    entry({ seen: false });
+    fireEvent.click(screen.getByRole("button", { name: "See the rest" }));
+    expect(await screen.findByText("the hub")).toBeInTheDocument();
+  });
+
+  it("ends on respond alone when every part of the page is off, as before", async () => {
+    const off = { word: false, weekend: false, venue: false, travel: false, dress: false, faq: false };
+    entry({ seen: false, modules: off });
+    expect(screen.queryByRole("button", { name: "See the rest" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Respond to the invitation" }));
     expect(await screen.findByText("the hub")).toBeInTheDocument();
   });
 
