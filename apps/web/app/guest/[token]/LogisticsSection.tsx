@@ -1,59 +1,56 @@
 "use client";
 
+import { groupMomentsByDay, resolveText, type GuestPageContent, type StoredText } from "@union/shared";
 import { useLocale } from "@/lib/i18n/client";
+import { LOCALES } from "@/lib/i18n";
 import { SectionHead } from "./SectionHead";
 
-// Curated stays recommendation list.
-const STAYS = [
-  {
-    name: "Hood River Hood Hotel",
-    type: "Boutique Hotel",
-    distance: "12 min from venue",
-    price: "$$$",
-    rating: "4.8 ★",
-    desc: "A gorgeous, historic brick boutique hotel in the heart of downtown Hood River with modern amenities.",
-    url: "https://www.hoodriverhotel.com",
-    badge: "Recommended Stay",
-  },
-  {
-    name: "Columbia Gorge Hotel & Spa",
-    type: "Luxury Resort & Spa",
-    distance: "15 min from venue",
-    price: "$$$$",
-    rating: "4.9 ★",
-    desc: "A beautiful, premium resort perched on a cliff overlooking the mighty Columbia River.",
-    url: "https://www.columbiagorgehotel.com",
-    badge: "Premium Choice",
-  },
-  {
-    name: "Westcliff Lodge",
-    type: "Cabins & Lodge",
-    distance: "14 min from venue",
-    price: "$$",
-    rating: "4.6 ★",
-    desc: "Secluded forest cabins and lodge rooms with spectacular views of the gorge. Ideal for families.",
-    url: "https://www.westclifflodge.com",
-    badge: "Great Views",
-  },
-];
-
-/** The venue, the day's schedule and where to stay. */
+/**
+ * The venue, how to get there, the weekend and where to stay — all from what
+ * the couple entered: the venue and address from the wedding settings, the
+ * rest from their guest page content and their stays. A part with nothing in
+ * it is left out rather than shown empty.
+ */
 export function LogisticsSection({
   venueName,
   addressText,
+  eventDate,
+  content,
 }: {
   venueName: string | null | undefined;
   /** Exactly what the couple chose to disclose; empty while it's hidden. */
   addressText: string;
+  eventDate: string | null | undefined;
+  content: GuestPageContent;
 }) {
   const { locale } = useLocale();
   const fr = locale === "fr";
+  const say = (value: StoredText) => resolveText(value, locale, LOCALES);
 
-  const schedule = [
-    { time: "16:00", title: fr ? "Arrivée des invités" : "Guest arrival", note: "Welcome drinks & premium seating" },
-    { time: "16:30", title: fr ? "La cérémonie" : "The ceremony", note: "In the beautiful meadow garden" },
-    { time: "17:30", title: fr ? "Cocktail & dîner" : "Cocktails & dining", note: "Local wines & seasonal organic banquet" },
-  ];
+  const ways = [
+    { key: "train", label: fr ? "En train" : "By train", text: say(content.page?.travel_train) },
+    { key: "plane", label: fr ? "En avion" : "By plane", text: say(content.page?.travel_plane) },
+    { key: "car", label: fr ? "En voiture" : "By car", text: say(content.page?.travel_car) },
+  ].filter((w): w is { key: string; label: string; text: string } => Boolean(w.text));
+  const shuttle = say(content.page?.shuttle);
+  const days = groupMomentsByDay(content.moments, eventDate);
+
+  const dayTitle = (offset: number, iso: string | null) => {
+    if (iso) {
+      const label = new Date(`${iso}T00:00:00`).toLocaleDateString(locale, {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      });
+      return label.charAt(0).toUpperCase() + label.slice(1);
+    }
+    if (offset === 0) return fr ? "Le jour J" : "The day";
+    if (offset === -1) return fr ? "La veille" : "The day before";
+    if (offset === 1) return fr ? "Le lendemain" : "The day after";
+    return offset < 0
+      ? fr ? `${-offset} jours avant` : `${-offset} days before`
+      : fr ? `${offset} jours après` : `${offset} days after`;
+  };
 
   return (
     <>
@@ -61,8 +58,8 @@ export function LogisticsSection({
         title={fr ? "Infos pratiques" : "The details"}
         lead={
           fr
-            ? "Toutes les adresses recommandées et le planning officiel du mariage."
-            : "The venue, the schedule of the day and where to stay."
+            ? "Le lieu, comment venir, le programme et où dormir."
+            : "The venue, getting there, the schedule and where to stay."
         }
       />
 
@@ -90,39 +87,67 @@ export function LogisticsSection({
           ) : null}
         </li>
 
-        <li className="gh-card">
-          <h3 className="gh-card-title">{fr ? "Le déroulé" : "The day"}</h3>
-          <ol className="gh-schedule">
-            {schedule.map((item) => (
-              <li key={item.time}>
-                <span className="gh-time">{item.time}</span>
-                <span>
-                  <span className="gh-what">{item.title}</span>
-                  <span className="gh-note">{item.note}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-        </li>
-      </ul>
+        {ways.length || shuttle ? (
+          <li className="gh-card">
+            <h3 className="gh-card-title">{fr ? "Venir" : "Getting there"}</h3>
+            <ul className="gh-schedule gh-ways">
+              {ways.map((w) => (
+                <li key={w.key}>
+                  <span>
+                    <span className="gh-what">{w.label}</span>
+                    <span className="gh-note">{w.text}</span>
+                  </span>
+                </li>
+              ))}
+              {shuttle ? (
+                <li>
+                  <span>
+                    <span className="gh-what">{fr ? "La navette" : "The shuttle"}</span>
+                    <span className="gh-note">{shuttle}</span>
+                  </span>
+                </li>
+              ) : null}
+            </ul>
+          </li>
+        ) : null}
 
-      <h3 className="gh-subhead">{fr ? "Où dormir" : "Where to stay"}</h3>
-      <ul className="gh-list">
-        {STAYS.map((stay) => (
-          <li key={stay.name} className="gh-card">
-            <h4 className="gh-card-title">{stay.name}</h4>
-            <p className="gh-card-meta">
-              {stay.type} · {stay.distance} · {stay.price} · {stay.rating}
-            </p>
-            <p className="gh-card-body">{stay.desc}</p>
-            <div className="gh-card-actions">
-              <a className="gh-link" href={stay.url} target="_blank" rel="noopener noreferrer">
-                {fr ? "Visiter le site" : "Visit website"}
-              </a>
-            </div>
+        {days.map((day) => (
+          <li key={day.dayOffset} className="gh-card">
+            <h3 className="gh-card-title">{dayTitle(day.dayOffset, day.date)}</h3>
+            <ol className="gh-schedule">
+              {day.moments.map((m) => {
+                const place = say(m.place);
+                const note = say(m.note);
+                return (
+                  <li key={m.id}>
+                    <span className="gh-time">{m.starts_at ?? ""}</span>
+                    <span>
+                      <span className="gh-what">{say(m.title)}</span>
+                      {place || note ? (
+                        <span className="gh-note">{[place, note].filter(Boolean).join(" · ")}</span>
+                      ) : null}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
           </li>
         ))}
       </ul>
+
+      {content.stays.length ? (
+        <>
+          <h3 className="gh-subhead">{fr ? "Où dormir" : "Where to stay"}</h3>
+          <ul className="gh-list">
+            {content.stays.map((stay) => (
+              <li key={stay.id} className="gh-card">
+                <h4 className="gh-card-title">{stay.name}</h4>
+                {stay.price_note ? <p className="gh-card-meta">{stay.price_note}</p> : null}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
     </>
   );
 }

@@ -224,6 +224,132 @@ export type Database = {
           },
         ]
       }
+      guest_page_faq: {
+        Row: {
+          answer: Json
+          created_at: string
+          id: string
+          question: Json
+          sort_order: number
+          wedding_id: string
+        }
+        Insert: {
+          answer: Json
+          created_at?: string
+          id?: string
+          question: Json
+          sort_order?: number
+          wedding_id: string
+        }
+        Update: {
+          answer?: Json
+          created_at?: string
+          id?: string
+          question?: Json
+          sort_order?: number
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_page_faq_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guest_page_moments: {
+        Row: {
+          created_at: string
+          day_offset: number
+          id: string
+          note: Json | null
+          place: Json | null
+          starts_at: string | null
+          title: Json
+          wedding_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_offset?: number
+          id?: string
+          note?: Json | null
+          place?: Json | null
+          starts_at?: string | null
+          title: Json
+          wedding_id: string
+        }
+        Update: {
+          created_at?: string
+          day_offset?: number
+          id?: string
+          note?: Json | null
+          place?: Json | null
+          starts_at?: string | null
+          title?: Json
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_page_moments_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guest_pages: {
+        Row: {
+          dress_code: Json | null
+          dress_note: Json | null
+          dress_text: Json | null
+          palette: Json
+          shuttle: Json | null
+          travel_car: Json | null
+          travel_plane: Json | null
+          travel_train: Json | null
+          updated_at: string
+          wedding_id: string
+          welcome: Json | null
+        }
+        Insert: {
+          dress_code?: Json | null
+          dress_note?: Json | null
+          dress_text?: Json | null
+          palette?: Json
+          shuttle?: Json | null
+          travel_car?: Json | null
+          travel_plane?: Json | null
+          travel_train?: Json | null
+          updated_at?: string
+          wedding_id: string
+          welcome?: Json | null
+        }
+        Update: {
+          dress_code?: Json | null
+          dress_note?: Json | null
+          dress_text?: Json | null
+          palette?: Json
+          shuttle?: Json | null
+          travel_car?: Json | null
+          travel_plane?: Json | null
+          travel_train?: Json | null
+          updated_at?: string
+          wedding_id?: string
+          welcome?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_pages_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: true
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guest_relationships: {
         Row: {
           created_at: string
@@ -845,6 +971,7 @@ export type Database = {
         Returns: Json
       }
       get_guest_email_status: { Args: { p_token: string }; Returns: Json }
+      get_guest_page: { Args: { p_token: string }; Returns: Json }
       get_invitation: { Args: { p_token: string }; Returns: Json }
       get_invitation_rsvp_forms: { Args: { p_token: string }; Returns: Json }
       get_wedding_by_join_code: { Args: { p_join_code: string }; Returns: Json }
