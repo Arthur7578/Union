@@ -38,7 +38,8 @@ test("a question the couple makes required in the builder can't be skipped by a 
   await page.context().clearCookies();
   await page.evaluate(() => window.localStorage.clear());
   await page.goto(`/guest/${seeded.guests.pat.token}`);
-  await page.getByRole("button", { name: "Respond to the invitation" }).click();
+  // The reply fixed at the bottom of the page.
+  await page.getByRole("button", { name: "Reply", exact: true }).click();
   await page.getByRole("button", { name: "Start" }).click();
   await page.getByRole("button", { name: /Attending/ }).click();
   await expect(page.getByRole("heading", { name: "Fish or meat?" })).toBeVisible();

@@ -175,7 +175,8 @@ export function paragraphs(value: string | undefined): string[] {
 
 /**
  * A suggested answer to "are children invited?", from the wedding's own
- * guest permissions, in French and English. The organiser can reword it; it
+ * guest permissions, in French and English. The French speaks to the guest
+ * as "tu", like the rest of the guest side. The organiser can reword it; it
  * only saves them typing what the app already knows.
  */
 export function suggestedChildrenAnswer(wedding: {
@@ -184,19 +185,19 @@ export function suggestedChildrenAnswer(wedding: {
 }): LocalizedText {
   if (!wedding.allow_guests_add_children) {
     return {
-      fr: "Les enfants attendus sont ceux nommés sur votre invitation.",
+      fr: "Les enfants attendus sont ceux nommés sur ton invitation.",
       en: "The children we are expecting are the ones named on your invitation.",
     };
   }
   const max = wedding.max_children_per_guest;
   if (max && max > 0) {
     return {
-      fr: `Oui, avec joie. Vous pouvez ajouter jusqu’à ${max} enfant${max > 1 ? "s" : ""} en répondant.`,
+      fr: `Oui, avec joie. Tu peux ajouter jusqu’à ${max} enfant${max > 1 ? "s" : ""} en répondant.`,
       en: `Yes, gladly. You can add up to ${max} ${max > 1 ? "children" : "child"} when you reply.`,
     };
   }
   return {
-    fr: "Oui, avec joie. Vous pouvez les ajouter en répondant.",
+    fr: "Oui, avec joie. Tu peux les ajouter en répondant.",
     en: "Yes, gladly. You can add them when you reply.",
   };
 }

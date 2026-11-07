@@ -103,13 +103,13 @@ describe("paragraphs", () => {
 describe("suggested answers", () => {
   it("answers the children question from the guest permissions", () => {
     expect(suggestedChildrenAnswer({ allow_guests_add_children: false, max_children_per_guest: null }).fr).toBe(
-      "Les enfants attendus sont ceux nommés sur votre invitation.",
+      "Les enfants attendus sont ceux nommés sur ton invitation.",
     );
     expect(suggestedChildrenAnswer({ allow_guests_add_children: true, max_children_per_guest: 2 }).en).toBe(
       "Yes, gladly. You can add up to 2 children when you reply.",
     );
     expect(suggestedChildrenAnswer({ allow_guests_add_children: true, max_children_per_guest: 1 }).fr).toBe(
-      "Oui, avec joie. Vous pouvez ajouter jusqu’à 1 enfant en répondant.",
+      "Oui, avec joie. Tu peux ajouter jusqu’à 1 enfant en répondant.",
     );
     expect(suggestedChildrenAnswer({ allow_guests_add_children: true, max_children_per_guest: null }).en).toBe(
       "Yes, gladly. You can add them when you reply.",

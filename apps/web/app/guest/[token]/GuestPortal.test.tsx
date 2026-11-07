@@ -83,9 +83,9 @@ describe("GuestPortal and the RSVP handoff", () => {
     expect(await screen.findByRole("heading", { name: rsvpQuestion })).toBeInTheDocument();
   });
 
-  it("lands on the hub when nobody just chose to respond", async () => {
+  it("lands on the page, its reply fixed at the bottom, when nobody just chose to respond", async () => {
     hub(invitation());
-    expect(await screen.findByRole("button", { name: "Respond to the invitation" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Reply" })).toBeInTheDocument();
     await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByRole("heading", { name: rsvpQuestion })).not.toBeInTheDocument();
   });
@@ -122,7 +122,7 @@ describe("GuestPortal and a maybe reply", () => {
     markRsvpHandoff("tok");
     hub(invitation({ allowMaybe: true, labelMaybe: "Hoping to!" }));
     expect(await screen.findByRole("heading", { name: rsvpQuestion })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Hoping to!/ })).toBeInTheDocument();
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: /Hoping to!/ })).toBeInTheDocument();
   });
 
   it("keeps the RSVP to yes and no when the flag is missing, as on a server older than the option", async () => {
@@ -188,9 +188,10 @@ describe("GuestPortal and the RSVP's opening window", () => {
   it("offers no reply once the couple has closed the RSVP", async () => {
     markRsvpHandoff("tok");
     hub(invitation({ rsvpForm: rsvpForm({ closes_at: "2000-01-01T00:00:00Z" }) }));
-    expect(await screen.findByText("Closed")).toBeInTheDocument();
+    expect(await screen.findByText(/^Replies closed on January 1/)).toBeInTheDocument();
     await new Promise((r) => setTimeout(r, 50));
-    expect(screen.queryByRole("button", { name: "Respond to the invitation" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Reply/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Attending" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: rsvpQuestion })).not.toBeInTheDocument();
   });
 
@@ -203,8 +204,9 @@ describe("GuestPortal and the RSVP's opening window", () => {
 
   it("says when the RSVP isn't open yet", async () => {
     hub(invitation({ rsvpForm: rsvpForm({ opens_at: "2999-01-01T00:00:00Z" }) }));
-    expect(await screen.findByText("Coming soon")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Respond to the invitation" })).not.toBeInTheDocument();
+    expect(await screen.findByText(/^Replies open on January 1/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Reply/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Attending" })).not.toBeInTheDocument();
   });
 });
 
@@ -231,17 +233,18 @@ describe("GuestPortal's RSVP card once the guest has replied (#85)", () => {
     rsvp_status: status,
     dietary_notes: null,
   });
-  /** The RSVP card: the checklist item whose heading is the RSVP's title. */
+  /** The RSVP card at the end of the page, headed with the RSVP's title. */
   const rsvpCard = async (title = "Attendance RSVP") =>
-    (await screen.findByRole("heading", { level: 3, name: title })).closest("li") as HTMLElement;
-  const metaOf = (card: HTMLElement) => card.querySelector(".gh-card-meta")?.textContent;
+    (await screen.findByRole("heading", { level: 3, name: title })).closest("article") as HTMLElement;
+  /** The card's one line: the subtitle before a reply, the answer after. */
+  const metaOf = (card: HTMLElement) => card.querySelector(".wp-summary, .wp-card-sub")?.textContent;
 
   it("shows a guest invited alone their answer, without their name", async () => {
     hub(invitation({ status: "attending" }));
     const card = await rsvpCard();
     expect(metaOf(card)).toBe("Attending");
-    expect(within(card).getByText("Done")).toBeInTheDocument();
-    expect(within(card).getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(within(card).getByText("Thank you!")).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Change my reply" })).toBeInTheDocument();
   });
 
   it("does the same in French", async () => {
@@ -300,7 +303,7 @@ describe("GuestPortal's RSVP card once the guest has replied (#85)", () => {
     expect(card.querySelector("[aria-label]")).toBeNull();
   });
 
-  it("leaves the hero's reply line as it was", async () => {
+  it("keeps the guest's answer in words at the bottom of the page", async () => {
     hub(invitation({ status: "attending" }));
     expect(await screen.findByText("You'll be with us")).toBeInTheDocument();
   });

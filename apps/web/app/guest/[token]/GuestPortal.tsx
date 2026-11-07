@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   EMPTY_GUEST_PAGE,
+  partHasContent,
   canAddChildren,
   canAddPartner as mayAddPartner,
   enabledGuestModules,
@@ -11,7 +12,7 @@ import {
   normalizeQuestions,
   rsvpCardLine,
 } from "@union/shared";
-import type { FormAnswers } from "@union/shared";
+import type { AnsweredRsvpStatus, FormAnswers, GuestModuleKey } from "@union/shared";
 import { LocaleToggle } from "@/components/guest/LocaleToggle";
 import { OliveBranch } from "@/components/guest/OliveBranch";
 import { useReplayWelcome, useWelcomeResponses } from "@/components/guest/WelcomeGate";
@@ -23,15 +24,21 @@ import { takeRsvpHandoff } from "@/lib/rsvpHandoff";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { GUEST_DA_VARS } from "@/lib/theme";
 import { CustomFormFlow, type Respondent } from "./CustomFormFlow";
+import { DressSection } from "./DressSection";
 import { FaqSection } from "./FaqSection";
-import { FormList, type FormItem } from "./FormList";
-import { LogisticsSection } from "./LogisticsSection";
+import { type FormItem } from "./FormList";
+import { ReplyDock } from "./ReplyDock";
+import { ReplySection } from "./ReplySection";
+import { VenueSection } from "./VenueSection";
+import { WeekendSection } from "./WeekendSection";
+import { WordSection } from "./WordSection";
 import { useReplyEmail } from "./ReplyEmailField";
 import { RsvpFlow, type RsvpAnswers, type RsvpReply } from "./RsvpFlow";
-import { SectionHead } from "./SectionHead";
 import { TravelSection } from "./TravelSection";
 import type { DBInvitation } from "./page";
+import { useActiveSection, useDaysLeft, useInView } from "./pageHooks";
 import "./GuestPortal.css";
+import "./WeddingPage.css";
 
 interface GuestPortalProps {
   token: string;
@@ -43,74 +50,32 @@ interface GuestPortalProps {
 
 type CustomForm = NonNullable<DBInvitation["custom_forms"]>[number];
 
-/** Whole days until the wedding, refreshed every minute; null without a date. */
-function useDaysLeft(eventDate: string | null | undefined) {
-  const [days, setDays] = useState<number | null>(null);
-  useEffect(() => {
-    if (!eventDate) return;
-    const target = new Date(`${eventDate}T00:00:00`).getTime();
-    const update = () => setDays(Math.max(0, Math.ceil((target - Date.now()) / 86_400_000)));
-    update();
-    const id = window.setInterval(update, 60_000);
-    return () => window.clearInterval(id);
-  }, [eventDate]);
-  return days;
-}
-
-/** Which section is on screen, for the section bar. */
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState<string | null>(null);
-  const key = ids.join(",");
-  useEffect(() => {
-    if (typeof IntersectionObserver !== "function") return;
-    const seen = new Map<string, boolean>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => seen.set(e.target.id, e.isIntersecting));
-        const first = key.split(",").find((id) => seen.get(id));
-        setActive(first ?? null);
-      },
-      { rootMargin: "-45% 0px -45% 0px" },
-    );
-    key.split(",").forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, [key]);
-  return active;
-}
-
 export function GuestPortal({ token, invitation, isDemo, emailMissing = false }: GuestPortalProps) {
   const replayWelcome = useReplayWelcome();
   const { t, locale } = useLocale();
   const hub = t.guestHub;
+  const page = t.weddingPage;
   const router = useRouter();
   const [hasAuthSession, setHasAuthSession] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Which modules this wedding shows. The couple turns them off in
-  // /guests/modules; a module they've turned off is never rendered here — not
-  // as an empty section, not as a link that opens nothing.
-  // Bridge from the page parts (20261107190000) to the hub's sections, until
-  // the wedding page replaces this hub: the forms are always on, the infos
-  // show while the weekend or the venue part is on.
-  type HubSection = "forms" | "travel" | "logistics" | "faq";
-  const parts = enabledGuestModules(invitation.wedding.guest_modules);
-  const modules: HubSection[] = [
-    "forms",
-    ...(parts.includes("travel") ? (["travel"] as const) : []),
-    ...(parts.includes("weekend") || parts.includes("venue") ? (["logistics"] as const) : []),
-    ...(parts.includes("faq") ? (["faq"] as const) : []),
-  ];
-  const moduleOn = (key: HubSection) => modules.includes(key);
-  // A bar of one section is a button that goes nowhere: only show it when
-  // there's somewhere else to go.
-  const showNav = modules.length > 1;
-  const sectionId = (key: HubSection) => `gh-${key}`;
-  const activeSection = useActiveSection(modules.map(sectionId));
+  const addressText = formatGuestAddress(invitation.wedding);
+  const guestPage = invitation.guest_page ?? EMPTY_GUEST_PAGE;
+
+  // The parts of the page this wedding shows: the ones the couple left on in
+  // Guests › Guest experience, and only those with something in them, so a
+  // guest never meets an empty title. The reply comes last, always.
+  const parts = enabledGuestModules(invitation.wedding.guest_modules).filter((key) =>
+    partHasContent(key, {
+      ...guestPage,
+      venueName: invitation.wedding.venue_name,
+      address: addressText,
+    }),
+  );
+  type PageSection = GuestModuleKey | "reply";
+  const sectionId = (key: PageSection) => `gh-${key}`;
 
   // Which form is open, full screen: the RSVP (its first ask, or the later
   // reconfirmation nudge — same answers, only the framing differs) or one of
@@ -119,8 +84,11 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   // Opened straight from "Respond to the invitation": the faire-part was the
   // introduction, so the form starts at its first question.
   const [rsvpFromWelcome, setRsvpFromWelcome] = useState(false);
-  const openRsvp = (context: "primary" | "reconfirmation") => {
+  // Answered on the page's RSVP card: the form opens on what follows.
+  const [rsvpAnswer, setRsvpAnswer] = useState<AnsweredRsvpStatus | undefined>(undefined);
+  const openRsvp = (context: "primary" | "reconfirmation", answer?: AnsweredRsvpStatus) => {
     setRsvpFromWelcome(false);
+    setRsvpAnswer(answer);
     setRsvpOpen(context);
   };
   const [openFormId, setOpenFormId] = useState<string | null>(null);
@@ -175,7 +143,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
     return "live";
   })();
   const rsvpLive = rsvpWindow === "live";
-  const answerNow = reply.status === "pending" && moduleOn("forms") && rsvpLive;
+  const answerNow = reply.status === "pending" && rsvpLive;
   useEffect(() => {
     // Next frame: the hub paints once, then the form slides in over it. The
     // flag is taken there too, so an effect React runs twice in development
@@ -248,8 +216,6 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
         { weekday: "long", year: "numeric", month: "long", day: "numeric" },
       )
     : null;
-  const addressText = formatGuestAddress(invitation.wedding);
-  const guestPage = invitation.guest_page ?? EMPTY_GUEST_PAGE;
   const place = invitation.wedding.venue_name || addressText;
 
   // RSVP wording — the couple's own copy in this guest's language if they've
@@ -317,7 +283,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   const activeRsvpFormId = activeRsvpForm?.id || null;
 
 
-  const scrollTo = (key: HubSection) =>
+  const scrollTo = (key: PageSection) =>
     document.getElementById(sectionId(key))?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   // The guest's answer in one line: their own answer when invited alone, one
@@ -335,25 +301,8 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
           locale,
         });
 
-  const formItems: FormItem[] = [
-    ...(rsvpWindow === "hidden"
-      ? []
-      : [
-          {
-            key: "rsvp",
-            title: rsvpTitle,
-            meta: replyLine,
-            state:
-              rsvpWindow === "scheduled"
-                ? ("soon" as const)
-                : reply.status !== "pending"
-                  ? ("done" as const)
-                  : rsvpWindow === "closed"
-                    ? ("closed" as const)
-                    : ("todo" as const),
-            onOpen: rsvpLive ? () => openRsvp("primary") : undefined,
-          },
-        ]),
+  // Under the RSVP card: the final check-in and the couple's own forms.
+  const otherForms: FormItem[] = [
     // No record says whether a guest has done the final check-in, so it
     // stays "to do" for as long as the couple keeps it open.
     ...(reconfirmationLive
@@ -389,156 +338,184 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
     }),
   ];
 
+  const showReply = rsvpWindow !== "hidden" || otherForms.length > 0;
+  const sections: PageSection[] = [...parts, ...(showReply ? (["reply"] as const) : [])];
+  // A bar of one section is a button that goes nowhere: only show it when
+  // there's somewhere else to go.
+  const showNav = sections.length > 1;
+  const activeSection = useActiveSection(sections.map(sectionId));
+  const overlayOpen = Boolean(rsvpOpen || openForm);
+  // The chip of the section on screen stays in view in the bar.
+  useEffect(() => {
+    if (!activeSection) return;
+    document
+      .querySelector(`.wp-chips [data-section="${activeSection}"]`)
+      ?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [activeSection]);
+  const [replyRef, replyInView] = useInView<HTMLElement>();
+
   return (
     <div className="gh" style={GUEST_DA_VARS as React.CSSProperties}>
-      {isDemo && <div className="gh-demo">{hub.demo}</div>}
+      {/* While a form is open over it, the page behind is out of reach: no
+          tabbing into it, nothing read out from it. */}
+      <div inert={overlayOpen || undefined} aria-hidden={overlayOpen || undefined}>
+        {isDemo && <div className="gh-demo">{hub.demo}</div>}
 
-      <header className="gh-top">
-        <span className="gh-mono" aria-label={coupleNames}>
-          {partnerOne?.charAt(0)}
-          <i aria-hidden="true" />
-          {partnerTwo?.charAt(0)}
-        </span>
-        <div className="gh-top-actions">
-          <LocaleToggle />
-          {(replayWelcome || (hasAuthSession && !isDemo)) && (
-            <div className="gh-menu" ref={menuRef}>
-              <button
-                type="button"
-                className="gh-menu-btn"
-                aria-label={hub.menu}
-                aria-expanded={menuOpen}
-                onClick={() => setMenuOpen((o) => !o)}
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M5 9h14M5 15h14" />
-                </svg>
-              </button>
-              {menuOpen && (
-                <div className="gh-menu-pop" role="menu">
-                  {replayWelcome && (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        replayWelcome();
-                      }}
-                    >
-                      {t.welcome.seeAgain}
-                    </button>
-                  )}
-                  {hasAuthSession && !isDemo && (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      disabled={signingOut}
-                      onClick={() => void handleGuestSignOut()}
-                    >
-                      {signingOut ? t.common.signingOut : t.common.signOut}
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </header>
-
-      <section className={`gh-hero${showNav ? " has-nav" : ""}`}>
-        <div className="gh-arch">
-          <OliveBranch className="gh-branch" />
-          <p className="gh-greet">{hub.greeting(guestFirstName)}</p>
-          <h1 className="gh-names">
-            <span>{partnerOne}</span>
-            <span className="gh-amp">&amp;</span>
-            <span>{partnerTwo}</span>
-          </h1>
-          <p className="gh-invite">{hub.inviteLine}</p>
-          {displayDate ? <p className="gh-date">{displayDate}</p> : null}
-          {place ? <p className="gh-place">{place}</p> : null}
-          {daysLeft ? <p className="gh-count">{hub.countdown(daysLeft)}</p> : null}
-        </div>
-
-        {moduleOn("forms") && (
-          <div className="gh-hero-cta">
-            {reply.status === "pending" ? (
-              rsvpLive ? (
-                <button type="button" className="gh-btn gh-btn--big" onClick={() => openRsvp("primary")}>
-                  {hub.respond}
+        <header className="gh-top">
+          <span className="gh-mono" aria-label={coupleNames}>
+            {partnerOne?.charAt(0)}
+            <i aria-hidden="true" />
+            {partnerTwo?.charAt(0)}
+          </span>
+          <div className="gh-top-actions">
+            <LocaleToggle />
+            {(replayWelcome || (hasAuthSession && !isDemo)) && (
+              <div className="gh-menu" ref={menuRef}>
+                <button
+                  type="button"
+                  className="gh-menu-btn"
+                  aria-label={hub.menu}
+                  aria-expanded={menuOpen}
+                  onClick={() => setMenuOpen((o) => !o)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 9h14M5 15h14" />
+                  </svg>
                 </button>
-              ) : null
-            ) : (
-              <p className="gh-replied">
-                <span className={`gh-replied-status is-${reply.status}`}>
-                  {reply.status === "attending" ? hub.coming : reply.status === "maybe" ? hub.maybe : hub.notComing}
-                </span>
-                {rsvpLive ? (
-                  <button type="button" className="gh-link" onClick={() => openRsvp("primary")}>
-                    {hub.editReply}
-                  </button>
-                ) : null}
-              </p>
+                {menuOpen && (
+                  <div className="gh-menu-pop" role="menu">
+                    {replayWelcome && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          replayWelcome();
+                        }}
+                      >
+                        {t.welcome.seeAgain}
+                      </button>
+                    )}
+                    {hasAuthSession && !isDemo && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        disabled={signingOut}
+                        onClick={() => void handleGuestSignOut()}
+                      >
+                        {signingOut ? t.common.signingOut : t.common.signOut}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
+        </header>
+
+        {showNav && (
+          <nav className="wp-chips" aria-label={hub.sections}>
+            {sections.map((key) => (
+              <button
+                key={key}
+                type="button"
+                data-section={sectionId(key)}
+                aria-current={activeSection === sectionId(key) ? "true" : undefined}
+                onClick={() => scrollTo(key)}
+              >
+                {page.nav[key]}
+              </button>
+            ))}
+          </nav>
         )}
 
-        <button type="button" className="gh-discover" onClick={() => scrollTo(modules[0] ?? "forms")}>
-          {hub.discover}
-          <i aria-hidden="true" />
-        </button>
-      </section>
+        <section className="gh-hero">
+          <div className="gh-arch">
+            <OliveBranch className="gh-branch" />
+            <p className="gh-greet">{hub.greeting(guestFirstName)}</p>
+            <h1 className="gh-names">
+              <span>{partnerOne}</span>
+              <span className="gh-amp">&amp;</span>
+              <span>{partnerTwo}</span>
+            </h1>
+            <p className="gh-invite">{hub.inviteLine}</p>
+            {displayDate ? <p className="gh-date">{displayDate}</p> : null}
+            {place ? <p className="gh-place">{place}</p> : null}
+            {/* The countdown belongs to Le mot; without it, it stays here. */}
+            {daysLeft && !parts.includes("word") ? <p className="gh-count">{hub.countdown(daysLeft)}</p> : null}
+          </div>
 
-      <main className={`gh-main${showNav ? " has-nav" : ""}`}>
-        {modules.map((key) => (
-          <section key={key} id={sectionId(key)} className="gh-section" aria-label={hub.nav[key]}>
-            {key === "forms" && (
-              <>
-                <SectionHead title={hub.formsTitle} lead={hub.formsIntro(guestFirstName)} />
-                <FormList items={formItems} />
-              </>
-            )}
-            {key === "travel" && <TravelSection guestName={guestFullName} />}
-            {key === "logistics" && (
-              <LogisticsSection
-                venueName={invitation.wedding.venue_name}
-                addressText={addressText}
-                eventDate={invitation.wedding.event_date}
-                content={guestPage}
-              />
-            )}
-            {key === "faq" && (
-              <FaqSection content={guestPage} />
-            )}
-          </section>
-        ))}
-
-        <footer className="gh-footer">
-          <OliveBranch className="gh-branch" />
-          <p className="gh-footer-script">{hub.footer}</p>
-          <p className="gh-footer-names">{coupleNames}</p>
-          {displayDate ? <p className="gh-place">{displayDate}</p> : null}
-        </footer>
-      </main>
-
-      {showNav && (
-        <nav className="gh-nav" aria-label={hub.sections}>
-          {modules.map((key) => (
-            <button
-              key={key}
-              type="button"
-              aria-current={activeSection === sectionId(key) ? "true" : undefined}
-              onClick={() => scrollTo(key)}
-            >
-              {hub.nav[key]}
+          {sections.length ? (
+            <button type="button" className="gh-discover" onClick={() => scrollTo(sections[0])}>
+              {hub.discover}
+              <i aria-hidden="true" />
             </button>
+          ) : null}
+        </section>
+
+        <main className="gh-main wp-main">
+          {sections.map((key) => (
+            <section
+              key={key}
+              id={sectionId(key)}
+              ref={key === "reply" ? replyRef : undefined}
+              className="gh-section"
+              aria-label={page.nav[key]}
+            >
+              {key === "word" && <WordSection content={guestPage} coupleNames={coupleNames} daysLeft={daysLeft} />}
+              {key === "weekend" && (
+                <WeekendSection
+                  content={guestPage}
+                  eventDate={invitation.wedding.event_date}
+                  venueName={invitation.wedding.venue_name}
+                  calendarName={coupleNames}
+                />
+              )}
+              {key === "venue" && (
+                <VenueSection venueName={invitation.wedding.venue_name} addressText={addressText} content={guestPage} />
+              )}
+              {key === "travel" && <TravelSection guestName={guestFullName} />}
+              {key === "dress" && <DressSection content={guestPage} />}
+              {key === "faq" && <FaqSection content={guestPage} />}
+              {key === "reply" && (
+                <ReplySection
+                  window={rsvpWindow}
+                  status={reply.status}
+                  title={rsvpTitle}
+                  summary={replyLine}
+                  labels={{ attending: labelAttending, maybe: labelMaybe, declined: labelDeclined }}
+                  allowMaybe={allowMaybe}
+                  opensAt={primaryForm?.opens_at}
+                  closesAt={primaryForm?.closes_at}
+                  onAnswer={(answer) => openRsvp("primary", answer)}
+                  onEdit={() => openRsvp("primary")}
+                  otherForms={otherForms}
+                />
+              )}
+            </section>
           ))}
-        </nav>
-      )}
+
+          <footer className="gh-footer">
+            <OliveBranch className="gh-branch" />
+            <p className="gh-footer-script">{hub.footer}</p>
+            <p className="gh-footer-names">{coupleNames}</p>
+            {displayDate ? <p className="gh-place">{displayDate}</p> : null}
+          </footer>
+        </main>
+
+        <ReplyDock
+          window={rsvpWindow}
+          status={reply.status}
+          closesAt={primaryForm?.closes_at}
+          away={replyInView}
+          onReply={() => openRsvp("primary")}
+        />
+      </div>
 
       {rsvpOpen && (
         <RsvpFlow
-          skipIntro={rsvpFromWelcome}
+          skipIntro={rsvpFromWelcome || Boolean(rsvpAnswer)}
+          answer={rsvpAnswer}
           token={token}
           isDemo={isDemo}
           formId={activeRsvpFormId}

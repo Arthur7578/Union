@@ -16,7 +16,7 @@ import type {
 } from "@union/shared";
 import { defaultPrimaryRsvpQuestions } from "@/lib/rsvpQuestions";
 import { GuestEntry } from "./GuestEntry";
-import { G, T, alpha } from "@/lib/theme";
+import { G, P, T, alpha } from "@/lib/theme";
 
 // Always fetch fresh invitation data (no static caching of personal links).
 export const dynamic = "force-dynamic";
@@ -84,18 +84,25 @@ export type DBInvitation = Invitation & {
 };
 
 /** What the demo couple wrote for their guests, so the demo shows every part
- *  of the hub. Real weddings read theirs from get_guest_page. */
+ *  of the wedding page. Real weddings read theirs from get_guest_page. */
 const DEMO_GUEST_PAGE: GuestPageContent = {
   page: {
-    welcome: null,
+    welcome: {
+      en: "We met at a table too small for everyone, and we've been gathering the people we love ever since.\n\nSo we chose the Gorge, an orchard barn and a whole afternoon to do it properly. We can't wait to see you there.",
+      fr: "On s'est rencontrés autour d'une table trop petite pour tout le monde, et depuis on réunit les gens qu'on aime dès qu'on peut.\n\nAlors on a choisi la Gorge, une grange au milieu des vergers et tout un après-midi pour le faire bien. On a hâte de t'y voir.",
+    },
     travel_train: { en: "Hood River has no station: Portland Union Station, then 1 h by car.", fr: "Pas de gare à Hood River : Portland Union Station, puis 1 h en voiture." },
     travel_plane: { en: "Portland International (PDX), about 1 h away.", fr: "Aéroport de Portland (PDX), à environ 1 h." },
     travel_car: { en: "Free parking on site.", fr: "Parking gratuit sur place." },
     shuttle: null,
     dress_code: { en: "Garden elegant", fr: "Chic champêtre" },
     dress_text: { en: "The ceremony is on the grass: flat shoes are your friends.", fr: "La cérémonie est sur l'herbe : préfère les chaussures plates." },
-    dress_note: null,
-    palette: [],
+    dress_note: { en: "White, we leave to Maya.", fr: "Le blanc, on le laisse à Maya." },
+    palette: [
+      { color: P.sage, name: { en: "Sage", fr: "Sauge" } },
+      { color: P.olive, name: { en: "Olive", fr: "Olive" } },
+      { color: P.dustyBlue, name: { en: "Dusty blue", fr: "Bleu poudré" } },
+    ],
   },
   moments: [
     { id: "demo-m1", day_offset: 0, starts_at: "16:00", title: { en: "Guest arrival", fr: "Arrivée des invités" }, place: { en: "Welcome drinks", fr: "Boissons d'accueil" }, note: null },

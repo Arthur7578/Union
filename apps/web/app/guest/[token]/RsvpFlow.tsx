@@ -120,6 +120,7 @@ export function RsvpFlow({
   coupleNames,
   replyEmail,
   skipIntro = false,
+  answer,
   initial,
   initialAnswers,
   companions,
@@ -149,6 +150,9 @@ export function RsvpFlow({
   replyEmail?: ReplyEmail;
   /** Start at the first question (opened from the faire-part's "respond"). */
   skipIntro?: boolean;
+  /** Already answered on the page's RSVP card: picked, and the form opens on
+   *  what comes after it. The guest can still go back and change it. */
+  answer?: AnsweredRsvpStatus;
   initial: RsvpReply;
   initialAnswers: RsvpAnswers;
   companions: Companion[];
@@ -163,7 +167,7 @@ export function RsvpFlow({
   const copy = t.rsvpFlow;
   const flowCopy = t.guestFlow;
 
-  const [status, setStatus] = useState<RsvpStatus>(initial.status);
+  const [status, setStatus] = useState<RsvpStatus>(answer ?? initial.status);
   const [replies, setReplies] = useState<Record<string, CompanionRsvp>>(initial.companions);
   const [answers, setAnswers] = useState<RsvpAnswers>(initialAnswers);
 
@@ -491,5 +495,15 @@ export function RsvpFlow({
     },
   });
 
-  return <Flow label={title} steps={resolved} onClose={onClose} />;
+  // Answered on the card: open on the email step if there is one (asked
+  // before anything else), else on the step after the answer. When the answer
+  // is the last step it is the one that sends, so the form opens on it.
+  let initialKey: string | undefined;
+  if (answer) {
+    const at = resolved.findIndex((step) => step.key === "attend");
+    const next = resolved[at + 1];
+    initialKey = emailStep ? "email" : next && next.key !== "end" ? next.key : "attend";
+  }
+
+  return <Flow label={title} steps={resolved} onClose={onClose} initialKey={initialKey} />;
 }
