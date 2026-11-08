@@ -99,6 +99,11 @@ test("a guest reads the couple's page, part by part, and replies from its card",
   await card.scrollIntoViewIfNeeded();
   await card.getByRole("button", { name: "Attending" }).click();
   await expect(page.getByRole("heading", { name: "Fish or meat?" })).toBeVisible();
+  // The answer given on the card sits at the top, and leads back to it.
+  await page.getByRole("button", { name: "Change my answer: Attending" }).click();
+  await expect(page.getByRole("heading", { name: /Lea, will you join us/ })).toBeVisible();
+  await page.getByRole("button", { name: /Attending/, pressed: true }).click();
+  await expect(page.getByRole("heading", { name: "Fish or meat?" })).toBeVisible();
   await page.getByRole("button", { name: /Meat/ }).click();
   await page.getByRole("button", { name: "Send" }).click();
   await expect(page.getByRole("heading", { name: /See you soon, Lea/ })).toBeVisible();
@@ -156,4 +161,18 @@ test("from the faire-part, the rest of the page opens on its first part, without
   await page.reload();
   await expect(section(page, "word")).toBeVisible();
   await expect(page.getByRole("button", { name: "See the rest" })).toHaveCount(0);
+});
+
+test("a guest with no email gives it first, then goes on past the answer picked on the card", async ({ page }) => {
+  const seeded = await seedPage();
+  const { error } = await seeded.owner.from("guests").update({ email: null }).eq("id", seeded.guests.lea.id);
+  if (error) throw error;
+  await page.goto(`/guest/${seeded.guests.lea.token}`);
+  const card = page.getByRole("article", { name: "Attendance RSVP" });
+  await card.scrollIntoViewIfNeeded();
+  await card.getByRole("button", { name: "Attending" }).click();
+  await expect(page.getByRole("heading", { name: "Your email" })).toBeVisible();
+  await page.getByRole("textbox").fill("lea@example.test");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Fish or meat?" })).toBeVisible();
 });

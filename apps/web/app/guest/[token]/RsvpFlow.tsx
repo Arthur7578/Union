@@ -29,6 +29,30 @@ export type RsvpReply = {
 /** Answers to an RSVP form's questions, keyed by the person they're for. */
 export type RsvpAnswers = Record<string, FormAnswers>;
 
+/**
+ * The guest's own answer, at the top of the form once it is behind them: a
+ * reminder of what they picked, and the way back to change it. Not shown on
+ * the answer's own step, nor before or after the questions.
+ */
+function AnswerChip({ label, hidden }: { label: string | null; hidden: readonly string[] }) {
+  const { t } = useLocale();
+  const flow = useFlow();
+  if (!label || hidden.includes(flow.currentKey)) return null;
+  return (
+    <button
+      type="button"
+      className="tf-answer"
+      onClick={() => flow.goTo("attend", -1)}
+      aria-label={t.rsvpFlow.changeAnswer(label)}
+    >
+      {label}
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M3 13l1-3 6.5-6.5 2 2L6 12l-3 1z" />
+      </svg>
+    </button>
+  );
+}
+
 /** "Someone like this is already on the list": add anyway, or don't. */
 function Lookalikes({
   candidates,
@@ -308,6 +332,10 @@ export function RsvpFlow({
 
   // Asked first, before the answer itself, when the couple has no email for
   // this guest (see ReplyEmailField); a group-link arrival must give one.
+  // Where the form goes once the email is given: past the answer when it was
+  // already picked on the page's card, else to the answer. Set once every
+  // step is known, below.
+  let afterEmailKey = "attend";
   let emailStep: FlowStep | null = null;
   if (replyEmail?.show) {
     const suggestion = suggestEmailFix(replyEmail.email);
@@ -342,7 +370,7 @@ export function RsvpFlow({
       // Saved as given (unconfirmed) before the reply itself is sent; a
       // required address that's missing or malformed keeps the guest here.
       // Once saved this step leaves the list, so it names what comes next.
-      onNext: async () => ((await replyEmail.save()) ? "attend" : false),
+      onNext: async () => ((await replyEmail.save()) ? afterEmailKey : false),
     };
   }
 
@@ -502,8 +530,23 @@ export function RsvpFlow({
   if (answer) {
     const at = resolved.findIndex((step) => step.key === "attend");
     const next = resolved[at + 1];
-    initialKey = emailStep ? "email" : next && next.key !== "end" ? next.key : "attend";
+    const pastAnswer = next && next.key !== "end" ? next.key : "attend";
+    afterEmailKey = pastAnswer;
+    initialKey = emailStep ? "email" : pastAnswer;
   }
 
-  return <Flow label={title} steps={resolved} onClose={onClose} initialKey={initialKey} />;
+  return (
+    <Flow
+      label={title}
+      steps={resolved}
+      onClose={onClose}
+      initialKey={initialKey}
+      topRight={
+        <AnswerChip
+          label={answerable ? answerLabel[status as AnsweredRsvpStatus] : null}
+          hidden={["intro", "email", "attend", "end"]}
+        />
+      }
+    />
+  );
 }

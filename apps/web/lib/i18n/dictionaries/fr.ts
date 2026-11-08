@@ -1283,6 +1283,7 @@ export const fr: Dictionary = {
   },
 
   rsvpFlow: {
+    changeAnswer: (label: string) => `Changer ma réponse : ${label}`,
     attend: (name: string) => `${name}, seras-tu des nôtres ?`,
     companion: (name: string) => `${name} nous rejoindra ?`,
     addSomeone: "Quelqu'un d'autre t'accompagne ?",

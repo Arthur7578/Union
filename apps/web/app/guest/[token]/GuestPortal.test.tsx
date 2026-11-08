@@ -323,7 +323,8 @@ describe("GuestPortal's RSVP card once the guest has replied (#85)", () => {
     fireEvent.change(screen.getAllByRole("textbox")[0], { target: { value: "Hugo" } });
     enter();
     await question("Will Hugo join us");
-    fireEvent.click(screen.getByRole("button", { name: /Attending/ }));
+    // Hugo's own choices (Arthur's answer sits at the top as well).
+    fireEvent.click(screen.getByRole("button", { name: /Attending/, pressed: false }));
     // A partner once added, there is no one else to offer: Hugo's answer sends.
     await question("See you soon, Arthur");
     fireEvent.click(screen.getByRole("button", { name: "Back to the invitation" }));

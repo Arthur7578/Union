@@ -1321,6 +1321,7 @@ export const en = {
 
   // The RSVP, asked one question at a time.
   rsvpFlow: {
+    changeAnswer: (label: string) => `Change my answer: ${label}`,
     attend: (name: string) => `${name}, will you join us?`,
     companion: (name: string) => `Will ${name} join us?`,
     addSomeone: "Is anyone else coming with you?",

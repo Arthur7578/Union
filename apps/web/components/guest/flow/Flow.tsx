@@ -48,8 +48,11 @@ type FlowApi = {
   next: () => void;
   /** Move on after a beat, so a picked choice can blink first. */
   nextSoon: () => void;
-  /** Go straight to a step, without validating the current one. */
-  goTo: (key: string) => void;
+  /** Go straight to a step, without validating the current one; -1 plays
+   *  the move as going back. */
+  goTo: (key: string, direction?: 1 | -1) => void;
+  /** The step on screen. */
+  currentKey: string;
   /** False while a step is leaving: its fields stop taking keys. */
   active: boolean;
 };
@@ -58,6 +61,7 @@ const FlowContext = createContext<FlowApi>({
   next: () => {},
   nextSoon: () => {},
   goTo: () => {},
+  currentKey: "",
   active: false,
 });
 
@@ -292,7 +296,8 @@ export function Flow({
       value={{
         next: () => void next(),
         nextSoon,
-        goTo: (key) => go(() => key, 1),
+        goTo: (key, dir = 1) => go(() => key, dir),
+        currentKey: step?.key ?? "",
         active: !leaving && !busy,
       }}
     >
