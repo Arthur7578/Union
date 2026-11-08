@@ -58,7 +58,7 @@ export function ReplySection({
 
       {rsvpWindow !== "hidden" ? (
         <div className="wp-card-wrap">
-          <article className="wp-card" aria-labelledby="wp-card-title">
+          <article className={`wp-card${replied ? " is-replied" : ""}`} aria-labelledby="wp-card-title">
             <h3 id="wp-card-title" className="wp-card-title">
               {title}
             </h3>

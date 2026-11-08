@@ -74,8 +74,10 @@
 .wp-card{--r:10px;position:relative;padding:30px 24px 26px;background:var(--da-card);
   -webkit-mask:radial-gradient(closest-side,#000 96%,#0000) 0 0/calc(2*var(--r)) calc(2*var(--r)) round,linear-gradient(#000 0 0) center/calc(100% - 2*var(--r)) calc(100% - 2*var(--r)) no-repeat;
           mask:radial-gradient(closest-side,#000 96%,#0000) 0 0/calc(2*var(--r)) calc(2*var(--r)) round,linear-gradient(#000 0 0) center/calc(100% - 2*var(--r)) calc(100% - 2*var(--r)) no-repeat}
-.wp-card-title{margin:0;padding-right:76px;font-weight:400;font-size:24px;letter-spacing:.14em;line-height:1.15;text-transform:uppercase;color:var(--da-olive-deep);text-wrap:balance}
-.wp-card-head{position:relative;padding-right:76px}
+.wp-card-title{margin:0;font-weight:400;font-size:24px;letter-spacing:.14em;line-height:1.15;text-transform:uppercase;color:var(--da-olive-deep);text-wrap:balance}
+.wp-card-head{position:relative}
+/* room for the "received" stamp, only once there is one */
+.wp-card.is-replied .wp-card-title,.wp-card.is-replied .wp-card-head{padding-right:76px}
 .wp-card-head p{margin:6px 0 0;font-size:16px;line-height:1.4;color:var(--da-ink-soft)}
 .gh .wp-card-head .wp-card-thanks{margin:10px 0 0;font-family:var(--script);font-size:40px;line-height:1.05;color:var(--da-olive-deep)}
 .wp-card-sub{margin:10px 0 0;font-size:16px;font-style:italic;color:var(--da-ink-soft)}
