@@ -82,7 +82,7 @@
 .gh .wp-card-head .wp-card-thanks{margin:10px 0 0;font-family:var(--script);font-size:40px;line-height:1.05;color:var(--da-olive-deep)}
 .wp-card-sub{margin:10px 0 0;font-size:16px;font-style:italic;color:var(--da-ink-soft)}
 .wp-stamp{position:absolute;top:-34px;right:0;transform:rotate(-12deg);padding:2px 8px;border:2px solid var(--da-olive);border-radius:6px;
-  font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:var(--da-olive);opacity:.85}
+  font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:var(--da-olive-deep)}
 .wp-opts{display:grid;gap:10px;margin-top:20px}
 .wp-opt{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 16px;border-radius:14px;border:1px solid var(--da-line);
   background:var(--da-paper);cursor:pointer;font-size:18px;text-align:left;transition:border-color .2s,background .2s}

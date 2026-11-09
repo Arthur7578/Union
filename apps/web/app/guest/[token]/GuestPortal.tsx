@@ -352,8 +352,12 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [welcomeContinues]);
   // The chip of the section on screen stays in view in the bar.
+  // Above the first part, the bar goes back to its start.
   useEffect(() => {
-    if (!activeSection) return;
+    if (!activeSection) {
+      document.querySelector(".wp-chips")?.scrollTo?.({ left: 0 });
+      return;
+    }
     document
       .querySelector(`.wp-chips [data-section="${activeSection}"]`)
       ?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
