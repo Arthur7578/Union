@@ -1,5 +1,6 @@
 "use client";
 
+import { fromDateInput, toDateInput } from "@/lib/dateLabels";
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -66,15 +67,6 @@ function localeName(locale: Locale): string {
   return getDictionary(locale).lang[locale];
 }
 
-function toDateInput(iso: string | null): string {
-  if (!iso) return "";
-  return new Date(iso).toISOString().slice(0, 10);
-}
-
-function fromDateInput(value: string): string | null {
-  if (!value) return null;
-  return new Date(`${value}T00:00:00`).toISOString();
-}
 
 /** Section wrapper — a tinted container + kicker is how organiser-only
  *  settings, guest-facing questions, and access/rights stay visually
