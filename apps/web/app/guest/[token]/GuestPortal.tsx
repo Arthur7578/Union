@@ -532,6 +532,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false, p
                       : []
                   }
                   calendarName={coupleNames}
+                  coupleNames={coupleNames}
                   onCarpool={parts.includes("travel") ? () => scrollTo("travel") : undefined}
                 />
               )}

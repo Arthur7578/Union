@@ -72,8 +72,15 @@
 /* Ta réponse: the scalloped card */
 .wp-card-wrap{transform:rotate(-1deg);filter:drop-shadow(0 2px 2px var(--da-shadow)) drop-shadow(0 16px 22px var(--da-shadow))}
 .wp-card{--r:10px;position:relative;padding:30px 24px 26px;background:var(--da-card);
-  -webkit-mask:radial-gradient(closest-side,#000 96%,#0000) 0 0/calc(2*var(--r)) calc(2*var(--r)) round,linear-gradient(#000 0 0) center/calc(100% - 2*var(--r)) calc(100% - 2*var(--r)) no-repeat;
-          mask:radial-gradient(closest-side,#000 96%,#0000) 0 0/calc(2*var(--r)) calc(2*var(--r)) round,linear-gradient(#000 0 0) center/calc(100% - 2*var(--r)) calc(100% - 2*var(--r)) no-repeat}
+  /* a die cut along the top and bottom edges, straight sides: plain repeat-x
+     only, which every engine draws the same (Safari draws "round" masks
+     with cut scallops at the edge) */
+  -webkit-mask:radial-gradient(circle closest-side,#000 96%,#0000) center top/calc(2*var(--r)) calc(2*var(--r)) repeat-x,
+    radial-gradient(circle closest-side,#000 96%,#0000) center bottom/calc(2*var(--r)) calc(2*var(--r)) repeat-x,
+    linear-gradient(#000 0 0) center/100% calc(100% - 2*var(--r)) no-repeat;
+          mask:radial-gradient(circle closest-side,#000 96%,#0000) center top/calc(2*var(--r)) calc(2*var(--r)) repeat-x,
+    radial-gradient(circle closest-side,#000 96%,#0000) center bottom/calc(2*var(--r)) calc(2*var(--r)) repeat-x,
+    linear-gradient(#000 0 0) center/100% calc(100% - 2*var(--r)) no-repeat}
 .wp-card-title{margin:0;font-weight:400;font-size:24px;letter-spacing:.14em;line-height:1.15;text-transform:uppercase;color:var(--da-olive-deep);text-wrap:balance}
 .wp-card-head{position:relative}
 /* room for the "received" stamp, only once there is one */

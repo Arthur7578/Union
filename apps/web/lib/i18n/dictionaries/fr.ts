@@ -1239,6 +1239,7 @@ export const fr: Dictionary = {
     replyPlease: "Merci de nous répondre",
     repliesClosed: (date: string) => `Les réponses sont closes depuis le ${date}`,
     repliesOpen: (date: string) => `Les réponses ouvrent le ${date}`,
+    closedHelp: (couple: string) => `Un imprévu ou une bonne nouvelle ? Préviens directement ${couple}.`,
     received: "Reçu",
     thanks: "Merci !",
     thanksBody: "On a hâte de te voir.",

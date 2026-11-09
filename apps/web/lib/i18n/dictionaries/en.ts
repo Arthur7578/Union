@@ -1275,6 +1275,7 @@ export const en = {
     replyPlease: "Please let us know",
     repliesClosed: (date: string) => `Replies closed on ${date}`,
     repliesOpen: (date: string) => `Replies open on ${date}`,
+    closedHelp: (couple: string) => `Something changed? Let ${couple} know directly.`,
     received: "Received",
     thanks: "Thank you!",
     thanksBody: "We can't wait to see you.",

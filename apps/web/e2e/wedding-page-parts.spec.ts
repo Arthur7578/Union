@@ -113,5 +113,8 @@ test("a closed RSVP is said to the couple, with the way to its dates, and in the
   const card = page.getByRole("article", { name: "Attendance RSVP" });
   await expect(card).toContainText(/Replies closed on October (28|29)/);
   await expect(card.getByRole("button")).toHaveCount(0);
+  // No call to reply left on a closed card; what to do instead.
+  await expect(card).not.toContainText("Let us know if you and your companions will join us.");
+  await expect(card).toContainText("Something changed? Let Maya & Daniel know directly.");
   await expect(page.getByRole("link", { name: "Edit the dates" })).toHaveAttribute("href", `/guests/forms/${seeded.forms.rsvp}`);
 });

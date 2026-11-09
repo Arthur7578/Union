@@ -32,6 +32,7 @@ export function ReplySection({
   otherForms,
   weekend = [],
   calendarName = "",
+  coupleNames = "",
   onCarpool,
 }: {
   window: RsvpWindow;
@@ -53,6 +54,8 @@ export function ReplySection({
   /** The weekend's moments as calendar events, when the page shows them. */
   weekend?: CalendarMoment[];
   calendarName?: string;
+  /** Who to tell, once replies are closed. */
+  coupleNames?: string;
   /** Goes to the carpool board, when the page shows it. */
   onCarpool?: () => void;
 }) {
@@ -89,7 +92,12 @@ export function ReplySection({
                           : copy.replyPlease}
                   </p>
                 </div>
-                {summary ? <p className="wp-card-sub">{summary}</p> : null}
+                {/* The couple's subtitle asks for a reply: only while one can
+                    be given. Once closed, what to do instead. */}
+                {live && summary ? <p className="wp-card-sub">{summary}</p> : null}
+                {rsvpWindow === "closed" && coupleNames ? (
+                  <p className="wp-card-sub">{copy.closedHelp(coupleNames)}</p>
+                ) : null}
                 {live ? (
                   <div className="wp-opts">
                     {rsvpAnswers(allowMaybe).map((answer) => (

@@ -210,6 +210,21 @@ describe("ReplySection", () => {
     expect(screen.getByText("Les réponses sont closes depuis le 12 mai")).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
+
+  it("drops the couple's call to reply once replies are closed, and says what to do instead", () => {
+    reply({ window: "closed", coupleNames: "Arthur & Margot" });
+    expect(screen.queryByText("Dis-nous si tu viens.")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Un imprévu ou une bonne nouvelle ? Préviens directement Arthur & Margot."),
+    ).toBeInTheDocument();
+  });
+
+  it("drops the call to reply before replies open too", () => {
+    reply({ window: "scheduled", opensAt: "2027-01-10" });
+    expect(screen.getByText("Les réponses ouvrent le 10 janvier")).toBeInTheDocument();
+    expect(screen.queryByText("Dis-nous si tu viens.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
 });
 
 describe("ReplySection, once a guest who is coming has replied", () => {
