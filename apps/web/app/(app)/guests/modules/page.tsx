@@ -183,6 +183,26 @@ function GuestModulesForm({ wedding, refresh }: { wedding: Wedding; refresh: () 
     <main className="u-main">
       <BackHeader title={t.title} subtitle={t.subtitle} fallback="/guests" />
 
+      <Link
+        href="/guest/preview"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 48,
+          margin: "0 0 18px",
+          borderRadius: 999,
+          border: `1px solid ${T.accentBorder}`,
+          background: T.surface,
+          color: T.accentInk,
+          fontWeight: 600,
+          fontSize: 14.5,
+          textDecoration: "none",
+        }}
+      >
+        {t.previewAsGuest}
+      </Link>
+
       <form onSubmit={save}>
         <SectionLabel style={{ marginTop: 0 }}>{t.openingLabel}</SectionLabel>
         <div style={box}>

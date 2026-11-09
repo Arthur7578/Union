@@ -5,7 +5,6 @@ import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import Link from "next/link";
 import { guestLinkPath } from "@union/shared";
-import { parseGuestPage } from "@union/shared";
 import type {
   FormAnswers,
   FormGuestCopy,
@@ -16,6 +15,7 @@ import type {
 } from "@union/shared";
 import { defaultPrimaryRsvpQuestions } from "@/lib/rsvpQuestions";
 import { GuestEntry } from "./GuestEntry";
+import { loadInvitation } from "./loadInvitation";
 import { G, P, T, alpha } from "@/lib/theme";
 
 // Always fetch fresh invitation data (no static caching of personal links).
@@ -200,67 +200,10 @@ export default async function GuestExperiencePage({
   } else {
     // Attempt to load from Supabase for all other tokens
     try {
-      const supabase = getSupabase();
-      const [invitationResult, rsvpFormsResult, emailStatusResult, guestPageResult] = await Promise.all([
-        supabase.rpc("get_invitation", { p_token: token }),
-        supabase.rpc("get_invitation_rsvp_forms", { p_token: token }),
-        supabase.rpc("get_guest_email_status", { p_token: token }),
-        supabase.rpc("get_guest_page", { p_token: token }),
-      ]);
-
-      if (
-        !invitationResult.error &&
-        invitationResult.data &&
-        !emailStatusResult.error &&
-        emailStatusResult.data
-      ) {
-        const base = invitationResult.data as unknown as DBInvitation;
-        const rsvpForms = !rsvpFormsResult.error && rsvpFormsResult.data
-          ? rsvpFormsResult.data as unknown as {
-              primary: Pick<NonNullable<DBInvitation["rsvp_form"]>, "id" | "published" | "opens_at" | "closes_at" | "questions" | "answers" | "companion_answers"> | null;
-              reconfirmation: Pick<NonNullable<DBInvitation["rsvp_reconfirmation"]>, "id" | "questions" | "answers" | "companion_answers"> | null;
-            }
-          : null;
-        if (rsvpFormsResult.error) {
-          console.error("Failed to load RSVP follow-up questions:", rsvpFormsResult.error);
-        }
-        if (guestPageResult.error) {
-          console.error("Failed to load the guest page content:", guestPageResult.error);
-        }
-        invitation = {
-          ...base,
-          guest_page: guestPageResult.error ? undefined : parseGuestPage(guestPageResult.data),
-          rsvp_form:
-            base.rsvp_form && rsvpForms?.primary
-              ? { ...base.rsvp_form, ...rsvpForms.primary }
-              : base.rsvp_form
-                ? {
-                    ...base.rsvp_form,
-                    id: "",
-                    published: true,
-                    opens_at: null,
-                    closes_at: null,
-                    questions: [],
-                    answers: null,
-                    companion_answers: {},
-                  }
-                : null,
-          rsvp_reconfirmation:
-            base.rsvp_reconfirmation && rsvpForms?.reconfirmation
-              ? { ...base.rsvp_reconfirmation, ...rsvpForms.reconfirmation }
-              : base.rsvp_reconfirmation
-                ? {
-                    ...base.rsvp_reconfirmation,
-                    id: "",
-                    questions: [],
-                    answers: null,
-                    companion_answers: {},
-                  }
-                : null,
-        };
-        emailMissing = Boolean(
-          (emailStatusResult.data as { email_missing?: boolean }).email_missing,
-        );
+      const loaded = await loadInvitation(getSupabase(), token);
+      if (loaded) {
+        invitation = loaded.invitation;
+        emailMissing = loaded.emailMissing;
       }
     } catch (e) {
       console.error("Failed to load invitation from Supabase:", e);

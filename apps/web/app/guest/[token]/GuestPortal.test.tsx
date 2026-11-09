@@ -108,14 +108,16 @@ describe("GuestPortal and the RSVP handoff", () => {
 describe("GuestPortal and a maybe reply", () => {
   it("says a maybe is a maybe on the hub, not that the guest can't make it", async () => {
     hub(invitation({ status: "maybe", allowMaybe: true }));
-    expect(await screen.findByText("You're not sure yet")).toBeInTheDocument();
+    // The bar at the bottom: still a maybe, to confirm.
+    expect(await screen.findByText("Maybe · to confirm")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm" })).toBeInTheDocument();
     expect(screen.queryByText("You won't be able to make it")).not.toBeInTheDocument();
   });
 
   it("still shows a maybe given before the couple turned the option off", async () => {
     // Existing replies are never rewritten, so the hub keeps reporting it.
     hub(invitation({ status: "maybe", allowMaybe: false }));
-    expect(await screen.findByText("You're not sure yet")).toBeInTheDocument();
+    expect(await screen.findByText("Maybe · to confirm")).toBeInTheDocument();
   });
 
   it("offers the third reply in the RSVP only when the couple turned it on", async () => {
@@ -188,7 +190,8 @@ describe("GuestPortal and the RSVP's opening window", () => {
   it("offers no reply once the couple has closed the RSVP", async () => {
     markRsvpHandoff("tok");
     hub(invitation({ rsvpForm: rsvpForm({ closes_at: "2000-01-01T00:00:00Z" }) }));
-    expect(await screen.findByText(/^Replies closed on January 1/)).toBeInTheDocument();
+    // On the card, and in the bar at the bottom.
+    expect(await screen.findAllByText(/^Replies closed on January 1/)).toHaveLength(2);
     await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByRole("button", { name: /^Reply/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Attending" })).not.toBeInTheDocument();
@@ -278,7 +281,10 @@ describe("GuestPortal's RSVP card once the guest has replied (#85)", () => {
     hub(invitation({ status: "attending", rsvpForm: rsvpForm({ closes_at: "2000-01-01T00:00:00Z" }) }));
     const card = await rsvpCard();
     expect(metaOf(card)).toBe("Attending");
-    expect(within(card).queryByRole("button")).not.toBeInTheDocument();
+    // Nothing to change it with; what is left are the guest's shortcuts
+    // (the carpool board here), which change no reply.
+    expect(within(card).queryByRole("button", { name: /Change/ })).not.toBeInTheDocument();
+    expect(within(card).getAllByRole("button").map((b) => b.textContent)).toEqual(["Find a carpool"]);
   });
 
   it("keeps one name per person for a household", async () => {

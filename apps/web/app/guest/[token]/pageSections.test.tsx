@@ -7,6 +7,7 @@ import { EMPTY_GUEST_PAGE, type GuestPageContent } from "@union/shared";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { DressSection } from "./DressSection";
 import { FaqSection } from "./FaqSection";
+import { ReplyDock } from "./ReplyDock";
 import { ReplySection } from "./ReplySection";
 import { VenueSection } from "./VenueSection";
 import { WeekendSection } from "./WeekendSection";
@@ -207,6 +208,93 @@ describe("ReplySection", () => {
   it("says replies are closed after the deadline, with nothing to press", () => {
     reply({ window: "closed" });
     expect(screen.getByText("Les réponses sont closes depuis le 12 mai")).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+});
+
+describe("ReplySection, once a guest who is coming has replied", () => {
+  const labels = { attending: "Oui, avec joie", maybe: "Peut-être", declined: "Non, avec regret" };
+  const moment = { id: "m", date: "2027-06-12", startsAt: "16:30", title: "La cérémonie" };
+  const replied = (over: Partial<React.ComponentProps<typeof ReplySection>> = {}) =>
+    inFrench(
+      <ReplySection
+        window="live"
+        status="attending"
+        title="RSVP de Présence"
+        summary="Oui, avec joie"
+        labels={labels}
+        allowMaybe
+        opensAt={null}
+        closesAt="2027-05-12"
+        onAnswer={() => {}}
+        onEdit={() => {}}
+        otherForms={[]}
+        {...over}
+      />,
+    );
+
+  it("offers the weekend in a calendar and the carpool board", () => {
+    const onCarpool = vi.fn();
+    replied({ weekend: [moment], calendarName: "Arthur & Margot", onCarpool });
+    fireEvent.click(screen.getByRole("button", { name: "Trouver un covoiturage" }));
+    expect(onCarpool).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter le week-end à mon agenda" }));
+    expect(screen.getByRole("dialog", { name: "Dans mon agenda" })).toBeInTheDocument();
+  });
+
+  it("offers only what the page has", () => {
+    replied({ weekend: [], onCarpool: undefined });
+    expect(screen.queryByRole("button", { name: /agenda|covoiturage/ })).not.toBeInTheDocument();
+  });
+
+  it("offers neither to a guest who is not coming, nor to a maybe", () => {
+    replied({ status: "declined", weekend: [moment], onCarpool: () => {} });
+    expect(screen.queryByRole("button", { name: /agenda|covoiturage/ })).not.toBeInTheDocument();
+    cleanup();
+    replied({ status: "maybe", weekend: [moment], onCarpool: () => {} });
+    expect(screen.queryByRole("button", { name: /agenda|covoiturage/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("ReplyDock, the reply fixed at the bottom", () => {
+  const dock = (over: Partial<React.ComponentProps<typeof ReplyDock>> = {}) => {
+    const onReply = vi.fn();
+    inFrench(<ReplyDock window="live" status="pending" closesAt="2027-05-12" away={false} onReply={onReply} {...over} />);
+    return onReply;
+  };
+
+  it("asks for a reply, with the deadline", () => {
+    const onReply = dock();
+    fireEvent.click(screen.getByRole("button", { name: "Répondre · avant le 12 mai" }));
+    expect(onReply).toHaveBeenCalled();
+  });
+
+  it("says where each answer stands, and what comes next", () => {
+    dock({ status: "attending" });
+    expect(screen.getByText("Tu seras des nôtres")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Modifier" })).toBeInTheDocument();
+    cleanup();
+    dock({ status: "maybe" });
+    expect(screen.getByText("Peut-être · à confirmer avant le 12 mai")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirmer" })).toBeInTheDocument();
+    cleanup();
+    dock({ status: "declined" });
+    expect(screen.getByText("Tu ne pourras pas venir")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Changer d'avis" })).toBeInTheDocument();
+  });
+
+  it("says replies are closed, with nothing to press", () => {
+    dock({ window: "closed" });
+    expect(screen.getByText("Réponses closes depuis le 12 mai")).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    cleanup();
+    dock({ window: "closed", status: "attending" });
+    expect(screen.getByText("Tu seras des nôtres")).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("steps aside, out of reach, while the card is on screen", () => {
+    dock({ away: true });
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 });

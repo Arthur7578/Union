@@ -1,10 +1,12 @@
 "use client";
 
-import { rsvpAnswers, type AnsweredRsvpStatus } from "@union/shared";
+import { useState } from "react";
+import { rsvpAnswers, type AnsweredRsvpStatus, type CalendarMoment } from "@union/shared";
 import { useLocale } from "@/lib/i18n/client";
 import type { RsvpStatus } from "@/lib/submitRsvp";
+import { CalendarSheet } from "./CalendarSheet";
 import { FormList, type FormItem } from "./FormList";
-import { shortDate } from "./pageFormat";
+import { dayLabel, shortDate } from "./pageFormat";
 import { SectionHead } from "./SectionHead";
 
 export type RsvpWindow = "hidden" | "scheduled" | "live" | "closed";
@@ -13,7 +15,8 @@ export type RsvpWindow = "hidden" | "scheduled" | "live" | "closed";
  * Ta réponse: the RSVP card at the end of the page, then the couple's other
  * forms. A box on the card opens the RSVP form already answered, on the
  * question that follows. Once replied, the card says so and offers to change
- * the reply while replies are open.
+ * the reply while replies are open; a guest who is coming is also offered the
+ * weekend in their calendar and the carpool board, when the page has them.
  */
 export function ReplySection({
   window: rsvpWindow,
@@ -27,6 +30,9 @@ export function ReplySection({
   onAnswer,
   onEdit,
   otherForms,
+  weekend = [],
+  calendarName = "",
+  onCarpool,
 }: {
   window: RsvpWindow;
   status: RsvpStatus;
@@ -44,6 +50,11 @@ export function ReplySection({
   onEdit: () => void;
   /** The final check-in and the couple's own forms. */
   otherForms: FormItem[];
+  /** The weekend's moments as calendar events, when the page shows them. */
+  weekend?: CalendarMoment[];
+  calendarName?: string;
+  /** Goes to the carpool board, when the page shows it. */
+  onCarpool?: () => void;
 }) {
   const { t, locale } = useLocale();
   const copy = t.weddingPage;
@@ -51,6 +62,9 @@ export function ReplySection({
   const opens = shortDate(opensAt, locale);
   const replied = status !== "pending";
   const live = rsvpWindow === "live";
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const coming = status === "attending";
+  const shortcuts = coming && (weekend.length > 0 || Boolean(onCarpool));
 
   return (
     <>
@@ -103,6 +117,20 @@ export function ReplySection({
                   </span>
                 </div>
                 <p className="wp-summary">{summary}</p>
+                {shortcuts ? (
+                  <div className="wp-shortcuts">
+                    {weekend.length ? (
+                      <button type="button" className="gh-btn" onClick={() => setSheetOpen(true)}>
+                        {copy.addWeekend}
+                      </button>
+                    ) : null}
+                    {onCarpool ? (
+                      <button type="button" className="gh-btn gh-btn--ghost" onClick={onCarpool}>
+                        {copy.findCarpool}
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
                 {live ? (
                   <div className="wp-actions">
                     <button type="button" className="gh-btn gh-btn--ghost" onClick={onEdit}>
@@ -115,6 +143,15 @@ export function ReplySection({
             )}
           </article>
         </div>
+      ) : null}
+
+      {sheetOpen ? (
+        <CalendarSheet
+          moments={weekend}
+          calendarName={calendarName}
+          labelOf={(m) => [dayLabel(m.date, locale), m.startsAt].filter(Boolean).join(", ")}
+          onClose={() => setSheetOpen(false)}
+        />
       ) : null}
 
       {otherForms.length ? (

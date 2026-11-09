@@ -53,3 +53,41 @@ test("the couple turns a part off and their guest no longer sees it", async ({ p
   await expect(page.getByText("Lea", { exact: false }).first()).toBeVisible();
   await expect(page.getByText("Is there a gift list?")).toHaveCount(0);
 });
+
+test("the couple sees their page as a guest would, and nothing is saved", async ({ page }) => {
+  const seeded = await seedWedding({ household: [{ key: "lea", firstName: "Lea", rsvp: "attending" }] });
+  const { error } = await seeded.owner.from("guest_pages").insert({
+    wedding_id: seeded.weddingId,
+    welcome: { en: "We met at a table too small for everyone." },
+    shuttle: { en: "Leaves the station at 3 pm." },
+  });
+  if (error) throw error;
+  const before = await seeded.owner.from("guests").select("welcome_seen_at").eq("id", seeded.guests.lea.id).single();
+
+  await signInAsOwner(page, seeded);
+  await page.goto("/guests/modules");
+  await page.getByRole("link", { name: "See as a guest" }).click();
+
+  // A first visit: the faire-part, then the page (reduced motion: at its end).
+  await page.getByRole("button", { name: "See the rest" }).click();
+  await expect(page.getByText("Preview: what your guests see. Nothing is saved.")).toBeVisible();
+  await expect(page.locator("#gh-word")).toContainText("We met at a table too small for everyone.");
+  // Not Lea, not her yes: a guest who hasn't replied, so no shuttle yet.
+  await expect(page.getByText(/\bLea\b/)).toHaveCount(0);
+  await expect(page.getByText("Leaves the station at 3 pm.")).toHaveCount(0);
+
+  // Replying goes through the whole form, and writes nothing.
+  const card = page.getByRole("article", { name: "Attendance RSVP" });
+  await card.scrollIntoViewIfNeeded();
+  await card.getByRole("button", { name: "Declined" }).click();
+  await page.getByRole("button", { name: /^Send/ }).click();
+  await page.getByRole("button", { name: "Back to the invitation" }).click();
+  await expect(card.locator(".wp-summary")).toHaveText("Declined");
+  const rsvp = await seeded.owner.from("rsvps").select("status").eq("guest_id", seeded.guests.lea.id).single();
+  expect(rsvp.data?.status).toBe("attending");
+  const after = await seeded.owner.from("guests").select("welcome_seen_at").eq("id", seeded.guests.lea.id).single();
+  expect(after.data?.welcome_seen_at).toBe(before.data?.welcome_seen_at);
+
+  await page.getByRole("link", { name: "Close the preview" }).click();
+  await expect(page).toHaveURL(/\/guests\/modules$/);
+});

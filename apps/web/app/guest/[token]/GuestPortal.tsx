@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   EMPTY_GUEST_PAGE,
@@ -28,7 +29,7 @@ import { type FormItem } from "./FormList";
 import { ReplyDock } from "./ReplyDock";
 import { ReplySection } from "./ReplySection";
 import { VenueSection } from "./VenueSection";
-import { WeekendSection } from "./WeekendSection";
+import { WeekendSection, calendarMoments } from "./WeekendSection";
 import { WordSection } from "./WordSection";
 import { useReplyEmail } from "./ReplyEmailField";
 import { RsvpFlow, type RsvpAnswers, type RsvpReply } from "./RsvpFlow";
@@ -45,11 +46,13 @@ interface GuestPortalProps {
   isDemo: boolean;
   /** The couple has no email for this guest: ask for one when they reply. */
   emailMissing?: boolean;
+  /** The organiser's "see as a guest" preview: a band says so, with the way out. */
+  preview?: boolean;
 }
 
 type CustomForm = NonNullable<DBInvitation["custom_forms"]>[number];
 
-export function GuestPortal({ token, invitation, isDemo, emailMissing = false }: GuestPortalProps) {
+export function GuestPortal({ token, invitation, isDemo, emailMissing = false, preview = false }: GuestPortalProps) {
   const replayWelcome = useReplayWelcome();
   const { t, locale } = useLocale();
   const hub = t.guestHub;
@@ -369,7 +372,14 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
       {/* While a form is open over it, the page behind is out of reach: no
           tabbing into it, nothing read out from it. */}
       <div inert={overlayOpen || undefined} aria-hidden={overlayOpen || undefined}>
-        {isDemo && <div className="gh-demo">{hub.demo}</div>}
+        {preview ? (
+          <div className="gh-demo wp-preview">
+            {t.guests.modules.previewBand}{" "}
+            <Link href="/guests/modules">{t.guests.modules.previewClose}</Link>
+          </div>
+        ) : isDemo ? (
+          <div className="gh-demo">{hub.demo}</div>
+        ) : null}
 
         <header className="gh-top">
           <span className="gh-mono" aria-label={coupleNames}>
@@ -500,6 +510,13 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
                   onAnswer={(answer) => openRsvp("primary", answer)}
                   onEdit={() => openRsvp("primary")}
                   otherForms={otherForms}
+                  weekend={
+                    parts.includes("weekend")
+                      ? calendarMoments(guestPage, invitation.wedding.event_date, locale, invitation.wedding.venue_name)
+                      : []
+                  }
+                  calendarName={coupleNames}
+                  onCarpool={parts.includes("travel") ? () => scrollTo("travel") : undefined}
                 />
               )}
             </section>

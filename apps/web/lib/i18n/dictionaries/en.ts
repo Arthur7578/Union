@@ -254,6 +254,12 @@ export const en = {
       saved: "Saved",
       previewNote:
         "Guests see the parts that are on, in this order. A part that is on but empty is not shown.",
+      previewAsGuest: "See as a guest",
+      previewBand: "Preview: what your guests see. Nothing is saved.",
+      previewClose: "Close the preview",
+      previewGuestName: "Sam",
+      previewNoGuest: "Add at least one guest to see your page as they will.",
+      previewError: "Couldn't load the preview.",
     },
     pageContent: {
       title: "Guest page content",
@@ -1271,6 +1277,12 @@ export const en = {
     dockReply: "Reply",
     dockEdit: "Change",
     dockClosed: "Replies closed",
+    dockClosedOn: (date: string) => `Replies closed on ${date}`,
+    dockMaybe: (date: string | null) => (date ? `Maybe · confirm by ${date}` : "Maybe · to confirm"),
+    dockConfirm: "Confirm",
+    dockChangeMind: "Change my mind",
+    addWeekend: "Add the weekend to my calendar",
+    findCarpool: "Find a carpool",
   },
 
   guestHub: {

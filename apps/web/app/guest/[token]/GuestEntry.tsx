@@ -18,11 +18,14 @@ export function GuestEntry({
   invitation,
   isDemo,
   emailMissing,
+  preview = false,
 }: {
   token: string;
   invitation: DBInvitation;
   isDemo: boolean;
   emailMissing: boolean;
+  /** The organiser's "see as a guest" preview (with isDemo: nothing is saved). */
+  preview?: boolean;
 }) {
   return (
     <WelcomeGate
@@ -42,6 +45,7 @@ export function GuestEntry({
         invitation={invitation}
         isDemo={isDemo}
         emailMissing={emailMissing}
+        preview={preview}
       />
     </WelcomeGate>
   );

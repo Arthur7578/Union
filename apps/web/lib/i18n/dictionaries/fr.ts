@@ -250,6 +250,12 @@ export const fr: Dictionary = {
       saved: "Enregistré",
       previewNote:
         "Vos invités voient les parties allumées, dans cet ordre. Une partie allumée mais vide ne s'affiche pas.",
+      previewAsGuest: "Voir comme un invité",
+      previewBand: "Aperçu : ce que voient vos invités. Rien n'est enregistré.",
+      previewClose: "Fermer l'aperçu",
+      previewGuestName: "Camille",
+      previewNoGuest: "Ajoutez au moins un invité pour voir votre page comme lui.",
+      previewError: "Impossible de charger l'aperçu.",
     },
     pageContent: {
       title: "Contenu de la page invité",
@@ -1235,6 +1241,12 @@ export const fr: Dictionary = {
     dockReply: "Répondre",
     dockEdit: "Modifier",
     dockClosed: "Réponses closes",
+    dockClosedOn: (date: string) => `Réponses closes depuis le ${date}`,
+    dockMaybe: (date: string | null) => (date ? `Peut-être · à confirmer avant le ${date}` : "Peut-être · à confirmer"),
+    dockConfirm: "Confirmer",
+    dockChangeMind: "Changer d'avis",
+    addWeekend: "Ajouter le week-end à mon agenda",
+    findCarpool: "Trouver un covoiturage",
   },
 
   guestHub: {
