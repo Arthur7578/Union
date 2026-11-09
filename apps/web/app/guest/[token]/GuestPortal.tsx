@@ -38,7 +38,7 @@ import type { DBInvitation } from "./page";
 import { useActiveSection, useDaysLeft, useInView } from "./pageHooks";
 import { shownParts } from "./pageParts";
 import { rsvpWindowOf } from "./rsvpWindow";
-import { shortDate } from "@/lib/dateLabels";
+import { previewRsvpNote } from "@/lib/rsvpNotes";
 import "./GuestPortal.css";
 import "./WeddingPage.css";
 
@@ -337,15 +337,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false, p
   const activeSection = useActiveSection(sections.map(sectionId));
   const overlayOpen = Boolean(rsvpOpen || openForm);
   // In the organiser's preview, why the RSVP card offers nothing to press.
-  const previewRsvpNote = !preview
-    ? null
-    : rsvpWindow === "closed"
-      ? t.guests.modules.previewRsvpClosed(shortDate(primaryForm?.closes_at, locale) ?? "")
-      : rsvpWindow === "scheduled"
-        ? t.guests.modules.previewRsvpScheduled(shortDate(primaryForm?.opens_at, locale) ?? "")
-        : rsvpWindow === "hidden"
-          ? t.guests.modules.previewRsvpDraft
-          : null;
+  const previewNote = preview ? previewRsvpNote(rsvpWindow, primaryForm, locale, t.guests.modules) : null;
   // "See the rest" on the faire-part: the card grew into this page's paper,
   // so the guest lands on its first part, which rises onto it.
   const welcomeContinues = useWelcomeContinues();
@@ -384,9 +376,9 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false, p
               {t.guests.modules.previewBand}{" "}
               <Link href="/guests/modules">{t.guests.modules.previewClose}</Link>
             </p>
-            {previewRsvpNote ? (
+            {previewNote ? (
               <p>
-                {previewRsvpNote}{" "}
+                {previewNote}{" "}
                 <Link href={primaryForm?.id ? `/guests/forms/${primaryForm.id}` : "/guests/forms"}>
                   {t.guests.modules.replyEditDates}
                 </Link>

@@ -18,7 +18,7 @@ import { fetchForms, fetchRoomBlocks, formStatus, updateWedding } from "@/lib/da
 import { fetchEditableGuestPage, type EditableGuestPage } from "@/lib/guestPageData";
 import { useLocale } from "@/lib/i18n/client";
 import { BackHeader } from "@/components/BackHeader";
-import { shortDate } from "@/lib/dateLabels";
+import { organiserRsvpStatus } from "@/lib/rsvpNotes";
 import { Button, SectionLabel, Switch, Loading } from "@/components/ui";
 
 /** Where each part's content is written, on the guest page content screen. */
@@ -150,18 +150,9 @@ function GuestModulesForm({ wedding, refresh }: { wedding: Wedding; refresh: () 
     };
   }, [wedding.id]);
   const rsvpState = rsvp ? formStatus(rsvp) : null;
-  const rsvpStatus: { text: string; tone: "on" | "warn" } =
-    rsvpState === "closed"
-      ? { text: t.replyClosed(shortDate(rsvp?.closes_at, locale) ?? ""), tone: "warn" }
-      : rsvpState === "scheduled"
-        ? { text: t.replyScheduled(shortDate(rsvp?.opens_at, locale) ?? ""), tone: "warn" }
-        : rsvpState === "draft"
-          ? { text: t.replyDraft, tone: "warn" }
-          : rsvpState === "live"
-            ? { text: t.replyOpen(shortDate(rsvp?.closes_at, locale)), tone: "on" }
-            : { text: t.always, tone: "on" };
+  const rsvpStatus = organiserRsvpStatus(rsvp, rsvpState, locale, t);
   const rsvpHref = rsvp ? `/guests/forms/${rsvp.id}` : "/guests/forms";
-  const rsvpBlocked = rsvpState === "closed" || rsvpState === "scheduled" || rsvpState === "draft";
+  const rsvpBlocked = rsvpStatus.blocked;
 
   const hasContent = (key: GuestModuleKey) =>
     content
