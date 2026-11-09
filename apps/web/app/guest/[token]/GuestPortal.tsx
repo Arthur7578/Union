@@ -37,6 +37,8 @@ import { TravelSection } from "./TravelSection";
 import type { DBInvitation } from "./page";
 import { useActiveSection, useDaysLeft, useInView } from "./pageHooks";
 import { shownParts } from "./pageParts";
+import { rsvpWindowOf } from "./rsvpWindow";
+import { shortDate } from "@/lib/dateLabels";
 import "./GuestPortal.css";
 import "./WeddingPage.css";
 
@@ -130,13 +132,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false, p
   // form: its answers are saved through the form, which refuses them outside
   // it. Unpublished, it isn't shown at all.
   const primaryForm = invitation.rsvp_form ?? null;
-  const rsvpWindow: "hidden" | "scheduled" | "live" | "closed" = (() => {
-    if (primaryForm?.published === false) return "hidden";
-    const at = new Date();
-    if (primaryForm?.opens_at && new Date(primaryForm.opens_at) > at) return "scheduled";
-    if (primaryForm?.closes_at && new Date(primaryForm.closes_at) < at) return "closed";
-    return "live";
-  })();
+  const rsvpWindow = rsvpWindowOf(primaryForm);
   const rsvpLive = rsvpWindow === "live";
   const answerNow = reply.status === "pending" && rsvpLive;
   useEffect(() => {
@@ -340,6 +336,16 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false, p
   const showNav = sections.length > 1;
   const activeSection = useActiveSection(sections.map(sectionId));
   const overlayOpen = Boolean(rsvpOpen || openForm);
+  // In the organiser's preview, why the RSVP card offers nothing to press.
+  const previewRsvpNote = !preview
+    ? null
+    : rsvpWindow === "closed"
+      ? t.guests.modules.previewRsvpClosed(shortDate(primaryForm?.closes_at, locale) ?? "")
+      : rsvpWindow === "scheduled"
+        ? t.guests.modules.previewRsvpScheduled(shortDate(primaryForm?.opens_at, locale) ?? "")
+        : rsvpWindow === "hidden"
+          ? t.guests.modules.previewRsvpDraft
+          : null;
   // "See the rest" on the faire-part: the card grew into this page's paper,
   // so the guest lands on its first part, which rises onto it.
   const welcomeContinues = useWelcomeContinues();
@@ -374,8 +380,18 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false, p
       <div inert={overlayOpen || undefined} aria-hidden={overlayOpen || undefined}>
         {preview ? (
           <div className="gh-demo wp-preview">
-            {t.guests.modules.previewBand}{" "}
-            <Link href="/guests/modules">{t.guests.modules.previewClose}</Link>
+            <p>
+              {t.guests.modules.previewBand}{" "}
+              <Link href="/guests/modules">{t.guests.modules.previewClose}</Link>
+            </p>
+            {previewRsvpNote ? (
+              <p>
+                {previewRsvpNote}{" "}
+                <Link href={primaryForm?.id ? `/guests/forms/${primaryForm.id}` : "/guests/forms"}>
+                  {t.guests.modules.replyEditDates}
+                </Link>
+              </p>
+            ) : null}
           </div>
         ) : isDemo ? (
           <div className="gh-demo">{hub.demo}</div>

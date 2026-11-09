@@ -256,6 +256,16 @@ export const fr: Dictionary = {
       previewGuestName: "Camille",
       previewNoGuest: "Ajoutez au moins un invité pour voir votre page comme lui.",
       previewError: "Impossible de charger l'aperçu.",
+      replyOpen: (date: string | null) => (date ? `Ouvert · réponses avant le ${date}` : "Ouvert"),
+      replyClosed: (date: string) => `Clos depuis le ${date} : vos invités ne peuvent plus répondre`,
+      replyScheduled: (date: string) => `Ouvre le ${date} : vos invités ne peuvent pas encore répondre`,
+      replyDraft: "Non publié : vos invités ne voient pas la carte RSVP",
+      replyEditDates: "Modifier les dates",
+      previewRsvpClosed: (date: string) =>
+        `Les réponses sont closes depuis le ${date} : vos invités voient la carte RSVP sans pouvoir répondre.`,
+      previewRsvpScheduled: (date: string) =>
+        `Les réponses ouvrent le ${date} : d'ici là, vos invités voient la carte RSVP sans pouvoir répondre.`,
+      previewRsvpDraft: "Le formulaire RSVP n'est pas publié : vos invités ne voient pas la carte RSVP.",
     },
     pageContent: {
       title: "Contenu de la page invité",

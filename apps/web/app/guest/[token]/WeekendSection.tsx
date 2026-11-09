@@ -5,7 +5,7 @@ import { groupMomentsByDay, resolveText, type CalendarMoment, type GuestPageCont
 import { useLocale } from "@/lib/i18n/client";
 import { LOCALES, type Locale } from "@/lib/i18n";
 import { CalendarSheet } from "./CalendarSheet";
-import { dayLabel } from "./pageFormat";
+import { dayLabel } from "@/lib/dateLabels";
 import { SectionHead } from "./SectionHead";
 
 type Copy = ReturnType<typeof useLocale>["t"]["weddingPage"];

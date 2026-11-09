@@ -19,3 +19,22 @@ export function dayLabel(iso: string, locale: Locale): string {
   });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/**
+ * A stored timestamp as the value of a date field ("YYYY-MM-DD"), in the
+ * organiser's own time zone: the day they picked, not the UTC day it falls on.
+ */
+export function toDateInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "";
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`;
+}
+
+/** A date field's value as a timestamp: the start of that day, local time. */
+export function fromDateInput(value: string): string | null {
+  if (!value) return null;
+  return new Date(`${value}T00:00:00`).toISOString();
+}

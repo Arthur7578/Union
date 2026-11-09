@@ -260,6 +260,16 @@ export const en = {
       previewGuestName: "Sam",
       previewNoGuest: "Add at least one guest to see your page as they will.",
       previewError: "Couldn't load the preview.",
+      replyOpen: (date: string | null) => (date ? `Open · replies by ${date}` : "Open"),
+      replyClosed: (date: string) => `Closed since ${date}: your guests can no longer reply`,
+      replyScheduled: (date: string) => `Opens on ${date}: your guests can't reply yet`,
+      replyDraft: "Not published: your guests don't see the RSVP card",
+      replyEditDates: "Edit the dates",
+      previewRsvpClosed: (date: string) =>
+        `Replies closed on ${date}: your guests see the RSVP card but can't reply.`,
+      previewRsvpScheduled: (date: string) =>
+        `Replies open on ${date}: until then, your guests see the RSVP card but can't reply.`,
+      previewRsvpDraft: "The RSVP form isn't published: your guests don't see the RSVP card.",
     },
     pageContent: {
       title: "Guest page content",

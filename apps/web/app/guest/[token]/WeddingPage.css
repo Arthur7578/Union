@@ -129,4 +129,6 @@
 
 /* the organiser's preview band: says what this is, and the way back */
 .wp-preview{text-transform:none;letter-spacing:.02em;font-size:13px;line-height:1.4}
+.wp-preview p{margin:0}
+.wp-preview p + p{margin-top:4px}
 .wp-preview a{color:inherit;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}

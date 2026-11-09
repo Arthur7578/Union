@@ -91,3 +91,27 @@ test("the couple sees their page as a guest would, and nothing is saved", async 
   await page.getByRole("link", { name: "Close the preview" }).click();
   await expect(page).toHaveURL(/\/guests\/modules$/);
 });
+
+test("a closed RSVP is said to the couple, with the way to its dates, and in the preview", async ({ page }) => {
+  const seeded = await seedWedding({ household: [{ key: "lea", firstName: "Lea" }] });
+  const { error } = await seeded.owner.from("forms").update({ closes_at: "2026-10-28T23:00:00Z" }).eq("id", seeded.forms.rsvp);
+  if (error) throw error;
+
+  await signInAsOwner(page, seeded);
+  await page.goto("/guests/modules");
+  const reply = page.getByRole("group", { name: "Your reply" });
+  await expect(reply).toContainText(/Closed since October (28|29): your guests can no longer reply/);
+  await expect(reply.getByRole("link", { name: "Edit the dates · Your reply" })).toHaveAttribute(
+    "href",
+    `/guests/forms/${seeded.forms.rsvp}`,
+  );
+
+  // The preview shows what guests see, and says why there is nothing to press.
+  await page.getByRole("link", { name: "See as a guest" }).click();
+  await page.getByRole("button", { name: "See the rest" }).click();
+  await expect(page.getByText(/^Replies closed on October (28|29): your guests see the RSVP card but can't reply\./)).toBeVisible();
+  const card = page.getByRole("article", { name: "Attendance RSVP" });
+  await expect(card).toContainText(/Replies closed on October (28|29)/);
+  await expect(card.getByRole("button")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Edit the dates" })).toHaveAttribute("href", `/guests/forms/${seeded.forms.rsvp}`);
+});

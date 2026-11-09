@@ -2,7 +2,7 @@
 
 import { useLocale } from "@/lib/i18n/client";
 import type { RsvpStatus } from "@/lib/submitRsvp";
-import { shortDate } from "./pageFormat";
+import { shortDate } from "@/lib/dateLabels";
 import type { RsvpWindow } from "./ReplySection";
 
 /**

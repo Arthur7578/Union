@@ -9,14 +9,16 @@ import {
   toStoredGuestModules,
   type GuestModuleKey,
   type GuestModules,
+  type Form,
   type Wedding,
 } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
-import { fetchRoomBlocks, updateWedding } from "@/lib/data";
+import { fetchForms, fetchRoomBlocks, formStatus, updateWedding } from "@/lib/data";
 import { fetchEditableGuestPage, type EditableGuestPage } from "@/lib/guestPageData";
 import { useLocale } from "@/lib/i18n/client";
 import { BackHeader } from "@/components/BackHeader";
+import { shortDate } from "@/lib/dateLabels";
 import { Button, SectionLabel, Switch, Loading } from "@/components/ui";
 
 /** Where each part's content is written, on the guest page content screen. */
@@ -135,6 +137,32 @@ function GuestModulesForm({ wedding, refresh }: { wedding: Wedding; refresh: () 
     };
   }, [wedding.id, wedding.default_locale, locale]);
 
+  // The RSVP's window: guests can only reply while it is open, so a closed or
+  // unpublished RSVP is said here, with the way to its dates.
+  const [rsvp, setRsvp] = useState<Form | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetchForms(wedding.id)
+      .then((forms) => live && setRsvp(forms.find((f) => f.kind === "rsvp" && f.purpose === "primary") ?? null))
+      .catch((e) => console.error("Failed to load the RSVP form:", e));
+    return () => {
+      live = false;
+    };
+  }, [wedding.id]);
+  const rsvpState = rsvp ? formStatus(rsvp) : null;
+  const rsvpStatus: { text: string; tone: "on" | "warn" } =
+    rsvpState === "closed"
+      ? { text: t.replyClosed(shortDate(rsvp?.closes_at, locale) ?? ""), tone: "warn" }
+      : rsvpState === "scheduled"
+        ? { text: t.replyScheduled(shortDate(rsvp?.opens_at, locale) ?? ""), tone: "warn" }
+        : rsvpState === "draft"
+          ? { text: t.replyDraft, tone: "warn" }
+          : rsvpState === "live"
+            ? { text: t.replyOpen(shortDate(rsvp?.closes_at, locale)), tone: "on" }
+            : { text: t.always, tone: "on" };
+  const rsvpHref = rsvp ? `/guests/forms/${rsvp.id}` : "/guests/forms";
+  const rsvpBlocked = rsvpState === "closed" || rsvpState === "scheduled" || rsvpState === "draft";
+
   const hasContent = (key: GuestModuleKey) =>
     content
       ? partHasContent(key, {
@@ -242,12 +270,16 @@ function GuestModulesForm({ wedding, refresh }: { wedding: Wedding; refresh: () 
           <Row
             title={t.replyTitle}
             sub={t.replySub}
-            status={t.always}
-            statusTone="on"
+            status={rsvpStatus.text}
+            statusTone={rsvpStatus.tone}
             last
             action={
-              <Link href="/guests/forms" style={editLink} aria-label={`${t.edit} · ${t.replyTitle}`}>
-                {t.edit}
+              <Link
+                href={rsvpHref}
+                style={editLink}
+                aria-label={`${rsvpBlocked ? t.replyEditDates : t.edit} · ${t.replyTitle}`}
+              >
+                {rsvpBlocked ? t.replyEditDates : t.edit}
               </Link>
             }
           />

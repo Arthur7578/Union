@@ -6,7 +6,7 @@ import { useLocale } from "@/lib/i18n/client";
 import type { RsvpStatus } from "@/lib/submitRsvp";
 import { CalendarSheet } from "./CalendarSheet";
 import { FormList, type FormItem } from "./FormList";
-import { dayLabel, shortDate } from "./pageFormat";
+import { dayLabel, shortDate } from "@/lib/dateLabels";
 import { SectionHead } from "./SectionHead";
 
 export type RsvpWindow = "hidden" | "scheduled" | "live" | "closed";
