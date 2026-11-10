@@ -396,36 +396,52 @@ textarea {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Garden marquee — the Guests hub (/guests) and list (/guests/list).
-   Colours: M in lib/theme.ts (--mq-*). Faces: app/(app)/guests/marquee.ts.
+   Guests hub (/guests) and guest list (/guests/list)
    ───────────────────────────────────────────────────────────── */
-.u-app:has(.mq) {
-  background: var(--mq-ground);
-  overflow-x: clip;
+.gu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+  margin-bottom: 20px;
 }
-.u-app:has(.mq) .u-tabbar {
-  background: var(--mq-chrome);
-  border-top-color: var(--mq-line-soft);
+.gu-h1 {
+  font-weight: 600;
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: -0.005em;
+  color: var(--text);
+  margin: 0;
 }
-.u-app:has(.mq) .u-sidebar {
-  background: var(--mq-chrome);
-  border-right-color: var(--mq-line-soft);
+.gu-h2 {
+  font-weight: 600;
+  font-size: 23px;
+  line-height: 1.1;
+  color: var(--text);
+  margin: 30px 2px 10px;
+  text-wrap: balance;
 }
-.mq {
-  font-family: var(--font-mq-sans), "Nunito", system-ui, sans-serif;
-  color: var(--mq-ink);
+.gu-lede {
+  display: block;
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--text);
+  text-wrap: balance;
 }
-.mq ::selection {
-  background: var(--mq-selection);
+.gu-numeral {
+  font-weight: 600;
+  font-size: 64px;
+  line-height: 0.85;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  font-variant-numeric: lining-nums tabular-nums;
 }
-.mq-display {
-  font-family: var(--font-mq-display), "Caprasimo", Georgia, serif;
-  font-weight: 400;
-}
-.mq-num {
+.gu-num {
   font-variant-numeric: tabular-nums;
 }
-.mq-sr {
+.gu-sr {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -433,539 +449,229 @@ textarea {
   clip-path: inset(50%);
   white-space: nowrap;
 }
-
-/* The canopy: 28px sage-and-white stripes, ending in a scalloped valance,
-   one 14px-deep flap per stripe. It runs edge to edge of the content area. */
-/* The tent: canopy, festoon lights, then the shaded inside of the tent where
-   the title sits, fading into the ground. Edge to edge of the content area. */
-.mq-tent {
-  margin: calc(-22px - env(safe-area-inset-top, 0px)) calc(50% - 50vw) 0;
-  padding-bottom: 22px;
-  background: linear-gradient(
-    to bottom,
-    var(--mq-sage-soft) 0%,
-    var(--mq-sage-soft) 55%,
-    var(--mq-ground) 100%
-  );
-}
-.mq-tent-inner {
-  width: min(100% - 40px, 996px);
-  margin: 0 auto;
-}
-.mq-festoon {
-  display: block;
-  margin-top: 10px;
-}
-.mq-canopy {
-  position: relative;
-  padding-top: env(safe-area-inset-top, 0px);
-  height: calc(52px + env(safe-area-inset-top, 0px));
-  background: repeating-linear-gradient(
-    90deg,
-    var(--mq-sage) 0 28px,
-    var(--mq-surface) 28px 56px
-  );
-  filter: drop-shadow(0 6px 6px var(--mq-shadow));
-  z-index: 1;
-}
-.mq-canopy::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  height: 14px;
-  background: inherit;
-  -webkit-mask: radial-gradient(circle at 50% 0, black 14px, transparent 14.5px)
-    0 0 / 28px 100% repeat-x;
-  mask: radial-gradient(circle at 50% 0, black 14px, transparent 14.5px)
-    0 0 / 28px 100% repeat-x;
-}
-.mq-canopy.is-slim {
-  height: calc(26px + env(safe-area-inset-top, 0px));
+.gu-main ::selection {
+  background: var(--selection);
 }
 
-.mq-header {
+/* The reply bar: one track, a segment per answer. Segments grow from the
+   empty track when the replies load. */
+.gu-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 4px;
+  gap: 3px;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
 }
-.mq-canopy.is-slim + .mq-tent-inner .mq-header {
-  padding-top: 28px;
-}
-.mq-h1 {
-  font-size: 42px;
-  line-height: 1;
-  margin: 0;
-  color: var(--mq-ink);
-}
-.mq-h2 {
-  font-size: 24px;
-  line-height: 1.15;
-  margin: 32px 4px 12px;
-  color: var(--mq-ink);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-wrap: balance;
-}
-
-/* The reply panel, right under the valance. */
-.mq-panel {
-  background: var(--mq-surface);
-  border-radius: 28px;
-  padding: 22px 20px 18px;
-  box-shadow: 0 12px 32px var(--mq-shadow);
-}
-.mq-count {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 0;
-}
-.mq-numeral {
-  font-size: 72px;
-  line-height: 0.8;
-  color: var(--mq-leaf);
-}
-.mq-count-of {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--mq-ink-2);
-}
-.mq-lede {
-  display: block;
-  font-size: 30px;
-  line-height: 1.1;
-  color: var(--mq-ink);
-  text-wrap: balance;
-}
-.mq-bar {
-  display: flex;
-  gap: 4px;
-  height: 14px;
-  margin-top: 18px;
-}
-.mq-seg {
+.gu-seg {
   flex-basis: 0;
   min-width: 0;
-  border-radius: 999px;
   transition: flex-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.mq-legend {
+.gu-seg:empty {
+  border-radius: 0;
+}
+.gu-legend {
   list-style: none;
-  margin: 12px 0 0;
+  margin: 14px 0 0;
   padding: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2px 14px;
+  gap: 2px 16px;
 }
-.mq-legend a {
+.gu-legend-link {
   display: flex;
   align-items: center;
   gap: 9px;
-  min-height: 42px;
-  padding: 0 10px;
-  margin: 0 -10px;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--mq-ink-2);
-}
-.mq-legend a:hover {
-  background: var(--mq-hover);
-  color: var(--mq-ink);
-}
-.mq-legend b {
-  margin-left: auto;
-  font-weight: 800;
-  color: var(--mq-ink);
-}
-.mq-dot {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-/* The nudge is the panel's footer, its top edge scalloped like the valance. */
-.mq-note {
-  position: relative;
-  margin: 22px -20px -18px;
-  padding: 16px 20px 18px;
-  border-radius: 0 0 28px 28px;
-  background: var(--mq-butter);
-  color: var(--mq-ink-2);
-}
-.mq-note::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -9px;
-  height: 10px;
-  background: var(--mq-butter);
-  -webkit-mask: radial-gradient(circle at 50% 100%, black 10px, transparent 10.5px) 0 0 / 20px 10px repeat-x;
-  mask: radial-gradient(circle at 50% 100%, black 10px, transparent 10.5px) 0 0 / 20px 10px repeat-x;
-}
-.mq-note p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.45;
-}
-.mq-note b {
-  color: var(--mq-ink);
-}
-
-/* Controls */
-.mq-btn,
-.mq-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 46px;
-  padding: 0 20px;
-  border-radius: 999px;
-  border: none;
-  font-family: inherit;
-  font-weight: 800;
-  font-size: 15px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: transform 0.12s ease, background-color 0.15s ease;
-}
-.mq-btn {
-  background: var(--mq-leaf);
-  color: var(--mq-surface);
-  box-shadow: 0 6px 16px var(--mq-shadow-strong);
-}
-.mq-btn:hover {
-  background: var(--mq-leaf-deep);
-  color: var(--mq-surface);
-}
-.mq-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-.mq-ghost {
-  background: var(--mq-surface);
-  color: var(--mq-ink);
-  box-shadow: inset 0 0 0 1.5px var(--mq-line);
-}
-.mq-ghost:hover {
-  color: var(--mq-ink);
-  background: var(--mq-sage-soft);
-}
-.mq-btn:active,
-.mq-ghost:active {
-  transform: scale(0.97);
-}
-.mq-btn.is-small {
   min-height: 40px;
-  padding: 0 16px;
+  padding: 0 8px;
+  margin: 0 -8px;
+  border-radius: 10px;
   font-size: 14px;
+  color: var(--text);
+}
+.gu-legend-link:hover {
+  background: var(--row-hover);
+  color: var(--text);
 }
 
-.mq-find {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 16px;
-  padding: 0 18px;
-  min-height: 54px;
-  border-radius: 999px;
-  background: var(--mq-surface);
-  box-shadow: inset 0 0 0 1.5px var(--mq-line);
-  transition: box-shadow 0.15s ease;
-}
-.mq-find:focus-within {
-  box-shadow: inset 0 0 0 2px var(--mq-leaf), 0 0 0 5px var(--mq-focus);
-}
-.mq-find input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-family: inherit;
-  font-weight: 600;
-  font-size: 16px;
-  color: var(--mq-ink);
-  caret-color: var(--mq-leaf);
-  padding: 14px 0;
-}
-.mq-find input::placeholder {
-  color: var(--mq-muted);
-  font-weight: 600;
-}
-
-/* Grouped rows on a white card. */
-.mq-group {
+/* Grouped rows: one surface, hairlines between, like a native settings list. */
+.gu-group {
   list-style: none;
   margin: 0;
-  padding: 4px 0;
-  background: var(--mq-surface);
-  border-radius: 24px;
-  box-shadow: 0 6px 20px var(--mq-shadow);
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: 18px;
+  overflow: hidden;
 }
-.mq-group > li + li {
-  border-top: 1px solid var(--mq-line-soft);
-  margin: 0 16px;
+.gu-group > li + li {
+  border-top: 1px solid var(--line-2);
 }
-.mq-group > li + li .mq-row {
-  margin: 0 -16px;
-}
-.mq-row {
+.gu-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 62px;
-  padding: 10px 16px;
-  color: var(--mq-ink);
-  border-radius: 20px;
+  min-height: 60px;
+  padding: 11px 16px;
+  color: var(--text);
   transition: background-color 0.15s ease;
 }
-.mq-row:hover {
-  background: var(--mq-hover);
-  color: var(--mq-ink);
+.gu-row:hover {
+  background: var(--row-hover);
+  color: var(--text);
 }
-.mq-row-title {
+.gu-name {
   display: block;
-  font-weight: 800;
-  font-size: 15.5px;
-  color: var(--mq-ink);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.mq-row-sub {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--mq-muted);
-  margin-top: 1px;
-}
-.mq-face {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+.gu-section-head {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-family: var(--font-mq-display), "Caprasimo", Georgia, serif;
-  font-size: 18px;
-}
-.mq-face.is-attending {
-  background: var(--mq-sage-soft);
-  color: var(--mq-leaf);
-}
-.mq-face.is-maybe {
-  background: var(--mq-butter);
-  color: var(--mq-butter-ink);
-}
-.mq-face.is-declined {
-  background: var(--mq-blush);
-  color: var(--mq-blush-ink);
-}
-.mq-face.is-pending {
-  background: var(--mq-surface);
-  color: var(--mq-muted);
-  box-shadow: inset 0 0 0 1.5px var(--mq-waiting);
-}
-.mq-tag {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 0 11px;
-  border-radius: 999px;
-  font-size: 12.5px;
-  font-weight: 800;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.mq-tag.is-attending {
-  background: var(--mq-sage-soft);
-  color: var(--mq-leaf);
-}
-.mq-tag.is-maybe {
-  background: var(--mq-butter);
-  color: var(--mq-butter-ink);
-}
-.mq-tag.is-declined {
-  background: var(--mq-blush);
-  color: var(--mq-blush-ink);
-}
-.mq-tag.is-pending {
-  background: var(--mq-ground);
-  color: var(--mq-muted);
-}
-.mq-reply.is-attending {
-  color: var(--mq-leaf);
-}
-.mq-reply.is-maybe {
-  color: var(--mq-butter-ink);
-}
-.mq-reply.is-declined {
-  color: var(--mq-blush-ink);
-}
-.mq-chev {
-  flex-shrink: 0;
-  color: var(--mq-leaf);
-}
-.mq-section-head {
-  display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin: 30px 4px 12px;
+  margin: 0 2px 10px;
 }
-.mq-section-head .mq-h2 {
-  margin: 0;
-}
-.mq-more {
-  font-weight: 800;
-  font-size: 14px;
-  color: var(--mq-leaf);
+.gu-more {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--accent-ink);
   white-space: nowrap;
   text-decoration: underline;
   text-decoration-color: transparent;
   text-underline-offset: 3px;
   transition: text-decoration-color 0.15s ease;
 }
-.mq-more:hover {
-  color: var(--mq-leaf-deep);
+.gu-more:hover {
+  color: var(--accent-ink);
   text-decoration-color: currentColor;
 }
-.mq-quiet {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: var(--mq-muted);
-  line-height: 1.5;
-  margin: 4px 4px 0;
-}
 
-/* List page */
-.mq-back {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: none;
-  background: var(--mq-surface);
-  box-shadow: inset 0 0 0 1.5px var(--mq-line);
-  color: var(--mq-ink);
+/* Search: on the hub it sends you to the list; on the list it filters. */
+.gu-find {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  cursor: pointer;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 0 14px;
+  min-height: 50px;
+  border-radius: 16px;
+  border: 1px solid var(--line-3);
+  background: var(--white);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.mq-back:hover {
-  background: var(--mq-sage-soft);
+.gu-find:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--focus-ring);
 }
-.mq-chips {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  margin: 0 -18px 12px;
-  padding: 2px 18px;
-}
-.mq-chips::-webkit-scrollbar {
-  display: none;
-}
-.mq-chip {
-  flex-shrink: 0;
-  min-height: 40px;
-  padding: 0 15px;
-  border-radius: 999px;
+.gu-find input {
+  flex: 1;
+  min-width: 0;
   border: none;
-  font-family: inherit;
-  font-weight: 800;
-  font-size: 14px;
-  background: var(--mq-surface);
-  color: var(--mq-ink-2);
-  box-shadow: inset 0 0 0 1.5px var(--mq-line);
-  cursor: pointer;
+  outline: none;
+  background: transparent;
+  font-size: 16px; /* 16px keeps iOS from zooming in on focus */
+  color: var(--text);
+  caret-color: var(--accent);
+  padding: 13px 0;
 }
-.mq-chip:hover {
-  background: var(--mq-sage-soft);
-}
-.mq-chip[aria-pressed="true"] {
-  background: var(--mq-leaf);
-  color: var(--mq-surface);
-  box-shadow: none;
-}
-.mq-chip .mq-num {
-  opacity: 0.8;
-  margin-left: 4px;
+.gu-find input::placeholder {
+  color: var(--muted-strong);
 }
 
-.mq-row:focus-visible,
-.mq-legend a:focus-visible,
-.mq-more:focus-visible,
-.mq-btn:focus-visible,
-.mq-ghost:focus-visible,
-.mq-chip:focus-visible,
-.mq-back:focus-visible {
-  outline: 2.5px solid var(--mq-leaf);
+.gu-add,
+.gu-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 14.5px;
+  white-space: nowrap;
+  transition: transform 0.12s ease, background-color 0.15s ease;
+}
+.gu-add {
+  background: var(--accent-ink);
+  color: var(--white);
+  box-shadow: 0 6px 16px var(--add-shadow);
+}
+.gu-add:hover {
+  color: var(--white);
+  background: var(--ink-hover);
+}
+.gu-ghost {
+  border: 1px solid var(--line-3);
+  color: var(--text);
+}
+.gu-ghost:hover {
+  color: var(--text);
+  background: var(--row-hover);
+}
+.gu-add:active,
+.gu-ghost:active {
+  transform: scale(0.97);
+}
+.gu-empty {
+  border-radius: 24px;
+  padding: 26px 22px 24px;
+}
+.gu-chip {
+  border: none;
+  background: transparent;
+  padding: 0;
+  border-radius: 20px;
+}
+
+.gu-row:focus-visible,
+.gu-legend-link:focus-visible,
+.gu-more:focus-visible,
+.gu-add:focus-visible,
+.gu-ghost:focus-visible,
+.gu-chip:focus-visible {
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-.mq-group .mq-row:focus-visible {
-  outline-offset: -3px;
+.gu-group .gu-row:focus-visible {
+  outline-offset: -2px;
 }
 
-.mq-stages > section:first-child .mq-h2 {
-  margin-top: 32px;
+.gu-stages > section:first-child .gu-h2 {
+  margin-top: 30px;
 }
 
 @media (min-width: 960px) {
-  .u-main.mq-main {
+  .u-main.gu-main {
     max-width: 1060px;
   }
-  .mq-tent {
-    margin: -42px calc(50% - (50vw - 124px)) 0;
+  .gu-h1 {
+    font-size: 46px;
   }
-  .mq-tent-inner {
-    width: min(100% - 64px, 996px);
-  }
-  .mq-canopy {
-    height: 64px;
-  }
-  .mq-list-body {
-    max-width: 760px;
-  }
-  .mq-canopy.is-slim {
-    height: 32px;
-  }
-  .mq-h1 {
-    font-size: 50px;
-  }
-  .mq-layout {
+  .gu-layout {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-    gap: 40px;
+    gap: 36px;
     align-items: start;
   }
-  .mq-stages > section:first-child .mq-h2 {
+  .gu-stages > section:first-child .gu-h2 {
     margin-top: 0;
   }
-  .mq-chips {
-    margin: 0 0 12px;
-    padding: 2px 0;
-    flex-wrap: wrap;
+  .gu-legend {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mq-seg,
-  .mq-row,
-  .mq-btn,
-  .mq-ghost,
-  .mq-find {
+  .gu-seg,
+  .gu-row,
+  .gu-add,
+  .gu-ghost,
+  .gu-find {
     transition: none;
   }
 }

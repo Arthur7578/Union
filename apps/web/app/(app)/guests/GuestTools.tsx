@@ -2,9 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
+import { T } from "@/lib/theme";
 import { ChevronRight } from "@/components/icons";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
-import { Bunting } from "./MarqueeTop";
 
 type Tool = { href: string; label: string; sub: string };
 type Stage = { id: string; title: string; tools: Tool[] };
@@ -60,24 +60,27 @@ export function guestStages(t: Dictionary, guestCount: number | null): Stage[] {
 
 export function GuestTools({ stages }: { stages: Stage[] }) {
   return (
-    <div className="mq-stages">
+    <div className="gu-stages">
       {stages.map((stage) => (
-        <section key={stage.id} aria-labelledby={`mq-stage-${stage.id}`}>
-          <h2 id={`mq-stage-${stage.id}`} className="mq-display mq-h2">
-            <Bunting />
+        <section key={stage.id} aria-labelledby={`gu-stage-${stage.id}`}>
+          <h2 id={`gu-stage-${stage.id}`} className="u-serif gu-h2">
             {stage.title}
           </h2>
-          <ul role="list" className="mq-group">
+          <ul role="list" className="gu-group">
             {stage.tools.map((tool) => (
               <li key={tool.href}>
-                <Link href={tool.href} className="mq-row">
+                <Link href={tool.href} className="gu-row">
                   <span style={{ flex: 1, minWidth: 0 }}>
-                    <span className="mq-row-title">{tool.label}</span>
-                    {tool.sub && <span className="mq-row-sub">{tool.sub}</span>}
+                    <span style={{ display: "block", fontWeight: 600, fontSize: 15, color: T.ink }}>
+                      {tool.label}
+                    </span>
+                    {tool.sub && (
+                      <span style={{ display: "block", fontSize: 12.5, color: T.muted, marginTop: 1 }}>
+                        {tool.sub}
+                      </span>
+                    )}
                   </span>
-                  <span className="mq-chev">
-                    <ChevronRight stroke="currentColor" />
-                  </span>
+                  <ChevronRight />
                 </Link>
               </li>
             ))}

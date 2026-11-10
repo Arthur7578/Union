@@ -9,15 +9,22 @@ import {
   parseGuestStatusFilter,
   type GuestStatusFilter,
 } from "@union/shared";
-import { M } from "@/lib/theme";
+import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import { guestStats } from "@/lib/data";
 import { initial } from "@/lib/format";
-import { ChevronLeft, ChevronRight, PlusIcon, SearchIcon } from "@/components/icons";
+import { Card, Button, Loading, Chip } from "@/components/ui";
+import { BackHeader } from "@/components/BackHeader";
+import { ChevronRight, PlusIcon, SearchIcon } from "@/components/icons";
 import { useT } from "@/lib/i18n/client";
 import { useGuests } from "../useGuests";
-import { marqueeClass } from "../marquee";
-import { MarqueeTop } from "../MarqueeTop";
+
+const STATUS_DOT: Record<string, string> = {
+  attending: T.green,
+  maybe: T.blueInk,
+  declined: T.roseSoft,
+  pending: T.ringAmber,
+};
 
 /**
  * Every guest, filterable by reply and searchable. The hub links here with
@@ -43,11 +50,6 @@ export function GuestList() {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
-  const back = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) router.back();
-    else router.push("/guests");
-  };
-
   const stats = guests ? guestStats(guests) : null;
   const showMaybe = wedding?.allow_rsvp_maybe === true || (stats?.maybe ?? 0) > 0;
 
@@ -69,7 +71,7 @@ export function GuestList() {
   );
 
   // Arriving from the hub on a filter further along the row: bring its chip
-  // into view, since the row scrolls sideways on a phone.
+  // into view when the row wraps or scrolls on a phone.
   const loaded = guests !== null;
   useEffect(() => {
     activeChip.current?.scrollIntoView({ inline: "nearest", block: "nearest" });
@@ -77,132 +79,159 @@ export function GuestList() {
 
   if (!wedding) return null;
 
-  const statusLabel = (status: string) =>
-    status === "attending"
-      ? t.guests.filterComing
-      : status === "maybe"
-        ? t.guests.filterMaybe
-        : status === "declined"
-          ? t.guests.filterCant
-          : t.guests.filterWaiting;
-
   return (
-    <main className={`u-main mq-main ${marqueeClass}`}>
-      <MarqueeTop slim>
-        <header className="mq-header">
-          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-            <button type="button" onClick={back} aria-label={t.guests.title} className="mq-back">
-              <ChevronLeft stroke="currentColor" />
-            </button>
-            <div style={{ minWidth: 0 }}>
-              <h1 className="mq-display" style={{ fontSize: 26, lineHeight: 1.05, margin: 0, textWrap: "balance" }}>
-                {t.guests.hub.listTitle}
-              </h1>
-              {stats && (
-                <div className="mq-row-sub mq-num">
-                  {stats.invited} {t.guests.kicker}
-                </div>
-              )}
-            </div>
-          </div>
-          <Link href="/guests/new" className="mq-btn is-small">
+    <main className="u-main">
+      <BackHeader
+        title={t.guests.hub.listTitle}
+        subtitle={stats ? `${stats.invited} ${t.guests.kicker}` : undefined}
+        fallback="/guests"
+        right={
+          <Link href="/guests/new" className="gu-add" style={{ minHeight: 40, fontSize: 14, gap: 7 }}>
             <PlusIcon />
             {t.guests.addShort}
           </Link>
-        </header>
-      </MarqueeTop>
+        }
+      />
 
-      <div className="mq-list-body">
-        {guests !== null && guests.length > 0 && (
-          <>
-            <div role="group" aria-label={t.guests.hub.replyBar} className="mq-chips">
-              {filterChips.map(([key, label, n]) => (
-                <button
-                  key={key}
-                  type="button"
-                  aria-pressed={filter === key}
-                  ref={filter === key ? activeChip : undefined}
-                  onClick={() => setFilter(key)}
-                  className="mq-chip"
-                >
+      {guests !== null && guests.length > 0 && (
+        <>
+          <div
+            role="group"
+            aria-label={t.guests.hub.replyBar}
+            style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}
+          >
+            {filterChips.map(([key, label, n]) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={filter === key}
+                ref={filter === key ? activeChip : undefined}
+                onClick={() => setFilter(key)}
+                className="gu-chip"
+              >
+                <Chip active={filter === key}>
                   {label}
-                  {typeof n === "number" && n > 0 && <span className="mq-num">{n}</span>}
-                </button>
-              ))}
-            </div>
-            <div className="mq-find" style={{ marginTop: 0, marginBottom: 16 }}>
-              <label htmlFor="mq-list-q" className="mq-sr">
-                {t.guests.hub.find}
-              </label>
-              <SearchIcon stroke={M.muted} />
-              <input
-                id="mq-list-q"
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t.guests.searchPlaceholder}
-                autoComplete="off"
-              />
-            </div>
-          </>
-        )}
+                  {typeof n === "number" && n > 0 ? ` · ${n}` : ""}
+                </Chip>
+              </button>
+            ))}
+          </div>
+          <div className="gu-find" style={{ marginTop: 0, marginBottom: 12 }}>
+            <label htmlFor="gl-q" className="gu-sr">
+              {t.guests.hub.find}
+            </label>
+            <SearchIcon />
+            <input
+              id="gl-q"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t.guests.searchPlaceholder}
+              autoComplete="off"
+            />
+          </div>
+        </>
+      )}
 
-        {guests === null ? (
-          <p className="mq-quiet" role="status">
-            {t.guests.loadingList}
-          </p>
-        ) : guests.length === 0 ? (
-          <section className="mq-panel" style={{ textAlign: "center", padding: "28px 20px" }}>
-            <h2 className="mq-display mq-lede" style={{ margin: 0 }}>
-              {t.guests.noGuestsTitle}
-            </h2>
-            <p className="mq-quiet" style={{ margin: "8px 0 18px" }}>
-              {t.guests.noGuestsBody}
-            </p>
-            <Link href="/guests/new" className="mq-btn">
-              {t.guests.add}
-            </Link>
-          </section>
-        ) : filtered.length === 0 ? (
-          <section className="mq-panel" style={{ textAlign: "center", padding: "22px 20px" }}>
-            <p className="mq-quiet" style={{ margin: 0 }}>
-              {t.guests.noMatches}
-            </p>
-          </section>
-        ) : (
-          <ul role="list" aria-label={t.guests.hub.listTitle} className="mq-group">
-            {filtered.map((g) => {
-              const status = guestReplyStatus(g);
-              const meta = [g.guest_group, g.role].filter(Boolean).join(" · ");
-              return (
-                <li key={g.id}>
-                  <Link href={`/guests/${g.id}`} className="mq-row">
-                    <span aria-hidden className={`mq-face is-${status}`}>
-                      {initial(g.first_name)}
+      {guests === null ? (
+        <Loading label={t.guests.loadingList} />
+      ) : guests.length === 0 ? (
+        <Card style={{ textAlign: "center", padding: "28px 20px" }}>
+          <div className="u-serif" style={{ fontSize: 22, color: T.ink }}>
+            {t.guests.noGuestsTitle}
+          </div>
+          <div style={{ fontSize: 14, color: T.muted, margin: "6px 0 16px" }}>
+            {t.guests.noGuestsBody}
+          </div>
+          <Link href="/guests/new">
+            <Button>{t.guests.add}</Button>
+          </Link>
+        </Card>
+      ) : filtered.length === 0 ? (
+        <Card style={{ textAlign: "center", padding: "22px 20px" }}>
+          <div style={{ fontSize: 14, color: T.muted }}>{t.guests.noMatches}</div>
+        </Card>
+      ) : (
+        <ul role="list" aria-label={t.guests.hub.listTitle} className="gu-group">
+          {filtered.map((g) => {
+            const status = guestReplyStatus(g);
+            const meta = [g.guest_group, g.role].filter(Boolean).join(" · ");
+            const statusLabel =
+              status === "attending"
+                ? t.guests.filterComing
+                : status === "maybe"
+                  ? t.guests.filterMaybe
+                  : status === "declined"
+                    ? t.guests.filterCant
+                    : t.guests.filterWaiting;
+            return (
+              <li key={g.id}>
+                <Link href={`/guests/${g.id}`} className="gu-row">
+                  <span
+                    aria-hidden
+                    className="u-serif"
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: "50%",
+                      background: T.accentPink,
+                      color: T.accentInk,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      fontWeight: 600,
+                      fontSize: 16,
+                    }}
+                  >
+                    {initial(g.first_name)}
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span className="gu-name">
+                      {g.first_name} {g.last_name ?? ""}
                     </span>
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <span className="mq-row-title">
-                        {g.first_name} {g.last_name ?? ""}
+                    {meta && (
+                      <span style={{ display: "block", fontSize: 12.5, color: T.muted, marginTop: 1 }}>
+                        {meta}
                       </span>
-                      {meta && <span className="mq-row-sub">{meta}</span>}
-                      {status === "pending" && !g.email && (
-                        <span className="mq-row-sub mq-reply is-declined">{t.guests.hub.noEmail}</span>
-                      )}
-                    </span>
-                    {/* Under a filter every row would repeat the same answer. */}
-                    {filter === "all" && (
-                      <span className={`mq-tag is-${status}`}>{statusLabel(status)}</span>
                     )}
-                    <span className="mq-chev">
-                      <ChevronRight stroke="currentColor" />
+                    {status === "pending" && !g.email && (
+                      <span style={{ display: "block", fontSize: 12.5, color: T.accentInk, marginTop: 1 }}>
+                        {t.guests.hub.noEmail}
+                      </span>
+                    )}
+                  </span>
+                  {/* Under a filter every row would repeat the same answer. */}
+                  {filter === "all" && (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: 12.5,
+                        color: T.muted,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span
+                        aria-hidden
+                        style={{
+                          width: 9,
+                          height: 9,
+                          borderRadius: "50%",
+                          background: STATUS_DOT[status] ?? T.sand,
+                        }}
+                      />
+                      {statusLabel}
                     </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+                  )}
+                  <ChevronRight />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </main>
   );
 }

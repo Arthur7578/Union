@@ -11,16 +11,12 @@ Scope: the couple's Guests tab. Mode: Operate. Audience: an engaged couple on th
 
 Job: see where replies stand, nudge the ones still waiting, reach any guest fast, find every guest tool by stage.
 
+## Decisions so far
+
+- Structure (kept): a hub with the reply count, one split bar, a nudge, search, latest replies and the tools grouped by stage; the full list at /guests/list.
+- Rejected directions: Seed packet, Airmail, Admit One, Métro line (not wedding-related); Garden marquee (built and rejected 2026-11-10: childish, divisive, excludes many wedding styles).
+- Constraint from the user: the interface stays theme-neutral and premium; personality comes from the couple's own wedding (PRODUCT.md principle 5).
+
 ## Direction contract
 
-THESIS: The guest list is the party gathering under the reception marquee. Refuses the category default of cream paper, serif display and rosewood stationery, and the generic dashboard of stat tiles.
-
-OWN-WORLD: Garden marquee. Fresh leaf-white ground, sage-and-white canopy stripes with a scalloped valance, deep forest ink, leaf-green actions, blush, butter and sage as reply colours. Caprasimo (soft, round, joyful display) for titles and numerals; Nunito for the interface. Round avatars, pill controls, white rows on the leaf ground.
-
-STORY: The couple opens Guests, sees under the canopy how many have answered and who, nudges the waiting ones, then jumps into the list or a tool.
-
-FIRST VIEWPORT: Full-bleed striped canopy with scalloped valance and festoon lights; the title and Add button sit in the shaded tent interior beneath it; directly under it the reply panel (big Caprasimo count, one rounded bar, four reply links) with the nudge as its scalloped footer. Cited adaptation: the search field also lands in the first phone viewport, serving the job "reach any guest fast".
-
-FORM: Candidate 1 of my grounded list (Garden marquee), taken as the user's choice over the assigned candidate 5 (Champagne tower). Seed key f5f65e35.
-
-FINISH: unreviewed and unshipped until the finish reviewer returns ship.
+None yet. The pages run on the incumbent Union look while a theme-neutral direction is chosen.

@@ -46,3 +46,4 @@ No real customers, testimonials, metrics or press. Never invent them. Sample scr
 2. Calm over completeness: show where things stand and the one next move, not every tool at once.
 3. Phone first: one-thumb reach, short visits, nothing that needs a desktop.
 4. Honest state: sample data is always labelled; numbers on screen are real.
+5. Theme-neutral: Union's interface never takes on a wedding style. It must not exclude any theme (bohemian, black tie, minimal, rustic…); couples should feel at the right place whatever their wedding looks like. Personality comes from the couple's own wedding (their names, date, details), not from the app. (Confirmed 2026-11-10, after a themed "garden marquee" trial read as childish and divisive.)

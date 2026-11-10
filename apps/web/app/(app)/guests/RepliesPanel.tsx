@@ -2,8 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
-import { M } from "@/lib/theme";
-import { EnvelopeIcon } from "@/components/icons";
+import { T, alpha } from "@/lib/theme";
+import { Button } from "@/components/ui";
+import { Spark } from "@/components/icons";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 import type { GuestStatusFilter } from "@union/shared";
 
@@ -42,71 +43,93 @@ export function RepliesPanel({
 }) {
   const answered = stats ? stats.invited - stats.waiting : null;
   const segments: Segment[] = [
-    { key: "coming", label: t.guests.filterComing, value: stats?.coming ?? 0, color: M.coming },
+    { key: "coming", label: t.guests.filterComing, value: stats?.coming ?? 0, color: T.green },
     ...(showMaybe
-      ? [{ key: "maybe" as const, label: t.guests.filterMaybe, value: stats?.maybe ?? 0, color: M.maybe }]
+      ? [{ key: "maybe" as const, label: t.guests.filterMaybe, value: stats?.maybe ?? 0, color: T.blueInk }]
       : []),
-    { key: "declined", label: t.guests.filterCant, value: stats?.declined ?? 0, color: M.cant },
-    { key: "waiting", label: t.guests.filterWaiting, value: stats?.waiting ?? 0, color: M.sageSoft },
+    { key: "declined", label: t.guests.filterCant, value: stats?.declined ?? 0, color: T.roseSoft },
+    { key: "waiting", label: t.guests.filterWaiting, value: stats?.waiting ?? 0, color: "transparent" },
   ];
   const total = stats?.invited ?? 0;
 
   return (
-    <section aria-labelledby="mq-replies" className="mq-panel">
-      <h2 id="mq-replies" style={{ margin: 0 }}>
+    <section
+      aria-labelledby="gu-replies"
+      style={{
+        background: T.surface,
+        border: `1px solid ${T.line2}`,
+        borderRadius: 24,
+        padding: "22px 20px 18px",
+        boxShadow: `0 10px 30px ${alpha(T.ink, 0.06)}`,
+      }}
+    >
+      <h2 id="gu-replies" style={{ margin: 0 }}>
         {stats && stats.invited > 0 && stats.waiting === 0 ? (
-          <span className="mq-display mq-lede">{t.guests.hub.allAnswered}</span>
+          <span className="u-serif gu-lede">{t.guests.hub.allAnswered}</span>
         ) : stats && answered === 0 ? (
-          <span className="mq-display mq-lede">{t.guests.hub.noneAnswered}</span>
+          <span className="u-serif gu-lede">{t.guests.hub.noneAnswered}</span>
         ) : (
-          <span className="mq-count">
-            <span className="mq-display mq-numeral mq-num">{answered ?? "—"}</span>
-            <span className="mq-count-of">{t.guests.hub.answeredOf(total)}</span>
+          <span style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+            <span className="u-serif gu-numeral">{answered ?? "—"}</span>
+            <span style={{ fontSize: 15, fontWeight: 500, color: T.muted }}>
+              {t.guests.hub.answeredOf(total)}
+            </span>
           </span>
         )}
       </h2>
 
-      {/* One bar, split by answer. Waiting stays the pale track: the part
+      {/* One bar, split by answer. Waiting is left unfilled: it is the part
           still to come. */}
       <div
         role="img"
-        aria-label={`${t.guests.hub.replyBar}: ${segments.map((s) => `${s.label} ${s.value}`).join(", ")}`}
-        className="mq-bar"
+        aria-label={`${t.guests.hub.replyBar}: ${segments
+          .map((s) => `${s.label} ${s.value}`)
+          .join(", ")}`}
+        className="gu-bar"
+        style={{ background: alpha(T.ink, 0.07), marginTop: 18 }}
       >
-        {segments.map((s) => (
-          <span
-            key={s.key}
-            className="mq-seg"
-            style={{
-              flexGrow: total > 0 ? s.value : s.key === "waiting" ? 1 : 0,
-              background: s.color,
-            }}
-          />
-        ))}
+        {segments
+          .filter((s) => s.key !== "waiting")
+          .map((s) => (
+            <span
+              key={s.key}
+              className="gu-seg"
+              style={{
+                flexGrow: total > 0 ? s.value : 0,
+                background: s.color,
+              }}
+            />
+          ))}
+        <span className="gu-seg" style={{ flexGrow: total > 0 ? stats!.waiting : 1 }} />
       </div>
 
-      <ul className="mq-legend" role="list">
+      <ul className="gu-legend" role="list">
         {segments.map((s) => (
           <li key={s.key}>
-            <Link href={`/guests/list?status=${s.key}`}>
+            <Link href={`/guests/list?status=${s.key}`} className="gu-legend-link">
               <span
                 aria-hidden
-                className="mq-dot"
-                style={
-                  s.key === "waiting"
-                    ? { boxShadow: `inset 0 0 0 2px ${M.waiting}` }
-                    : { background: s.color }
-                }
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  flexShrink: 0,
+                  background: s.key === "waiting" ? "transparent" : s.color,
+                  border: s.key === "waiting" ? `2px solid ${T.ringAmber}` : "none",
+                  boxSizing: "border-box",
+                }}
               />
-              {s.label}
-              <b className="mq-num">{stats ? s.value : "—"}</b>
+              <span style={{ flex: 1, color: T.ink2 }}>{s.label}</span>
+              <span className="gu-num" style={{ fontWeight: 600, color: T.ink }}>
+                {stats ? s.value : "—"}
+              </span>
             </Link>
           </li>
         ))}
       </ul>
 
       {stats && stats.maybe > 0 && (
-        <p style={{ fontSize: 13.5, fontWeight: 600, color: M.muted, margin: "10px 0 0", lineHeight: 1.45 }}>
+        <p style={{ fontSize: 13, color: T.muted, margin: "12px 2px 0", lineHeight: 1.45 }}>
           {t.guests.headcountRange(stats.headcount, stats.headcountMax)}
         </p>
       )}
@@ -116,7 +139,7 @@ export function RepliesPanel({
   );
 }
 
-/** The reminder under the replies, for guests who haven't answered. */
+/** The reminder line under the replies, for guests who haven't answered. */
 export function NudgeRow({
   waiting,
   withEmail,
@@ -133,17 +156,17 @@ export function NudgeRow({
   t: Dictionary;
 }) {
   return (
-    <div className="mq-note">
+    <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.line2}` }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <span style={{ flexShrink: 0, display: "flex" }}>
-          <EnvelopeIcon stroke={M.butterInk} />
+          <Spark size={16} color={T.accent} />
         </span>
-        {/* Lead with the same number as Waiting above, then say who the
-            nudge can reach: only guests with an email go in the Bcc. */}
-        <p style={{ flex: "1 1 180px" }}>
+        <p style={{ flex: "1 1 180px", margin: 0, fontSize: 13.5, lineHeight: 1.45, color: T.ink2 }}>
+          {/* Lead with the same number as Waiting above, then say who the
+              nudge can reach: only guests with an email go in the Bcc. */}
           {withEmail > 0 ? (
             <>
-              <b>{t.guests.hub.nudgeWaiting(waiting)}</b>{" "}
+              <b style={{ color: T.ink }}>{t.guests.hub.nudgeWaiting(waiting)}</b>{" "}
               {withEmail === waiting
                 ? t.guests.hub.nudgeAllReachable(waiting)
                 : t.guests.hub.nudgeSomeReachable(withEmail, waiting - withEmail)}
@@ -151,23 +174,23 @@ export function NudgeRow({
           ) : (
             <>
               {t.guests.reminderNoEmail.before}
-              <b>{t.guests.reminderNoEmail.strong(waiting)}</b>
+              <b style={{ color: T.ink }}>{t.guests.reminderNoEmail.strong(waiting)}</b>
               {t.guests.reminderNoEmail.after}
             </>
           )}
         </p>
         {withEmail > 0 && (
-          <button type="button" onClick={onSend} disabled={busy} className="mq-btn is-small">
-            {busy
-              ? t.guests.opening
-              : withEmail === waiting
-                ? t.guests.sendNudge
-                : t.guests.hub.nudgeButton(withEmail)}
-          </button>
+          <Button
+            onClick={onSend}
+            disabled={busy}
+            style={{ minHeight: 40, fontSize: 13.5, padding: "0 16px", background: T.accentInk }}
+          >
+            {busy ? t.guests.opening : withEmail === waiting ? t.guests.sendNudge : t.guests.hub.nudgeButton(withEmail)}
+          </Button>
         )}
       </div>
       {note && (
-        <p role="status" style={{ fontSize: 13, margin: "8px 0 0 32px" }}>
+        <p role="status" style={{ fontSize: 12.5, color: T.muted, margin: "8px 0 0 28px" }}>
           {note}
         </p>
       )}

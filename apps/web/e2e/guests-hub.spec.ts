@@ -90,6 +90,12 @@ test("the nudge says who it can reach when some waiting guests have no email", a
   await expect(page.getByText("2 guests haven't replied yet.")).toBeVisible();
   await expect(page.getByText(/I can email the one with an address\. The other one has no email/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Nudge 1" })).toBeVisible();
+
+  // The list shows which waiting guest can't be emailed.
+  await page.goto("/guests/list?status=waiting");
+  const rows = page.getByRole("list", { name: "Guest list" }).getByRole("link");
+  await expect(rows.filter({ hasText: "Noe" })).toContainText("No email: send their link");
+  await expect(rows.filter({ hasText: "Ines" })).not.toContainText("No email");
 });
 
 test("a wedding with no guests yet is offered both ways to start", async ({ page }) => {
