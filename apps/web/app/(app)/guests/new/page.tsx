@@ -171,7 +171,7 @@ export default function NewGuestPage() {
           kind: "parent_of",
         });
       }
-      router.replace("/guests");
+      router.replace("/guests/list");
     } catch (err) {
       setError(err instanceof Error ? err.message : t.guests.errAdd);
       setBusy(false);

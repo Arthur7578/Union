@@ -555,7 +555,7 @@ export default function StaysPage() {
                   >
                     …and {unassigned.length - 30} more. Assign one at a time
                     from the{" "}
-                    <Link href="/guests" style={{ color: T.accentInk }}>
+                    <Link href="/guests/list" style={{ color: T.accentInk }}>
                       guest list
                     </Link>
                     .

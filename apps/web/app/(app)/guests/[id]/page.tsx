@@ -293,7 +293,7 @@ export default function GuestDetailPage() {
   if (!guest)
     return (
       <main className="u-main">
-        <BackHeader title="Guest not found" fallback="/guests" />
+        <BackHeader title="Guest not found" fallback="/guests/list" />
       </main>
     );
 
@@ -350,7 +350,7 @@ export default function GuestDetailPage() {
     setBusy(true);
     try {
       await deleteGuest(guest.id);
-      router.replace("/guests");
+      router.replace("/guests/list");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't remove.");
       setBusy(false);
@@ -706,7 +706,7 @@ export default function GuestDetailPage() {
       <BackHeader
         title={`${guest.first_name} ${guest.last_name ?? ""}`.trim()}
         subtitle=""
-        fallback="/guests"
+        fallback="/guests/list"
         right={<StatusPill tone={sl.tone}>{sl.text}</StatusPill>}
       />
 

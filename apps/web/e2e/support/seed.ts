@@ -121,7 +121,12 @@ export async function seedWedding(opts: {
     // As the guest's own link does once they've opened the welcome.
     must(await db.rpc("mark_welcome_seen", { p_token: guests[g.key].token }));
     if (g.rsvp) {
-      must(await db.from("rsvps").insert({ guest_id: guests[g.key].id, status: g.rsvp }));
+      // Stamped like a real reply, so the guests hub lists it among the latest.
+      must(
+        await db
+          .from("rsvps")
+          .insert({ guest_id: guests[g.key].id, status: g.rsvp, responded_at: new Date().toISOString() }),
+      );
     }
   }
   const [invited] = opts.household;

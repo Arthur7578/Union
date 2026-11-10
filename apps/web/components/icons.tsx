@@ -131,3 +131,12 @@ export function UpArrow({ size = 18, stroke = T.white }: IconProps) {
     </svg>
   );
 }
+
+export function SearchIcon({ size = 18, stroke = T.muted2 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <circle cx="11" cy="11" r="6.5" stroke={stroke} strokeWidth="2" fill="none" />
+      <path d="M16 16l4.5 4.5" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}

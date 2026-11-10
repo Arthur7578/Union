@@ -219,4 +219,17 @@ export const CSS_VARS = {
   "--sidebar-line": alpha(T.ink, 0.08),
   "--card-shadow": alpha(G.ink, 0.06),
   "--focus-ring": alpha(T.accent, 0.16),
+
+  // Guests hub (app/(app)/guests): rows, the reply bar and the search field
+  "--ink-2": T.ink2,
+  "--muted-strong": T.muted,
+  "--line-2": T.line2,
+  "--line-3": T.line3,
+  "--row-hover": alpha(T.ink, 0.035),
+  "--accent-soft": T.accentSoft,
+  "--accent": T.accent,
+  "--accent-ink": T.accentInk,
+  "--ink-hover": T.ink2,
+  "--add-shadow": alpha(T.ink, 0.16),
+  "--selection": alpha(T.accent, 0.22),
 } as const;

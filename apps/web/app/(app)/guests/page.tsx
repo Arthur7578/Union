@@ -1,463 +1,184 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { guestLinkUrl } from "@union/shared";
+import Form from "next/form";
+import { latestReplies } from "@union/shared";
 import { T } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
-import {
-  fetchGuests,
-  guestStats,
-  markRemindersSent,
-  type GuestWithRsvp,
-} from "@/lib/data";
-import { initial } from "@/lib/format";
-import {
-  PageHeader,
-  Card,
-  SectionLabel,
-  Button,
-  Loading,
-  UnionNote,
-  Chip,
-} from "@/components/ui";
-import { useT } from "@/lib/i18n/client";
+import { guestStats } from "@/lib/data";
+import { initial, timeAgo } from "@/lib/format";
+import { Loading } from "@/components/ui";
+import { SearchIcon, ChevronRight } from "@/components/icons";
+import { useLocale } from "@/lib/i18n/client";
+import { useGuests, useRsvpNudge } from "./useGuests";
+import { RepliesPanel, NudgeRow } from "./RepliesPanel";
+import { GuestTools, guestStages } from "./GuestTools";
 
-type Filter = "all" | "coming" | "maybe" | "waiting" | "declined";
-
-const STATUS_DOT: Record<string, string> = {
-  attending: T.green,
+const REPLY_COLOR: Record<string, string> = {
+  attending: T.greenDeep,
   maybe: T.blueInk,
-  declined: T.roseSoft,
-  pending: T.ringAmber,
+  declined: T.muted,
 };
 
+/**
+ * The Guests hub: where the replies stand and what to do about it, a way
+ * straight to any guest, and every guest tool grouped by stage. The full
+ * list lives at /guests/list.
+ */
 export default function GuestsPage() {
-  const t = useT();
-  const TOOLS = [
-    {
-      href: "/guests/forms",
-      label: t.guests.tools.formsLabel,
-      sub: t.guests.tools.formsSub,
-    },
-    {
-      href: "/guests/groups",
-      label: t.guests.tools.groupsLabel,
-      sub: t.guests.tools.groupsSub,
-    },
-    {
-      href: "/guests/seating",
-      label: t.guests.tools.seatingLabel,
-      sub: t.guests.tools.seatingSub,
-    },
-    {
-      href: "/guests/stays",
-      label: t.guests.tools.staysLabel,
-      sub: t.guests.tools.staysSub,
-    },
-    {
-      href: "/guests/duplicates",
-      label: "Duplicates",
-      sub: "Merge co-parents' kids",
-    },
-    {
-      href: "/guests/permissions",
-      label: "Permissions",
-      sub: "Plus-ones and kids defaults",
-    },
-    {
-      href: "/guests/modules",
-      label: t.guests.tools.modulesLabel,
-      sub: t.guests.tools.modulesSub,
-    },
-    {
-      href: "/guests/page-content",
-      label: t.guests.tools.pageContentLabel,
-      sub: t.guests.tools.pageContentSub,
-    },
-    {
-      href: "/guests/sms-template",
-      label: t.guests.tools.smsTemplateLabel,
-      sub: t.guests.tools.smsTemplateSub,
-    },
-    {
-      href: "/guests/group-link",
-      label: t.guests.tools.groupLinkLabel,
-      sub: t.guests.tools.groupLinkSub,
-    },
-  ];
+  const { t, locale } = useLocale();
   const { wedding } = useWedding();
-  const router = useRouter();
-  const [guests, setGuests] = useState<GuestWithRsvp[] | null>(null);
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
-  const [reminderBusy, setReminderBusy] = useState(false);
-  const [reminderNote, setReminderNote] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!wedding) return;
-    let ok = true;
-    fetchGuests(wedding.id)
-      .then((g) => ok && setGuests(g))
-      .catch(() => ok && setGuests([]));
-    return () => {
-      ok = false;
-    };
-  }, [wedding]);
-
-  const stats = guests ? guestStats(guests) : null;
-
-  // Show the maybe column when the couple has the option on, or when replies
-  // already sitting at maybe would otherwise be invisible after they turned
-  // it off.
-  const showMaybe = wedding?.allow_rsvp_maybe === true || (stats?.maybe ?? 0) > 0;
-
-  const filterChips: Array<[Filter, string, number | undefined]> = [
-    ["all", t.guests.filterAll, stats?.invited],
-    ["coming", t.guests.filterComing, stats?.coming],
-    ...(showMaybe
-      ? ([["maybe", t.guests.filterMaybe, stats?.maybe]] as Array<
-          [Filter, string, number | undefined]
-        >)
-      : []),
-    ["waiting", t.guests.filterWaiting, stats?.waiting],
-    ["declined", t.guests.filterCant, stats?.declined],
-  ];
-
-  const filtered = useMemo(() => {
-    if (!guests) return [];
-    const q = query.trim().toLowerCase();
-    return guests.filter((g) => {
-      const status = g.rsvps?.status ?? "pending";
-      if (filter === "coming" && status !== "attending") return false;
-      if (filter === "maybe" && status !== "maybe") return false;
-      if (filter === "waiting" && status !== "pending") return false;
-      if (filter === "declined" && status !== "declined") return false;
-      if (!q) return true;
-      const hay = `${g.first_name ?? ""} ${g.last_name ?? ""} ${g.email ?? ""} ${g.guest_group ?? ""} ${g.role ?? ""}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [guests, query, filter]);
-
-  const waitingWithEmail = useMemo(() => {
-    return (guests ?? []).filter(
-      (g) => (g.rsvps?.status ?? "pending") === "pending" && !!g.email,
-    );
-  }, [guests]);
+  const { guests, reload } = useGuests(wedding?.id);
+  const nudge = useRsvpNudge(wedding, guests, reload, t);
 
   if (!wedding) return null;
 
-  const sendReminders = async () => {
-    if (waitingWithEmail.length === 0) return;
-    setReminderBusy(true);
-    setReminderNote(null);
-    try {
-      const origin =
-        typeof window !== "undefined" ? window.location.origin : "";
-      const to = waitingWithEmail.map((g) => g.email!).filter(Boolean).join(",");
-      const partners =
-        [wedding.partner_one, wedding.partner_two]
-          .filter(Boolean)
-          .join(" & ") || t.guests.theCouple;
-      const subject = t.guests.emailSubject(partners);
-      const linksLine =
-        waitingWithEmail.length === 1
-          ? t.guests.emailBody.singleLink(
-              guestLinkUrl(origin, waitingWithEmail[0].invite_token),
-            )
-          : t.guests.emailBody.multipleLinks;
-      const body = `${t.guests.emailBody.hello}\n\n${t.guests.emailBody.lead}${linksLine}\n${t.guests.emailBody.thanks}\n${partners}`;
-      const mailto = `mailto:?bcc=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      await markRemindersSent(waitingWithEmail.map((g) => g.id));
-      const fresh = await fetchGuests(wedding.id);
-      setGuests(fresh);
-      if (typeof window !== "undefined") window.location.href = mailto;
-      setReminderNote(t.guests.reminderSummary(waitingWithEmail.length));
-    } catch (err) {
-      setReminderNote(
-        err instanceof Error ? err.message : t.guests.reminderFail,
-      );
-    } finally {
-      setReminderBusy(false);
-    }
-  };
+  const stats = guests ? guestStats(guests) : null;
+  const showMaybe = wedding.allow_rsvp_maybe === true || (stats?.maybe ?? 0) > 0;
+  const recent = guests ? latestReplies(guests, 4) : [];
+  const empty = guests !== null && guests.length === 0;
 
   return (
-    <main className="u-main">
-      <PageHeader
-        kicker={stats ? `${stats.invited} ${t.guests.kicker}` : t.guests.kickerFallback}
-        title={t.guests.title}
-        right={
-          <Link href="/guests/new">
-            <Button style={{ minHeight: 40, fontSize: 14 }}>
-              {t.guests.addShort}
-            </Button>
-          </Link>
-        }
-      />
+    <main className="u-main gu-main">
+      <header className="gu-header">
+        <h1 className="u-serif gu-h1">{t.guests.title}</h1>
+        <Link href="/guests/new" className="gu-add">
+          {t.guests.add}
+        </Link>
+      </header>
 
-      {/* Real stat tiles. The maybe tile appears when the option is on or when
-          replies already sitting at maybe would otherwise go uncounted — a
-          couple not using it keeps the three-tile row they had. */}
-      <div style={{ display: "flex", gap: 9, marginTop: 16 }}>
-        <StatTile
-          value={stats?.coming}
-          label={t.today.guestStatsComing}
-          bg={T.greenBg}
-          fg={T.greenDeep}
-        />
-        {showMaybe && (
-          <StatTile
-            value={stats?.maybe}
-            label={t.today.guestStatsMaybe}
-            bg={T.blueBg}
-            fg={T.blueInk}
-          />
-        )}
-        <StatTile
-          value={stats?.declined}
-          label={t.today.guestStatsCant}
-          bg={T.roseBg}
-          fg={T.rose}
-        />
-        <StatTile
-          value={stats?.waiting}
-          label={t.today.guestStatsWaiting}
-          bg={T.amberBg}
-          fg={T.amberInk}
-        />
-      </div>
-
-      {/* The point of the option: a number the couple can actually plan
-          against. Only worth saying once there's a spread to report. */}
-      {stats && stats.maybe > 0 && (
-        <div style={{ fontSize: 12.5, color: T.muted, marginTop: 10, padding: "0 4px" }}>
-          {t.guests.headcountRange(stats.headcount, stats.headcountMax)}
-        </div>
-      )}
-
-      {stats && stats.waiting > 0 && (
-        <div style={{ marginTop: 14 }}>
-          <UnionNote
-            action={
-              <Button
-                onClick={sendReminders}
-                disabled={reminderBusy || waitingWithEmail.length === 0}
-                style={{ minHeight: 38, fontSize: 12.5, padding: "0 13px" }}
-              >
-                {reminderBusy ? t.guests.opening : t.guests.sendNudge}
-              </Button>
-            }
-          >
-            {waitingWithEmail.length > 0 ? (
-              <>
-                {t.guests.reminderPromptLead}{" "}
-                <b style={{ color: T.ink }}>
-                  {t.guests.reminderPromptStrong(waitingWithEmail.length)}
-                </b>
-                {t.guests.reminderPromptTail}
-              </>
-            ) : (
-              <>
-                {t.guests.reminderNoEmail.before}
-                <b style={{ color: T.ink }}>
-                  {t.guests.reminderNoEmail.strong(stats.waiting)}
-                </b>
-                {t.guests.reminderNoEmail.after}
-              </>
-            )}
-          </UnionNote>
-          {reminderNote && (
-            <div
-              style={{
-                fontSize: 12,
-                color: T.faint,
-                marginTop: 8,
-                padding: "0 4px",
-              }}
+      <div className="gu-layout">
+        <div className="gu-col">
+          {empty ? (
+            <section
+              className="gu-empty"
+              aria-labelledby="gu-empty-title"
+              style={{ background: T.surface, border: `1px solid ${T.line2}` }}
             >
-              {reminderNote}
-            </div>
+              <h2 id="gu-empty-title" className="u-serif gu-lede" style={{ margin: 0 }}>
+                {t.guests.hub.emptyTitle}
+              </h2>
+              <p style={{ fontSize: 14.5, color: T.muted, lineHeight: 1.5, margin: "8px 0 18px", maxWidth: "46ch" }}>
+                {t.guests.hub.emptyBody}
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <Link href="/guests/new" className="gu-add">
+                  {t.guests.add}
+                </Link>
+                <Link href="/guests/group-link" className="gu-ghost">
+                  {t.guests.hub.shareLink}
+                </Link>
+              </div>
+            </section>
+          ) : (
+            <>
+              <RepliesPanel
+                stats={stats}
+                showMaybe={showMaybe}
+                t={t}
+                nudge={
+                  stats && stats.waiting > 0 ? (
+                    <NudgeRow
+                      waiting={stats.waiting}
+                      withEmail={nudge.waitingWithEmail.length}
+                      busy={nudge.busy}
+                      note={nudge.note}
+                      onSend={nudge.send}
+                      t={t}
+                    />
+                  ) : null
+                }
+              />
+
+              <Form action="/guests/list" className="gu-find" role="search">
+                <label htmlFor="gu-q" className="gu-sr">
+                  {t.guests.hub.find}
+                </label>
+                <SearchIcon />
+                <input
+                  id="gu-q"
+                  name="q"
+                  type="search"
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  placeholder={t.guests.hub.findPlaceholder}
+                />
+              </Form>
+
+              <section aria-labelledby="gu-latest" style={{ marginTop: 26 }}>
+                <div className="gu-section-head">
+                  <h2 id="gu-latest" className="u-serif gu-h2" style={{ margin: 0 }}>
+                    {t.guests.hub.latest}
+                  </h2>
+                  {guests && guests.length > 0 && (
+                    <Link href="/guests/list" className="gu-more">
+                      {t.guests.hub.seeAll(guests.length)}
+                    </Link>
+                  )}
+                </div>
+                {guests === null ? (
+                  <Loading label={t.guests.loadingList} />
+                ) : recent.length === 0 ? (
+                  <p style={{ fontSize: 14, color: T.muted, margin: "4px 2px 0", lineHeight: 1.5 }}>
+                    {t.guests.hub.noRepliesYet}
+                  </p>
+                ) : (
+                  <ul role="list" className="gu-group">
+                    {recent.map((g) => {
+                      const status = g.rsvps!.status as "attending" | "maybe" | "declined";
+                      return (
+                        <li key={g.id}>
+                          <Link href={`/guests/${g.id}`} className="gu-row">
+                            <span
+                              aria-hidden
+                              className="u-serif"
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: "50%",
+                                background: T.accentPink,
+                                color: T.accentInk,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                                fontWeight: 600,
+                                fontSize: 16,
+                              }}
+                            >
+                              {initial(g.first_name)}
+                            </span>
+                            <span style={{ flex: 1, minWidth: 0 }}>
+                              <span className="gu-name">
+                                {g.first_name} {g.last_name ?? ""}
+                              </span>
+                              <span style={{ display: "block", fontSize: 12.5, marginTop: 1 }}>
+                                <span style={{ color: REPLY_COLOR[status], fontWeight: 600 }}>
+                                  {t.guests.hub.replied[status]}
+                                </span>
+                                <span style={{ color: T.muted }}>
+                                  {" · "}
+                                  {timeAgo(g.rsvps!.responded_at, locale)}
+                                </span>
+                              </span>
+                            </span>
+                            <ChevronRight />
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+            </>
           )}
         </div>
-      )}
 
-      {/* Planning tools */}
-      <SectionLabel>{t.guests.planningTools}</SectionLabel>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {TOOLS.map((tool) => (
-          <Link key={tool.href} href={tool.href}>
-            <Card onClick={() => {}} style={{ padding: 14 }}>
-              <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>
-                {tool.label}
-              </div>
-              <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>
-                {tool.sub}
-              </div>
-            </Card>
-          </Link>
-        ))}
-      </div>
-
-      {/* Real guest list */}
-      <SectionLabel>{t.guests.guestList}</SectionLabel>
-
-      {guests !== null && guests.length > 0 && (
-        <>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-            {filterChips.map(([key, label, n]) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key)}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  padding: 0,
-                  cursor: "pointer",
-                }}
-              >
-                <Chip active={filter === key}>
-                  {label}
-                  {typeof n === "number" && n > 0 ? ` · ${n}` : ""}
-                </Chip>
-              </button>
-            ))}
-          </div>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t.guests.searchPlaceholder}
-            style={{
-              width: "100%",
-              boxSizing: "border-box",
-              padding: "11px 15px",
-              borderRadius: 14,
-              border: `1px solid ${T.line3}`,
-              background: T.white,
-              fontFamily: T.sans,
-              fontSize: 14,
-              color: T.ink,
-              marginBottom: 12,
-            }}
-          />
-        </>
-      )}
-
-      {guests === null ? (
-        <Loading label={t.guests.loadingList} />
-      ) : guests.length === 0 ? (
-        <Card style={{ textAlign: "center", padding: "28px 20px" }}>
-          <div className="u-serif" style={{ fontSize: 22, color: T.ink }}>
-            {t.guests.noGuestsTitle}
-          </div>
-          <div style={{ fontSize: 14, color: T.muted, margin: "6px 0 16px" }}>
-            {t.guests.noGuestsBody}
-          </div>
-          <Link href="/guests/new">
-            <Button>{t.guests.add}</Button>
-          </Link>
-        </Card>
-      ) : filtered.length === 0 ? (
-        <Card style={{ textAlign: "center", padding: "22px 20px" }}>
-          <div style={{ fontSize: 14, color: T.muted }}>
-            {t.guests.noMatches}
-          </div>
-        </Card>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filtered.map((g) => {
-            const status = g.rsvps?.status ?? "pending";
-            const group = g.guest_group ? ` · ${g.guest_group}` : "";
-            const role = g.role ? ` · ${g.role}` : "";
-            return (
-              <Card
-                key={g.id}
-                onClick={() => router.push(`/guests/${g.id}`)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "13px 15px",
-                }}
-              >
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: "50%",
-                    background: T.accentPink,
-                    color: T.accentInk,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    fontFamily: T.serif,
-                    fontWeight: 600,
-                    fontSize: 16,
-                  }}
-                >
-                  {initial(g.first_name)}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>
-                    {g.first_name} {g.last_name ?? ""}
-                  </div>
-                  <div style={{ fontSize: 12, color: T.faint, marginTop: 1 }}>
-                    {group}
-                    {role}
-                  </div>
-                </div>
-                <span
-                  aria-label={status}
-                  style={{
-                    width: 9,
-                    height: 9,
-                    borderRadius: "50%",
-                    background: STATUS_DOT[status] ?? T.sand,
-                    flexShrink: 0,
-                  }}
-                />
-              </Card>
-            );
-          })}
+        <div className="gu-col">
+          <GuestTools stages={guestStages(t, guests ? guests.length : null)} />
         </div>
-      )}
+      </div>
     </main>
-  );
-}
-
-function StatTile({
-  value,
-  label,
-  bg,
-  fg,
-}: {
-  value: number | undefined;
-  label: string;
-  bg: string;
-  fg: string;
-}) {
-  return (
-    <div
-      style={{
-        flex: 1,
-        borderRadius: 18,
-        background: bg,
-        padding: "14px 10px",
-        textAlign: "center",
-      }}
-    >
-      <div
-        className="u-serif"
-        style={{ fontWeight: 600, fontSize: 28, color: fg, lineHeight: 1 }}
-      >
-        {value ?? "—"}
-      </div>
-      <div style={{ fontWeight: 600, fontSize: 11, color: fg, marginTop: 4 }}>
-        {label}
-      </div>
-    </div>
   );
 }

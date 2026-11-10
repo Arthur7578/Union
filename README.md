@@ -51,7 +51,7 @@ as **sample-data previews only** — see [Live data vs. sample data](#live-data-
 
 The web app is a true responsive web experience — **bottom tab bar on mobile, a
 left sidebar on desktop** — not a phone frame. It shares the same Supabase
-backend and 8-digit email code auth as the mobile app. It has **41 pages** and
+backend and 8-digit email code auth as the mobile app. It has **43 pages** and
 **3 API routes**.
 
 The five nav tabs are Today, Vendors, Union (vendor search), Guests and Plan. The
@@ -80,7 +80,8 @@ account area (`/account/*`) sits outside them.
 | Route | What it is | Data |
 | --- | --- | --- |
 | `/today` | Greeting, live countdown, and a snapshot of your guests. The "needs you today", "Union is handling" and "just closed" sections are sample. | Live + Sample |
-| `/guests` | Guest list with live RSVP stats and invite links. | Live |
+| `/guests` | Guests hub: how many have answered (with a nudge for the ones still waiting), a search that opens the list, the latest replies, and every guest tool grouped by stage. | Live |
+| `/guests/list` | The full guest list, filterable by reply (`?status=`) and searchable (`?q=`). | Live |
 | `/guests/new` | Add a guest, with links to existing relatives or new ones created inline. | Live |
 | `/guests/[id]` | Guest detail and edit, including per-guest permission overrides. | Live |
 | `/guests/groups` | Groups & roles. | Live |
