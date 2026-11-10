@@ -13,6 +13,7 @@
  * everywhere except this file. Before adding a token, look for an existing one
  * within a few units per channel and use that instead of minting a near-duplicate.
  */
+import type { WeddingAccent } from "@union/shared";
 export const T = {
   // Ink + text
   ink: "#43353A",
@@ -196,6 +197,59 @@ export function alpha(hex: string, a: number): string {
  * with the `.card` / `.btn` classes); the guest portal re-declares a few of
  * these locally. The second block is the app shell and form chrome.
  */
+/**
+ * "Your colours" — the Guests hub and list (/guests, /guests/list). A neutral,
+ * premium frame that takes no wedding style of its own; the couple's wedding
+ * colour (weddings.accent) is the one colour it wears. See PRODUCT.md,
+ * principle 5, and .impeccable/surfaces/ for the direction.
+ */
+export const V = {
+  ground: "#F6F6F4",
+  surface: "#FFFFFF",
+  ink: "#1B1B1A",
+  ink2: "#45443F",
+  muted: "#686660",
+  track: "#ECECEA",
+  cant: "#C9C7C1",
+  ring: "#D6D4CE",
+} as const;
+
+/** One wedding colour: `base` for fills, `deep` for text and buttons (white
+ *  on it and it on `soft` both pass WCAG AA), `soft` for tinted grounds. */
+export type AccentShades = { base: string; deep: string; soft: string };
+
+/** Union's own colour when the couple hasn't picked one: graphite. */
+export const NEUTRAL_ACCENT: AccentShades = { base: "#55544F", deep: "#1B1B1A", soft: "#ECECEA" };
+
+export const ACCENTS: Record<WeddingAccent, AccentShades> = {
+  sage: { base: "#7A9A7E", deep: "#3F6146", soft: "#E6EEE7" },
+  terracotta: { base: "#C4673F", deep: "#9A4423", soft: "#F7E6DD" },
+  dusty_blue: { base: "#7B97B5", deep: "#3F5F80", soft: "#E5ECF3" },
+  navy: { base: "#2E4A72", deep: "#1F3557", soft: "#E2E8F1" },
+  burgundy: { base: "#8E2D43", deep: "#74203A", soft: "#F3E1E5" },
+  rose: { base: "#D08C96", deep: "#A2525E", soft: "#F8E8EA" },
+  ochre: { base: "#C9963A", deep: "#85601A", soft: "#F6EDD9" },
+  lilac: { base: "#9C88BE", deep: "#634F8C", soft: "#EEE9F5" },
+  black: { base: "#1B1B1A", deep: "#1B1B1A", soft: "#ECECEA" },
+};
+
+export function accentShades(key: WeddingAccent | null): AccentShades {
+  return key ? ACCENTS[key] : NEUTRAL_ACCENT;
+}
+
+/** The wedding colour as CSS variables, set on a page's root element. The
+ *  neutral default is also in CSS_VARS, so the stylesheet always has one. */
+export function accentVars(key: WeddingAccent | null): Record<string, string> {
+  const a = accentShades(key);
+  return {
+    "--wa-base": a.base,
+    "--wa-deep": a.deep,
+    "--wa-soft": a.soft,
+    "--wa-focus": alpha(a.deep, 0.18),
+    "--wa-shadow": alpha(a.deep, 0.12),
+  };
+}
+
 export const CSS_VARS = {
   "--bg": T.bg,
   "--surface": T.surface,
@@ -220,16 +274,23 @@ export const CSS_VARS = {
   "--card-shadow": alpha(G.ink, 0.06),
   "--focus-ring": alpha(T.accent, 0.16),
 
-  // Guests hub (app/(app)/guests): rows, the reply bar and the search field
-  "--ink-2": T.ink2,
-  "--muted-strong": T.muted,
-  "--line-2": T.line2,
-  "--line-3": T.line3,
-  "--row-hover": alpha(T.ink, 0.035),
-  "--accent-soft": T.accentSoft,
-  "--accent": T.accent,
-  "--accent-ink": T.accentInk,
-  "--ink-hover": T.ink2,
-  "--add-shadow": alpha(T.ink, 0.16),
-  "--selection": alpha(T.accent, 0.22),
+  // "Your colours" (V): the Guests hub and list, plus the wedding colour's
+  // neutral default (pages override --wa-* with the couple's colour).
+  "--vc-ground": V.ground,
+  "--vc-surface": V.surface,
+  "--vc-ink": V.ink,
+  "--vc-ink-2": V.ink2,
+  "--vc-muted": V.muted,
+  "--vc-track": V.track,
+  "--vc-ring": V.ring,
+  "--vc-line": alpha(V.ink, 0.08),
+  "--vc-line-strong": alpha(V.ink, 0.14),
+  "--vc-hover": alpha(V.ink, 0.035),
+  "--vc-shadow": alpha(V.ink, 0.05),
+  "--vc-chrome": alpha(V.ground, 0.92),
+  "--wa-base": NEUTRAL_ACCENT.base,
+  "--wa-deep": NEUTRAL_ACCENT.deep,
+  "--wa-soft": NEUTRAL_ACCENT.soft,
+  "--wa-focus": alpha(NEUTRAL_ACCENT.deep, 0.18),
+  "--wa-shadow": alpha(NEUTRAL_ACCENT.deep, 0.12),
 } as const;

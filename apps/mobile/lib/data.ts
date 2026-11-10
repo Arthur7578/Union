@@ -30,6 +30,7 @@ export async function createWedding(
   input: Omit<
     Wedding,
     | "id"
+    | "accent"
     | "created_at"
     | "join_code"
     | "guest_join_auth_mode"

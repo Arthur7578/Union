@@ -751,6 +751,7 @@ export type Database = {
       }
       weddings: {
         Row: {
+          accent: string | null
           address_area: string | null
           address_city: string | null
           address_country: string | null
@@ -784,6 +785,7 @@ export type Database = {
           venue_name: string | null
         }
         Insert: {
+          accent?: string | null
           address_area?: string | null
           address_city?: string | null
           address_country?: string | null
@@ -817,6 +819,7 @@ export type Database = {
           venue_name?: string | null
         }
         Update: {
+          accent?: string | null
           address_area?: string | null
           address_city?: string | null
           address_country?: string | null

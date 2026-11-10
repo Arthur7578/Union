@@ -276,3 +276,5 @@ export {
   parseGuestStatusFilter,
 } from "./guestListFilter";
 export type { FilterableGuest, GuestStatusFilter } from "./guestListFilter";
+export { WEDDING_ACCENTS, parseWeddingAccent } from "./weddingAccent";
+export type { WeddingAccent } from "./weddingAccent";

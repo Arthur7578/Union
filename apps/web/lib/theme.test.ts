@@ -6,7 +6,12 @@ const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8")
 
 /** Variables that come from somewhere other than CSS_VARS: next/font sets
  *  these on <html> through the font classNames in app/layout.tsx. */
-const PROVIDED_ELSEWHERE = new Set(["--font-serif", "--font-sans"]);
+const PROVIDED_ELSEWHERE = new Set([
+  "--font-serif",
+  "--font-sans",
+  // The Guests hub and list load their own face (app/(app)/guests/guestsType.ts).
+  "--font-vc",
+]);
 
 describe("globals.css", () => {
   it("carries no colour literals — colours come from lib/theme.ts", () => {

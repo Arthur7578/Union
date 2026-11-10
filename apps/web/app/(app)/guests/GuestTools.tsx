@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import { T } from "@/lib/theme";
 import { ChevronRight } from "@/components/icons";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
@@ -63,7 +62,7 @@ export function GuestTools({ stages }: { stages: Stage[] }) {
     <div className="gu-stages">
       {stages.map((stage) => (
         <section key={stage.id} aria-labelledby={`gu-stage-${stage.id}`}>
-          <h2 id={`gu-stage-${stage.id}`} className="u-serif gu-h2">
+          <h2 id={`gu-stage-${stage.id}`} className="gu-h2">
             {stage.title}
           </h2>
           <ul role="list" className="gu-group">
@@ -71,16 +70,12 @@ export function GuestTools({ stages }: { stages: Stage[] }) {
               <li key={tool.href}>
                 <Link href={tool.href} className="gu-row">
                   <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: "block", fontWeight: 600, fontSize: 15, color: T.ink }}>
-                      {tool.label}
-                    </span>
-                    {tool.sub && (
-                      <span style={{ display: "block", fontSize: 12.5, color: T.muted, marginTop: 1 }}>
-                        {tool.sub}
-                      </span>
-                    )}
+                    <span className="gu-row-title">{tool.label}</span>
+                    {tool.sub && <span className="gu-row-sub">{tool.sub}</span>}
                   </span>
-                  <ChevronRight />
+                  <span className="gu-chev">
+                    <ChevronRight stroke="currentColor" />
+                  </span>
                 </Link>
               </li>
             ))}

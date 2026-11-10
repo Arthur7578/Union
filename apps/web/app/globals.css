@@ -396,47 +396,89 @@ textarea {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Guests hub (/guests) and guest list (/guests/list)
+   Guests hub (/guests) and guest list (/guests/list): "Your colours".
+   A neutral frame (V in lib/theme.ts, --vc-*) wearing one colour, the
+   couple's wedding colour (--wa-*, set on the page root from
+   weddings.accent; graphite until they pick one).
    ───────────────────────────────────────────────────────────── */
+.u-app:has(.gu-world) {
+  background: var(--vc-ground);
+}
+.u-app:has(.gu-world) .u-tabbar,
+.u-app:has(.gu-world) .u-sidebar {
+  background: var(--vc-chrome);
+}
+.gu-world {
+  font-family: var(--font-vc), "Hanken Grotesk", system-ui, sans-serif;
+  color: var(--vc-ink);
+}
+.gu-world ::selection {
+  background: var(--wa-soft);
+}
 .gu-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   padding: 0 2px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 .gu-h1 {
   font-weight: 600;
   font-size: 40px;
-  line-height: 1;
-  letter-spacing: -0.005em;
-  color: var(--text);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--vc-ink);
   margin: 0;
+}
+.gu-couple {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--vc-muted);
+}
+.gu-couple a {
+  color: var(--wa-deep);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.gu-swatch-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--wa-base);
+  flex-shrink: 0;
 }
 .gu-h2 {
   font-weight: 600;
-  font-size: 23px;
-  line-height: 1.1;
-  color: var(--text);
-  margin: 30px 2px 10px;
+  font-size: 19px;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--vc-ink);
+  margin: 34px 2px 12px;
   text-wrap: balance;
 }
 .gu-lede {
   display: block;
   font-weight: 600;
-  font-size: 30px;
-  line-height: 1.1;
-  color: var(--text);
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--vc-ink);
   text-wrap: balance;
 }
 .gu-numeral {
-  font-weight: 600;
-  font-size: 64px;
-  line-height: 0.85;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  font-variant-numeric: lining-nums tabular-nums;
+  font-weight: 500;
+  font-size: 76px;
+  line-height: 0.82;
+  letter-spacing: -0.045em;
+  color: var(--wa-deep);
+  font-variant-numeric: tabular-nums;
 }
 .gu-num {
   font-variant-numeric: tabular-nums;
@@ -449,26 +491,25 @@ textarea {
   clip-path: inset(50%);
   white-space: nowrap;
 }
-.gu-main ::selection {
-  background: var(--selection);
-}
 
-/* The reply bar: one track, a segment per answer. Segments grow from the
-   empty track when the replies load. */
+.gu-panel {
+  background: var(--vc-surface);
+  border: 1px solid var(--vc-line);
+  border-radius: 20px;
+  padding: 24px 22px 20px;
+  box-shadow: 0 1px 2px var(--vc-shadow), 0 12px 32px var(--vc-shadow);
+}
 .gu-bar {
   display: flex;
   gap: 3px;
-  height: 12px;
-  border-radius: 6px;
-  overflow: hidden;
+  height: 10px;
+  margin-top: 22px;
 }
 .gu-seg {
   flex-basis: 0;
   min-width: 0;
+  border-radius: 5px;
   transition: flex-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.gu-seg:empty {
-  border-radius: 0;
 }
 .gu-legend {
   list-style: none;
@@ -476,111 +517,49 @@ textarea {
   padding: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2px 16px;
+  gap: 0 18px;
 }
 .gu-legend-link {
   display: flex;
   align-items: center;
   gap: 9px;
-  min-height: 40px;
+  min-height: 42px;
   padding: 0 8px;
   margin: 0 -8px;
   border-radius: 10px;
-  font-size: 14px;
-  color: var(--text);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--vc-ink-2);
 }
 .gu-legend-link:hover {
-  background: var(--row-hover);
-  color: var(--text);
+  background: var(--vc-hover);
+  color: var(--vc-ink);
 }
-
-/* Grouped rows: one surface, hairlines between, like a native settings list. */
-.gu-group {
-  list-style: none;
+.gu-legend-link b {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--vc-ink);
+}
+.gu-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.gu-nudge {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--vc-line);
+}
+.gu-nudge p {
   margin: 0;
-  padding: 0;
-  background: var(--surface);
-  border: 1px solid var(--line-2);
-  border-radius: 18px;
-  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--vc-ink-2);
 }
-.gu-group > li + li {
-  border-top: 1px solid var(--line-2);
-}
-.gu-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 60px;
-  padding: 11px 16px;
-  color: var(--text);
-  transition: background-color 0.15s ease;
-}
-.gu-row:hover {
-  background: var(--row-hover);
-  color: var(--text);
-}
-.gu-name {
-  display: block;
+.gu-nudge b {
   font-weight: 600;
-  font-size: 15px;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.gu-section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0 2px 10px;
-}
-.gu-more {
-  font-weight: 600;
-  font-size: 13.5px;
-  color: var(--accent-ink);
-  white-space: nowrap;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: 3px;
-  transition: text-decoration-color 0.15s ease;
-}
-.gu-more:hover {
-  color: var(--accent-ink);
-  text-decoration-color: currentColor;
-}
-
-/* Search: on the hub it sends you to the list; on the list it filters. */
-.gu-find {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-  padding: 0 14px;
-  min-height: 50px;
-  border-radius: 16px;
-  border: 1px solid var(--line-3);
-  background: var(--white);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-.gu-find:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--focus-ring);
-}
-.gu-find input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 16px; /* 16px keeps iOS from zooming in on focus */
-  color: var(--text);
-  caret-color: var(--accent);
-  padding: 13px 0;
-}
-.gu-find input::placeholder {
-  color: var(--muted-strong);
+  color: var(--vc-ink);
 }
 
 .gu-add,
@@ -588,44 +567,263 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 7px;
   min-height: 44px;
   padding: 0 18px;
-  border-radius: 14px;
+  border-radius: 12px;
+  border: none;
+  font-family: inherit;
   font-weight: 600;
   font-size: 14.5px;
   white-space: nowrap;
-  transition: transform 0.12s ease, background-color 0.15s ease;
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 .gu-add {
-  background: var(--accent-ink);
-  color: var(--white);
-  box-shadow: 0 6px 16px var(--add-shadow);
+  background: var(--wa-deep);
+  color: var(--vc-surface);
+  box-shadow: 0 2px 8px var(--wa-shadow);
 }
 .gu-add:hover {
-  color: var(--white);
-  background: var(--ink-hover);
+  color: var(--vc-surface);
+  box-shadow: 0 4px 12px var(--wa-shadow);
+}
+.gu-add:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 .gu-ghost {
-  border: 1px solid var(--line-3);
-  color: var(--text);
+  background: var(--vc-surface);
+  color: var(--vc-ink);
+  box-shadow: inset 0 0 0 1px var(--vc-line-strong);
 }
 .gu-ghost:hover {
-  color: var(--text);
-  background: var(--row-hover);
+  color: var(--vc-ink);
+  background: var(--vc-hover);
 }
 .gu-add:active,
 .gu-ghost:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
+}
+.gu-add.is-small {
+  min-height: 40px;
+  padding: 0 15px;
+  font-size: 14px;
+}
+
+.gu-find {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 0 16px;
+  min-height: 50px;
+  border-radius: 14px;
+  background: var(--vc-surface);
+  box-shadow: inset 0 0 0 1px var(--vc-line-strong);
+  transition: box-shadow 0.15s ease;
+}
+.gu-find:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--wa-deep), 0 0 0 4px var(--wa-focus);
+}
+.gu-find input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 16px; /* 16px keeps iOS from zooming in on focus */
+  color: var(--vc-ink);
+  caret-color: var(--wa-deep);
+  padding: 13px 0;
+}
+.gu-find input::placeholder {
+  color: var(--vc-muted);
+}
+
+.gu-group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--vc-surface);
+  border: 1px solid var(--vc-line);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.gu-group > li + li {
+  border-top: 1px solid var(--vc-line);
+}
+.gu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 11px 16px;
+  color: var(--vc-ink);
+  transition: background-color 0.15s ease;
+}
+.gu-row:hover {
+  background: var(--vc-hover);
+  color: var(--vc-ink);
+}
+.gu-row-title {
+  display: block;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--vc-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gu-row-sub {
+  display: block;
+  font-size: 13px;
+  color: var(--vc-muted);
+  margin-top: 1px;
+}
+.gu-chev {
+  flex-shrink: 0;
+  display: flex;
+  color: var(--vc-ring);
+}
+.gu-row:hover .gu-chev {
+  color: var(--wa-deep);
+}
+.gu-face {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 15px;
+}
+.gu-face.is-attending {
+  background: var(--wa-soft);
+  color: var(--wa-deep);
+}
+.gu-face.is-maybe {
+  background: var(--vc-surface);
+  color: var(--wa-deep);
+  box-shadow: inset 0 0 0 1.5px var(--wa-base);
+}
+.gu-face.is-declined {
+  background: var(--vc-track);
+  color: var(--vc-ink-2);
+}
+.gu-face.is-pending {
+  background: var(--vc-surface);
+  color: var(--vc-muted);
+  box-shadow: inset 0 0 0 1.5px var(--vc-ring);
+}
+.gu-reply.is-attending {
+  color: var(--wa-deep);
+  font-weight: 600;
+}
+.gu-reply.is-maybe {
+  color: var(--vc-ink-2);
+  font-weight: 600;
+}
+.gu-reply.is-declined,
+.gu-reply.is-pending {
+  color: var(--vc-muted);
+  font-weight: 600;
+}
+.gu-alert {
+  color: var(--wa-deep);
+  font-weight: 600;
+}
+.gu-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 34px 2px 12px;
+}
+.gu-section-head .gu-h2 {
+  margin: 0;
+}
+.gu-more {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--wa-deep);
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s ease;
+}
+.gu-more:hover {
+  color: var(--wa-deep);
+  text-decoration-color: currentColor;
+}
+.gu-quiet {
+  font-size: 14.5px;
+  color: var(--vc-muted);
+  line-height: 1.5;
+  margin: 4px 2px 0;
 }
 .gu-empty {
-  border-radius: 24px;
-  padding: 26px 22px 24px;
+  padding: 28px 24px 26px;
+}
+
+/* List page */
+.gu-back {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: none;
+  background: var(--vc-surface);
+  box-shadow: inset 0 0 0 1px var(--vc-line-strong);
+  color: var(--vc-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.gu-back:hover {
+  background: var(--vc-hover);
+}
+.gu-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -18px 12px;
+  padding: 2px 18px;
+}
+.gu-chips::-webkit-scrollbar {
+  display: none;
 }
 .gu-chip {
+  flex-shrink: 0;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
   border: none;
-  background: transparent;
-  padding: 0;
-  border-radius: 20px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--vc-surface);
+  color: var(--vc-ink-2);
+  box-shadow: inset 0 0 0 1px var(--vc-line-strong);
+  cursor: pointer;
+}
+.gu-chip:hover {
+  background: var(--vc-hover);
+}
+.gu-chip[aria-pressed="true"] {
+  background: var(--wa-deep);
+  color: var(--vc-surface);
+  box-shadow: none;
+}
+.gu-chip .gu-num {
+  opacity: 0.7;
+  margin-left: 5px;
 }
 
 .gu-row:focus-visible,
@@ -633,8 +831,10 @@ textarea {
 .gu-more:focus-visible,
 .gu-add:focus-visible,
 .gu-ghost:focus-visible,
-.gu-chip:focus-visible {
-  outline: 2px solid var(--accent);
+.gu-chip:focus-visible,
+.gu-back:focus-visible,
+.gu-couple a:focus-visible {
+  outline: 2px solid var(--wa-deep);
   outline-offset: 2px;
 }
 .gu-group .gu-row:focus-visible {
@@ -642,7 +842,7 @@ textarea {
 }
 
 .gu-stages > section:first-child .gu-h2 {
-  margin-top: 30px;
+  margin-top: 34px;
 }
 
 @media (min-width: 960px) {
@@ -655,7 +855,7 @@ textarea {
   .gu-layout {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-    gap: 36px;
+    gap: 40px;
     align-items: start;
   }
   .gu-stages > section:first-child .gu-h2 {
@@ -663,6 +863,15 @@ textarea {
   }
   .gu-legend {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  .gu-chips {
+    margin: 0 0 12px;
+    padding: 2px 0;
+    flex-wrap: wrap;
+  }
+  .gu-list-body,
+  .gu-list .gu-header {
+    max-width: 760px;
   }
 }
 
@@ -674,4 +883,18 @@ textarea {
   .gu-find {
     transition: none;
   }
+}
+
+/* Wedding colour swatches (components/AccentPicker.tsx): the radio stays in
+   the accessibility tree and takes focus; the swatch shows it. */
+.u-swatch-input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+label:has(> .u-swatch-input:focus-visible) {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
 }

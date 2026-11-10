@@ -12,6 +12,8 @@ import { useLocale } from "@/lib/i18n/client";
 import { LOCALES, getDictionary, isLocale, type Locale } from "@/lib/i18n";
 import { BackHeader } from "@/components/BackHeader";
 import { Avatar, Button, SectionLabel, UnionNote } from "@/components/ui";
+import { AccentPicker } from "@/components/AccentPicker";
+import { parseWeddingAccent, type WeddingAccent } from "@union/shared";
 
 export default function WeddingSettingsPage() {
   const { wedding, setWedding } = useWedding();
@@ -57,6 +59,7 @@ function WeddingSettingsForm({
     wedding.guest_count_target != null ? String(wedding.guest_count_target) : "",
   );
   const [styleVibe, setStyleVibe] = useState(wedding.style_vibe ?? "");
+  const [accent, setAccent] = useState<WeddingAccent | null>(parseWeddingAccent(wedding.accent));
   const [defaultLocale, setDefaultLocale] = useState<Locale>(
     isLocale(wedding.default_locale) ? wedding.default_locale : "en",
   );
@@ -121,6 +124,7 @@ function WeddingSettingsForm({
         guest_count_target: guestTarget.trim() ? parseInt(guestTarget, 10) : null,
         default_locale: defaultLocale,
         style_vibe: styleVibe.trim() || null,
+        accent,
       });
       setWedding(updated);
       setNote(t.account.saved);
@@ -360,6 +364,13 @@ function WeddingSettingsForm({
             onChange={(e) => setStyleVibe(e.target.value)}
             placeholder={t.account.stylePlaceholder}
           />
+        </div>
+        <div className="field">
+          <div id="wedding-colour" style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+            {t.account.accentLabel}
+          </div>
+          <AccentPicker value={accent} onChange={setAccent} />
+          <div style={{ fontSize: 12, color: T.faint, marginTop: 8 }}>{t.account.accentHint}</div>
         </div>
         {error ? (
           <div className="error" role="alert">
