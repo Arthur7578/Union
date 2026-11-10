@@ -4,22 +4,17 @@ import React from "react";
 import Link from "next/link";
 import Form from "next/form";
 import { latestReplies } from "@union/shared";
-import { T } from "@/lib/theme";
+import { M } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import { guestStats } from "@/lib/data";
 import { initial, timeAgo } from "@/lib/format";
-import { Loading } from "@/components/ui";
 import { SearchIcon, ChevronRight } from "@/components/icons";
 import { useLocale } from "@/lib/i18n/client";
 import { useGuests, useRsvpNudge } from "./useGuests";
 import { RepliesPanel, NudgeRow } from "./RepliesPanel";
 import { GuestTools, guestStages } from "./GuestTools";
-
-const REPLY_COLOR: Record<string, string> = {
-  attending: T.greenDeep,
-  maybe: T.blueInk,
-  declined: T.muted,
-};
+import { marqueeClass } from "./marquee";
+import { MarqueeTop } from "./MarqueeTop";
 
 /**
  * The Guests hub: where the replies stand and what to do about it, a way
@@ -40,33 +35,31 @@ export default function GuestsPage() {
   const empty = guests !== null && guests.length === 0;
 
   return (
-    <main className="u-main gu-main">
-      <header className="gu-header">
-        <h1 className="u-serif gu-h1">{t.guests.title}</h1>
-        <Link href="/guests/new" className="gu-add">
-          {t.guests.add}
-        </Link>
-      </header>
+    <main className={`u-main mq-main ${marqueeClass}`}>
+      <MarqueeTop>
+        <header className="mq-header">
+          <h1 className="mq-display mq-h1">{t.guests.title}</h1>
+          <Link href="/guests/new" className="mq-btn">
+            {t.guests.add}
+          </Link>
+        </header>
+      </MarqueeTop>
 
-      <div className="gu-layout">
-        <div className="gu-col">
+      <div className="mq-layout">
+        <div>
           {empty ? (
-            <section
-              className="gu-empty"
-              aria-labelledby="gu-empty-title"
-              style={{ background: T.surface, border: `1px solid ${T.line2}` }}
-            >
-              <h2 id="gu-empty-title" className="u-serif gu-lede" style={{ margin: 0 }}>
+            <section className="mq-panel" aria-labelledby="mq-empty-title" style={{ padding: "26px 22px 24px" }}>
+              <h2 id="mq-empty-title" className="mq-display mq-lede" style={{ margin: 0 }}>
                 {t.guests.hub.emptyTitle}
               </h2>
-              <p style={{ fontSize: 14.5, color: T.muted, lineHeight: 1.5, margin: "8px 0 18px", maxWidth: "46ch" }}>
+              <p className="mq-quiet" style={{ margin: "10px 0 20px", maxWidth: "46ch" }}>
                 {t.guests.hub.emptyBody}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <Link href="/guests/new" className="gu-add">
+                <Link href="/guests/new" className="mq-btn">
                   {t.guests.add}
                 </Link>
-                <Link href="/guests/group-link" className="gu-ghost">
+                <Link href="/guests/group-link" className="mq-ghost">
                   {t.guests.hub.shareLink}
                 </Link>
               </div>
@@ -91,13 +84,13 @@ export default function GuestsPage() {
                 }
               />
 
-              <Form action="/guests/list" className="gu-find" role="search">
-                <label htmlFor="gu-q" className="gu-sr">
+              <Form action="/guests/list" className="mq-find" role="search">
+                <label htmlFor="mq-q" className="mq-sr">
                   {t.guests.hub.find}
                 </label>
-                <SearchIcon />
+                <SearchIcon stroke={M.muted} />
                 <input
-                  id="gu-q"
+                  id="mq-q"
                   name="q"
                   type="search"
                   enterKeyHint="search"
@@ -106,64 +99,48 @@ export default function GuestsPage() {
                 />
               </Form>
 
-              <section aria-labelledby="gu-latest" style={{ marginTop: 26 }}>
-                <div className="gu-section-head">
-                  <h2 id="gu-latest" className="u-serif gu-h2" style={{ margin: 0 }}>
+              <section aria-labelledby="mq-latest">
+                <div className="mq-section-head">
+                  <h2 id="mq-latest" className="mq-display mq-h2">
                     {t.guests.hub.latest}
                   </h2>
                   {guests && guests.length > 0 && (
-                    <Link href="/guests/list" className="gu-more">
+                    <Link href="/guests/list" className="mq-more">
                       {t.guests.hub.seeAll(guests.length)}
                     </Link>
                   )}
                 </div>
                 {guests === null ? (
-                  <Loading label={t.guests.loadingList} />
-                ) : recent.length === 0 ? (
-                  <p style={{ fontSize: 14, color: T.muted, margin: "4px 2px 0", lineHeight: 1.5 }}>
-                    {t.guests.hub.noRepliesYet}
+                  <p className="mq-quiet" role="status">
+                    {t.guests.loadingList}
                   </p>
+                ) : recent.length === 0 ? (
+                  <p className="mq-quiet">{t.guests.hub.noRepliesYet}</p>
                 ) : (
-                  <ul role="list" className="gu-group">
+                  <ul role="list" className="mq-group">
                     {recent.map((g) => {
                       const status = g.rsvps!.status as "attending" | "maybe" | "declined";
                       return (
                         <li key={g.id}>
-                          <Link href={`/guests/${g.id}`} className="gu-row">
-                            <span
-                              aria-hidden
-                              className="u-serif"
-                              style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: "50%",
-                                background: T.accentPink,
-                                color: T.accentInk,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                flexShrink: 0,
-                                fontWeight: 600,
-                                fontSize: 16,
-                              }}
-                            >
+                          <Link href={`/guests/${g.id}`} className="mq-row">
+                            <span aria-hidden className={`mq-face is-${status}`}>
                               {initial(g.first_name)}
                             </span>
                             <span style={{ flex: 1, minWidth: 0 }}>
-                              <span className="gu-name">
+                              <span className="mq-row-title">
                                 {g.first_name} {g.last_name ?? ""}
                               </span>
-                              <span style={{ display: "block", fontSize: 12.5, marginTop: 1 }}>
-                                <span style={{ color: REPLY_COLOR[status], fontWeight: 600 }}>
+                              <span className="mq-row-sub">
+                                <span className={`mq-reply is-${status}`} style={{ fontWeight: 800 }}>
                                   {t.guests.hub.replied[status]}
                                 </span>
-                                <span style={{ color: T.muted }}>
-                                  {" · "}
-                                  {timeAgo(g.rsvps!.responded_at, locale)}
-                                </span>
+                                {" · "}
+                                {timeAgo(g.rsvps!.responded_at, locale)}
                               </span>
                             </span>
-                            <ChevronRight />
+                            <span className="mq-chev">
+                              <ChevronRight stroke="currentColor" />
+                            </span>
                           </Link>
                         </li>
                       );
@@ -175,7 +152,7 @@ export default function GuestsPage() {
           )}
         </div>
 
-        <div className="gu-col">
+        <div>
           <GuestTools stages={guestStages(t, guests ? guests.length : null)} />
         </div>
       </div>

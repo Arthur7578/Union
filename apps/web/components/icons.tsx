@@ -140,3 +140,20 @@ export function SearchIcon({ size = 18, stroke = T.muted2 }: IconProps) {
     </svg>
   );
 }
+
+export function EnvelopeIcon({ size = 20, stroke = T.ink }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <rect x="3" y="5.5" width="18" height="13" rx="3" stroke={stroke} strokeWidth="2" fill="none" />
+      <path d="M4 7.5l8 6 8-6" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function PlusIcon({ size = 14, stroke = T.white }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 14 14" aria-hidden>
+      <path d="M7 1.5v11M1.5 7h11" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}

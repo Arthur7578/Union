@@ -186,7 +186,7 @@ export const fr: Dictionary = {
     kicker: "invités",
     kickerFallback: "Liste des invités",
     add: "Ajouter un invité",
-    addShort: "+ Ajouter",
+    addShort: "Ajouter",
     empty: "Aucun invité pour l'instant — ajoutez votre première invitation.",
     noGuestsTitle: "Aucun invité pour l'instant",
     noGuestsBody: "Ajoutez la première personne que vous invitez pour commencer.",
@@ -229,7 +229,7 @@ export const fr: Dictionary = {
       noneAnswered: "Personne n'a encore répondu.",
       replyBar: "Réponses à ce jour",
       find: "Trouver un invité",
-      findPlaceholder: "Trouver un invité : nom, e-mail, groupe",
+      findPlaceholder: "Trouver un invité",
       latest: "Dernières réponses",
       noRepliesYet: "Les réponses arrivent ici dès que vos invités répondent.",
       seeAll: (n: number) => (n === 1 ? "Voir l'invité" : `Voir les ${n} invités`),
@@ -255,6 +255,7 @@ export const fr: Dictionary = {
           without === 1 ? "L'autre n'en a pas" : `Les ${without} autres n'en ont pas`
         } : envoyez-leur leur lien depuis leur fiche.`,
       nudgeButton: (n: number) => `Relancer ${n}`,
+      noEmail: "Pas d'e-mail : envoyez son lien",
     },
     modules: {
       title: "Modules de l'invitation",

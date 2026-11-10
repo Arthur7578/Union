@@ -190,7 +190,7 @@ export const en = {
     kicker: "invited",
     kickerFallback: "Guest list",
     add: "Add a guest",
-    addShort: "+ Add",
+    addShort: "Add",
     empty: "No guests yet — add your first invitation.",
     noGuestsTitle: "No guests yet",
     noGuestsBody: "Add the first person you're inviting to get started.",
@@ -259,6 +259,7 @@ export const en = {
           without === 1 ? "The other one has" : `The other ${without} have`
         } no email: send their link from their page.`,
       nudgeButton: (n: number) => `Nudge ${n}`,
+      noEmail: "No email: send their link",
     },
     modules: {
       title: "Invitation modules",

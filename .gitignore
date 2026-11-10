@@ -51,3 +51,6 @@ apps/web/playwright-report/
 # Local Supabase CLI state (created by `supabase start`)
 supabase/.branches/
 supabase/.temp/
+
+# Impeccable design tool: local roll records (the surface briefs are kept)
+apps/web/.impeccable/questions/

@@ -196,6 +196,32 @@ export function alpha(hex: string, a: number): string {
  * with the `.card` / `.btn` classes); the guest portal re-declares a few of
  * these locally. The second block is the app shell and form chrome.
  */
+/**
+ * Garden marquee — the Guests hub and list (/guests, /guests/list). A fresh
+ * leaf-white ground under a sage-and-white striped canopy, forest ink,
+ * leaf-green actions, and blush / butter / sage for the replies. Trial world
+ * for the couple's app; see .impeccable/surfaces/ for the direction.
+ */
+export const M = {
+  ground: "#F3F7F1",
+  surface: "#FFFFFF",
+  ink: "#1E3A2D",
+  ink2: "#41594C",
+  muted: "#5E7366",
+  leaf: "#2E6B4E",
+  leafDeep: "#24563E",
+  sage: "#CFE3D2",
+  sageSoft: "#E6F0E7",
+  coming: "#4F9A6E",
+  maybe: "#E8B23F",
+  cant: "#E79C90",
+  waiting: "#B9C7BD",
+  blush: "#F9DEDA",
+  blushInk: "#9E3F37",
+  butter: "#FBEFC6",
+  butterInk: "#7A5A0F",
+} as const;
+
 export const CSS_VARS = {
   "--bg": T.bg,
   "--surface": T.surface,
@@ -220,16 +246,30 @@ export const CSS_VARS = {
   "--card-shadow": alpha(G.ink, 0.06),
   "--focus-ring": alpha(T.accent, 0.16),
 
-  // Guests hub (app/(app)/guests): rows, the reply bar and the search field
-  "--ink-2": T.ink2,
-  "--muted-strong": T.muted,
-  "--line-2": T.line2,
-  "--line-3": T.line3,
-  "--row-hover": alpha(T.ink, 0.035),
-  "--accent-soft": T.accentSoft,
-  "--accent": T.accent,
-  "--accent-ink": T.accentInk,
-  "--ink-hover": T.ink2,
-  "--add-shadow": alpha(T.ink, 0.16),
-  "--selection": alpha(T.accent, 0.22),
+  // Garden marquee (M): the Guests hub and list
+  "--mq-ground": M.ground,
+  "--mq-surface": M.surface,
+  "--mq-ink": M.ink,
+  "--mq-ink-2": M.ink2,
+  "--mq-muted": M.muted,
+  "--mq-leaf": M.leaf,
+  "--mq-leaf-deep": M.leafDeep,
+  "--mq-sage": M.sage,
+  "--mq-sage-soft": M.sageSoft,
+  "--mq-coming": M.coming,
+  "--mq-maybe": M.maybe,
+  "--mq-cant": M.cant,
+  "--mq-waiting": M.waiting,
+  "--mq-blush": M.blush,
+  "--mq-blush-ink": M.blushInk,
+  "--mq-butter": M.butter,
+  "--mq-butter-ink": M.butterInk,
+  "--mq-line": alpha(M.ink, 0.1),
+  "--mq-line-soft": alpha(M.ink, 0.06),
+  "--mq-hover": alpha(M.leaf, 0.06),
+  "--mq-shadow": alpha(M.ink, 0.08),
+  "--mq-shadow-strong": alpha(M.ink, 0.18),
+  "--mq-focus": alpha(M.leaf, 0.22),
+  "--mq-chrome": alpha(M.ground, 0.92),
+  "--mq-selection": alpha(M.coming, 0.28),
 } as const;
