@@ -28,6 +28,10 @@ test("the hub says how many have answered and lists the latest replies", async (
   const replies = page.getByRole("heading", { level: 2, name: /2\s*of 4 have answered/ });
   await expect(replies).toBeVisible();
 
+  // The nudge leads with the same number as Waiting.
+  await expect(page.getByText("2 guests haven't replied yet.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Send a nudge" })).toBeVisible();
+
   const latest = page.getByRole("region", { name: "Latest replies" });
   await expect(latest.getByRole("link", { name: /Lea/ })).toContainText("Coming");
   await expect(latest.getByRole("link", { name: /Hugo/ })).toContainText("Can't come");
@@ -75,6 +79,17 @@ test("searching from the hub lands on the list with the search applied", async (
 
   await rows.first().click();
   await expect(page).toHaveURL(new RegExp(`/guests/${seeded.guests.hugo.id}$`));
+});
+
+test("the nudge says who it can reach when some waiting guests have no email", async ({ page }) => {
+  const seeded = await seed();
+  await seeded.owner.from("guests").update({ email: null }).eq("id", seeded.guests.noe.id);
+  await signInAsOwner(page, seeded);
+  await page.goto("/guests");
+
+  await expect(page.getByText("2 guests haven't replied yet.")).toBeVisible();
+  await expect(page.getByText(/I can email the one with an address\. The other one has no email/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Nudge 1" })).toBeVisible();
 });
 
 test("a wedding with no guests yet is offered both ways to start", async ({ page }) => {

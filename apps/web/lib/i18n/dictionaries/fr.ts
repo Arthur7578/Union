@@ -244,6 +244,17 @@ export const fr: Dictionary = {
       shareLink: "Partager le lien de groupe",
       replied: { attending: "Vient", maybe: "Peut-être", declined: "Ne vient pas" },
       listTitle: "Liste des invités",
+      nudgeWaiting: (n: number) =>
+        n === 1 ? "1 invité n'a pas encore répondu." : `${n} invités n'ont pas encore répondu.`,
+      nudgeAllReachable: (n: number) =>
+        n === 1
+          ? "Une relance ? J'ouvre votre messagerie avec lui en Cci."
+          : "Une relance ? J'ouvre votre messagerie avec eux tous en Cci.",
+      nudgeSomeReachable: (withEmail: number, without: number) =>
+        `Je peux écrire ${withEmail === 1 ? "à celui qui a" : `aux ${withEmail} qui ont`} un e-mail. ${
+          without === 1 ? "L'autre n'en a pas" : `Les ${without} autres n'en ont pas`
+        } : envoyez-leur leur lien depuis leur fiche.`,
+      nudgeButton: (n: number) => `Relancer ${n}`,
     },
     modules: {
       title: "Modules de l'invitation",
@@ -359,10 +370,6 @@ export const fr: Dictionary = {
       loadError: "Impossible de charger votre page invité.",
     },
     guestList: "Liste des invités",
-    reminderPromptStrong: (n: number) =>
-      n === 1 ? "1 personne encore indécise" : `${n} personnes encore indécises`,
-    reminderPromptLead: "Vous voulez que je relance en douceur",
-    reminderPromptTail: " ? Je prépare un e-mail avec toutes leurs adresses.",
     reminderNoEmail: {
       before: "",
       strong: (n: number) => String(n),

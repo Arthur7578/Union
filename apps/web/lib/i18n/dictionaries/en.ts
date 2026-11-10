@@ -248,6 +248,17 @@ export const en = {
       shareLink: "Share the group link",
       replied: { attending: "Coming", maybe: "Maybe", declined: "Can't come" },
       listTitle: "Guest list",
+      nudgeWaiting: (n: number) =>
+        n === 1 ? "1 guest hasn't replied yet." : `${n} guests haven't replied yet.`,
+      nudgeAllReachable: (n: number): string =>
+        n === 1
+          ? "Want to nudge them? I'll open your email with them in Bcc."
+          : "Want to nudge them? I'll open your email with all of them in Bcc.",
+      nudgeSomeReachable: (withEmail: number, without: number) =>
+        `I can email the ${withEmail === 1 ? "one" : withEmail} with an address. ${
+          without === 1 ? "The other one has" : `The other ${without} have`
+        } no email: send their link from their page.`,
+      nudgeButton: (n: number) => `Nudge ${n}`,
     },
     modules: {
       title: "Invitation modules",
@@ -363,9 +374,6 @@ export const en = {
       loadError: "Couldn't load your guest page.",
     },
     guestList: "Guest list",
-    reminderPromptStrong: (n: number) => `${n} still deciding`,
-    reminderPromptLead: "Want me to gently remind the",
-    reminderPromptTail: "? I'll open your email with them all.",
     reminderNoEmail: {
       before: "",
       strong: (n: number) => String(n),

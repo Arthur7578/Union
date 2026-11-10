@@ -162,11 +162,14 @@ export function NudgeRow({
           <Spark size={16} color={T.accent} />
         </span>
         <p style={{ flex: "1 1 180px", margin: 0, fontSize: 13.5, lineHeight: 1.45, color: T.ink2 }}>
+          {/* Lead with the same number as Waiting above, then say who the
+              nudge can reach: only guests with an email go in the Bcc. */}
           {withEmail > 0 ? (
             <>
-              {t.guests.reminderPromptLead}{" "}
-              <b style={{ color: T.ink }}>{t.guests.reminderPromptStrong(withEmail)}</b>
-              {t.guests.reminderPromptTail}
+              <b style={{ color: T.ink }}>{t.guests.hub.nudgeWaiting(waiting)}</b>{" "}
+              {withEmail === waiting
+                ? t.guests.hub.nudgeAllReachable(waiting)
+                : t.guests.hub.nudgeSomeReachable(withEmail, waiting - withEmail)}
             </>
           ) : (
             <>
@@ -182,7 +185,7 @@ export function NudgeRow({
             disabled={busy}
             style={{ minHeight: 40, fontSize: 13.5, padding: "0 16px", background: T.accentInk }}
           >
-            {busy ? t.guests.opening : t.guests.sendNudge}
+            {busy ? t.guests.opening : withEmail === waiting ? t.guests.sendNudge : t.guests.hub.nudgeButton(withEmail)}
           </Button>
         )}
       </div>
