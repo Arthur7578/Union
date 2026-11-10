@@ -47,3 +47,7 @@ yarn-error.*
 # playwright
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Local Supabase CLI state (created by `supabase start`)
+supabase/.branches/
+supabase/.temp/
