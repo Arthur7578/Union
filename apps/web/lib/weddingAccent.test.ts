@@ -38,6 +38,12 @@ describe("wedding colours", () => {
     });
   }
 
+  it("keeps Maybe apart from Coming in every colour", () => {
+    for (const a of [NEUTRAL_ACCENT, ...Object.values(ACCENTS)]) {
+      expect(a.base.toLowerCase()).not.toBe(a.deep.toLowerCase());
+    }
+  });
+
   it("falls back to the neutral colour when none is picked", () => {
     expect(accentVars(null)["--wa-deep"]).toBe(NEUTRAL_ACCENT.deep);
     expect(accentVars("navy")["--wa-deep"]).toBe(ACCENTS.navy.deep);

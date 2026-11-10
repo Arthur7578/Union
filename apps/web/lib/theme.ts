@@ -230,7 +230,8 @@ export const ACCENTS: Record<WeddingAccent, AccentShades> = {
   rose: { base: "#D08C96", deep: "#A2525E", soft: "#F8E8EA" },
   ochre: { base: "#C9963A", deep: "#85601A", soft: "#F6EDD9" },
   lilac: { base: "#9C88BE", deep: "#634F8C", soft: "#EEE9F5" },
-  black: { base: "#1B1B1A", deep: "#1B1B1A", soft: "#ECECEA" },
+  // base stays lighter than deep so "Maybe" reads apart from "Coming".
+  black: { base: "#8C8B86", deep: "#1B1B1A", soft: "#ECECEA" },
 };
 
 export function accentShades(key: WeddingAccent | null): AccentShades {

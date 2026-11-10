@@ -176,7 +176,7 @@ Presets (defined in `ACCENTS`, `lib/theme.ts`; keys in `packages/shared/src/wedd
 | rose | #D08C96 | #A2525E | #F8E8EA |
 | ochre | #C9963A | #85601A | #F6EDD9 |
 | lilac | #9C88BE | #634F8C | #EEE9F5 |
-| black | #1B1B1A | #1B1B1A | #ECECEA |
+| black | #8C8B86 | #1B1B1A | #ECECEA |
 
 ### Neutral
 - **Paper Ground** (ground): the page background, also tinted into the shell chrome at 92% (chrome).
