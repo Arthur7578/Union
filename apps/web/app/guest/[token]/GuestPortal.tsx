@@ -292,8 +292,10 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false, p
           locale,
         });
 
-  // Under the RSVP card: the final check-in and the couple's own forms.
-  const otherForms: FormItem[] = [
+  // Under the RSVP card: the final check-in and the couple's own forms. They
+  // are for guests who may come, so they wait for a yes or a maybe: nothing
+  // else to fill in before replying, nor after a no.
+  const otherForms: FormItem[] = !mayAttend(reply.status) ? [] : [
     // No record says whether a guest has done the final check-in, so it
     // stays "to do" for as long as the couple keeps it open.
     ...(reconfirmationLive

@@ -176,3 +176,23 @@ test("a guest with no email gives it first, then goes on past the answer picked 
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Fish or meat?" })).toBeVisible();
 });
+
+test("the couple's other forms wait for a yes", async ({ page }) => {
+  const seeded = await seedWedding({
+    customForms: [{ key: "menu", title: "Menu & preferences", perPerson: false, questions: [] }],
+    household: [{ key: "lea", firstName: "Lea" }],
+  });
+  await page.goto(`/guest/${seeded.guests.lea.token}`);
+  const card = page.getByRole("article", { name: "Attendance RSVP" });
+  await card.scrollIntoViewIfNeeded();
+  // Not replied yet: the RSVP alone.
+  await expect(page.getByText("Menu & preferences")).toHaveCount(0);
+
+  await card.getByRole("button", { name: "Attending" }).click();
+  await page.getByRole("button", { name: /^Send/ }).click();
+  await page.getByRole("button", { name: "Back to the invitation" }).click();
+
+  // Coming: the couple's form is there, without a reload.
+  await expect(page.getByText("Your other forms")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Menu & preferences" })).toBeVisible();
+});

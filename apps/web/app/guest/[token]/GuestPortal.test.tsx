@@ -158,6 +158,26 @@ describe("GuestPortal's forms checklist", () => {
     companion_answers: {},
   });
 
+  it("shows the couple's other forms only once the guest has said yes or maybe", async () => {
+    // Not replied yet, or not coming: nothing else to fill in.
+    hub(invitation({ status: "pending", customForms: [dinner(false)] }));
+    await screen.findByRole("article", { name: "Attendance RSVP" });
+    expect(screen.queryByText("Dinner")).not.toBeInTheDocument();
+    expect(screen.queryByText("Your other forms")).not.toBeInTheDocument();
+    cleanup();
+    hub(invitation({ status: "declined", customForms: [dinner(false)] }));
+    await screen.findByRole("article", { name: "Attendance RSVP" });
+    expect(screen.queryByText("Dinner")).not.toBeInTheDocument();
+    cleanup();
+    // Coming, or maybe: the forms are there.
+    hub(invitation({ status: "maybe", allowMaybe: true, customForms: [dinner(false)] }));
+    expect(await screen.findByText("Dinner")).toBeInTheDocument();
+    expect(screen.getByText("Your other forms")).toBeInTheDocument();
+    cleanup();
+    hub(invitation({ status: "attending", customForms: [dinner(false)] }));
+    expect(await screen.findByText("Dinner")).toBeInTheDocument();
+  });
+
   it("shows how far a per-person form has got, and keeps it to do until everyone is answered for", async () => {
     hub(invitation({ status: "attending", companions: [guinevere], customForms: [dinner(true)] }));
     expect(await screen.findByText("Answered for 1 of 2")).toBeInTheDocument();
