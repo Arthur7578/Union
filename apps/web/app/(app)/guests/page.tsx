@@ -3,8 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import Form from "next/form";
-import { latestReplies, parseWeddingAccent } from "@union/shared";
-import { V, accentVars } from "@/lib/theme";
+import { latestReplies } from "@union/shared";
+import { V } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import { guestStats } from "@/lib/data";
 import { formatLongDate, initial, timeAgo } from "@/lib/format";
@@ -18,8 +18,7 @@ import { guestsTypeClass } from "./guestsType";
 /**
  * The Guests hub: where the replies stand and what to do about it, a way
  * straight to any guest, and every guest tool grouped by stage. The full
- * list lives at /guests/list. The frame is neutral; the couple's wedding
- * colour is the one colour it wears.
+ * list lives at /guests/list. The frame is neutral (PRODUCT.md, principle 5).
  */
 export default function GuestsPage() {
   const { t, locale } = useLocale();
@@ -29,7 +28,6 @@ export default function GuestsPage() {
 
   if (!wedding) return null;
 
-  const accent = parseWeddingAccent(wedding.accent);
   const stats = guests ? guestStats(guests) : null;
   const showMaybe = wedding.allow_rsvp_maybe === true || (stats?.maybe ?? 0) > 0;
   const recent = guests ? latestReplies(guests, 4) : [];
@@ -38,25 +36,14 @@ export default function GuestsPage() {
   const when = wedding.event_date ? formatLongDate(wedding.event_date, locale) : null;
 
   return (
-    <main
-      className={`u-main gu-main ${guestsTypeClass}`}
-      style={accentVars(accent) as React.CSSProperties}
-    >
+    <main className={`u-main gu-main ${guestsTypeClass}`}>
       <header className="gu-header">
         <div style={{ minWidth: 0 }}>
           <h1 className="gu-h1">{t.guests.title}</h1>
-          {/* Whose wedding this is, in their colour: the personality comes
-              from the couple, not from Union. */}
+          {/* Whose wedding this is: the personality comes from the couple,
+              not from Union. */}
           {(couple || when) && (
-            <div className="gu-couple">
-              <span aria-hidden className="gu-swatch-dot" />
-              <span>{[couple, when].filter(Boolean).join(" · ")}</span>
-            </div>
-          )}
-          {!accent && (
-            <div className="gu-couple" style={{ marginTop: 4 }}>
-              <Link href="/account/wedding#wedding-colour">{t.guests.hub.pickColour}</Link>
-            </div>
+            <div className="gu-couple">{[couple, when].filter(Boolean).join(" · ")}</div>
           )}
         </div>
         <Link href="/guests/new" className="gu-add">

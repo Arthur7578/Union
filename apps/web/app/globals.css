@@ -396,10 +396,9 @@ textarea {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Guests hub (/guests) and guest list (/guests/list): "Your colours".
-   A neutral frame (V in lib/theme.ts, --vc-*) wearing one colour, the
-   couple's wedding colour (--wa-*, set on the page root from
-   weddings.accent; graphite until they pick one).
+   Guests hub (/guests) and guest list (/guests/list).
+   A neutral frame (V in lib/theme.ts, --vc-*) with one graphite accent;
+   it takes no wedding style of its own (PRODUCT.md, principle 5).
    ───────────────────────────────────────────────────────────── */
 .u-app:has(.gu-world) {
   background: var(--vc-ground);
@@ -413,7 +412,7 @@ textarea {
   color: var(--vc-ink);
 }
 .gu-world ::selection {
-  background: var(--wa-soft);
+  background: var(--vc-accent-soft);
 }
 .gu-header {
   display: flex;
@@ -432,27 +431,10 @@ textarea {
   margin: 0;
 }
 .gu-couple {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   margin-top: 8px;
   font-size: 14.5px;
   font-weight: 500;
   color: var(--vc-muted);
-}
-.gu-couple a {
-  color: var(--wa-deep);
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1px;
-}
-.gu-swatch-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--wa-base);
-  flex-shrink: 0;
 }
 .gu-h2 {
   font-weight: 600;
@@ -477,7 +459,7 @@ textarea {
   font-size: 76px;
   line-height: 0.82;
   letter-spacing: -0.045em;
-  color: var(--wa-deep);
+  color: var(--vc-accent);
   font-variant-numeric: tabular-nums;
 }
 .gu-num {
@@ -580,13 +562,13 @@ textarea {
   transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 .gu-add {
-  background: var(--wa-deep);
+  background: var(--vc-accent);
   color: var(--vc-surface);
-  box-shadow: 0 2px 8px var(--wa-shadow);
+  box-shadow: 0 2px 8px var(--vc-accent-shadow);
 }
 .gu-add:hover {
   color: var(--vc-surface);
-  box-shadow: 0 4px 12px var(--wa-shadow);
+  box-shadow: 0 4px 12px var(--vc-accent-shadow);
 }
 .gu-add:disabled {
   opacity: 0.6;
@@ -624,7 +606,7 @@ textarea {
   transition: box-shadow 0.15s ease;
 }
 .gu-find:focus-within {
-  box-shadow: inset 0 0 0 1.5px var(--wa-deep), 0 0 0 4px var(--wa-focus);
+  box-shadow: inset 0 0 0 1.5px var(--vc-accent), 0 0 0 4px var(--vc-focus);
 }
 .gu-find input {
   flex: 1;
@@ -635,7 +617,7 @@ textarea {
   font-family: inherit;
   font-size: 16px; /* 16px keeps iOS from zooming in on focus */
   color: var(--vc-ink);
-  caret-color: var(--wa-deep);
+  caret-color: var(--vc-accent);
   padding: 13px 0;
 }
 .gu-find input::placeholder {
@@ -688,7 +670,7 @@ textarea {
   color: var(--vc-ring);
 }
 .gu-row:hover .gu-chev {
-  color: var(--wa-deep);
+  color: var(--vc-accent);
 }
 .gu-face {
   width: 38px;
@@ -702,13 +684,13 @@ textarea {
   font-size: 15px;
 }
 .gu-face.is-attending {
-  background: var(--wa-soft);
-  color: var(--wa-deep);
+  background: var(--vc-accent-soft);
+  color: var(--vc-accent);
 }
 .gu-face.is-maybe {
   background: var(--vc-surface);
-  color: var(--wa-deep);
-  box-shadow: inset 0 0 0 1.5px var(--wa-base);
+  color: var(--vc-accent);
+  box-shadow: inset 0 0 0 1.5px var(--vc-accent-2);
 }
 .gu-face.is-declined {
   background: var(--vc-track);
@@ -720,7 +702,7 @@ textarea {
   box-shadow: inset 0 0 0 1.5px var(--vc-ring);
 }
 .gu-reply.is-attending {
-  color: var(--wa-deep);
+  color: var(--vc-accent);
   font-weight: 600;
 }
 .gu-reply.is-maybe {
@@ -733,7 +715,7 @@ textarea {
   font-weight: 600;
 }
 .gu-alert {
-  color: var(--wa-deep);
+  color: var(--vc-accent);
   font-weight: 600;
 }
 .gu-section-head {
@@ -749,7 +731,7 @@ textarea {
 .gu-more {
   font-weight: 600;
   font-size: 14px;
-  color: var(--wa-deep);
+  color: var(--vc-accent);
   white-space: nowrap;
   text-decoration: underline;
   text-decoration-color: transparent;
@@ -757,7 +739,7 @@ textarea {
   transition: text-decoration-color 0.15s ease;
 }
 .gu-more:hover {
-  color: var(--wa-deep);
+  color: var(--vc-accent);
   text-decoration-color: currentColor;
 }
 .gu-quiet {
@@ -817,7 +799,7 @@ textarea {
   background: var(--vc-hover);
 }
 .gu-chip[aria-pressed="true"] {
-  background: var(--wa-deep);
+  background: var(--vc-accent);
   color: var(--vc-surface);
   box-shadow: none;
 }
@@ -832,9 +814,8 @@ textarea {
 .gu-add:focus-visible,
 .gu-ghost:focus-visible,
 .gu-chip:focus-visible,
-.gu-back:focus-visible,
-.gu-couple a:focus-visible {
-  outline: 2px solid var(--wa-deep);
+.gu-back:focus-visible {
+  outline: 2px solid var(--vc-accent);
   outline-offset: 2px;
 }
 .gu-group .gu-row:focus-visible {
@@ -883,18 +864,4 @@ textarea {
   .gu-find {
     transition: none;
   }
-}
-
-/* Wedding colour swatches (components/AccentPicker.tsx): the radio stays in
-   the accessibility tree and takes focus; the swatch shows it. */
-.u-swatch-input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-label:has(> .u-swatch-input:focus-visible) {
-  outline: 2px solid var(--text);
-  outline-offset: 4px;
 }

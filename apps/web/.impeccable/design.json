@@ -1,28 +1,13 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-10T23:10:00Z",
+  "generatedAt": "2026-11-10T23:45:00Z",
   "title": "Design System: Union",
   "extensions": {
-    "scope": "The \"Your colours\" world on /guests and /guests/list only (trial, finish review pending). The rest of the app uses the older palette T in lib/theme.ts, not documented here; the shared shell is not part of this world yet.",
+    "scope": "The neutral-frame world on /guests and /guests/list only (trial, finish review pending). The rest of the app uses the older palette T in lib/theme.ts, not documented here; the shared shell is not part of this world yet.",
     "colorMeta": {
-      "wedding-base": {
+      "accent": {
         "role": "primary",
-        "displayName": "Wedding Colour, base (graphite default)",
-        "canonical": "#55544F",
-        "tonalRamp": [
-          "#0C0B08",
-          "#262521",
-          "#43423D",
-          "#62615C",
-          "#83827D",
-          "#A6A59F",
-          "#CAC9C3",
-          "#F0EFE9"
-        ]
-      },
-      "wedding-deep": {
-        "role": "primary",
-        "displayName": "Wedding Colour, deep (graphite default)",
+        "displayName": "Graphite",
         "canonical": "#1B1B1A",
         "tonalRamp": [
           "#0B0B0A",
@@ -35,9 +20,24 @@
           "#EEEEED"
         ]
       },
-      "wedding-soft": {
+      "accent-2": {
         "role": "primary",
-        "displayName": "Wedding Colour, soft (graphite default)",
+        "displayName": "Maybe Stone",
+        "canonical": "#8C8B86",
+        "tonalRamp": [
+          "#0C0B08",
+          "#262521",
+          "#43423D",
+          "#62615C",
+          "#8C8B86",
+          "#A6A59F",
+          "#CAC9C3",
+          "#F0EFE9"
+        ]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Graphite Wash",
         "canonical": "#ECECEA",
         "tonalRamp": [
           "#0B0B0A",
@@ -50,9 +50,9 @@
           "#EEEEEC"
         ]
       },
-      "wedding-focus": {
+      "focus": {
         "role": "primary",
-        "displayName": "Wedding Focus Halo",
+        "displayName": "Focus Halo",
         "canonical": "rgba(27,27,26,0.18)"
       },
       "ground": {
@@ -196,80 +196,6 @@
         "canonical": "rgba(246,246,244,0.92)"
       }
     },
-    "weddingAccents": {
-      "source": "lib/theme.ts ACCENTS / NEUTRAL_ACCENT; keys in packages/shared/src/weddingAccent.ts; DB column weddings.accent (check constraint)",
-      "default": {
-        "key": null,
-        "displayName": "Graphite",
-        "base": "#55544F",
-        "deep": "#1B1B1A",
-        "soft": "#ECECEA"
-      },
-      "presets": [
-        {
-          "key": "sage",
-          "base": "#7A9A7E",
-          "deep": "#3F6146",
-          "soft": "#E6EEE7"
-        },
-        {
-          "key": "terracotta",
-          "base": "#C4673F",
-          "deep": "#9A4423",
-          "soft": "#F7E6DD"
-        },
-        {
-          "key": "dusty_blue",
-          "base": "#7B97B5",
-          "deep": "#3F5F80",
-          "soft": "#E5ECF3"
-        },
-        {
-          "key": "navy",
-          "base": "#2E4A72",
-          "deep": "#1F3557",
-          "soft": "#E2E8F1"
-        },
-        {
-          "key": "burgundy",
-          "base": "#8E2D43",
-          "deep": "#74203A",
-          "soft": "#F3E1E5"
-        },
-        {
-          "key": "rose",
-          "base": "#D08C96",
-          "deep": "#A2525E",
-          "soft": "#F8E8EA"
-        },
-        {
-          "key": "ochre",
-          "base": "#C9963A",
-          "deep": "#85601A",
-          "soft": "#F6EDD9"
-        },
-        {
-          "key": "lilac",
-          "base": "#9C88BE",
-          "deep": "#634F8C",
-          "soft": "#EEE9F5"
-        },
-        {
-          "key": "black",
-          "base": "#8C8B86",
-          "deep": "#1B1B1A",
-          "soft": "#ECECEA"
-        }
-      ],
-      "variables": {
-        "--wa-base": "fills",
-        "--wa-deep": "text, buttons, selected state",
-        "--wa-soft": "tinted grounds",
-        "--wa-focus": "deep at 18%",
-        "--wa-shadow": "deep at 12%"
-      },
-      "contrastGuard": "lib/weddingAccent.test.ts: white on deep, deep on soft, deep on ground >= 4.5:1"
-    },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
@@ -277,7 +203,7 @@
       },
       "numeral": {
         "displayName": "Numeral",
-        "purpose": "The one big answered count, in wedding deep, tabular."
+        "purpose": "The one big answered count, in graphite, tabular."
       },
       "headline": {
         "displayName": "Headline",
@@ -312,8 +238,8 @@
       },
       {
         "name": "primary-glow",
-        "value": "0 2px 8px var(--wa-shadow)",
-        "purpose": "Primary button at rest; 0 4px 12px on hover."
+        "value": "0 2px 8px var(--vc-accent-shadow)",
+        "purpose": "Primary button at rest (graphite at 12%); 0 4px 12px on hover."
       },
       {
         "name": "inset-outline",
@@ -322,7 +248,7 @@
       },
       {
         "name": "focus-halo",
-        "value": "inset 0 0 0 1.5px var(--wa-deep), 0 0 0 4px var(--wa-focus)",
+        "value": "inset 0 0 0 1.5px var(--vc-accent), 0 0 0 4px var(--vc-focus)",
         "purpose": "Search field focus."
       }
     ],
@@ -360,9 +286,9 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The one coloured action in an area, in the wedding colour's deep shade (shown with the sage preset).",
+      "description": "The one filled action in an area, in graphite.",
       "html": "<button class=\"ds-btn ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Add guest</button>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--wa-base:#7A9A7E;--wa-deep:#3F6146;--wa-soft:#E6EEE7;--wa-focus:rgba(63,97,70,.18);--wa-shadow:rgba(63,97,70,.12)}.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 18px;border-radius:12px;border:none;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;font-weight:600;font-size:14.5px;cursor:pointer;transition:transform .12s ease,background-color .15s ease,box-shadow .15s ease}.ds-btn:active{transform:scale(.98)}.ds-btn:focus-visible{outline:2px solid var(--wa-deep);outline-offset:2px}.ds-btn-primary{background:var(--wa-deep);color:var(--vc-surface);box-shadow:0 2px 8px var(--wa-shadow)}.ds-btn-primary:hover{box-shadow:0 4px 12px var(--wa-shadow)}.ds-btn-primary:disabled{opacity:.6;cursor:default}"
+      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 18px;border-radius:12px;border:none;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;font-weight:600;font-size:14.5px;cursor:pointer;transition:transform .12s ease,background-color .15s ease,box-shadow .15s ease}.ds-btn:active{transform:scale(.98)}.ds-btn:focus-visible{outline:2px solid var(--vc-accent);outline-offset:2px}.ds-btn-primary{background:var(--vc-accent);color:var(--vc-surface);box-shadow:0 2px 8px var(--vc-accent-shadow)}.ds-btn-primary:hover{box-shadow:0 4px 12px var(--vc-accent-shadow)}.ds-btn-primary:disabled{opacity:.6;cursor:default}"
     },
     {
       "name": "Ghost Button",
@@ -370,73 +296,68 @@
       "refersTo": "button-ghost",
       "description": "Secondary action: white with an inset strong hairline.",
       "html": "<button class=\"ds-btn ds-btn-ghost\">Share the group link</button>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--wa-base:#7A9A7E;--wa-deep:#3F6146;--wa-soft:#E6EEE7;--wa-focus:rgba(63,97,70,.18);--wa-shadow:rgba(63,97,70,.12)}.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 18px;border-radius:12px;border:none;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;font-weight:600;font-size:14.5px;cursor:pointer;transition:transform .12s ease,background-color .15s ease,box-shadow .15s ease}.ds-btn:active{transform:scale(.98)}.ds-btn:focus-visible{outline:2px solid var(--wa-deep);outline-offset:2px}.ds-btn-ghost{background:var(--vc-surface);color:var(--vc-ink);box-shadow:inset 0 0 0 1px var(--vc-line-strong)}.ds-btn-ghost:hover{background:var(--vc-hover)}"
+      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 18px;border-radius:12px;border:none;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;font-weight:600;font-size:14.5px;cursor:pointer;transition:transform .12s ease,background-color .15s ease,box-shadow .15s ease}.ds-btn:active{transform:scale(.98)}.ds-btn:focus-visible{outline:2px solid var(--vc-accent);outline-offset:2px}.ds-btn-ghost{background:var(--vc-surface);color:var(--vc-ink);box-shadow:inset 0 0 0 1px var(--vc-line-strong)}.ds-btn-ghost:hover{background:var(--vc-hover)}"
     },
     {
       "name": "Search Field",
       "kind": "input",
       "refersTo": "search-field",
-      "description": "Find any guest; focus turns the outline wedding deep with a soft halo.",
+      "description": "Find any guest; focus turns the outline graphite with a soft halo.",
       "html": "<label class=\"ds-find\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#686660\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-3.5-3.5\"/></svg><input type=\"search\" placeholder=\"Find a guest\"></label>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--wa-base:#7A9A7E;--wa-deep:#3F6146;--wa-soft:#E6EEE7;--wa-focus:rgba(63,97,70,.18);--wa-shadow:rgba(63,97,70,.12)}.ds-find{display:flex;align-items:center;gap:10px;padding:0 16px;min-height:50px;border-radius:14px;background:var(--vc-surface);box-shadow:inset 0 0 0 1px var(--vc-line-strong);transition:box-shadow .15s ease;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif}.ds-find:focus-within{box-shadow:inset 0 0 0 1.5px var(--wa-deep),0 0 0 4px var(--wa-focus)}.ds-find input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-family:inherit;font-size:16px;color:var(--vc-ink);caret-color:var(--wa-deep);padding:13px 0}.ds-find input::placeholder{color:var(--vc-muted)}"
+      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-find{display:flex;align-items:center;gap:10px;padding:0 16px;min-height:50px;border-radius:14px;background:var(--vc-surface);box-shadow:inset 0 0 0 1px var(--vc-line-strong);transition:box-shadow .15s ease;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif}.ds-find:focus-within{box-shadow:inset 0 0 0 1.5px var(--vc-accent),0 0 0 4px var(--vc-focus)}.ds-find input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-family:inherit;font-size:16px;color:var(--vc-ink);caret-color:var(--vc-accent);padding:13px 0}.ds-find input::placeholder{color:var(--vc-muted)}"
     },
     {
       "name": "Filter Chips",
       "kind": "chip",
       "refersTo": "chip",
-      "description": "Reply filters on the list; the pressed one fills with wedding deep.",
+      "description": "Reply filters on the list; the pressed one fills with graphite.",
       "html": "<div class=\"ds-chips\"><button class=\"ds-chip\" aria-pressed=\"true\">All<span class=\"ds-n\">48</span></button><button class=\"ds-chip\" aria-pressed=\"false\">Coming<span class=\"ds-n\">21</span></button><button class=\"ds-chip\" aria-pressed=\"false\">Waiting<span class=\"ds-n\">19</span></button></div>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--wa-base:#7A9A7E;--wa-deep:#3F6146;--wa-soft:#E6EEE7;--wa-focus:rgba(63,97,70,.18);--wa-shadow:rgba(63,97,70,.12)}.ds-chips{display:flex;gap:6px}.ds-chip{min-height:38px;padding:0 14px;border-radius:10px;border:none;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;font-weight:600;font-size:14px;background:var(--vc-surface);color:var(--vc-ink-2);box-shadow:inset 0 0 0 1px var(--vc-line-strong);cursor:pointer}.ds-chip:hover{background:var(--vc-hover)}.ds-chip[aria-pressed=true]{background:var(--wa-deep);color:var(--vc-surface);box-shadow:none}.ds-chip:focus-visible{outline:2px solid var(--wa-deep);outline-offset:2px}.ds-n{opacity:.7;margin-left:5px;font-variant-numeric:tabular-nums}"
+      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-chips{display:flex;gap:6px}.ds-chip{min-height:38px;padding:0 14px;border-radius:10px;border:none;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;font-weight:600;font-size:14px;background:var(--vc-surface);color:var(--vc-ink-2);box-shadow:inset 0 0 0 1px var(--vc-line-strong);cursor:pointer}.ds-chip:hover{background:var(--vc-hover)}.ds-chip[aria-pressed=true]{background:var(--vc-accent);color:var(--vc-surface);box-shadow:none}.ds-chip:focus-visible{outline:2px solid var(--vc-accent);outline-offset:2px}.ds-n{opacity:.7;margin-left:5px;font-variant-numeric:tabular-nums}"
     },
     {
       "name": "Guest List Group",
       "kind": "nav",
       "refersTo": "list-group",
-      "description": "White group of 60px rows divided by hairlines; reply avatars in the wedding colour's shades.",
+      "description": "White group of 60px rows divided by hairlines; reply avatars in graphite, stone and neutrals.",
       "html": "<ul class=\"ds-group\"><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-face is-attending\">C</span><span class=\"ds-txt\"><span class=\"ds-t\">Camille Martin</span><span class=\"ds-s\"><b class=\"ds-yes\">Coming</b> · 2h ago</span></span><span class=\"ds-chev\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 6l6 6-6 6\"/></svg></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-face is-maybe\">J</span><span class=\"ds-txt\"><span class=\"ds-t\">Jules Bernard</span><span class=\"ds-s\">Maybe · yesterday</span></span><span class=\"ds-chev\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 6l6 6-6 6\"/></svg></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-face is-pending\">L</span><span class=\"ds-txt\"><span class=\"ds-t\">Léa Petit</span><span class=\"ds-s\">Family</span></span><span class=\"ds-chev\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 6l6 6-6 6\"/></svg></span></a></li></ul>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--wa-base:#7A9A7E;--wa-deep:#3F6146;--wa-soft:#E6EEE7;--wa-focus:rgba(63,97,70,.18);--wa-shadow:rgba(63,97,70,.12)}.ds-group{list-style:none;margin:0;padding:0;background:var(--vc-surface);border:1px solid var(--vc-line);border-radius:18px;overflow:hidden;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif}.ds-group>li+li{border-top:1px solid var(--vc-line)}.ds-row{display:flex;align-items:center;gap:12px;min-height:60px;padding:11px 16px;color:var(--vc-ink);text-decoration:none;transition:background-color .15s ease}.ds-row:hover{background:var(--vc-hover)}.ds-row:focus-visible{outline:2px solid var(--wa-deep);outline-offset:-2px}.ds-txt{flex:1;min-width:0}.ds-t{display:block;font-weight:600;font-size:15px}.ds-s{display:block;font-size:13px;color:var(--vc-muted);margin-top:1px}.ds-yes{color:var(--wa-deep);font-weight:600}.ds-chev{display:flex;color:var(--vc-ring)}.ds-row:hover .ds-chev{color:var(--wa-deep)}.ds-face{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600;font-size:15px}.ds-face.is-attending{background:var(--wa-soft);color:var(--wa-deep)}.ds-face.is-maybe{background:var(--vc-surface);color:var(--wa-deep);box-shadow:inset 0 0 0 1.5px var(--wa-base)}.ds-face.is-pending{background:var(--vc-surface);color:var(--vc-muted);box-shadow:inset 0 0 0 1.5px var(--vc-ring)}"
+      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-group{list-style:none;margin:0;padding:0;background:var(--vc-surface);border:1px solid var(--vc-line);border-radius:18px;overflow:hidden;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif}.ds-group>li+li{border-top:1px solid var(--vc-line)}.ds-row{display:flex;align-items:center;gap:12px;min-height:60px;padding:11px 16px;color:var(--vc-ink);text-decoration:none;transition:background-color .15s ease}.ds-row:hover{background:var(--vc-hover)}.ds-row:focus-visible{outline:2px solid var(--vc-accent);outline-offset:-2px}.ds-txt{flex:1;min-width:0}.ds-t{display:block;font-weight:600;font-size:15px}.ds-s{display:block;font-size:13px;color:var(--vc-muted);margin-top:1px}.ds-yes{color:var(--vc-accent);font-weight:600}.ds-chev{display:flex;color:var(--vc-ring)}.ds-row:hover .ds-chev{color:var(--vc-accent)}.ds-face{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600;font-size:15px}.ds-face.is-attending{background:var(--vc-accent-soft);color:var(--vc-accent)}.ds-face.is-maybe{background:var(--vc-surface);color:var(--vc-accent);box-shadow:inset 0 0 0 1.5px var(--vc-accent-2)}.ds-face.is-pending{background:var(--vc-surface);color:var(--vc-muted);box-shadow:inset 0 0 0 1.5px var(--vc-ring)}"
     },
     {
       "name": "Reply Panel",
       "kind": "card",
       "refersTo": "panel",
-      "description": "Signature: the big answered numeral in wedding deep, one split reply bar, legend links.",
-      "html": "<section class=\"ds-panel\"><div class=\"ds-head\"><span class=\"ds-numeral\">29</span><span class=\"ds-of\">answered of 48</span></div><div class=\"ds-bar\"><span style=\"flex-grow:21;background:var(--wa-deep)\"></span><span style=\"flex-grow:3;background:var(--wa-base)\"></span><span style=\"flex-grow:5;background:#C9C7C1\"></span><span style=\"flex-grow:19;background:var(--vc-track)\"></span></div><ul class=\"ds-legend\"><li><a href=\"#\"><i style=\"background:var(--wa-deep)\"></i>Coming<b>21</b></a></li><li><a href=\"#\"><i style=\"background:var(--wa-base)\"></i>Maybe<b>3</b></a></li><li><a href=\"#\"><i style=\"background:#C9C7C1\"></i>Can't come<b>5</b></a></li><li><a href=\"#\"><i style=\"box-shadow:inset 0 0 0 1.5px var(--vc-ring)\"></i>Waiting<b>19</b></a></li></ul></section>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--wa-base:#7A9A7E;--wa-deep:#3F6146;--wa-soft:#E6EEE7;--wa-focus:rgba(63,97,70,.18);--wa-shadow:rgba(63,97,70,.12)}.ds-panel{background:var(--vc-surface);border:1px solid var(--vc-line);border-radius:20px;padding:24px 22px 20px;box-shadow:0 1px 2px var(--vc-shadow),0 12px 32px var(--vc-shadow);font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;color:var(--vc-ink)}.ds-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.ds-numeral{font-weight:500;font-size:76px;line-height:.82;letter-spacing:-.045em;color:var(--wa-deep);font-variant-numeric:tabular-nums}.ds-of{font-size:16px;font-weight:500;color:var(--vc-ink-2)}.ds-bar{display:flex;gap:3px;height:10px;margin-top:22px}.ds-bar span{flex-basis:0;min-width:0;border-radius:5px}.ds-legend{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 18px}.ds-legend a{display:flex;align-items:center;gap:9px;min-height:42px;padding:0 8px;margin:0 -8px;border-radius:10px;font-size:14.5px;font-weight:500;color:var(--vc-ink-2);text-decoration:none}.ds-legend a:hover{background:var(--vc-hover);color:var(--vc-ink)}.ds-legend a:focus-visible{outline:2px solid var(--wa-deep);outline-offset:2px}.ds-legend i{width:10px;height:10px;border-radius:50%;flex-shrink:0}.ds-legend b{margin-left:auto;font-weight:600;color:var(--vc-ink);font-variant-numeric:tabular-nums}"
+      "description": "Signature: the big answered numeral in graphite, one split reply bar, legend links.",
+      "html": "<section class=\"ds-panel\"><div class=\"ds-head\"><span class=\"ds-numeral\">29</span><span class=\"ds-of\">answered of 48</span></div><div class=\"ds-bar\"><span style=\"flex-grow:21;background:var(--vc-accent)\"></span><span style=\"flex-grow:3;background:var(--vc-accent-2)\"></span><span style=\"flex-grow:5;background:#C9C7C1\"></span><span style=\"flex-grow:19;background:var(--vc-track)\"></span></div><ul class=\"ds-legend\"><li><a href=\"#\"><i style=\"background:var(--vc-accent)\"></i>Coming<b>21</b></a></li><li><a href=\"#\"><i style=\"background:var(--vc-accent-2)\"></i>Maybe<b>3</b></a></li><li><a href=\"#\"><i style=\"background:#C9C7C1\"></i>Can't come<b>5</b></a></li><li><a href=\"#\"><i style=\"box-shadow:inset 0 0 0 1.5px var(--vc-ring)\"></i>Waiting<b>19</b></a></li></ul></section>",
+      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-panel{background:var(--vc-surface);border:1px solid var(--vc-line);border-radius:20px;padding:24px 22px 20px;box-shadow:0 1px 2px var(--vc-shadow),0 12px 32px var(--vc-shadow);font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;color:var(--vc-ink)}.ds-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.ds-numeral{font-weight:500;font-size:76px;line-height:.82;letter-spacing:-.045em;color:var(--vc-accent);font-variant-numeric:tabular-nums}.ds-of{font-size:16px;font-weight:500;color:var(--vc-ink-2)}.ds-bar{display:flex;gap:3px;height:10px;margin-top:22px}.ds-bar span{flex-basis:0;min-width:0;border-radius:5px}.ds-legend{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 18px}.ds-legend a{display:flex;align-items:center;gap:9px;min-height:42px;padding:0 8px;margin:0 -8px;border-radius:10px;font-size:14.5px;font-weight:500;color:var(--vc-ink-2);text-decoration:none}.ds-legend a:hover{background:var(--vc-hover);color:var(--vc-ink)}.ds-legend a:focus-visible{outline:2px solid var(--vc-accent);outline-offset:2px}.ds-legend i{width:10px;height:10px;border-radius:50%;flex-shrink:0}.ds-legend b{margin-left:auto;font-weight:600;color:var(--vc-ink);font-variant-numeric:tabular-nums}"
     },
     {
       "name": "Page Header",
       "kind": "custom",
       "refersTo": "display",
-      "description": "Title with the couple's names and date beside a swatch of their colour.",
-      "html": "<header class=\"ds-header\"><div><h1 class=\"ds-h1\">Guests</h1><div class=\"ds-couple\"><span class=\"ds-dot\"></span>Camille &amp; Hugo · 12 June 2027</div></div></header>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--wa-base:#7A9A7E;--wa-deep:#3F6146;--wa-soft:#E6EEE7;--wa-focus:rgba(63,97,70,.18);--wa-shadow:rgba(63,97,70,.12)}.ds-header{font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;padding:0 2px}.ds-h1{font-weight:600;font-size:40px;line-height:1.05;letter-spacing:-.03em;color:var(--vc-ink);margin:0}.ds-couple{display:inline-flex;align-items:center;gap:8px;margin-top:8px;font-size:14.5px;font-weight:500;color:var(--vc-muted)}.ds-dot{width:10px;height:10px;border-radius:50%;background:var(--wa-base)}"
+      "description": "Title with the couple's names and date beneath, in quiet grey.",
+      "html": "<header class=\"ds-header\"><div><h1 class=\"ds-h1\">Guests</h1><div class=\"ds-couple\">Camille &amp; Hugo · 12 June 2027</div></div></header>",
+      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-header{font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;padding:0 2px}.ds-h1{font-weight:600;font-size:40px;line-height:1.05;letter-spacing:-.03em;color:var(--vc-ink);margin:0}.ds-couple{margin-top:8px;font-size:14.5px;font-weight:500;color:var(--vc-muted)}"
     }
   ],
   "narrative": {
-    "northStar": "The Neutral Frame That Wears Their Colour",
-    "overview": "Union's interface takes no wedding style of its own. The frame is near-white ground, white cards with hairline borders, near-black ink and one calm grotesque with tabular numerals; it should sit equally well beside a bohemian, black-tie, minimal or rustic wedding. The personality comes from the couple: their names and date in the page header, and exactly one colour, the wedding colour they picked. Theme neutrality is a binding product principle (PRODUCT.md, principle 5), confirmed after a themed trial read as childish and divisive.\n\nThe wedding colour is not a free hex. It is a preset key stored in `weddings.accent` (sage, terracotta, dusty blue, navy, burgundy, rose, ochre, lilac, black) or null, which falls back to Union's own graphite. Each preset resolves to three shades (base for fills, deep for text and buttons, soft for tinted grounds), and every set is checked for WCAG AA by a unit test. A page sets the shades as `--wa-*` variables on its root element; everything below reads them.\n\nDensity is calm and phone-first: one column on a phone, large readable numbers, rows tall enough for a thumb (60px), and at most one coloured action per area. Depth is soft and ambient, never decorative.",
+    "northStar": "The Neutral Frame",
+    "overview": "Union's interface takes no wedding style of its own. The frame is near-white ground, white cards with hairline borders, near-black ink and one calm grotesque with tabular numerals; it should sit equally well beside a bohemian, black-tie, minimal or rustic wedding. The personality comes from the couple: their names and date in the page header, and their guests. Theme neutrality is a binding product principle (PRODUCT.md, principle 5), confirmed after a themed trial read as childish and divisive.\n\nThere is one fixed accent, graphite, the same for every couple. It carries the actions, the answered count and the \"yes\" in the replies; a lighter stone marks \"maybe\". Nothing about the colour varies from one wedding to the next.\n\nDensity is calm and phone-first: one column on a phone, large readable numbers, rows tall enough for a thumb (60px), and at most one filled action per area. Depth is soft and ambient, never decorative.",
     "keyCharacteristics": [
-      "A neutral, warm-grey frame; the couple's colour is the only hue on screen.",
-      "One preset colour in three AA-checked shades, set per page as `--wa-*`; graphite when unset.",
+      "A neutral, very slightly warm grey frame with no hue at all.",
+      "One fixed graphite accent for actions and \"yes\", a lighter stone for \"maybe\".",
       "One face, Hanken Grotesk, semibold headings with tight negative tracking, tabular figures for every count.",
       "White cards on a near-white ground, separated by hairlines and a faint ambient shadow.",
       "Generous radii (10 to 20px) and 44px-plus touch targets."
     ],
     "rules": [
       {
-        "name": "The One Colour Rule",
-        "body": "The wedding colour is the only hue in the world. Status is told with the wedding colour's shades plus neutrals (coming = deep, maybe = base, declined = stone, waiting = bare track), never with green, amber or red.",
-        "section": "colors"
-      },
-      {
-        "name": "The Preset-Only Rule",
-        "body": "A wedding colour is always a preset key with tuned shades, never a free hex. A new preset ships with base, deep and soft and must pass the contrast test in `lib/weddingAccent.test.ts`: white on deep, deep on soft and deep on the ground all at 4.5:1 or more.",
+        "name": "The One Accent Rule",
+        "body": "Graphite is the only accent in the world, and it is fixed. Status is told with graphite plus neutrals (coming = graphite, maybe = stone, declined = can't-come stone, waiting = bare track), never with green, amber or red.",
         "section": "colors"
       },
       {
         "name": "The Variables Rule",
-        "body": "Components read `var(--wa-*)` and `var(--vc-*)`; they never import a preset's hex directly. The default graphite set is also in the root `CSS_VARS`, so the stylesheet always has a colour, even before a page sets one.",
+        "body": "Components read `var(--vc-*)` (or `V` in inline styles); they never write a hex. A new colour is added to `V` and exposed through `CSS_VARS`.",
         "section": "colors"
       },
       {
@@ -456,19 +377,18 @@
       }
     ],
     "dos": [
-      "Do set `accentVars(parseWeddingAccent(wedding.accent))` on the page root of every surface in this world, so `--wa-*` is the couple's colour.",
-      "Do use wedding deep for text, buttons and the selected state, base for fills and rings, soft for tinted grounds.",
-      "Do add new presets only with all three shades and a passing contrast test (4.5:1 for white on deep, deep on soft, deep on the ground).",
+      "Do put `gu-main` and `guestsTypeClass` on the page root of every surface in this world, so it gets the neutral ground and Hanken Grotesk.",
+      "Do use graphite for actions, the answered count, \"yes\" and the selected state; stone only for \"maybe\".",
       "Do keep touch targets at 44px or more for buttons and 60px for list rows, and 16px text in inputs.",
       "Do use tabular figures for every count.",
       "Do honour `prefers-reduced-motion` for the bar, rows, buttons and field transitions."
     ],
     "donts": [
       "Don't give the interface a wedding style: no romantic cream and serif, garden-party motifs or black-tie ornament (PRODUCT.md, principle 5).",
-      "Don't add a second hue: no brand accent beside the wedding colour, no green, amber or red status colours in this world.",
-      "Don't accept a free colour from the couple; only preset keys.",
+      "Don't add a second hue: no brand colour beside graphite, no green, amber or red status colours in this world.",
+      "Don't vary the accent; it is one fixed graphite for every couple.",
       "Don't add a second typeface.",
-      "Don't hard-code a preset's hex in a component; read `var(--wa-*)`."
+      "Don't write a hex in a component; read `var(--vc-*)` or `V`."
     ]
   }
 }

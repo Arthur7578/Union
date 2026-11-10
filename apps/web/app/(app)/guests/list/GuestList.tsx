@@ -7,10 +7,9 @@ import {
   filterGuests,
   guestReplyStatus,
   parseGuestStatusFilter,
-  parseWeddingAccent,
   type GuestStatusFilter,
 } from "@union/shared";
-import { V, accentVars } from "@/lib/theme";
+import { V } from "@/lib/theme";
 import { useWedding } from "@/lib/wedding";
 import { guestStats } from "@/lib/data";
 import { initial } from "@/lib/format";
@@ -87,10 +86,7 @@ export function GuestList() {
           : t.guests.filterWaiting;
 
   return (
-    <main
-      className={`u-main gu-main gu-list ${guestsTypeClass}`}
-      style={accentVars(parseWeddingAccent(wedding.accent)) as React.CSSProperties}
-    >
+    <main className={`u-main gu-main gu-list ${guestsTypeClass}`}>
       <header className="gu-header" style={{ alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
           <button type="button" onClick={back} aria-label={t.guests.title} className="gu-back">

@@ -26,7 +26,6 @@ vi.mock("@/components/BackHeader", () => ({
 import GuestPermissionsPage from "./page";
 
 const wedding = (patch: Partial<Wedding> = {}): Wedding => ({
-  accent: null,
   address_area: null,
   address_city: null,
   address_country: null,

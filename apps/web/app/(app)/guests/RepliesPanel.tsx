@@ -20,14 +20,13 @@ type Segment = {
   key: Exclude<GuestStatusFilter, "all">;
   label: string;
   value: number;
-  /** A CSS colour: the wedding colour's shades for the yes and maybe. */
   color: string;
 };
 
 /**
  * Where the replies stand: how many have answered, one bar split by answer,
- * and a way into the list for each answer. The bar wears the couple's
- * wedding colour. The nudge for the guests still waiting sits underneath.
+ * and a way into the list for each answer. The nudge for the guests still
+ * waiting sits underneath.
  */
 export function RepliesPanel({
   stats,
@@ -42,9 +41,9 @@ export function RepliesPanel({
 }) {
   const answered = stats ? stats.invited - stats.waiting : null;
   const segments: Segment[] = [
-    { key: "coming", label: t.guests.filterComing, value: stats?.coming ?? 0, color: "var(--wa-deep)" },
+    { key: "coming", label: t.guests.filterComing, value: stats?.coming ?? 0, color: V.accent },
     ...(showMaybe
-      ? [{ key: "maybe" as const, label: t.guests.filterMaybe, value: stats?.maybe ?? 0, color: "var(--wa-base)" }]
+      ? [{ key: "maybe" as const, label: t.guests.filterMaybe, value: stats?.maybe ?? 0, color: V.accent2 }]
       : []),
     { key: "declined", label: t.guests.filterCant, value: stats?.declined ?? 0, color: V.cant },
     { key: "waiting", label: t.guests.filterWaiting, value: stats?.waiting ?? 0, color: V.track },
