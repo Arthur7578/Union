@@ -1,0 +1,521 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-10T00:00:00Z",
+  "title": "Design System: Union",
+  "extensions": {
+    "scope": "Trial world: covers /guests and /guests/list only. Other couple-app screens still use the incumbent palette T in lib/theme.ts.",
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Leaf White",
+        "canonical": "#F3F7F1",
+        "tonalRamp": [
+          "#0B0B0A",
+          "#242623",
+          "#40433F",
+          "#5F625D",
+          "#80847E",
+          "#A3A6A1",
+          "#C7CAC5",
+          "#EDEFEC"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Forest Ink",
+        "canonical": "#1E3A2D",
+        "tonalRamp": [
+          "#060D09",
+          "#192921",
+          "#30483C",
+          "#4C695A",
+          "#6C8B7B",
+          "#8EAE9D",
+          "#B5D1C2",
+          "#E1F4EA"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Forest Ink 2",
+        "canonical": "#41594C",
+        "tonalRamp": [
+          "#070D09",
+          "#1B2921",
+          "#33473C",
+          "#4F685A",
+          "#70897B",
+          "#92AC9E",
+          "#B9D0C3",
+          "#E3F3EA"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Moss Grey",
+        "canonical": "#5E7366",
+        "tonalRamp": [
+          "#070D09",
+          "#1D2821",
+          "#36473C",
+          "#52675A",
+          "#73887B",
+          "#95AB9D",
+          "#BBCFC2",
+          "#E5F3EA"
+        ]
+      },
+      "leaf": {
+        "role": "primary",
+        "displayName": "Leaf Green",
+        "canonical": "#2E6B4E",
+        "tonalRamp": [
+          "#020F07",
+          "#0A2C1D",
+          "#184D35",
+          "#326F52",
+          "#559172",
+          "#77B594",
+          "#A3D7BB",
+          "#D5F9E4"
+        ]
+      },
+      "leaf-deep": {
+        "role": "primary",
+        "displayName": "Deep Leaf",
+        "canonical": "#24563E",
+        "tonalRamp": [
+          "#030E08",
+          "#102B1E",
+          "#214C37",
+          "#3C6D54",
+          "#5D8F75",
+          "#7FB397",
+          "#A9D5BD",
+          "#D9F7E6"
+        ]
+      },
+      "sage": {
+        "role": "secondary",
+        "displayName": "Canopy Sage",
+        "canonical": "#CFE3D2",
+        "tonalRamp": [
+          "#080C09",
+          "#1F2820",
+          "#38463A",
+          "#556658",
+          "#768879",
+          "#98AB9B",
+          "#BECEC0",
+          "#E6F2E8"
+        ]
+      },
+      "sage-soft": {
+        "role": "secondary",
+        "displayName": "Sage Mist",
+        "canonical": "#E6F0E7",
+        "tonalRamp": [
+          "#0A0C0A",
+          "#222622",
+          "#3D443E",
+          "#5B645C",
+          "#7C857D",
+          "#9FA8A0",
+          "#C3CCC4",
+          "#EAF0EB"
+        ]
+      },
+      "coming": {
+        "role": "tertiary",
+        "displayName": "Garden Green",
+        "canonical": "#4F9A6E",
+        "tonalRamp": [
+          "#000F05",
+          "#012E18",
+          "#04502D",
+          "#247248",
+          "#499469",
+          "#6DB88B",
+          "#9BDAB2",
+          "#D0FBDE"
+        ]
+      },
+      "maybe": {
+        "role": "tertiary",
+        "displayName": "Lantern Gold",
+        "canonical": "#E8B23F",
+        "tonalRamp": [
+          "#150800",
+          "#391E00",
+          "#613800",
+          "#885600",
+          "#AB7800",
+          "#D09B1E",
+          "#F0C268",
+          "#FFEAAF"
+        ]
+      },
+      "cant": {
+        "role": "tertiary",
+        "displayName": "Rose Petal",
+        "canonical": "#E79C90",
+        "tonalRamp": [
+          "#170604",
+          "#3C1914",
+          "#662F27",
+          "#8E4B42",
+          "#B36C62",
+          "#D98F83",
+          "#F8B6AC",
+          "#FFE2DA"
+        ]
+      },
+      "waiting": {
+        "role": "tertiary",
+        "displayName": "Waiting Ring",
+        "canonical": "#B9C7BD",
+        "tonalRamp": [
+          "#090C0A",
+          "#202722",
+          "#3B453E",
+          "#58655C",
+          "#79867D",
+          "#9BA99F",
+          "#C1CDC4",
+          "#E9F1EB"
+        ]
+      },
+      "blush": {
+        "role": "tertiary",
+        "displayName": "Blush",
+        "canonical": "#F9DEDA",
+        "tonalRamp": [
+          "#0F0909",
+          "#2E2220",
+          "#4F3D3A",
+          "#725B58",
+          "#947C78",
+          "#B89E9B",
+          "#DAC3C0",
+          "#FAEAE8"
+        ]
+      },
+      "blush-ink": {
+        "role": "tertiary",
+        "displayName": "Blush Ink",
+        "canonical": "#9E3F37",
+        "tonalRamp": [
+          "#1A0303",
+          "#44110E",
+          "#72231D",
+          "#9D3E36",
+          "#C36156",
+          "#EB8478",
+          "#FFAEA2",
+          "#FFDCD3"
+        ]
+      },
+      "butter": {
+        "role": "tertiary",
+        "displayName": "Butter",
+        "canonical": "#FBEFC6",
+        "tonalRamp": [
+          "#0E0B03",
+          "#2A2511",
+          "#4B4223",
+          "#6C613C",
+          "#8D825D",
+          "#B0A57E",
+          "#D3C9A7",
+          "#F5EFD7"
+        ]
+      },
+      "butter-ink": {
+        "role": "tertiary",
+        "displayName": "Butter Ink",
+        "canonical": "#7A5A0F",
+        "tonalRamp": [
+          "#120900",
+          "#332200",
+          "#573D00",
+          "#7B5B11",
+          "#9E7D39",
+          "#C2A05D",
+          "#E3C58D",
+          "#FFECC5"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(30,58,45,0.1)",
+        "note": "#1E3A2D at 10% via alpha() in lib/theme.ts"
+      },
+      "line-soft": {
+        "role": "neutral",
+        "displayName": "Soft Hairline",
+        "canonical": "rgba(30,58,45,0.06)",
+        "note": "#1E3A2D at 6% via alpha() in lib/theme.ts"
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Leaf Wash",
+        "canonical": "rgba(46,107,78,0.06)",
+        "note": "#2E6B4E at 6% via alpha() in lib/theme.ts"
+      },
+      "focus-halo": {
+        "role": "neutral",
+        "displayName": "Focus Halo",
+        "canonical": "rgba(46,107,78,0.22)",
+        "note": "#2E6B4E at 22% via alpha() in lib/theme.ts"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page title in the tent; 50px at 960px and up."
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "The answered count in the reply panel, leaf, tabular."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Reply-panel sentence when all or none answered; empty-state titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings, optionally led by the bunting mark."
+      },
+      "row-title": {
+        "displayName": "Row title",
+        "purpose": "Names and tool labels in rows; one line, ellipsis."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Quiet notes and empty-state copy, about 46ch max."
+      },
+      "input": {
+        "displayName": "Input",
+        "purpose": "Search field text; 16px so phones do not zoom."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, chips and links (14px on small buttons and chips)."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Row sub-lines: reply and time, group and role."
+      },
+      "tag": {
+        "displayName": "Tag",
+        "purpose": "Reply tags in the unfiltered list."
+      }
+    },
+    "shadows": [
+      {
+        "name": "canopy-cast",
+        "value": "drop-shadow(0 6px 6px rgba(30,58,45,0.08))",
+        "purpose": "filter under the canopy and its scallops."
+      },
+      {
+        "name": "panel-lift",
+        "value": "0 12px 32px rgba(30,58,45,0.08)",
+        "purpose": "The reply panel."
+      },
+      {
+        "name": "card-lift",
+        "value": "0 6px 20px rgba(30,58,45,0.08)",
+        "purpose": "Row cards."
+      },
+      {
+        "name": "action-lift",
+        "value": "0 6px 16px rgba(30,58,45,0.18)",
+        "purpose": "Primary leaf buttons."
+      },
+      {
+        "name": "hairline",
+        "value": "inset 0 0 0 1.5px rgba(30,58,45,0.1)",
+        "purpose": "Outline of ghost buttons, chips, back button, search field."
+      },
+      {
+        "name": "focus-field",
+        "value": "inset 0 0 0 2px #2E6B4E, 0 0 0 5px rgba(46,107,78,0.22)",
+        "purpose": "Focused search field."
+      },
+      {
+        "name": "focus-outline",
+        "value": "outline: 2.5px solid #2E6B4E; outline-offset: 2px",
+        "purpose": "Focus on rows (offset -3px inside cards), links, buttons, chips."
+      }
+    ],
+    "motion": [
+      {
+        "name": "bar-grow",
+        "value": "flex-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Reply bar segments settling to their share."
+      },
+      {
+        "name": "press",
+        "value": "transform 0.12s ease; scale(0.97)",
+        "purpose": "Button press."
+      },
+      {
+        "name": "state",
+        "value": "0.15s ease",
+        "purpose": "Background, shadow and underline state changes."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transition: none",
+        "purpose": "All of the above off under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "desktop",
+        "value": "960px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The leaf action pill: Add guest, Send nudge, empty-state actions.",
+      "html": "<button class=\"ds-btn-primary\">Add a guest</button>",
+      "css": ".ds-btn-primary { font-family: Nunito, system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 20px; border-radius: 999px; border: none; font-weight: 800; font-size: 15px; background: #2E6B4E; color: #FFFFFF; box-shadow: 0 6px 16px rgba(30,58,45,0.18); cursor: pointer; transition: transform 0.12s ease, background-color 0.15s ease; } .ds-btn-primary:hover { background: #24563E; } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: 2.5px solid #2E6B4E; outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action: white pill with an inset forest hairline.",
+      "html": "<button class=\"ds-btn-ghost\">Share the group link</button>",
+      "css": ".ds-btn-ghost { font-family: Nunito, system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border-radius: 999px; border: none; font-weight: 800; font-size: 15px; background: #FFFFFF; color: #1E3A2D; box-shadow: inset 0 0 0 1.5px rgba(30,58,45,0.1); cursor: pointer; transition: transform 0.12s ease, background-color 0.15s ease; } .ds-btn-ghost:hover { background: #E6F0E7; } .ds-btn-ghost:active { transform: scale(0.97); } .ds-btn-ghost:focus-visible { outline: 2.5px solid #2E6B4E; outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input-find",
+      "description": "The find-a-guest pill, in the first phone viewport.",
+      "html": "<label class=\"ds-find\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"6.5\" stroke=\"#5E7366\" stroke-width=\"2\" fill=\"none\"/><path d=\"M16 16l4.5 4.5\" stroke=\"#5E7366\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg><input type=\"search\" placeholder=\"Find a guest\"></label>",
+      "css": ".ds-find { display: flex; align-items: center; gap: 10px; padding: 0 18px; min-height: 54px; border-radius: 999px; background: #FFFFFF; box-shadow: inset 0 0 0 1.5px rgba(30,58,45,0.1); transition: box-shadow 0.15s ease; } .ds-find:focus-within { box-shadow: inset 0 0 0 2px #2E6B4E, 0 0 0 5px rgba(46,107,78,0.22); } .ds-find input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: Nunito, system-ui, sans-serif; font-weight: 600; font-size: 16px; color: #1E3A2D; caret-color: #2E6B4E; padding: 14px 0; } .ds-find input::placeholder { color: #5E7366; }"
+    },
+    {
+      "name": "Reply Filter Chips",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Reply filters on the list; the selected chip fills with leaf.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\" aria-pressed=\"true\">All <span>48</span></button><button class=\"ds-chip\" aria-pressed=\"false\">Coming <span>21</span></button><button class=\"ds-chip\" aria-pressed=\"false\">Waiting <span>19</span></button></div>",
+      "css": ".ds-chips { display: flex; gap: 8px; flex-wrap: wrap; } .ds-chip { font-family: Nunito, system-ui, sans-serif; min-height: 40px; padding: 0 15px; border-radius: 999px; border: none; font-weight: 800; font-size: 14px; background: #FFFFFF; color: #41594C; box-shadow: inset 0 0 0 1.5px rgba(30,58,45,0.1); cursor: pointer; } .ds-chip span { opacity: 0.8; margin-left: 4px; font-variant-numeric: tabular-nums; } .ds-chip:hover { background: #E6F0E7; } .ds-chip[aria-pressed=\"true\"] { background: #2E6B4E; color: #FFFFFF; box-shadow: none; } .ds-chip:focus-visible { outline: 2.5px solid #2E6B4E; outline-offset: 2px; }"
+    },
+    {
+      "name": "Guest Row Card",
+      "kind": "card",
+      "refersTo": "group-card",
+      "description": "White row card with avatar faces, reply tags and leaf chevrons.",
+      "html": "<ul class=\"ds-group\"><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-face is-attending\">C</span><span class=\"ds-txt\"><span class=\"ds-title\">Camille Martin</span><span class=\"ds-sub\">Family · Witness</span></span><span class=\"ds-tag is-attending\">Coming</span><span class=\"ds-chev\"><svg width=\"8\" height=\"14\" viewBox=\"0 0 8 14\" aria-hidden=\"true\"><path d=\"M1 1l6 6-6 6\" stroke=\"currentColor\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-face is-maybe\">J</span><span class=\"ds-txt\"><span class=\"ds-title\">Jules Petit</span><span class=\"ds-sub\">Friends</span></span><span class=\"ds-tag is-maybe\">Maybe</span><span class=\"ds-chev\"><svg width=\"8\" height=\"14\" viewBox=\"0 0 8 14\" aria-hidden=\"true\"><path d=\"M1 1l6 6-6 6\" stroke=\"currentColor\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-face is-pending\">L</span><span class=\"ds-txt\"><span class=\"ds-title\">Léa Bernard</span><span class=\"ds-sub\">Work</span></span><span class=\"ds-tag is-pending\">Waiting</span><span class=\"ds-chev\"><svg width=\"8\" height=\"14\" viewBox=\"0 0 8 14\" aria-hidden=\"true\"><path d=\"M1 1l6 6-6 6\" stroke=\"currentColor\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></span></a></li></ul>",
+      "css": ".ds-group { list-style: none; margin: 0; padding: 4px 0; background: #FFFFFF; border-radius: 24px; box-shadow: 0 6px 20px rgba(30,58,45,0.08); font-family: Nunito, system-ui, sans-serif; } .ds-group > li + li { border-top: 1px solid rgba(30,58,45,0.06); margin: 0 16px; } .ds-group > li + li .ds-row { margin: 0 -16px; } .ds-row { display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 10px 16px; color: #1E3A2D; border-radius: 20px; text-decoration: none; transition: background-color 0.15s ease; } .ds-row:hover { background: rgba(46,107,78,0.06); } .ds-row:focus-visible { outline: 2.5px solid #2E6B4E; outline-offset: -3px; } .ds-txt { flex: 1; min-width: 0; } .ds-title { display: block; font-weight: 800; font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-sub { display: block; font-size: 13px; font-weight: 600; color: #5E7366; margin-top: 1px; } .ds-face { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: Caprasimo, Georgia, serif; font-size: 18px; } .ds-face.is-attending, .ds-tag.is-attending { background: #E6F0E7; color: #2E6B4E; } .ds-face.is-maybe, .ds-tag.is-maybe { background: #FBEFC6; color: #7A5A0F; } .ds-face.is-pending { background: #FFFFFF; color: #5E7366; box-shadow: inset 0 0 0 1.5px #B9C7BD; } .ds-tag { display: inline-flex; align-items: center; min-height: 26px; padding: 0 11px; border-radius: 999px; font-size: 12.5px; font-weight: 800; flex-shrink: 0; } .ds-tag.is-pending { background: #F3F7F1; color: #5E7366; } .ds-chev { color: #2E6B4E; flex-shrink: 0; display: flex; }"
+    },
+    {
+      "name": "Reply Panel",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "Signature: big Caprasimo count, one pill-segment reply bar, linked legend, scalloped butter nudge footer.",
+      "html": "<section class=\"ds-panel\"><p class=\"ds-count\"><span class=\"ds-numeral\">29</span><span class=\"ds-of\">of 48 have answered</span></p><div class=\"ds-bar\"><span style=\"flex-grow:21;background:#4F9A6E\"></span><span style=\"flex-grow:3;background:#E8B23F\"></span><span style=\"flex-grow:5;background:#E79C90\"></span><span style=\"flex-grow:19;background:#E6F0E7\"></span></div><ul class=\"ds-legend\"><li><a href=\"#\"><i style=\"background:#4F9A6E\"></i>Coming<b>21</b></a></li><li><a href=\"#\"><i style=\"background:#E8B23F\"></i>Maybe<b>3</b></a></li><li><a href=\"#\"><i style=\"background:#E79C90\"></i>Can't come<b>5</b></a></li><li><a href=\"#\"><i style=\"box-shadow:inset 0 0 0 2px #B9C7BD\"></i>Waiting<b>19</b></a></li></ul><div class=\"ds-note\"><p><b>19 still waiting.</b> One email reaches all of them.</p><button class=\"ds-note-btn\">Send a nudge</button></div></section>",
+      "css": ".ds-panel { font-family: Nunito, system-ui, sans-serif; background: #FFFFFF; border-radius: 28px; padding: 22px 20px 18px; box-shadow: 0 12px 32px rgba(30,58,45,0.08); color: #1E3A2D; max-width: 420px; } .ds-count { display: flex; align-items: baseline; gap: 10px; margin: 0; flex-wrap: wrap; } .ds-numeral { font-family: Caprasimo, Georgia, serif; font-size: 72px; line-height: 0.8; color: #2E6B4E; font-variant-numeric: tabular-nums; } .ds-of { font-size: 16px; font-weight: 700; color: #41594C; } .ds-bar { display: flex; gap: 4px; height: 14px; margin-top: 18px; } .ds-bar span { flex-basis: 0; min-width: 0; border-radius: 999px; } .ds-legend { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; } .ds-legend a { display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 10px; margin: 0 -10px; border-radius: 14px; font-size: 15px; font-weight: 600; color: #41594C; text-decoration: none; } .ds-legend a:hover { background: rgba(46,107,78,0.06); color: #1E3A2D; } .ds-legend a:focus-visible { outline: 2.5px solid #2E6B4E; outline-offset: 2px; } .ds-legend i { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; } .ds-legend b { margin-left: auto; font-weight: 800; color: #1E3A2D; font-variant-numeric: tabular-nums; } .ds-note { position: relative; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 22px -20px -18px; padding: 16px 20px 18px; border-radius: 0 0 28px 28px; background: #FBEFC6; color: #41594C; } .ds-note::before { content: ''; position: absolute; left: 0; right: 0; top: -9px; height: 10px; background: #FBEFC6; -webkit-mask: radial-gradient(circle at 50% 100%, black 10px, transparent 10.5px) 0 0 / 20px 10px repeat-x; mask: radial-gradient(circle at 50% 100%, black 10px, transparent 10.5px) 0 0 / 20px 10px repeat-x; } .ds-note p { flex: 1 1 180px; margin: 0; font-size: 14px; line-height: 1.45; } .ds-note b { color: #1E3A2D; } .ds-note-btn { font-family: Nunito, system-ui, sans-serif; min-height: 40px; padding: 0 16px; border-radius: 999px; border: none; background: #2E6B4E; color: #FFFFFF; font-weight: 800; font-size: 14px; box-shadow: 0 6px 16px rgba(30,58,45,0.18); cursor: pointer; } .ds-note-btn:hover { background: #24563E; } .ds-note-btn:focus-visible { outline: 2.5px solid #2E6B4E; outline-offset: 2px; }"
+    },
+    {
+      "name": "Canopy",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Signature: sage-and-white striped canopy, scalloped valance, title in the shaded tent.",
+      "html": "<div class=\"ds-tent\"><div class=\"ds-canopy\"></div><div class=\"ds-tent-inner\"><h1 class=\"ds-h1\">Guests</h1><button class=\"ds-tent-btn\">Add a guest</button></div></div>",
+      "css": ".ds-tent { padding-bottom: 22px; background: linear-gradient(to bottom, #E6F0E7 0%, #E6F0E7 55%, #F3F7F1 100%); } .ds-canopy { position: relative; height: 52px; background: repeating-linear-gradient(90deg, #CFE3D2 0 28px, #FFFFFF 28px 56px); filter: drop-shadow(0 6px 6px rgba(30,58,45,0.08)); z-index: 1; } .ds-canopy::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 14px; background: inherit; -webkit-mask: radial-gradient(circle at 50% 0, black 14px, transparent 14.5px) 0 0 / 28px 100% repeat-x; mask: radial-gradient(circle at 50% 0, black 14px, transparent 14.5px) 0 0 / 28px 100% repeat-x; } .ds-tent-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 34px 20px 0; } .ds-h1 { font-family: Caprasimo, Georgia, serif; font-weight: 400; font-size: 42px; line-height: 1; margin: 0; color: #1E3A2D; } .ds-tent-btn { font-family: Nunito, system-ui, sans-serif; min-height: 46px; padding: 0 20px; border-radius: 999px; border: none; background: #2E6B4E; color: #FFFFFF; font-weight: 800; font-size: 15px; box-shadow: 0 6px 16px rgba(30,58,45,0.18); cursor: pointer; } .ds-tent-btn:hover { background: #24563E; } .ds-tent-btn:focus-visible { outline: 2.5px solid #2E6B4E; outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Garden Marquee",
+    "overview": "The guest list is the party gathering under the reception tent. Each page opens under a full-bleed canopy of sage-and-white stripes ending in a scalloped valance, with a string of festoon lights below it on the hub, and the title standing in the shaded inside of the tent, which fades into a fresh leaf-white ground. Below the tent everything is white and rounded: a big reply panel, pill controls, white row cards resting on the leaf ground.\n\nThe mood is joyful, light and fresh, not stationery. Caprasimo, a soft round display face, carries the titles and the numbers; Nunito, a rounded sans, carries the interface at heavy weights (600 to 800). Density is phone-first and calm: one panel, one search, a short list of latest replies, then the tools grouped by stage. The world rejects, by its own thesis, the wedding category default of cream paper, serif display and rosewood stationery, and the generic dashboard of stat tiles.",
+    "keyCharacteristics": [
+      "Striped canopy with scalloped valance at the top of every page in the world, edge to edge of the content area.",
+      "Leaf-white ground, white surfaces, deep forest ink; leaf green is the one action colour.",
+      "Replies speak in three soft tints (sage, butter, blush) plus an empty ring for waiting.",
+      "Everything round: pills, circles, 20 to 28px cards. No square corners.",
+      "Soft shadows tinted with forest ink, never grey or black, never offset hard."
+    ],
+    "rules": [
+      {
+        "name": "The Reply Colour Rule",
+        "body": "Sage/green means coming, butter/gold means maybe, blush/rose means can't come, an empty ring on white means waiting. These tints carry replies (and the nudge about replies); they are not decoration and are never swapped.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Leaf Rule",
+        "body": "Leaf green is the only colour a control is filled with. Secondary actions are white pills with a hairline, not a second accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The Theme-Only Rule",
+        "body": "Every colour is defined in `M` in `lib/theme.ts` and reaches CSS as a `--mq-*` variable; tints are built with `alpha()` there. No hex anywhere else (ESLint enforces it).",
+        "section": "colors"
+      },
+      {
+        "name": "The Round Voice Rule",
+        "body": "Caprasimo is for titles and numbers only, always at weight 400 and 24px or more (the 18px avatar initial is the one exception). Every word of interface is Nunito at 600 or heavier.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Count Rule",
+        "body": "Every count (numeral, legend values, chip counts, list total) uses tabular figures.",
+        "section": "typography"
+      },
+      {
+        "name": "The Forest Shadow Rule",
+        "body": "Shadows are tinted with forest ink at 8% (18% for the leaf button), blurred wide, offset only downward. Never grey or black, never a hard offset.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Valance Rule",
+        "body": "Scallops belong to the canopy and to the panel footer that hangs from it. They mark something hanging, never a generic divider.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** open every page of this world with `MarqueeTop` (full canopy on a hub, slim on a sub-page) and put the page title inside the tent.",
+      "**Do** fill actions with leaf green and give secondary actions a white pill with a 1.5px inset hairline.",
+      "**Do** use the reply tints only for replies: sage for coming, butter for maybe, blush for can't come, an empty ring for waiting.",
+      "**Do** keep controls pills or circles, at least 40px tall, and cards at 20 to 28px corners.",
+      "**Do** set titles and numbers in Caprasimo 400 and everything else in Nunito 600 to 800; use tabular figures for counts.",
+      "**Do** tint shadows with forest ink at 8% (18% for the leaf button) and add new colours to `M` in `lib/theme.ts` as `--mq-*` variables.",
+      "**Do** keep French copy in mind: titles balance, rows ellipsize, chips scroll on a phone.",
+      "**Do** turn transitions off under `prefers-reduced-motion`."
+    ],
+    "donts": [
+      "**Don't** bring back the category default this world refuses: cream paper, serif display, rosewood stationery.",
+      "**Don't** summarise replies as a row of stat tiles; use the one reply bar and its legend.",
+      "**Don't** mix the incumbent `T` palette or its fonts into a marquee page, or marquee tokens into a `T` page, while the trial runs.",
+      "**Don't** use grey or black shadows, or hard offset shadows.",
+      "**Don't** add small uppercase labels (kickers, eyebrows) above titles.",
+      "**Don't** write a hex value outside `lib/theme.ts`.",
+      "**Don't** use the waiting ring colour for text; it is a graphic edge only."
+    ]
+  }
+}
