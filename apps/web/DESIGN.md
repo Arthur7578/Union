@@ -1,57 +1,66 @@
 ---
 name: Union
-description: A neutral, premium planning frame with one graphite accent; the couple's own details are the only personality.
+description: Union's own colours named by role and checked for AA, one modern grotesque, calm cards; the couple's details are the only personality.
 colors:
-  ground: "#F6F6F4"
-  surface: "#FFFFFF"
-  ink: "#1B1B1A"
-  ink-2: "#45443F"
-  muted: "#686660"
-  track: "#ECECEA"
-  cant: "#C9C7C1"
-  ring: "#D6D4CE"
-  line: "rgba(27,27,26,0.08)"
-  line-strong: "rgba(27,27,26,0.14)"
-  hover: "rgba(27,27,26,0.035)"
-  chrome: "rgba(246,246,244,0.92)"
-  accent: "#1B1B1A"
-  accent-2: "#8C8B86"
-  accent-soft: "#ECECEA"
-  focus: "rgba(27,27,26,0.18)"
+  canvas: "#FAF5F1"
+  surface: "#FFFCFA"
+  ink: "#43353A"
+  ink-2: "#5C4B50"
+  muted: "#6E5E62"
+  track: "#EFE7DF"
+  line: "rgba(67,53,58,0.08)"
+  line-strong: "rgba(67,53,58,0.15)"
+  hover: "rgba(67,53,58,0.035)"
+  white: "#FFFFFF"
+  accent: "#B07C82"
+  accent-strong: "#8A545C"
+  accent-soft: "#F2E1E0"
+  focus: "rgba(176,124,130,0.3)"
+  coming: "#7E9A82"
+  coming-strong: "#4F6A54"
+  coming-soft: "#E7EFE6"
+  maybe: "#5C648A"
+  maybe-soft: "#E4E7EE"
+  cant: "#C7A9A2"
+  cant-soft: "#F1E7E3"
+  waiting: "#DDB27C"
+  waiting-strong: "#9A5B23"
+  waiting-soft: "#FBEEE2"
 typography:
   display:
     fontFamily: "Hanken Grotesk, system-ui, sans-serif"
-    fontSize: "40px"
+    fontSize: "38px"
     fontWeight: 600
     lineHeight: 1.05
     letterSpacing: "-0.03em"
   numeral:
     fontFamily: "Hanken Grotesk, system-ui, sans-serif"
-    fontSize: "76px"
-    fontWeight: 500
-    lineHeight: 0.82
-    letterSpacing: "-0.045em"
+    fontSize: "44px"
+    fontWeight: 600
+    lineHeight: 0.9
+    letterSpacing: "-0.04em"
     fontFeature: "tnum"
-  headline:
+  lede:
     fontFamily: "Hanken Grotesk, system-ui, sans-serif"
-    fontSize: "28px"
+    fontSize: "26px"
     fontWeight: 600
     lineHeight: 1.15
     letterSpacing: "-0.025em"
-  title:
+  headline:
     fontFamily: "Hanken Grotesk, system-ui, sans-serif"
-    fontSize: "19px"
+    fontSize: "18px"
     fontWeight: 600
-    lineHeight: 1.2
+    lineHeight: 1.25
     letterSpacing: "-0.015em"
-  row-title:
+  title:
     fontFamily: "Hanken Grotesk, system-ui, sans-serif"
     fontSize: "15px"
     fontWeight: 600
+    lineHeight: 1.3
   body:
     fontFamily: "Hanken Grotesk, system-ui, sans-serif"
     fontSize: "14.5px"
-    fontWeight: 500
+    fontWeight: 400
     lineHeight: 1.5
   label:
     fontFamily: "Hanken Grotesk, system-ui, sans-serif"
@@ -62,50 +71,47 @@ typography:
     fontSize: "13px"
     fontWeight: 400
 rounded:
-  bar: "5px"
+  meter: "4px"
+  skeleton: "8px"
   chip: "10px"
-  control: "12px"
+  icon: "11px"
+  button: "12px"
   field: "14px"
   group: "18px"
-  panel: "20px"
-  round: "50%"
+  card: "20px"
+  full: "50%"
 spacing:
-  hairline-gap: "3px"
-  xs: "8px"
-  sm: "12px"
-  md: "14px"
-  lg: "18px"
-  xl: "22px"
-  section: "34px"
+  xs: "6px"
+  sm: "8px"
+  md: "12px"
+  lg: "16px"
+  xl: "20px"
+  section: "30px"
+  split: "40px"
 components:
   button-primary:
-    backgroundColor: "{colors.accent}"
-    textColor: "{colors.surface}"
+    backgroundColor: "{colors.accent-strong}"
+    textColor: "{colors.white}"
     typography: "{typography.label}"
-    rounded: "{rounded.control}"
+    rounded: "{rounded.button}"
     padding: "0 18px"
     height: "44px"
-  button-primary-small:
-    backgroundColor: "{colors.accent}"
-    textColor: "{colors.surface}"
-    rounded: "{rounded.control}"
-    padding: "0 15px"
-    height: "40px"
   button-ghost:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
     typography: "{typography.label}"
-    rounded: "{rounded.control}"
+    rounded: "{rounded.button}"
     padding: "0 18px"
     height: "44px"
   button-ghost-hover:
     backgroundColor: "{colors.hover}"
-  search-field:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.field}"
-    padding: "0 16px"
-    height: "50px"
+  button-small:
+    rounded: "{rounded.button}"
+    padding: "0 14px"
+    height: "40px"
+  link:
+    textColor: "{colors.accent-strong}"
+    typography: "{typography.label}"
   chip:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink-2}"
@@ -113,169 +119,282 @@ components:
     padding: "0 14px"
     height: "38px"
   chip-selected:
-    backgroundColor: "{colors.accent}"
-    textColor: "{colors.surface}"
-  panel:
+    backgroundColor: "{colors.accent-strong}"
+    textColor: "{colors.white}"
+  field:
     backgroundColor: "{colors.surface}"
-    rounded: "{rounded.panel}"
-    padding: "24px 22px 20px"
-  list-group:
+    textColor: "{colors.ink}"
+    rounded: "{rounded.field}"
+    padding: "0 16px"
+    height: "50px"
+  card:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.card}"
+    padding: "20px"
+  group:
     backgroundColor: "{colors.surface}"
     rounded: "{rounded.group}"
-  list-row:
+  row:
     textColor: "{colors.ink}"
     padding: "11px 16px"
     height: "60px"
-  avatar-attending:
+  row-hover:
+    backgroundColor: "{colors.hover}"
+  task:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.group}"
+    padding: "16px"
+  task-icon:
     backgroundColor: "{colors.accent-soft}"
-    textColor: "{colors.accent}"
-    rounded: "{rounded.round}"
+    textColor: "{colors.accent-strong}"
+    rounded: "{rounded.icon}"
+    size: "36px"
+  task-icon-calm:
+    backgroundColor: "{colors.track}"
+    textColor: "{colors.muted}"
+  tile:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.field}"
+    padding: "13px 14px"
+    height: "58px"
+  face:
+    backgroundColor: "{colors.accent-soft}"
+    textColor: "{colors.accent-strong}"
+    rounded: "{rounded.full}"
     size: "38px"
+  face-attending:
+    backgroundColor: "{colors.coming-soft}"
+    textColor: "{colors.coming-strong}"
+  face-maybe:
+    backgroundColor: "{colors.maybe-soft}"
+    textColor: "{colors.maybe}"
+  face-declined:
+    backgroundColor: "{colors.cant-soft}"
+    textColor: "{colors.muted}"
+  face-pending:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.waiting-strong}"
+  back:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.button}"
+    size: "40px"
 ---
 
 # Design System: Union
 
-> **Scope.** This file records the neutral-frame world as built on two pages only: the Guests hub (`/guests`) and the guest list (`/guests/list`). It is a trial; the finish review has not yet returned ship. The rest of the signed-in app still runs on the older warm palette `T` in `lib/theme.ts` (and the guest-facing pages on `G` and `P`); those palettes are deliberately not documented here. The shared app shell (sidebar, bottom tab bar) is not part of this world yet: on these two pages it only takes the neutral ground as a translucent background.
+> **Scope.** This file documents design system v2 ("ds"). It is being rolled out page by page. **Migrated so far: `/guests` (the hub root) and `/guests/list`.** Every other screen, and the app shell (sidebar, tab bar), still uses the incumbent `T` styles and the components in `components/ui.tsx`; those stay valid until each page migrates. The guest-facing palettes (`G`, `P` in `lib/theme.ts`) and the public RSVP page are out of scope. To move a page across, follow "Migrating a page" at the end.
 >
-> **Source of truth.** Every colour is defined in `lib/theme.ts` (`V`, `CSS_VARS`); ESLint bans hex elsewhere. The stylesheet reads them as `--vc-*` custom properties, set on `<html>` by the root layout.
+> **Sources of truth.** Colours: `DS` in `lib/theme.ts`, exposed as `--ds-*` custom properties through `CSS_VARS`. Face: Hanken Grotesk, loaded in `app/layout.tsx` as `--font-ds` (not preloaded, so only migrated pages fetch it). Classes: the "Union design system v2" section of `app/globals.css`. A page opts in with the `ds` class on its root.
 
 ## Overview
 
-**Creative North Star: "The Neutral Frame"**
+**Creative North Star: "The Couple's Desk"**
 
-Union's interface takes no wedding style of its own. The frame is near-white ground, white cards with hairline borders, near-black ink and one calm grotesque with tabular numerals; it should sit equally well beside a bohemian, black-tie, minimal or rustic wedding. The personality comes from the couple: their names and date in the page header, and their guests. Theme neutrality is a binding product principle (PRODUCT.md, principle 5), confirmed after a themed trial read as childish and divisive.
+A calm, warm working surface that belongs to Union and to nobody's wedding. Cream canvas, white-cream cards drawn with hairlines, warm ink, one modern grotesque, and a single rosewood voice for the action that matters. The palette is Union's incumbent colours (rosewood, cream, warm ink, sage, dusty blue, sand, amber), renamed by role and given the darker shades that make text pass WCAG AA.
 
-There is one fixed accent, graphite, the same for every couple. It carries the actions, the answered count and the "yes" in the replies; a lighter stone marks "maybe". Nothing about the colour varies from one wedding to the next.
+Union is theme-neutral (PRODUCT.md, principle 5): the interface never takes on a wedding style, so it cannot exclude a bohemian, black-tie, minimal or rustic couple. Personality comes from the couple's own details (their names and date under the page title), never from the chrome. A themed "garden marquee" trial and a black-and-white neutral frame were both rejected; this is the middle path.
 
-Density is calm and phone-first: one column on a phone, large readable numbers, rows tall enough for a thumb (60px), and at most one filled action per area. Depth is soft and ambient, never decorative.
+The density is phone-first and Operate-mode: short visits, one-tap actions, large type for the one number that matters, quiet type for everything else. On desktop the same content opens into two columns rather than growing new furniture.
 
 **Key Characteristics:**
-- A neutral, very slightly warm grey frame with no hue at all.
-- One fixed graphite accent for actions and "yes", a lighter stone for "maybe".
-- One face, Hanken Grotesk, semibold headings with tight negative tracking, tabular figures for every count.
-- White cards on a near-white ground, separated by hairlines and a faint ambient shadow.
-- Generous radii (10 to 20px) and 44px-plus touch targets.
+- Union's own colours named by role; text only in the roles that pass AA.
+- One face (Hanken Grotesk) at a few tight sizes, weight 600 for anything that names something.
+- Flat hairline surfaces; only the summary card and the filled button lift.
+- One filled rosewood button per area; everything else is ghost or link.
+- Reply status always uses the same four-colour vocabulary: coming, maybe, can't, waiting.
 
 ## Colors
 
-A near-neutral, very slightly warm grey frame with a single graphite accent.
+Warm, low-chroma neutrals carry the page; rosewood marks action, and four muted hues carry the reply status.
 
 ### Primary
-- **Graphite** (accent): primary buttons, the selected filter chip, the big reply numeral, the "Coming" segment and legend dot, the attending reply label, the "no email" alert, links such as "See all", hovered chevrons, focus outlines and the search caret. White on it is 17:1. It shares its value with ink but is a separate token: accent marks action and "yes", ink marks text.
-- **Maybe Stone** (accent-2): the "maybe" segment of the reply bar, its legend dot, and the ring on a "maybe" avatar. Lighter than graphite so the two answers read apart.
-- **Graphite Wash** (accent-soft): the attending avatar ground and text selection.
-- **Focus Halo** (focus): graphite at 18%, the search field's focus halo. A sibling tint, graphite at 12%, colours the primary button's shadow (see Elevation).
+- **Rosewood Deep** (accent-strong): the action colour. Filled buttons, links, the selected chip, text on rosewood tints, the hover state of row chevrons, focus outlines. White on it reads at 5.99:1.
+- **Rosewood** (accent): shapes only. Fills, dots, and the base of the focus halo (`focus`, rosewood at 30%). Never text (3.21:1 on canvas).
+- **Rosewood Blush** (accent-soft): the tint behind rosewood text: initials faces with no status, task icons, text selection.
+
+### Secondary (reply status)
+- **Sage** (coming) / **Deep Sage** (coming-strong) / **Sage Mist** (coming-soft): guests who are coming. Sage fills meter segments and dots; Deep Sage is the text and initials colour; Sage Mist the face tint.
+- **Dusty Blue** (maybe) / **Blue Mist** (maybe-soft): guests who are unsure. Dusty Blue is dark enough to be both the fill and the text.
+- **Sand Rose** (cant) / **Sand Mist** (cant-soft): guests who can't come. Sand Rose is a fill only; their text falls back to `muted`, so a decline reads as quiet, not alarming.
+- **Amber Ring** (waiting) / **Burnt Amber** (waiting-strong) / **Amber Mist** (waiting-soft): guests who have not answered. Amber Ring draws outlines (the pending face's inset ring, the legend's hollow dot); Burnt Amber is the text ("no email", "waiting").
 
 ### Neutral
-- **Paper Ground** (ground): the page background, also tinted into the shell chrome at 92% (chrome).
-- **Card White** (surface): panels, list groups, chips, fields, ghost buttons; also the text colour on graphite fills.
-- **Near-Black Ink** (ink): titles, row titles, strong figures.
-- **Soft Ink** (ink-2): secondary prose, legend labels, unselected chip text, the "maybe" reply label, declined avatar text.
-- **Quiet Grey** (muted): row subtitles, placeholders, the search icon, notes, declined and waiting reply labels.
-- **Empty Track** (track): the "waiting" part of the reply bar (the bare track still to fill) and the declined avatar ground.
-- **Can't-Come Stone** (cant): the "declined" segment of the reply bar.
-- **Pending Ring** (ring): hairline rings on pending avatars and the waiting legend dot, and resting chevrons.
-- **Hairline** (line) and **Strong Hairline** (line-strong): ink at 8% for card borders and row dividers, ink at 14% for inset outlines on chips, ghost buttons and fields.
-- **Hover Wash** (hover): ink at 3.5% under hovered rows, links and ghost controls.
+- **Cream Canvas** (canvas): the page ground.
+- **Cream Card** (surface): cards, groups, tasks, tiles, fields, ghost buttons, chips.
+- **Warm Ink** (ink): titles, row titles, body text that matters.
+- **Warm Ink Soft** (ink-2): secondary copy that still reads as content (unselected chips, the summary's "of N invited", legend).
+- **Warm Grey** (muted): subtitles, row metadata, quiet paragraphs, placeholders, the search icon.
+- **Sand Track** (track): the empty part of a meter and the waiting segment, the calm task icon, the skeleton shimmer base.
+- **Hairline** (line) and **Hairline Strong** (line-strong): ink at 8% and 15%. Card, group and tile borders; dividers between rows; the inset outline of ghost buttons, chips, fields and the back button.
+- **Hover Wash** (hover): ink at 3.5%, the hover fill for rows, tiles, chips and ghost buttons.
+
+### Contrast (computed, WCAG 2.x relative luminance)
+
+| Text role | on canvas | on surface | on its soft tint | Use as text |
+| --- | --- | --- | --- | --- |
+| ink | 10.72 | 11.36 | n/a | yes |
+| ink-2 | 7.53 | 7.98 | n/a | yes |
+| muted | 5.64 | 5.97 | 5.02 (cant-soft) / 4.99 (track) | yes |
+| accent-strong | 5.54 | 5.87 | 4.74 (accent-soft) | yes |
+| coming-strong | 5.51 | 5.84 | 5.08 (coming-soft) | yes |
+| maybe | 5.32 | 5.64 | 4.65 (maybe-soft) | yes |
+| waiting-strong | 4.98 | 5.28 | 4.73 (waiting-soft) | yes, but not on track (4.41) |
+| white on accent-strong | | | 5.99 | yes (filled button, selected chip) |
+| accent | 3.21 | 3.40 | 2.75 | no: shapes only |
+| coming | 2.84 | 3.01 | 2.62 | no: shapes only |
+| cant | 2.02 | 2.14 | 1.80 | no: shapes only |
+| waiting | 1.81 | 1.92 | 1.72 | no: outlines only |
 
 ### Named Rules
-**The One Accent Rule.** Graphite is the only accent in the world, and it is fixed. Status is told with graphite plus neutrals (coming = graphite, maybe = stone, declined = can't-come stone, waiting = bare track), never with green, amber or red.
+**The AA Text Rule.** Text takes only `ink`, `ink-2`, `muted`, `accent-strong`, `coming-strong`, `maybe` or `waiting-strong`. `accent`, `coming`, `cant` and `waiting` are for fills, dots and rings, never for letters.
 
-**The Variables Rule.** Components read `var(--vc-*)` (or `V` in inline styles); they never write a hex. A new colour is added to `V` and exposed through `CSS_VARS`.
+**The Rosewood Voice Rule.** Rosewood Deep marks what you can act on: the one filled button, links, the selected chip, the focused element. It is never decoration.
+
+**The Waiting Ring Rule.** Not answering is an absence, so it is drawn hollow: an amber ring on the pending face and the legend dot, and plain track in the meter. Only the answers get solid colour.
 
 ## Typography
 
-**Display Font:** Hanken Grotesk (with system-ui, sans-serif), loaded with `next/font` as `--font-vc`, weights 400 to 700.
-**Body Font:** the same face.
+**Display Font:** Hanken Grotesk (with system-ui, sans-serif), loaded as `--font-ds`
+**Body Font:** Hanken Grotesk, same stack
+**Numerals:** the same face with tabular figures (`ds-num`) wherever a count can change
 
-**Character:** one calm, neutral grotesque for everything; hierarchy comes from size, weight (500 and 600) and tight negative tracking at large sizes, never from a second face.
+**Character:** one modern grotesque, tightly tracked at display sizes and neutral at reading sizes; it names things at weight 600 and explains them at 400 or 500 in a muted colour.
 
 ### Hierarchy
-- **Display** (600, 40px on a phone, 46px from 960px, line-height 1.05, -0.03em): the page title. Sub-pages such as the list use the same style at 26px beside a back button.
-- **Numeral** (500, 76px, line-height 0.82, -0.045em, tabular): the one big count of answered replies, in graphite. One per page.
-- **Headline** (600, 28px, line-height 1.15, -0.025em, balanced wrap): the sentence that replaces the numeral (all answered, none yet) and empty-state titles.
-- **Title** (600, 19px, line-height 1.2, -0.015em, balanced wrap): section headings above list groups.
-- **Row title** (600, 15px, single line with ellipsis): the name or tool in a list row.
-- **Body** (500, 14.5px, line-height 1.5): couple line, legend labels, quiet prose; 14px in the nudge. Supporting line beside the numeral at 16px.
-- **Label** (600, 14.5px; 14px on small buttons and chips): buttons, chips, "See all" links.
-- **Caption** (13px, sometimes 13.5px for notes): row subtitles, status notes.
+- **Display** (600, 38px, 44px from 960px, line-height 1.05, -0.03em, balanced): the page title, one per page. Module sub-pages currently set it to 26px inline.
+- **Numeral** (600, 44px, line-height 0.9, -0.04em, tabular): the single figure a hub leads with (replies answered).
+- **Lede** (600, 26px, line-height 1.15, -0.025em): a statement that replaces the numeral ("everyone has answered") and empty-state titles.
+- **Headline** (600, 18px, line-height 1.25, -0.015em): section headings ("To do", "Modules"), sentence case, 30px above, 12px below.
+- **Title** (600, 15px row titles; 15.5px task titles, line-height 1.3): the name of one thing in a list or card.
+- **Body** (400, 14.5px quiet paragraphs at line-height 1.5; 14px task bodies at 1.45), in `muted`. Empty-state copy holds to about 46ch.
+- **Label** (600, 14.5px; 14px on small buttons and chips): buttons, chips, links, tile labels.
+- **Caption** (400, 13px row metadata; 12.5px tile meta; 13px/600 tile group labels), in `muted`. Sentence case throughout.
 
 ### Named Rules
-**The Tabular Count Rule.** Every number that counts guests (the numeral, legend counts, chip counts, the invited total) uses tabular figures.
+**The Sentence-Case Heading Rule.** Section headings are Headline type in sentence case. No uppercase, letter-spaced eyebrow or kicker above or in place of a heading.
 
-**The Sentence Case Rule.** Headings and labels are sentence case at reading size. There are no uppercase, tracked-out labels in this world.
+**The One Number Rule.** A hub leads with at most one Numeral; everything else is Title size or below.
 
 ## Layout
 
-Phone first, one column. The header pairs the title (with the couple's names and date beneath, in quiet grey) against the primary "Add" button. On the hub the reply panel comes first, the search field directly beneath it so it lands in the first phone viewport, then the latest replies, then every guest tool grouped by stage.
+Phone-first single column inside the app shell's main area (`u-main`), content inset 2px from card edges for headings so type aligns with card borders. Rhythm: 6 and 8px inside clusters (chips, tiles), 10 to 14px between related blocks (task list gap 10px, header gap 12px, task icon to text 14px), 16 to 20px for card and task padding, 20px under the page header, 30px above each section heading.
 
-Spacing runs on a small set of steps: 3px between bar segments, 8 to 14px inside rows and between controls, 18 to 22px inside panels and under the header, and 34px above each section heading. Headings keep a 2px inset from card edges so type aligns optically with card contents.
+The page header is a row: title block on the left (title, then a muted subtitle 6px below), one action on the right.
 
-From 960px the main column widens to 1060px and the hub becomes a two-column grid (1.1fr and 1fr, 40px gap): replies, search and latest on the left, tools on the right. The reply legend flows into as many 150px columns as fit. The list page caps its body at 760px, and the filter chips wrap instead of scrolling. On a phone the chips scroll sideways edge to edge with the scrollbar hidden.
+Filter chips scroll sideways on a phone, bleeding 18px past the content edge so the row reads as continuous; from 960px they wrap in place.
+
+From 960px, a page with `ds-wide` widens its main column to 1060px and a `ds-split` lays out two columns (1.15fr and 1fr, 40px gap, top-aligned): the work on the left, the way into the modules on the right. A list page inside `ds-wide` holds its content to 760px (`ds-narrow`). Hub tiles are always a two-column grid with an 8px gap.
 
 ## Elevation & Depth
 
-A hybrid of hairlines and soft ambient shadow. Most depth comes from white surfaces on the paper ground, separated by 1px hairlines; only the hero panel and the primary button lift.
+Mostly flat, with tonal layering: cream-card surfaces on a cream canvas, separated by hairlines. Lift is reserved for two things: the summary card that a hub leads with, and the filled button.
 
 ### Shadow Vocabulary
-- **Panel lift** (`box-shadow: 0 1px 2px var(--vc-shadow), 0 12px 32px var(--vc-shadow)`, ink at 5%): the reply panel and empty-state panels only.
-- **Primary glow** (`box-shadow: 0 2px 8px var(--vc-accent-shadow)`, graphite at 12%, rising to `0 4px 12px` on hover): the primary button.
-- **Inset outline** (`box-shadow: inset 0 0 0 1px var(--vc-line-strong)`): chips, ghost and back buttons, the search field. Outlines are drawn inside so controls keep their size.
+- **Card lift** (`box-shadow: 0 1px 2px var(--ds-shadow), 0 10px 28px var(--ds-shadow)`, shadow = ink at 6%): `ds-card` only.
+- **Button glow** (`0 2px 8px var(--ds-accent-shadow)`, rising to `0 4px 14px` on hover; rosewood deep at 20%): the filled button only.
+- **Inset outline** (`inset 0 0 0 1px var(--ds-line-strong)`): ghost buttons, chips, fields, back button. An outline, not depth.
 
 ### Named Rules
-**The Quiet Lift Rule.** Shadows are diffuse and low-opacity; list groups and rows sit flat with hairlines. Only one panel per view carries the lift.
+**The Quiet Lift Rule.** Groups, rows, tasks and tiles are flat with a 1px hairline. Only the lead card and the filled button cast a shadow, so the eye goes to the summary and to the action.
 
 ## Shapes
 
-Softly rounded and consistent by size: 5px on bar segments, 10px on chips and legend links, 12px on buttons and the back button, 14px on the search field, 18px on list groups, 20px on panels. Avatars and legend dots are full circles. List groups clip their rows, which are divided by hairlines rather than gaps.
+Soft, generous rounding that grows with the container: 4px meter segments, 8px skeleton bars, 10px chips, 11px task icons, 12px buttons and the back button, 14px fields and tiles, 18px groups and task cards, 20px cards. Faces and dots are circles. Borders are 1px hairlines; the field's focus thickens its inset outline to 1.5px. Groups clip their rows (`overflow: hidden`) so row hover washes respect the corners.
 
 ## Components
 
 ### Buttons
-Calm and solid; the one filled action in its area.
-- **Shape:** gently rounded (12px), 44px tall, 18px side padding, label type.
-- **Primary:** graphite with white text and the primary glow. Used for "Add guest" and "Send nudge".
-- **Hover / Focus / Active:** the glow deepens on hover; focus draws a 2px graphite outline 2px out; press scales to 0.98. Disabled at 60% opacity.
-- **Small:** 40px tall, 15px padding, 14px label (header on sub-pages, nudge).
-- **Ghost:** white with a strong hairline inset outline and ink text; hover wash on hover. Secondary actions such as "Share the group link".
-- **Back:** a 40px square ghost button holding a chevron.
+Confident and few.
+- **Shape:** gently rounded (12px), at least 44px tall (40px for `is-small`), 18px side padding (14px small), icon gap 7px.
+- **Primary (`ds-btn`):** Rosewood Deep fill, white label at 600, button glow. One per area.
+- **Ghost (`ds-btn is-ghost`):** Cream Card with a strong-hairline inset outline, ink label; hover wash on hover.
+- **Hover / Focus / Active:** glow deepens on hover; 2px Rosewood Deep outline at 2px offset on focus-visible; scales to 0.98 when pressed (0.12s); disabled at 60% opacity.
+- **Link (`ds-link`):** Rosewood Deep, 600, 14px, underline fades in on hover (offset 3px). For secondary actions next to a button ("not now", "see who").
+- **Back (`ds-back`):** a 40px ghost square with a chevron, left of a sub-page title.
 
 ### Chips
-- **Style:** white, strong hairline inset outline, soft ink label, 38px tall, 10px radius; count in tabular figures at 70% opacity.
-- **State:** the pressed filter (`aria-pressed`) fills with graphite and white text, outline removed. One selected at a time.
+- **Style:** 38px tall, 10px corners, Cream Card with a strong-hairline outline, Warm Ink Soft label at 600; an optional count in tabular figures at 75% opacity.
+- **State:** toggles carry `aria-pressed`; pressed chips fill Rosewood Deep with white text and drop the outline. Grouped in a `role="group"` with a label.
 
 ### Cards / Containers
-- **Reply panel:** white, hairline border, 20px radius, 24px 22px 20px padding, panel lift. Holds the numeral or headline, the split reply bar, the legend and the nudge (above a hairline divider).
-- **List group:** white, hairline border, 18px radius, rows divided by hairlines, no shadow.
-- **Empty state:** the panel at 28px 24px 26px padding with a headline, quiet prose (46ch) and one primary plus one ghost action.
+- **Card (`ds-card`):** 20px corners, Cream Card, 1px hairline, card lift, 20px padding. The lead summary and empty states.
+- **Group (`ds-group`):** a list of rows in one 18px-cornered Cream Card, hairline-divided, flat.
+- **Row (`ds-row`):** at least 60px tall, 11px by 16px padding, 12px gap: face, title and caption, optional status on the right, chevron that turns rosewood on hover. The whole row is the link.
 
 ### Inputs / Fields
-- **Search:** 50px tall, 14px radius, white with a strong hairline inset outline, muted search icon, 16px input text (keeps iOS from zooming).
-- **Focus:** the outline turns 1.5px graphite with a 4px focus halo; the caret is graphite.
+- **Style (`ds-field`):** 50px tall, 14px corners, Cream Card with a strong-hairline inset outline, leading muted icon, 16px input text (keeps iOS from zooming), muted placeholder, rosewood caret. Labels are visually hidden (`ds-sr`) when the icon and placeholder carry the meaning.
+- **Focus:** the outline becomes 1.5px Rosewood Deep with a 4px rosewood halo at 30%.
 
 ### Navigation
-- **List rows:** 60px minimum, 11px 16px padding, avatar or text block, a chevron at the end in pending-ring grey that turns graphite on hover; the row gets the hover wash. Focus draws the outline inside the group (-2px offset).
-- **Legend links:** a two-column grid of 42px links (dot, label, count pushed right), each opening the list filtered by that reply.
-- **Section link ("See all"):** graphite, 14px semibold, underline fading in on hover.
+The app shell (sidebar, tab bar) is not migrated and keeps its incumbent styles. Inside a migrated page, navigation is the back button and hub tiles.
 
-### Reply Bar (signature)
-One 10px bar split by answer with 3px gaps and 5px-rounded segments: coming in graphite, maybe in stone (only when the wedding allows maybe or has one), declined in can't-come stone, waiting as the bare track. Segments grow into place over 0.9s on `cubic-bezier(0.16, 1, 0.3, 1)`; reduced motion removes the transition. The bar is one labelled image for assistive tech.
+### Reply status (signature)
+One vocabulary in four places, keyed `is-attending`, `is-maybe`, `is-declined`, `is-pending`:
+- **Face (`ds-face`):** 38px initials circle, 600, tinted by status (Sage Mist / Blue Mist / Sand Mist with their AA text colour); pending is a Cream Card circle with an inset 1.5px Amber Ring and Burnt Amber initials. With no status it is Rosewood Blush.
+- **Status (`ds-status`):** the status word at 600 in the matching AA text colour.
+- **Dot (`ds-dot`):** 10px circle in the fill colour; waiting is a hollow amber ring.
+- **Meter (`ds-meter`):** an 8px track split into rounded segments with 3px gaps, each segment's width its count, eased in over 0.9s (`cubic-bezier(0.16, 1, 0.3, 1)`). Carries `role="img"` and a spoken summary.
 
-### Reply Avatar (signature)
-A 38px circle with the guest's initial: attending is graphite wash with graphite text, maybe is white with a 1.5px stone ring, declined is the track with soft ink, pending is white with a pending-ring outline and muted text.
+### Replies summary (signature)
+The hub's lead card, and a link into the list: the Numeral ("answered") with an Ink Soft "of N invited", or a Lede when everyone has answered; the meter 16px below; a legend of dots and counts. While loading it shows skeletons, never a zero.
+
+### Task cards (signature)
+One thing that needs the couple, with one action. An 18px-cornered flat card, 16px padding: a 36px rounded-square icon (Rosewood Blush, or Sand Track for calm items), a Title, a muted body, actions 12px below. The first pressing task carries the filled small button; the others use ghost small buttons or a link. When nothing needs them, a single calm task says so.
+
+### Tiles (signature)
+Entry points to a hub's modules: a two-column grid of 14px-cornered flat tiles, label at 600 and a muted caption; the caption turns Rosewood Deep and 600 when the module needs attention. Grouped under small muted sentence-case group labels.
+
+### Skeleton
+Loading placeholders shaped like the content they replace (a face circle and a title bar for a row, an icon square and two lines for a task), shimmering track to surface over 1.4s. Lists set `aria-busy`.
+
+### Motion and reduced motion
+State transitions are 0.12 to 0.15s `ease`. Under `prefers-reduced-motion`, meter, row, button, field and tile transitions are removed and the skeleton stops shimmering.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** put `gu-main` and `guestsTypeClass` on the page root of every surface in this world, so it gets the neutral ground and Hanken Grotesk.
-- **Do** use graphite for actions, the answered count, "yes" and the selected state; stone only for "maybe".
-- **Do** keep touch targets at 44px or more for buttons and 60px for list rows, and 16px text in inputs.
-- **Do** use tabular figures for every count.
-- **Do** honour `prefers-reduced-motion` for the bar, rows, buttons and field transitions.
+- **Do** take every colour from `DS` / `--ds-*` by role; hex lives only in `lib/theme.ts`.
+- **Do** set text in the AA roles only (see the contrast table); keep `accent`, `coming`, `cant` and `waiting` for shapes.
+- **Do** give each area one filled Rosewood Deep button; make the rest ghost buttons or links.
+- **Do** show reply status with the shared four-state vocabulary (face, status, dot, meter) and the `is-attending | is-maybe | is-declined | is-pending` modifiers.
+- **Do** put the couple's names and date under the page title; that is where personality lives.
+- **Do** use tabular figures for counts and skeletons shaped like the content while loading.
+- **Do** keep touch targets at 44px (40px for small buttons and the back button) and inputs at 16px text.
 
 ### Don't:
-- **Don't** give the interface a wedding style: no romantic cream and serif, garden-party motifs or black-tie ornament (PRODUCT.md, principle 5).
-- **Don't** add a second hue: no brand colour beside graphite, no green, amber or red status colours in this world.
-- **Don't** vary the accent; it is one fixed graphite for every couple.
-- **Don't** add a second typeface.
-- **Don't** write a hex in a component; read `var(--vc-*)` or `V`.
+- **Don't** mix `T` styles or `components/ui.tsx` pieces with `ds-*` classes inside one page.
+- **Don't** add wedding motifs, themed ornaments or a per-wedding colour to the interface (PRODUCT.md principle 5).
+- **Don't** set uppercase, letter-spaced eyebrows or kickers above headings; headings are sentence case.
+- **Don't** put `waiting-strong` text on `track` (4.41:1) or any text in `accent`, `coming`, `cant` or `waiting`.
+- **Don't** add shadows to groups, rows, tasks or tiles; only the lead card and the filled button lift.
+- **Don't** show a placeholder zero while data loads.
+
+## Migrating a page
+
+An ordered checklist. Do it only when a task already changes how the page looks, or when asked (CLAUDE.md, "Design system v2").
+
+1. **Opt the page in.** Put `ds` on the page's root element (with `u-main`). Add `ds-wide` if the page has two columns on desktop, then wrap the columns in `ds-split`; for a single list column inside `ds-wide`, wrap it in `ds-narrow`.
+2. **Replace `components/ui.tsx` pieces with the ds equivalents:**
+
+   | Incumbent (`components/ui.tsx`) | ds replacement |
+   | --- | --- |
+   | `Card` | `ds-card` (or `ds-group` of `ds-row` for a list) |
+   | `PageHeader` | `ds-header` containing `ds-h1` and `ds-sub`, one action on the right; `ds-back` for a sub-page |
+   | `SectionLabel` | `ds-h2`, sentence case (no uppercase eyebrow) |
+   | `Button` primary | `ds-btn` (`is-small` in cards and headers) |
+   | `Button` secondary | `ds-btn is-ghost`; `ds-link` for a minor action |
+   | `Chip` | `ds-chip` with `aria-pressed`, inside `ds-chips` |
+   | `StatusPill` | `ds-status` (text) or `ds-face` (avatar) with `is-attending`, `is-maybe`, `is-declined` or `is-pending` |
+   | `Avatar` | `ds-face` |
+   | `ProgressBar` | `ds-meter` with one `span` per segment (`flex-grow` = count) |
+   | `Loading` | `ds-skeleton` blocks shaped like the content, with `aria-busy` |
+   | `UnionNote` | a `ds-task` card (icon, title, body, one action) |
+
+   A piece with no ds equivalent yet (for example `Switch`) gets a new `ds-*` class in the v2 section of `app/globals.css`, built from the tokens above, rather than importing the incumbent component into the migrated page.
+3. **Colours by role only.** Import `DS` (not `T`) for any inline colour, or use `var(--ds-*)` in CSS. Text only in the AA roles (`ink`, `ink2`, `muted`, `accentStrong`, `comingStrong`, `maybe`, `waitingStrong`).
+4. **One filled button per area.** Demote the others to `ds-btn is-ghost` or `ds-link`.
+5. **Do not mix systems.** No `T` import, no `components/ui.tsx` import, no incumbent classes left in the page or its child components.
+6. **Keep the browser test current.** Update or add the Playwright test of the flow in `apps/web/e2e/` (guest flows at phone size), per CLAUDE.md "Tests"; update selectors that relied on the old components rather than weakening assertions.
+7. **Record the migration.** Add the route to the "Migrated so far" list in three places: the Scope note at the top of this file, CLAUDE.md "Design system v2 (page by page)", and the header comment of the v2 section in `app/globals.css`.
