@@ -43,10 +43,10 @@ test("the hub opens on where replies stand and what needs the couple, with no li
 
   // The list and its search live in the guest list module, not at the root.
   await expect(page.getByRole("searchbox")).toHaveCount(0);
-  for (const stage of ["Who's invited", "Their invitation", "Sending it", "On the day"]) {
+  for (const stage of ["Who's invited", "Their invitation", "Sending it", "Hosting them"]) {
     await expect(page.getByRole("heading", { level: 3, name: stage })).toBeVisible();
   }
-  await expect(page.getByRole("link", { name: /Seating/ })).toHaveAttribute("href", "/guests/seating");
+  await expect(page.getByRole("link", { name: /Seating plan & ceremony/ })).toHaveAttribute("href", "/guests/seating");
   await expect(page.getByRole("link", { name: /Guest list/ })).toContainText("4 guests");
 });
 
@@ -131,7 +131,7 @@ test("a wedding where everyone has answered has nothing to do", async ({ page })
   await page.goto("/guests");
 
   await expect(page.getByText("Everyone has answered.")).toBeVisible();
-  await expect(todo(page).getByText("Nothing needs you here right now.")).toBeVisible();
+  await expect(todo(page).getByText("You're all caught up")).toBeVisible();
 });
 
 test("a wedding with no guests yet is offered both ways to start", async ({ page }) => {

@@ -204,7 +204,7 @@ export const fr: Dictionary = {
     tools: {
       groupsLabel: "Groupes & rôles",
       groupsSub: "Codez votre liste par couleur",
-      seatingLabel: "Placement",
+      seatingLabel: "Plan de table & cérémonie",
       seatingSub: "Plan de salle & cérémonie",
       staysLabel: "Hébergements & voyages",
       staysSub: "Blocs de chambres",
@@ -235,7 +235,7 @@ export const fr: Dictionary = {
       stageInvited: "Qui est invité",
       stageInvitation: "Leur invitation",
       stageSending: "L'envoi",
-      stageDay: "Le jour J",
+      stageDay: "L'accueil",
       emptyTitle: "Commencez votre liste",
       emptyBody:
         "Ajoutez vos invités un par un, ou partagez un seul lien dans un groupe pour que chacun trouve sa propre invitation.",
@@ -244,8 +244,8 @@ export const fr: Dictionary = {
       listTitle: "Liste des invités",
       backToGuests: "Retour aux invités",
       todo: "À faire",
-      allClear: "Rien ne vous attend ici pour l'instant.",
-      allClearBody: "Les réponses arrivent toutes seules. Ce qui demande votre attention s'affichera ici.",
+      allClear: "Tout est à jour",
+      allClearBody: "Aucune action à faire sur vos invités pour l'instant. Dès qu'il y aura quelque chose, ça apparaîtra ici.",
       modules: "Tous les modules",
       nudgeTitle: (n: number) =>
         n === 1 ? "1 invité n'a pas encore répondu" : `${n} invités n'ont pas encore répondu`,
@@ -278,7 +278,7 @@ export const fr: Dictionary = {
       maybeTitle: (n: number) => (n === 1 ? "1 invité hésite encore" : `${n} invités hésitent encore`),
       seeThem: "Les voir",
       review: "Vérifier",
-      openSeating: "Ouvrir le placement",
+      openSeating: "Ouvrir le plan de table",
       noEmail: "Pas d'e-mail : envoyez son lien",
       noEmailFilter: "Sans e-mail",
       clearFilter: "retirer le filtre",

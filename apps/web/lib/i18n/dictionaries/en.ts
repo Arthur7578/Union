@@ -208,7 +208,7 @@ export const en = {
     tools: {
       groupsLabel: "Groups & roles",
       groupsSub: "Colour-code your list",
-      seatingLabel: "Seating",
+      seatingLabel: "Seating plan & ceremony",
       seatingSub: "Floor plan & ceremony",
       staysLabel: "Stays & travel",
       staysSub: "Room blocks",
@@ -239,7 +239,7 @@ export const en = {
       stageInvited: "Who's invited",
       stageInvitation: "Their invitation",
       stageSending: "Sending it",
-      stageDay: "On the day",
+      stageDay: "Hosting them",
       emptyTitle: "Start your guest list",
       emptyBody:
         "Add people one by one, or share one link in a group chat and let each guest find their own invitation.",
@@ -248,8 +248,8 @@ export const en = {
       listTitle: "Guest list",
       backToGuests: "Back to guests",
       todo: "To do",
-      allClear: "Nothing needs you here right now.",
-      allClearBody: "Replies come in on their own. Anything that needs you will show up here.",
+      allClear: "You're all caught up",
+      allClearBody: "No action needed on your guests for now. When something needs you, it will show up here.",
       modules: "All modules",
       nudgeTitle: (n: number) =>
         n === 1 ? "1 guest hasn't replied yet" : `${n} guests haven't replied yet`,
@@ -282,7 +282,7 @@ export const en = {
       maybeTitle: (n: number) => (n === 1 ? "1 guest is still unsure" : `${n} guests are still unsure`),
       seeThem: "See them",
       review: "Review",
-      openSeating: "Open seating",
+      openSeating: "Open the seating plan",
       noEmail: "No email: send their link",
       noEmailFilter: "No email",
       clearFilter: "remove filter",

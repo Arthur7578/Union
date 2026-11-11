@@ -9,7 +9,8 @@ import type { Wedding } from "@union/shared";
  *   the guests in Bcc; it cannot know whether the email was sent, so it never
  *   records a nudge on its own. The couple can note it afterwards if they want.
  *
- * Union has no email sender yet (Brevo is only wired for SMS), so every
+ * Union has no email sender yet (Brevo is only wired for SMS; the choice of
+ * tech is open in issue #115), so every
  * wedding is "manual" today. When the sender lands, decide here from the
  * wedding's sender settings, e.g. a verified sender address and a working key.
  */
