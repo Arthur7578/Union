@@ -5,7 +5,6 @@ import Link from "next/link";
 import { guestAttention } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
 import { fetchDuplicateGroups, fetchSeatingTables, guestStats } from "@/lib/data";
-import { formatLongDate } from "@/lib/format";
 import { PlusIcon } from "@/components/icons";
 import { useLocale } from "@/lib/i18n/client";
 import { useGuests, useRsvpNudge } from "./useGuests";
@@ -20,7 +19,7 @@ import { GuestTools, guestStages } from "./GuestTools";
  * browse here: no search, no list.
  */
 export default function GuestsPage() {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const { wedding } = useWedding();
   const { guests, reload } = useGuests(wedding?.id);
   const nudge = useRsvpNudge(wedding, guests, reload, t);
@@ -49,17 +48,11 @@ export default function GuestsPage() {
   const items = loaded ? guestAttention(guests, context) : [];
   const unseated = items.find((i) => i.kind === "unseated");
   const empty = guests !== null && guests.length === 0;
-  const couple = [wedding.partner_one, wedding.partner_two].filter(Boolean).join(" & ");
-  const when = wedding.event_date ? formatLongDate(wedding.event_date, locale) : null;
 
   return (
     <main className="u-main ds ds-wide">
-      <header className="ds-header">
-        <div style={{ minWidth: 0 }}>
-          <h1 className="ds-h1">{t.guests.title}</h1>
-          {/* Whose wedding this is: the personality comes from the couple. */}
-          {(couple || when) && <div className="ds-sub">{[couple, when].filter(Boolean).join(" · ")}</div>}
-        </div>
+      <header className="ds-header" style={{ alignItems: "center" }}>
+        <h1 className="ds-h1">{t.guests.title}</h1>
         {!empty && (
           <Link href="/guests/new" className="ds-btn is-ghost">
             <PlusIcon stroke="currentColor" />

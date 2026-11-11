@@ -627,14 +627,14 @@
       "name": "Page Header",
       "kind": "custom",
       "refersTo": "typography.display",
-      "description": "Title with the couple's names and date, one action on the right.",
-      "html": "<header class=\"ds-header\"><div><h1 class=\"ds-h1\">Guests</h1><div class=\"ds-sub\">Camille &amp; Hugo · 12 June 2027</div></div><button class=\"ds-hbtn\">Add</button></header>",
+      "description": "Page title, one action on the right; an optional ds-sub subtitle when it helps the task.",
+      "html": "<header class=\"ds-header\"><div><h1 class=\"ds-h1\">Guests</h1></div><button class=\"ds-hbtn\">Add</button></header>",
       "css": ".ds-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:0 2px;font-family: \"Hanken Grotesk\", system-ui, sans-serif;}.ds-h1{font-weight:600;font-size:38px;line-height:1.05;letter-spacing:-0.03em;color:#43353A;margin:0;text-wrap:balance}.ds-sub{margin-top:6px;font-size:14.5px;font-weight:500;color:#6E5E62}.ds-hbtn{font-family: \"Hanken Grotesk\", system-ui, sans-serif;min-height:44px;padding:0 18px;border-radius:12px;border:none;font-weight:600;font-size:14.5px;background:#FFFCFA;color:#43353A;box-shadow:inset 0 0 0 1px rgba(67,53,58,0.15);cursor:pointer}.ds-hbtn:hover{background:rgba(67,53,58,0.035)}.ds-hbtn:focus-visible{outline:2px solid #8A545C;outline-offset:2px}"
     }
   ],
   "narrative": {
     "northStar": "The Couple's Desk",
-    "overview": "**Creative North Star: \"The Couple's Desk\"**\n\nA calm, warm working surface that belongs to Union and to nobody's wedding. Cream canvas, white-cream cards drawn with hairlines, warm ink, one modern grotesque, and a single rosewood voice for the action that matters. The palette is Union's incumbent colours (rosewood, cream, warm ink, sage, dusty blue, sand, amber), renamed by role and given the darker shades that make text pass WCAG AA.\n\nUnion is theme-neutral (PRODUCT.md, principle 5): the interface never takes on a wedding style, so it cannot exclude a bohemian, black-tie, minimal or rustic couple. Personality comes from the couple's own details (their names and date under the page title), never from the chrome. A themed \"garden marquee\" trial and a black-and-white neutral frame were both rejected; this is the middle path.\n\nThe density is phone-first and Operate-mode: short visits, one-tap actions, large type for the one number that matters, quiet type for everything else. On desktop the same content opens into two columns rather than growing new furniture.",
+    "overview": "**Creative North Star: \"The Couple's Desk\"**\n\nA calm, warm working surface that belongs to Union and to nobody's wedding. Cream canvas, white-cream cards drawn with hairlines, warm ink, one modern grotesque, and a single rosewood voice for the action that matters. The palette is Union's incumbent colours (rosewood, cream, warm ink, sage, dusty blue, sand, amber), renamed by role and given the darker shades that make text pass WCAG AA.\n\nUnion is theme-neutral (PRODUCT.md, principle 5): the interface never takes on a wedding style, so it cannot exclude a bohemian, black-tie, minimal or rustic couple. Personality comes from the couple's own content (their guests, their replies, their words), never from the chrome. A themed \"garden marquee\" trial and a black-and-white neutral frame were both rejected; this is the middle path.\n\nThe density is phone-first and Operate-mode: short visits, one-tap actions, large type for the one number that matters, quiet type for everything else. On desktop the same content opens into two columns rather than growing new furniture.",
     "keyCharacteristics": [
       "Union's own colours named by role; text only in the roles that pass AA.",
       "One face (Hanken Grotesk) at a few tight sizes, weight 600 for anything that names something.",
@@ -679,7 +679,7 @@
       "Do set text in the AA roles only (see the contrast table); keep `accent`, `coming`, `cant` and `waiting` for shapes.",
       "Do give each area one filled Rosewood Deep button; make the rest ghost buttons or links.",
       "Do show reply status with the shared four-state vocabulary (face, status, dot, meter) and the `is-attending | is-maybe | is-declined | is-pending` modifiers.",
-      "Do put the couple's names and date under the page title; that is where personality lives.",
+      "Do keep the header to the page title and one action; add a subtitle (`ds-sub`) only when it helps the task, never as decoration.",
       "Do use tabular figures for counts and skeletons shaped like the content while loading.",
       "Do keep touch targets at 44px (40px for small buttons and the back button) and inputs at 16px text."
     ],

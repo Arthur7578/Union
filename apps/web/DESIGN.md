@@ -194,7 +194,7 @@ components:
 
 A calm, warm working surface that belongs to Union and to nobody's wedding. Cream canvas, white-cream cards drawn with hairlines, warm ink, one modern grotesque, and a single rosewood voice for the action that matters. The palette is Union's incumbent colours (rosewood, cream, warm ink, sage, dusty blue, sand, amber), renamed by role and given the darker shades that make text pass WCAG AA.
 
-Union is theme-neutral (PRODUCT.md, principle 5): the interface never takes on a wedding style, so it cannot exclude a bohemian, black-tie, minimal or rustic couple. Personality comes from the couple's own details (their names and date under the page title), never from the chrome. A themed "garden marquee" trial and a black-and-white neutral frame were both rejected; this is the middle path.
+Union is theme-neutral (PRODUCT.md, principle 5): the interface never takes on a wedding style, so it cannot exclude a bohemian, black-tie, minimal or rustic couple. Personality comes from the couple's own content (their guests, their replies, their words), never from the chrome. A themed "garden marquee" trial and a black-and-white neutral frame were both rejected; this is the middle path.
 
 The density is phone-first and Operate-mode: short visits, one-tap actions, large type for the one number that matters, quiet type for everything else. On desktop the same content opens into two columns rather than growing new furniture.
 
@@ -359,7 +359,7 @@ State transitions are 0.12 to 0.15s `ease`. Under `prefers-reduced-motion`, mete
 - **Do** set text in the AA roles only (see the contrast table); keep `accent`, `coming`, `cant` and `waiting` for shapes.
 - **Do** give each area one filled Rosewood Deep button; make the rest ghost buttons or links.
 - **Do** show reply status with the shared four-state vocabulary (face, status, dot, meter) and the `is-attending | is-maybe | is-declined | is-pending` modifiers.
-- **Do** put the couple's names and date under the page title; that is where personality lives.
+- **Do** keep the header to the page title and one action; add a subtitle (`ds-sub`) only when it helps the task, never as decoration.
 - **Do** use tabular figures for counts and skeletons shaped like the content while loading.
 - **Do** keep touch targets at 44px (40px for small buttons and the back button) and inputs at 16px text.
 

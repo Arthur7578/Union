@@ -23,7 +23,7 @@ OWN-WORLD: Union canvas (warm cream), white-cream cards with hairlines, warm ink
 
 STORY: The couple opens Guests, sees how many have answered, then a short list of what needs them (nudge the waiting ones, guests with no email, possible duplicates, coming guests without a seat, the unsure ones), acts in one tap, or opens a module.
 
-FIRST VIEWPORT: Title with the couple's names and date, a ghost Add button; a compact replies card (count, one split bar, legend) that opens the list; "To do" with the most pressing card first and its filled button.
+FIRST VIEWPORT: Title and a ghost Add button (no couple names or date: they help no task); a compact replies card (count, one split bar, legend) that opens the list; "To do" with the most pressing card first and its filled button.
 
 FORM: Seed key 9087c69e (direction round "Your colours"), recoloured with Union's palette and restructured around actions at the user's request.
 

@@ -37,7 +37,6 @@ test("the hub opens on where replies stand and what needs the couple, with no li
   await page.goto("/guests");
 
   await expect(page.getByRole("heading", { level: 1, name: "Guests" })).toBeVisible();
-  await expect(page.getByText("Maya & Daniel")).toBeVisible();
   await expect(page.getByRole("link", { name: "See replies in the guest list" })).toContainText("of 4 have answered");
   await expect(todo(page).getByRole("heading", { name: "2 guests haven't replied yet" })).toBeVisible();
 
