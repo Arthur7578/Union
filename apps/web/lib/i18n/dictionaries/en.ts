@@ -232,11 +232,9 @@ export const en = {
       allAnswered: "Everyone has answered.",
       noneAnswered: "No one has answered yet.",
       replyBar: "Replies so far",
+      summaryLink: "See replies in the guest list",
       find: "Find a guest",
       findPlaceholder: "Find a guest by name, email or group",
-      latest: "Latest replies",
-      noRepliesYet: "Replies land here as guests answer their invitation.",
-      seeAll: (n: number) => (n === 1 ? "See the guest" : `See all ${n} guests`),
       listSub: (n: number) => (n === 1 ? "1 guest" : `${n} guests`),
       stageInvited: "Who's invited",
       stageInvitation: "Their invitation",
@@ -246,20 +244,52 @@ export const en = {
       emptyBody:
         "Add people one by one, or share one link in a group chat and let each guest find their own invitation.",
       shareLink: "Share the group link",
-      replied: { attending: "Coming", maybe: "Maybe", declined: "Can't come" },
+      replied: { attending: "Coming", maybe: "Maybe", declined: "Can't come", pending: "Waiting" },
       listTitle: "Guest list",
-      nudgeWaiting: (n: number) =>
-        n === 1 ? "1 guest hasn't replied yet." : `${n} guests haven't replied yet.`,
-      nudgeAllReachable: (n: number): string =>
+      backToGuests: "Back to guests",
+      todo: "To do",
+      allClear: "Nothing needs you here right now.",
+      allClearBody: "Replies come in on their own. Anything that needs you will show up here.",
+      modules: "All modules",
+      nudgeTitle: (n: number) =>
+        n === 1 ? "1 guest hasn't replied yet" : `${n} guests haven't replied yet`,
+      nudgeBody: (n: number) =>
         n === 1
-          ? "Want to nudge them? I'll open your email with them in Bcc."
-          : "Want to nudge them? I'll open your email with all of them in Bcc.",
-      nudgeSomeReachable: (withEmail: number, without: number) =>
-        `I can email the ${withEmail === 1 ? "one" : withEmail} with an address. ${
-          without === 1 ? "The other one has" : `The other ${without} have`
-        } no email: send their link from their page.`,
+          ? "Write to them: your mail app opens with their address in Bcc."
+          : `Write to the ${n} who have an email: your mail app opens with them in Bcc.`,
+      nudgeRecent: (days: number) =>
+        days === 0
+          ? "You nudged them today. Give them a few days."
+          : `You nudged them ${days === 1 ? "yesterday" : `${days} days ago`}. Give them a few days.`,
       nudgeButton: (n: number) => `Nudge ${n}`,
+      nudgeAgain: "Nudge again",
+      nudgeConfirm: "Sent? Note them as nudged, to keep track of who you've reminded.",
+      nudgeConfirmYes: "Note as nudged",
+      nudgeConfirmNo: "Not now",
+      nudgeNoted: (n: number) =>
+        n === 1 ? "Noted: 1 guest nudged today." : `Noted: ${n} guests nudged today.`,
+      noEmailTitle: (n: number) =>
+        n === 1 ? "1 waiting guest has no email" : `${n} waiting guests have no email`,
+      noEmailBody: (n: number): string =>
+        n === 1
+          ? "Send them their link by text or WhatsApp from their page."
+          : "Send them their link by text or WhatsApp from their pages.",
+      duplicatesTitle: (n: number) => (n === 1 ? "1 possible duplicate" : `${n} possible duplicates`),
+      duplicatesBody: "Two entries may be the same person. Check before invitations go out.",
+      unseatedTitle: (n: number) =>
+        n === 1 ? "1 guest coming has no seat" : `${n} guests coming have no seat`,
+      unseatedBody: "Give them a table on the seating plan.",
+      maybeTitle: (n: number) => (n === 1 ? "1 guest is still unsure" : `${n} guests are still unsure`),
+      seeThem: "See them",
+      review: "Review",
+      openSeating: "Open seating",
       noEmail: "No email: send their link",
+      noEmailFilter: "No email",
+      clearFilter: "remove filter",
+      nudgedAgo: (days: number) =>
+        days === 0 ? "Nudged today" : days === 1 ? "Nudged yesterday" : `Nudged ${days} days ago`,
+      duplicatesMeta: (n: number) => (n === 1 ? "1 to check" : `${n} to check`),
+      unseatedMeta: (n: number) => (n === 1 ? "1 without a seat" : `${n} without a seat`),
     },
     modules: {
       title: "Invitation modules",

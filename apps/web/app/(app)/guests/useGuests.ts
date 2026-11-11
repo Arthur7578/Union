@@ -29,8 +29,11 @@ export function useGuests(weddingId: string | undefined) {
 }
 
 /**
- * The "nudge everyone still waiting" action: records the reminder, then opens
- * the couple's mail app with every waiting guest who has an email in Bcc.
+ * The "nudge everyone still waiting" action, in manual mode (see
+ * lib/reminders.ts): it builds the email for the couple's own mail app,
+ * with every waiting guest who has an email in Bcc. Opening the mail app
+ * records nothing, since Union can't know the email was sent; the couple
+ * can then note those guests as nudged, or not.
  */
 export function useRsvpNudge(
   wedding: Pick<Wedding, "partner_one" | "partner_two"> | null,
@@ -38,6 +41,8 @@ export function useRsvpNudge(
   reload: () => Promise<void>,
   t: Dictionary,
 ) {
+  /** Guests in the email the couple just opened, waiting to be noted. */
+  const [opened, setOpened] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -47,27 +52,36 @@ export function useRsvpNudge(
     [guests],
   );
 
-  const send = async () => {
-    if (!wedding || waitingWithEmail.length === 0) return;
-    setBusy(true);
+  const mailto = useMemo(() => {
+    if (!wedding || waitingWithEmail.length === 0) return null;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const to = waitingWithEmail.map((g) => g.email!).join(",");
+    const partners =
+      [wedding.partner_one, wedding.partner_two].filter(Boolean).join(" & ") || t.guests.theCouple;
+    const subject = t.guests.emailSubject(partners);
+    const linksLine =
+      waitingWithEmail.length === 1
+        ? t.guests.emailBody.singleLink(guestLinkUrl(origin, waitingWithEmail[0].invite_token))
+        : t.guests.emailBody.multipleLinks;
+    const body = `${t.guests.emailBody.hello}\n\n${t.guests.emailBody.lead}${linksLine}\n${t.guests.emailBody.thanks}\n${partners}`;
+    return `mailto:?bcc=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }, [wedding, waitingWithEmail, t]);
+
+  /** The mail app is opening: remember who was in it, record nothing yet. */
+  const onOpen = () => {
     setNote(null);
+    setOpened(waitingWithEmail.map((g) => g.id));
+  };
+
+  /** The couple says it went out: note those guests as nudged today. */
+  const confirm = async () => {
+    if (!opened) return;
+    setBusy(true);
     try {
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const to = waitingWithEmail.map((g) => g.email!).join(",");
-      const partners =
-        [wedding.partner_one, wedding.partner_two].filter(Boolean).join(" & ") ||
-        t.guests.theCouple;
-      const subject = t.guests.emailSubject(partners);
-      const linksLine =
-        waitingWithEmail.length === 1
-          ? t.guests.emailBody.singleLink(guestLinkUrl(origin, waitingWithEmail[0].invite_token))
-          : t.guests.emailBody.multipleLinks;
-      const body = `${t.guests.emailBody.hello}\n\n${t.guests.emailBody.lead}${linksLine}\n${t.guests.emailBody.thanks}\n${partners}`;
-      const mailto = `mailto:?bcc=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      await markRemindersSent(waitingWithEmail.map((g) => g.id));
+      await markRemindersSent(opened);
       await reload();
-      if (typeof window !== "undefined") window.location.href = mailto;
-      setNote(t.guests.reminderSummary(waitingWithEmail.length));
+      setNote(t.guests.hub.nudgeNoted(opened.length));
+      setOpened(null);
     } catch (err) {
       setNote(err instanceof Error ? err.message : t.guests.reminderFail);
     } finally {
@@ -75,5 +89,7 @@ export function useRsvpNudge(
     }
   };
 
-  return { waitingWithEmail, busy, note, send };
+  const dismiss = () => setOpened(null);
+
+  return { waitingWithEmail, mailto, opened, onOpen, confirm, dismiss, busy, note };
 }

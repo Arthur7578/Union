@@ -80,8 +80,8 @@ account area (`/account/*`) sits outside them.
 | Route | What it is | Data |
 | --- | --- | --- |
 | `/today` | Greeting, live countdown, and a snapshot of your guests. The "needs you today", "Union is handling" and "just closed" sections are sample. | Live + Sample |
-| `/guests` | Guests hub: how many have answered (with a nudge for the ones still waiting), a search that opens the list, the latest replies, and every guest tool grouped by stage. | Live |
-| `/guests/list` | The full guest list, filterable by reply (`?status=`) and searchable (`?q=`). | Live |
+| `/guests` | Guests hub: a compact replies summary, "To do" cards for what needs the couple (nudge the waiting guests, guests with no email, possible duplicates, coming guests without a seat, the unsure ones), and every guest module as tiles. Nudges open the couple's own mail app; Union records a nudge only when the couple confirms it (no email sender yet). | Live |
+| `/guests/list` | The guest list module: filter by reply (`?status=`) or missing email (`?email=missing`), search (`?q=`). | Live |
 | `/guests/new` | Add a guest, with links to existing relatives or new ones created inline. | Live |
 | `/guests/[id]` | Guest detail and edit, including per-guest permission overrides. | Live |
 | `/guests/groups` | Groups & roles. | Live |

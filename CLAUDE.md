@@ -33,6 +33,15 @@ The test bank must follow the product, not lag behind it. These rules apply to e
 
 Issues labelled `squad` go through an automated product squad (strategist → designer, PM, tech lead → tests first → developer → QA, external reviewer and designer review, in a loop). How it works and how to drive it: `docs/squad/README.md`. Its specs live in `docs/specs/<issue>/`; read them before changing a feature that has one.
 
+## Design system v2 (page by page)
+
+The web app is moving to a new design system, one page at a time: Union's own colours named by role (`DS` in `apps/web/lib/theme.ts`, CSS variables `--ds-*`), the Hanken Grotesk face (`--font-ds`) and shared `ds-*` classes in `apps/web/app/globals.css`. `apps/web/DESIGN.md` is the reference, with a "Migrating a page" checklist. Migrated so far: `/guests` and `/guests/list`.
+
+- A new page, or a page you are redesigning, uses the new system.
+- Do not migrate a page as a drive-by: only when a task already changes how that page looks, or when asked.
+- Never mix systems inside one page: a migrated page has `ds` on its root and uses only `ds-*` classes and `DS` colours.
+- Text colours come from the roles that pass WCAG AA (`accentStrong`, `comingStrong`, `maybe`, `waitingStrong`, `muted`, `ink`); `accent` and the plain fills are for shapes only.
+
 ## Opportunistic refactors (tech debt)
 
 Three client pages are each one giant component with a lot of local state. Nothing is broken and CI is green, so this is not urgent. Do not split them as a drive-by or in a dedicated refactor: they have no UI tests, so a big restructure is risky.

@@ -228,12 +228,10 @@ export const fr: Dictionary = {
       allAnswered: "Tout le monde a répondu.",
       noneAnswered: "Personne n'a encore répondu.",
       replyBar: "Réponses à ce jour",
+      summaryLink: "Voir les réponses dans la liste des invités",
       find: "Trouver un invité",
       findPlaceholder: "Chercher par nom, e-mail, groupe",
-      latest: "Dernières réponses",
-      noRepliesYet: "Les réponses arrivent ici dès que vos invités répondent.",
-      seeAll: (n: number) => (n === 1 ? "Voir l'invité" : `Voir les ${n} invités`),
-      listSub: (n: number) => (n === 1 ? "1 invité" : `${n} invités`),
+      listSub: (n: number) => (n <= 1 ? `${n} invité` : `${n} invités`),
       stageInvited: "Qui est invité",
       stageInvitation: "Leur invitation",
       stageSending: "L'envoi",
@@ -242,20 +240,52 @@ export const fr: Dictionary = {
       emptyBody:
         "Ajoutez vos invités un par un, ou partagez un seul lien dans un groupe pour que chacun trouve sa propre invitation.",
       shareLink: "Partager le lien de groupe",
-      replied: { attending: "Vient", maybe: "Peut-être", declined: "Ne vient pas" },
+      replied: { attending: "Vient", maybe: "Peut-être", declined: "Ne vient pas", pending: "En attente" },
       listTitle: "Liste des invités",
-      nudgeWaiting: (n: number) =>
-        n === 1 ? "1 invité n'a pas encore répondu." : `${n} invités n'ont pas encore répondu.`,
-      nudgeAllReachable: (n: number) =>
+      backToGuests: "Retour aux invités",
+      todo: "À faire",
+      allClear: "Rien ne vous attend ici pour l'instant.",
+      allClearBody: "Les réponses arrivent toutes seules. Ce qui demande votre attention s'affichera ici.",
+      modules: "Tous les modules",
+      nudgeTitle: (n: number) =>
+        n === 1 ? "1 invité n'a pas encore répondu" : `${n} invités n'ont pas encore répondu`,
+      nudgeBody: (n: number) =>
         n === 1
-          ? "Une relance ? J'ouvre votre messagerie avec lui en Cci."
-          : "Une relance ? J'ouvre votre messagerie avec eux tous en Cci.",
-      nudgeSomeReachable: (withEmail: number, without: number) =>
-        `Je peux écrire ${withEmail === 1 ? "à celui qui a" : `aux ${withEmail} qui ont`} un e-mail. ${
-          without === 1 ? "L'autre n'en a pas" : `Les ${without} autres n'en ont pas`
-        } : envoyez-leur leur lien depuis leur fiche.`,
+          ? "Écrivez-lui : votre messagerie s'ouvre avec son adresse en Cci."
+          : `Écrivez aux ${n} qui ont un e-mail : votre messagerie s'ouvre avec eux en Cci.`,
+      nudgeRecent: (days: number) =>
+        days === 0
+          ? "Vous les avez relancés aujourd'hui. Laissez-leur quelques jours."
+          : `Vous les avez relancés ${days === 1 ? "hier" : `il y a ${days} jours`}. Laissez-leur quelques jours.`,
       nudgeButton: (n: number) => `Relancer ${n}`,
+      nudgeAgain: "Relancer quand même",
+      nudgeConfirm: "C'est envoyé ? Notez-les comme relancés, pour savoir qui vous avez déjà relancé.",
+      nudgeConfirmYes: "Noter comme relancés",
+      nudgeConfirmNo: "Pas maintenant",
+      nudgeNoted: (n: number) =>
+        n === 1 ? "C'est noté : 1 invité relancé aujourd'hui." : `C'est noté : ${n} invités relancés aujourd'hui.`,
+      noEmailTitle: (n: number) =>
+        n === 1 ? "1 invité en attente n'a pas d'e-mail" : `${n} invités en attente n'ont pas d'e-mail`,
+      noEmailBody: (n: number) =>
+        n === 1
+          ? "Envoyez-lui son lien par SMS ou WhatsApp depuis sa fiche."
+          : "Envoyez-leur leur lien par SMS ou WhatsApp depuis leur fiche.",
+      duplicatesTitle: (n: number) => (n === 1 ? "1 doublon possible" : `${n} doublons possibles`),
+      duplicatesBody: "Deux fiches désignent peut-être la même personne. Vérifiez avant d'envoyer les invitations.",
+      unseatedTitle: (n: number) =>
+        n === 1 ? "1 invité qui vient n'a pas de place" : `${n} invités qui viennent n'ont pas de place`,
+      unseatedBody: "Placez-les sur le plan de table.",
+      maybeTitle: (n: number) => (n === 1 ? "1 invité hésite encore" : `${n} invités hésitent encore`),
+      seeThem: "Les voir",
+      review: "Vérifier",
+      openSeating: "Ouvrir le placement",
       noEmail: "Pas d'e-mail : envoyez son lien",
+      noEmailFilter: "Sans e-mail",
+      clearFilter: "retirer le filtre",
+      nudgedAgo: (days: number) =>
+        days === 0 ? "Relancé aujourd'hui" : days === 1 ? "Relancé hier" : `Relancé il y a ${days} j`,
+      duplicatesMeta: (n: number) => (n === 1 ? "1 à vérifier" : `${n} à vérifier`),
+      unseatedMeta: (n: number) => (n === 1 ? "1 sans place" : `${n} sans place`),
     },
     modules: {
       title: "Modules de l'invitation",

@@ -2,80 +2,92 @@
 
 import React from "react";
 import Link from "next/link";
-import { ChevronRight } from "@/components/icons";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
-type Tool = { href: string; label: string; sub: string };
+type Tool = { href: string; label: string; meta?: string; alert?: boolean };
 type Stage = { id: string; title: string; tools: Tool[] };
 
 /**
- * Every guest tool, ordered the way a couple meets them: who is invited,
- * what the invitation says, how it goes out, then the day itself.
+ * Every guest module, ordered the way a couple meets them: who is invited,
+ * what the invitation says, how it goes out, then the day itself. Counts
+ * show where they help (how many guests, what is left to check).
  */
-export function guestStages(t: Dictionary, guestCount: number | null): Stage[] {
+export function guestStages(
+  t: Dictionary,
+  counts: { guests: number | null; duplicates: number; unseated: number },
+): Stage[] {
   const tools = t.guests.tools;
+  const h = t.guests.hub;
   return [
     {
       id: "invited",
-      title: t.guests.hub.stageInvited,
+      title: h.stageInvited,
       tools: [
         {
           href: "/guests/list",
           label: t.guests.guestList,
-          sub: guestCount === null ? "" : t.guests.hub.listSub(guestCount),
+          meta: counts.guests === null ? undefined : h.listSub(counts.guests),
         },
-        { href: "/guests/groups", label: tools.groupsLabel, sub: tools.groupsSub },
-        { href: "/guests/duplicates", label: tools.duplicatesLabel, sub: tools.duplicatesSub },
+        { href: "/guests/groups", label: tools.groupsLabel },
+        {
+          href: "/guests/duplicates",
+          label: tools.duplicatesLabel,
+          meta: counts.duplicates > 0 ? h.duplicatesMeta(counts.duplicates) : undefined,
+          alert: counts.duplicates > 0,
+        },
       ],
     },
     {
       id: "invitation",
-      title: t.guests.hub.stageInvitation,
+      title: h.stageInvitation,
       tools: [
-        { href: "/guests/page-content", label: tools.pageContentLabel, sub: tools.pageContentSub },
-        { href: "/guests/forms", label: tools.formsLabel, sub: tools.formsSub },
-        { href: "/guests/modules", label: tools.modulesLabel, sub: tools.modulesSub },
-        { href: "/guests/permissions", label: tools.permissionsLabel, sub: tools.permissionsSub },
+        { href: "/guests/page-content", label: tools.pageContentLabel },
+        { href: "/guests/forms", label: tools.formsLabel },
+        { href: "/guests/modules", label: tools.modulesLabel },
+        { href: "/guests/permissions", label: tools.permissionsLabel },
       ],
     },
     {
       id: "sending",
-      title: t.guests.hub.stageSending,
+      title: h.stageSending,
       tools: [
-        { href: "/guests/group-link", label: tools.groupLinkLabel, sub: tools.groupLinkSub },
-        { href: "/guests/sms-template", label: tools.smsTemplateLabel, sub: tools.smsTemplateSub },
+        { href: "/guests/group-link", label: tools.groupLinkLabel },
+        { href: "/guests/sms-template", label: tools.smsTemplateLabel },
       ],
     },
     {
       id: "day",
-      title: t.guests.hub.stageDay,
+      title: h.stageDay,
       tools: [
-        { href: "/guests/seating", label: tools.seatingLabel, sub: tools.seatingSub },
-        { href: "/guests/stays", label: tools.staysLabel, sub: tools.staysSub },
+        {
+          href: "/guests/seating",
+          label: tools.seatingLabel,
+          meta: counts.unseated > 0 ? h.unseatedMeta(counts.unseated) : undefined,
+          alert: counts.unseated > 0,
+        },
+        { href: "/guests/stays", label: tools.staysLabel },
       ],
     },
   ];
 }
 
+/** The modules as compact tiles, grouped by stage. */
 export function GuestTools({ stages }: { stages: Stage[] }) {
   return (
-    <div className="gu-stages">
+    <div>
       {stages.map((stage) => (
-        <section key={stage.id} aria-labelledby={`gu-stage-${stage.id}`}>
-          <h2 id={`gu-stage-${stage.id}`} className="gu-h2">
+        <section key={stage.id} aria-labelledby={`ds-stage-${stage.id}`}>
+          <h3 id={`ds-stage-${stage.id}`} className="ds-tiles-label">
             {stage.title}
-          </h2>
-          <ul role="list" className="gu-group">
+          </h3>
+          <ul role="list" className="ds-tiles">
             {stage.tools.map((tool) => (
               <li key={tool.href}>
-                <Link href={tool.href} className="gu-row">
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span className="gu-row-title">{tool.label}</span>
-                    {tool.sub && <span className="gu-row-sub">{tool.sub}</span>}
-                  </span>
-                  <span className="gu-chev">
-                    <ChevronRight stroke="currentColor" />
-                  </span>
+                <Link href={tool.href} className="ds-tile">
+                  <span className="ds-tile-label">{tool.label}</span>
+                  {tool.meta && (
+                    <span className={tool.alert ? "ds-tile-meta is-alert" : "ds-tile-meta"}>{tool.meta}</span>
+                  )}
                 </Link>
               </li>
             ))}

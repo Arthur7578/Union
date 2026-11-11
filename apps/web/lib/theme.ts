@@ -197,24 +197,41 @@ export function alpha(hex: string, a: number): string {
  * these locally. The second block is the app shell and form chrome.
  */
 /**
- * The Guests hub and list (/guests, /guests/list): a neutral, premium frame
- * that takes no wedding style of its own (PRODUCT.md, principle 5). One
- * accent, graphite, carries the actions and the "yes" in the replies.
+ * Union design system v2 ("ds"). Union's own colours (T), named by role, with
+ * the shades that pass WCAG AA where text sits, and one interface face
+ * (Hanken Grotesk, --font-ds). Pages move to it one at a time: a migrated
+ * page puts `ds` on its root element and uses the `ds-*` classes in
+ * app/globals.css. See apps/web/DESIGN.md › "Migrating a page".
+ *
+ * Contrast rules baked into the roles: `accentStrong`, `comingStrong`,
+ * `maybe`, `waiting` and `muted` pass 4.5:1 as text on `canvas`, `surface`
+ * and their own `*Soft` tint; `accent` and the plain fills are for shapes,
+ * never for text. White on `accentStrong` is 6:1.
  */
-export const V = {
-  ground: "#F6F6F4",
-  surface: "#FFFFFF",
-  ink: "#1B1B1A",
-  ink2: "#45443F",
-  muted: "#686660",
-  track: "#ECECEA",
-  cant: "#C9C7C1",
-  ring: "#D6D4CE",
-  /** Actions, the answered count and "Coming". White on it is 17:1. */
-  accent: "#1B1B1A",
-  /** "Maybe": lighter than the accent so the two read apart. */
-  accent2: "#8C8B86",
-  accentSoft: "#ECECEA",
+export const DS = {
+  canvas: T.bg,
+  surface: T.surface,
+  ink: T.ink,
+  ink2: T.ink2,
+  muted: T.muted,
+  track: T.sandBg,
+
+  /** Rosewood: fills, dots, the selected state's ring. Not for text. */
+  accent: T.accent,
+  /** Rosewood for text, links and primary buttons. */
+  accentStrong: "#8A545C",
+  accentSoft: T.accentPink,
+
+  coming: T.green,
+  comingStrong: "#4F6A54",
+  comingSoft: T.greenBg,
+  maybe: T.blueInk,
+  maybeSoft: T.blueBg,
+  cant: T.roseSoft,
+  cantSoft: T.roseBg,
+  waiting: T.ringAmber,
+  waitingStrong: T.amberDeep,
+  waitingSoft: T.amberBg,
 } as const;
 
 export const CSS_VARS = {
@@ -241,22 +258,30 @@ export const CSS_VARS = {
   "--card-shadow": alpha(G.ink, 0.06),
   "--focus-ring": alpha(T.accent, 0.16),
 
-  // The Guests hub and list (V)
-  "--vc-ground": V.ground,
-  "--vc-surface": V.surface,
-  "--vc-ink": V.ink,
-  "--vc-ink-2": V.ink2,
-  "--vc-muted": V.muted,
-  "--vc-track": V.track,
-  "--vc-ring": V.ring,
-  "--vc-line": alpha(V.ink, 0.08),
-  "--vc-line-strong": alpha(V.ink, 0.14),
-  "--vc-hover": alpha(V.ink, 0.035),
-  "--vc-shadow": alpha(V.ink, 0.05),
-  "--vc-chrome": alpha(V.ground, 0.92),
-  "--vc-accent": V.accent,
-  "--vc-accent-2": V.accent2,
-  "--vc-accent-soft": V.accentSoft,
-  "--vc-focus": alpha(V.accent, 0.18),
-  "--vc-accent-shadow": alpha(V.accent, 0.12),
+  // Design system v2 (DS): pages with `ds` on their root. See DESIGN.md.
+  "--ds-canvas": DS.canvas,
+  "--ds-surface": DS.surface,
+  "--ds-ink": DS.ink,
+  "--ds-ink-2": DS.ink2,
+  "--ds-muted": DS.muted,
+  "--ds-track": DS.track,
+  "--ds-line": alpha(DS.ink, 0.08),
+  "--ds-line-strong": alpha(DS.ink, 0.15),
+  "--ds-hover": alpha(DS.ink, 0.035),
+  "--ds-shadow": alpha(DS.ink, 0.06),
+  "--ds-accent": DS.accent,
+  "--ds-accent-strong": DS.accentStrong,
+  "--ds-accent-soft": DS.accentSoft,
+  "--ds-accent-shadow": alpha(DS.accentStrong, 0.2),
+  "--ds-focus": alpha(DS.accent, 0.3),
+  "--ds-coming": DS.coming,
+  "--ds-coming-strong": DS.comingStrong,
+  "--ds-coming-soft": DS.comingSoft,
+  "--ds-maybe": DS.maybe,
+  "--ds-maybe-soft": DS.maybeSoft,
+  "--ds-cant": DS.cant,
+  "--ds-cant-soft": DS.cantSoft,
+  "--ds-waiting": DS.waiting,
+  "--ds-waiting-strong": DS.waitingStrong,
+  "--ds-waiting-soft": DS.waitingSoft,
 } as const;

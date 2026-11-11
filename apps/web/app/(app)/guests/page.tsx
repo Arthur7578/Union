@@ -1,165 +1,132 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import Form from "next/form";
-import { latestReplies } from "@union/shared";
-import { V } from "@/lib/theme";
+import { guestAttention } from "@union/shared";
 import { useWedding } from "@/lib/wedding";
-import { guestStats } from "@/lib/data";
-import { formatLongDate, initial, timeAgo } from "@/lib/format";
-import { SearchIcon, ChevronRight, PlusIcon } from "@/components/icons";
+import { fetchDuplicateGroups, fetchSeatingTables, guestStats } from "@/lib/data";
+import { formatLongDate } from "@/lib/format";
+import { PlusIcon } from "@/components/icons";
 import { useLocale } from "@/lib/i18n/client";
 import { useGuests, useRsvpNudge } from "./useGuests";
-import { RepliesPanel, NudgeRow } from "./RepliesPanel";
+import { RepliesSummary } from "./RepliesSummary";
+import { AttentionList } from "./Attention";
 import { GuestTools, guestStages } from "./GuestTools";
-import { guestsTypeClass } from "./guestsType";
 
 /**
- * The Guests hub: where the replies stand and what to do about it, a way
- * straight to any guest, and every guest tool grouped by stage. The full
- * list lives at /guests/list. The frame is neutral (PRODUCT.md, principle 5).
+ * The root of the Guests hub. Its job: tell the couple whether anything
+ * needs them on their guests, and let them act in one tap. Then the way
+ * into every module, the guest list included (/guests/list). Nothing to
+ * browse here: no search, no list.
  */
 export default function GuestsPage() {
   const { t, locale } = useLocale();
   const { wedding } = useWedding();
   const { guests, reload } = useGuests(wedding?.id);
   const nudge = useRsvpNudge(wedding, guests, reload, t);
+  const [context, setContext] = useState<{ duplicateGroups: number; seatingTables: number } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!wedding) return;
+    let ok = true;
+    // A side check each: if one fails, the hub still shows the rest.
+    Promise.all([
+      fetchDuplicateGroups(wedding.id).then((g) => g.length, () => 0),
+      fetchSeatingTables(wedding.id).then((s) => s.length, () => 0),
+    ]).then(([duplicateGroups, seatingTables]) => ok && setContext({ duplicateGroups, seatingTables }));
+    return () => {
+      ok = false;
+    };
+  }, [wedding]);
 
   if (!wedding) return null;
 
   const stats = guests ? guestStats(guests) : null;
   const showMaybe = wedding.allow_rsvp_maybe === true || (stats?.maybe ?? 0) > 0;
-  const recent = guests ? latestReplies(guests, 4) : [];
+  const loaded = guests !== null && context !== null;
+  const items = loaded ? guestAttention(guests, context) : [];
+  const unseated = items.find((i) => i.kind === "unseated");
   const empty = guests !== null && guests.length === 0;
   const couple = [wedding.partner_one, wedding.partner_two].filter(Boolean).join(" & ");
   const when = wedding.event_date ? formatLongDate(wedding.event_date, locale) : null;
 
   return (
-    <main className={`u-main gu-main ${guestsTypeClass}`}>
-      <header className="gu-header">
+    <main className="u-main ds ds-wide">
+      <header className="ds-header">
         <div style={{ minWidth: 0 }}>
-          <h1 className="gu-h1">{t.guests.title}</h1>
-          {/* Whose wedding this is: the personality comes from the couple,
-              not from Union. */}
-          {(couple || when) && (
-            <div className="gu-couple">{[couple, when].filter(Boolean).join(" · ")}</div>
-          )}
+          <h1 className="ds-h1">{t.guests.title}</h1>
+          {/* Whose wedding this is: the personality comes from the couple. */}
+          {(couple || when) && <div className="ds-sub">{[couple, when].filter(Boolean).join(" · ")}</div>}
         </div>
-        <Link href="/guests/new" className="gu-add">
-          <PlusIcon />
-          {t.guests.addShort}
-        </Link>
+        {!empty && (
+          <Link href="/guests/new" className="ds-btn is-ghost">
+            <PlusIcon stroke="currentColor" />
+            {t.guests.addShort}
+          </Link>
+        )}
       </header>
 
-      <div className="gu-layout">
+      <div className="ds-split">
         <div>
           {empty ? (
-            <section className="gu-panel gu-empty" aria-labelledby="gu-empty-title">
-              <h2 id="gu-empty-title" className="gu-lede" style={{ margin: 0 }}>
+            <section className="ds-card" aria-labelledby="ds-empty-title" style={{ padding: "26px 22px 24px" }}>
+              <h2 id="ds-empty-title" className="ds-lede" style={{ margin: 0 }}>
                 {t.guests.hub.emptyTitle}
               </h2>
-              <p className="gu-quiet" style={{ margin: "10px 0 20px", maxWidth: "46ch" }}>
+              <p className="ds-quiet" style={{ margin: "10px 0 20px", maxWidth: "46ch" }}>
                 {t.guests.hub.emptyBody}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <Link href="/guests/new" className="gu-add">
+                <Link href="/guests/new" className="ds-btn">
                   {t.guests.add}
                 </Link>
-                <Link href="/guests/group-link" className="gu-ghost">
+                <Link href="/guests/group-link" className="ds-btn is-ghost">
                   {t.guests.hub.shareLink}
                 </Link>
               </div>
             </section>
           ) : (
             <>
-              <RepliesPanel
-                stats={stats}
-                showMaybe={showMaybe}
-                t={t}
-                nudge={
-                  stats && stats.waiting > 0 ? (
-                    <NudgeRow
-                      waiting={stats.waiting}
-                      withEmail={nudge.waitingWithEmail.length}
-                      busy={nudge.busy}
-                      note={nudge.note}
-                      onSend={nudge.send}
-                      t={t}
-                    />
-                  ) : null
-                }
-              />
-
-              <Form action="/guests/list" className="gu-find" role="search">
-                <label htmlFor="gu-q" className="gu-sr">
-                  {t.guests.hub.find}
-                </label>
-                <SearchIcon stroke={V.muted} />
-                <input
-                  id="gu-q"
-                  name="q"
-                  type="search"
-                  enterKeyHint="search"
-                  autoComplete="off"
-                  placeholder={t.guests.hub.findPlaceholder}
-                />
-              </Form>
-
-              <section aria-labelledby="gu-latest">
-                <div className="gu-section-head">
-                  <h2 id="gu-latest" className="gu-h2">
-                    {t.guests.hub.latest}
-                  </h2>
-                  {guests && guests.length > 0 && (
-                    <Link href="/guests/list" className="gu-more">
-                      {t.guests.hub.seeAll(guests.length)}
-                    </Link>
-                  )}
-                </div>
-                {guests === null ? (
-                  <p className="gu-quiet" role="status">
-                    {t.guests.loadingList}
-                  </p>
-                ) : recent.length === 0 ? (
-                  <p className="gu-quiet">{t.guests.hub.noRepliesYet}</p>
+              <RepliesSummary stats={stats} showMaybe={showMaybe} t={t} />
+              <section aria-labelledby="ds-todo">
+                <h2 id="ds-todo" className="ds-h2">
+                  {t.guests.hub.todo}
+                </h2>
+                {loaded ? (
+                  <AttentionList
+                    items={items}
+                    nudge={nudge}
+                    headcount={{ firm: stats!.headcount, ceiling: stats!.headcountMax }}
+                    t={t}
+                  />
                 ) : (
-                  <ul role="list" className="gu-group">
-                    {recent.map((g) => {
-                      const status = g.rsvps!.status as "attending" | "maybe" | "declined";
-                      return (
-                        <li key={g.id}>
-                          <Link href={`/guests/${g.id}`} className="gu-row">
-                            <span aria-hidden className={`gu-face is-${status}`}>
-                              {initial(g.first_name)}
-                            </span>
-                            <span style={{ flex: 1, minWidth: 0 }}>
-                              <span className="gu-row-title">
-                                {g.first_name} {g.last_name ?? ""}
-                              </span>
-                              <span className="gu-row-sub">
-                                <span className={`gu-reply is-${status}`}>{t.guests.hub.replied[status]}</span>
-                                {" · "}
-                                {timeAgo(g.rsvps!.responded_at, locale)}
-                              </span>
-                            </span>
-                            <span className="gu-chev">
-                              <ChevronRight stroke="currentColor" />
-                            </span>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <div className="ds-task" aria-busy="true">
+                    <span className="ds-skeleton" style={{ width: 36, height: 36, borderRadius: 11 }} />
+                    <div style={{ flex: 1 }}>
+                      <span className="ds-skeleton" style={{ width: "70%", height: 16 }} />
+                      <span className="ds-skeleton" style={{ width: "90%", height: 13, marginTop: 10 }} />
+                    </div>
+                  </div>
                 )}
               </section>
             </>
           )}
         </div>
 
-        <div>
-          <GuestTools stages={guestStages(t, guests ? guests.length : null)} />
-        </div>
+        <section aria-labelledby="ds-modules">
+          <h2 id="ds-modules" className="ds-h2">
+            {t.guests.hub.modules}
+          </h2>
+          <GuestTools
+            stages={guestStages(t, {
+              guests: guests ? guests.length : null,
+              duplicates: context?.duplicateGroups ?? 0,
+              unseated: unseated && unseated.kind === "unseated" ? unseated.count : 0,
+            })}
+          />
+        </section>
       </div>
     </main>
   );

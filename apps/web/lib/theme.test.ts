@@ -9,8 +9,7 @@ const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8")
 const PROVIDED_ELSEWHERE = new Set([
   "--font-serif",
   "--font-sans",
-  // The Guests hub and list load their own face (app/(app)/guests/guestsType.ts).
-  "--font-vc",
+  "--font-ds",
 ]);
 
 describe("globals.css", () => {

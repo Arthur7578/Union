@@ -276,3 +276,5 @@ export {
   parseGuestStatusFilter,
 } from "./guestListFilter";
 export type { FilterableGuest, GuestStatusFilter } from "./guestListFilter";
+export { RECENT_NUDGE_DAYS, guestAttention } from "./guestAttention";
+export type { AttentionGuest, AttentionItem } from "./guestAttention";

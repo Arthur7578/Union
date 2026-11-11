@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Instrument_Sans } from "next/font/google";
+import { Cormorant_Garamond, Hanken_Grotesk, Instrument_Sans } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -23,6 +23,16 @@ const sans = Instrument_Sans({
   weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
   display: "swap",
+});
+
+// Design system v2's face (see DESIGN.md). Not preloaded: only pages that
+// have moved to it (class `ds`) download it.
+const ds = Hanken_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-ds",
+  display: "swap",
+  preload: false,
 });
 
 const SITE_URL = "https://union-silk.vercel.app";
@@ -85,7 +95,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${serif.variable} ${sans.variable}`}
+      className={`${serif.variable} ${sans.variable} ${ds.variable}`}
       style={CSS_VARS as React.CSSProperties}
     >
       <body>

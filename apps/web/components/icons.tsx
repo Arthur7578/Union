@@ -157,3 +157,34 @@ export function PlusIcon({ size = 14, stroke = T.white }: IconProps) {
     </svg>
   );
 }
+
+export function LinkIcon({ size = 20, stroke = T.ink }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function TableIcon({ size = 20, stroke = T.ink }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="12" r="4.5" stroke={stroke} strokeWidth="2" fill="none" />
+      <circle cx="12" cy="3.5" r="1.5" fill={stroke} />
+      <circle cx="12" cy="20.5" r="1.5" fill={stroke} />
+      <circle cx="3.5" cy="12" r="1.5" fill={stroke} />
+      <circle cx="20.5" cy="12" r="1.5" fill={stroke} />
+    </svg>
+  );
+}
+
+export function QuestionIcon({ size = 20, stroke = T.ink }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke={stroke} strokeWidth="2" fill="none" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.4" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round" />
+      <circle cx="12" cy="17" r="1.2" fill={stroke} />
+    </svg>
+  );
+}

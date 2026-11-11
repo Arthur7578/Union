@@ -396,76 +396,23 @@ textarea {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Guests hub (/guests) and guest list (/guests/list).
-   A neutral frame (V in lib/theme.ts, --vc-*) with one graphite accent;
-   it takes no wedding style of its own (PRODUCT.md, principle 5).
+   Union design system v2 ("ds"). Colours: DS in lib/theme.ts (--ds-*),
+   face: Hanken Grotesk (--font-ds, app/layout.tsx). A page opts in with
+   `ds` on its root element and builds from the classes below; see
+   apps/web/DESIGN.md › "Migrating a page". Migrated so far: /guests,
+   /guests/list.
    ───────────────────────────────────────────────────────────── */
-.u-app:has(.gu-world) {
-  background: var(--vc-ground);
+.ds {
+  font-family: var(--font-ds), "Hanken Grotesk", system-ui, sans-serif;
+  color: var(--ds-ink);
 }
-.u-app:has(.gu-world) .u-tabbar,
-.u-app:has(.gu-world) .u-sidebar {
-  background: var(--vc-chrome);
+.ds ::selection {
+  background: var(--ds-accent-soft);
 }
-.gu-world {
-  font-family: var(--font-vc), "Hanken Grotesk", system-ui, sans-serif;
-  color: var(--vc-ink);
-}
-.gu-world ::selection {
-  background: var(--vc-accent-soft);
-}
-.gu-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 2px;
-  margin-bottom: 22px;
-}
-.gu-h1 {
-  font-weight: 600;
-  font-size: 40px;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  color: var(--vc-ink);
-  margin: 0;
-}
-.gu-couple {
-  margin-top: 8px;
-  font-size: 14.5px;
-  font-weight: 500;
-  color: var(--vc-muted);
-}
-.gu-h2 {
-  font-weight: 600;
-  font-size: 19px;
-  line-height: 1.2;
-  letter-spacing: -0.015em;
-  color: var(--vc-ink);
-  margin: 34px 2px 12px;
-  text-wrap: balance;
-}
-.gu-lede {
-  display: block;
-  font-weight: 600;
-  font-size: 28px;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
-  color: var(--vc-ink);
-  text-wrap: balance;
-}
-.gu-numeral {
-  font-weight: 500;
-  font-size: 76px;
-  line-height: 0.82;
-  letter-spacing: -0.045em;
-  color: var(--vc-accent);
+.ds-num {
   font-variant-numeric: tabular-nums;
 }
-.gu-num {
-  font-variant-numeric: tabular-nums;
-}
-.gu-sr {
+.ds-sr {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -474,78 +421,116 @@ textarea {
   white-space: nowrap;
 }
 
-.gu-panel {
-  background: var(--vc-surface);
-  border: 1px solid var(--vc-line);
-  border-radius: 20px;
-  padding: 24px 22px 20px;
-  box-shadow: 0 1px 2px var(--vc-shadow), 0 12px 32px var(--vc-shadow);
+/* Type */
+.ds-h1 {
+  font-weight: 600;
+  font-size: 38px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--ds-ink);
+  margin: 0;
+  text-wrap: balance;
 }
-.gu-bar {
-  display: flex;
-  gap: 3px;
-  height: 10px;
-  margin-top: 22px;
-}
-.gu-seg {
-  flex-basis: 0;
-  min-width: 0;
-  border-radius: 5px;
-  transition: flex-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.gu-legend {
-  list-style: none;
-  margin: 14px 0 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 18px;
-}
-.gu-legend-link {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 42px;
-  padding: 0 8px;
-  margin: 0 -8px;
-  border-radius: 10px;
+.ds-sub {
+  margin-top: 6px;
   font-size: 14.5px;
   font-weight: 500;
-  color: var(--vc-ink-2);
+  color: var(--ds-muted);
 }
-.gu-legend-link:hover {
-  background: var(--vc-hover);
-  color: var(--vc-ink);
-}
-.gu-legend-link b {
-  margin-left: auto;
+.ds-h2 {
   font-weight: 600;
-  color: var(--vc-ink);
+  font-size: 18px;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--ds-ink);
+  margin: 30px 2px 12px;
+  text-wrap: balance;
 }
-.gu-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
+.ds-lede {
+  display: block;
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--ds-ink);
+  text-wrap: balance;
 }
-.gu-nudge {
-  margin-top: 18px;
-  padding-top: 18px;
-  border-top: 1px solid var(--vc-line);
-}
-.gu-nudge p {
-  margin: 0;
-  font-size: 14px;
+.ds-quiet {
+  font-size: 14.5px;
+  color: var(--ds-muted);
   line-height: 1.5;
-  color: var(--vc-ink-2);
-}
-.gu-nudge b {
-  font-weight: 600;
-  color: var(--vc-ink);
+  margin: 0;
 }
 
-.gu-add,
-.gu-ghost {
+/* Page header: title block on the left, one action on the right. */
+.ds-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+  margin-bottom: 20px;
+}
+
+/* Surfaces */
+.ds-card {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-line);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 1px 2px var(--ds-shadow), 0 10px 28px var(--ds-shadow);
+}
+.ds-group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-line);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.ds-group > li + li {
+  border-top: 1px solid var(--ds-line);
+}
+.ds-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 11px 16px;
+  color: var(--ds-ink);
+  transition: background-color 0.15s ease;
+}
+.ds-row:hover {
+  background: var(--ds-hover);
+  color: var(--ds-ink);
+}
+.ds-row-title {
+  display: block;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ds-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ds-row-sub {
+  display: block;
+  font-size: 13px;
+  color: var(--ds-muted);
+  margin-top: 1px;
+}
+.ds-chev {
+  flex-shrink: 0;
+  display: flex;
+  color: var(--ds-line-strong);
+}
+.ds-row:hover .ds-chev {
+  color: var(--ds-accent-strong);
+}
+
+/* Buttons and links. One filled button per area; the rest are ghost. */
+.ds-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -559,56 +544,88 @@ textarea {
   font-size: 14.5px;
   white-space: nowrap;
   cursor: pointer;
+  background: var(--ds-accent-strong);
+  color: var(--white);
+  box-shadow: 0 2px 8px var(--ds-accent-shadow);
   transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
-.gu-add {
-  background: var(--vc-accent);
-  color: var(--vc-surface);
-  box-shadow: 0 2px 8px var(--vc-accent-shadow);
+.ds-btn:hover {
+  color: var(--white);
+  box-shadow: 0 4px 14px var(--ds-accent-shadow);
 }
-.gu-add:hover {
-  color: var(--vc-surface);
-  box-shadow: 0 4px 12px var(--vc-accent-shadow);
+.ds-btn.is-ghost {
+  background: var(--ds-surface);
+  color: var(--ds-ink);
+  box-shadow: inset 0 0 0 1px var(--ds-line-strong);
 }
-.gu-add:disabled {
+.ds-btn.is-ghost:hover {
+  color: var(--ds-ink);
+  background: var(--ds-hover);
+}
+.ds-btn.is-small {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+.ds-btn:disabled {
   opacity: 0.6;
   cursor: default;
 }
-.gu-ghost {
-  background: var(--vc-surface);
-  color: var(--vc-ink);
-  box-shadow: inset 0 0 0 1px var(--vc-line-strong);
-}
-.gu-ghost:hover {
-  color: var(--vc-ink);
-  background: var(--vc-hover);
-}
-.gu-add:active,
-.gu-ghost:active {
+.ds-btn:active {
   transform: scale(0.98);
 }
-.gu-add.is-small {
-  min-height: 40px;
-  padding: 0 15px;
+.ds-link {
+  font-weight: 600;
   font-size: 14px;
+  color: var(--ds-accent-strong);
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s ease;
+}
+.ds-link:hover {
+  color: var(--ds-accent-strong);
+  text-decoration-color: currentColor;
+}
+.ds-back {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: none;
+  background: var(--ds-surface);
+  box-shadow: inset 0 0 0 1px var(--ds-line-strong);
+  color: var(--ds-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.ds-back:hover {
+  background: var(--ds-hover);
 }
 
-.gu-find {
+/* Fields */
+.ds-field {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 14px;
   padding: 0 16px;
   min-height: 50px;
   border-radius: 14px;
-  background: var(--vc-surface);
-  box-shadow: inset 0 0 0 1px var(--vc-line-strong);
+  background: var(--ds-surface);
+  box-shadow: inset 0 0 0 1px var(--ds-line-strong);
   transition: box-shadow 0.15s ease;
 }
-.gu-find:focus-within {
-  box-shadow: inset 0 0 0 1.5px var(--vc-accent), 0 0 0 4px var(--vc-focus);
+.ds-field:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--ds-accent-strong), 0 0 0 4px var(--ds-focus);
 }
-.gu-find input {
+.ds-field input {
   flex: 1;
   min-width: 0;
   border: none;
@@ -616,63 +633,57 @@ textarea {
   background: transparent;
   font-family: inherit;
   font-size: 16px; /* 16px keeps iOS from zooming in on focus */
-  color: var(--vc-ink);
-  caret-color: var(--vc-accent);
+  color: var(--ds-ink);
+  caret-color: var(--ds-accent-strong);
   padding: 13px 0;
 }
-.gu-find input::placeholder {
-  color: var(--vc-muted);
+.ds-field input::placeholder {
+  color: var(--ds-muted);
 }
 
-.gu-group {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  background: var(--vc-surface);
-  border: 1px solid var(--vc-line);
-  border-radius: 18px;
-  overflow: hidden;
-}
-.gu-group > li + li {
-  border-top: 1px solid var(--vc-line);
-}
-.gu-row {
+/* Filter chips: a sideways-scrolling row on a phone. */
+.ds-chips {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 60px;
-  padding: 11px 16px;
-  color: var(--vc-ink);
-  transition: background-color 0.15s ease;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -18px 12px;
+  padding: 2px 18px;
 }
-.gu-row:hover {
-  background: var(--vc-hover);
-  color: var(--vc-ink);
+.ds-chips::-webkit-scrollbar {
+  display: none;
 }
-.gu-row-title {
-  display: block;
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--vc-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.gu-row-sub {
-  display: block;
-  font-size: 13px;
-  color: var(--vc-muted);
-  margin-top: 1px;
-}
-.gu-chev {
+.ds-chip {
   flex-shrink: 0;
-  display: flex;
-  color: var(--vc-ring);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: none;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--ds-surface);
+  color: var(--ds-ink-2);
+  box-shadow: inset 0 0 0 1px var(--ds-line-strong);
+  cursor: pointer;
 }
-.gu-row:hover .gu-chev {
-  color: var(--vc-accent);
+.ds-chip:hover {
+  background: var(--ds-hover);
 }
-.gu-face {
+.ds-chip[aria-pressed="true"] {
+  background: var(--ds-accent-strong);
+  color: var(--white);
+  box-shadow: none;
+}
+.ds-chip .ds-num {
+  opacity: 0.75;
+}
+
+/* Reply status: avatar tint, text colour, dot. */
+.ds-face {
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -682,186 +693,275 @@ textarea {
   flex-shrink: 0;
   font-weight: 600;
   font-size: 15px;
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
 }
-.gu-face.is-attending {
-  background: var(--vc-accent-soft);
-  color: var(--vc-accent);
+.ds-face.is-attending {
+  background: var(--ds-coming-soft);
+  color: var(--ds-coming-strong);
 }
-.gu-face.is-maybe {
-  background: var(--vc-surface);
-  color: var(--vc-accent);
-  box-shadow: inset 0 0 0 1.5px var(--vc-accent-2);
+.ds-face.is-maybe {
+  background: var(--ds-maybe-soft);
+  color: var(--ds-maybe);
 }
-.gu-face.is-declined {
-  background: var(--vc-track);
-  color: var(--vc-ink-2);
+.ds-face.is-declined {
+  background: var(--ds-cant-soft);
+  color: var(--ds-muted);
 }
-.gu-face.is-pending {
-  background: var(--vc-surface);
-  color: var(--vc-muted);
-  box-shadow: inset 0 0 0 1.5px var(--vc-ring);
+.ds-face.is-pending {
+  background: var(--ds-surface);
+  color: var(--ds-waiting-strong);
+  box-shadow: inset 0 0 0 1.5px var(--ds-waiting);
 }
-.gu-reply.is-attending {
-  color: var(--vc-accent);
+.ds-status {
   font-weight: 600;
 }
-.gu-reply.is-maybe {
-  color: var(--vc-ink-2);
-  font-weight: 600;
+.ds-status.is-attending {
+  color: var(--ds-coming-strong);
 }
-.gu-reply.is-declined,
-.gu-reply.is-pending {
-  color: var(--vc-muted);
-  font-weight: 600;
+.ds-status.is-maybe {
+  color: var(--ds-maybe);
 }
-.gu-alert {
-  color: var(--vc-accent);
-  font-weight: 600;
+.ds-status.is-declined {
+  color: var(--ds-muted);
 }
-.gu-section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 34px 2px 12px;
+.ds-status.is-pending {
+  color: var(--ds-waiting-strong);
 }
-.gu-section-head .gu-h2 {
-  margin: 0;
-}
-.gu-more {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--vc-accent);
-  white-space: nowrap;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: 3px;
-  transition: text-decoration-color 0.15s ease;
-}
-.gu-more:hover {
-  color: var(--vc-accent);
-  text-decoration-color: currentColor;
-}
-.gu-quiet {
-  font-size: 14.5px;
-  color: var(--vc-muted);
-  line-height: 1.5;
-  margin: 4px 2px 0;
-}
-.gu-empty {
-  padding: 28px 24px 26px;
+.ds-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-/* List page */
-.gu-back {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  border: none;
-  background: var(--vc-surface);
-  box-shadow: inset 0 0 0 1px var(--vc-line-strong);
-  color: var(--vc-ink);
+/* Meter: one track split into segments (e.g. replies by answer). */
+.ds-meter {
+  display: flex;
+  gap: 3px;
+  height: 8px;
+}
+.ds-meter > span {
+  flex-basis: 0;
+  min-width: 0;
+  border-radius: 4px;
+  transition: flex-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Task card: one thing that needs the user, with one action. The first
+   pressing task carries the filled button; the others use ghost buttons. */
+.ds-tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.ds-task {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-line);
+  border-radius: 18px;
+  padding: 16px;
+}
+.ds-task-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  cursor: pointer;
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-strong);
 }
-.gu-back:hover {
-  background: var(--vc-hover);
+.ds-task-icon.is-calm {
+  background: var(--ds-track);
+  color: var(--ds-muted);
 }
-.gu-chips {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  margin: 0 -18px 12px;
-  padding: 2px 18px;
-}
-.gu-chips::-webkit-scrollbar {
-  display: none;
-}
-.gu-chip {
-  flex-shrink: 0;
-  min-height: 38px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: none;
-  font-family: inherit;
+.ds-task-title {
+  margin: 0;
   font-weight: 600;
+  font-size: 15.5px;
+  line-height: 1.3;
+  color: var(--ds-ink);
+}
+.ds-task-body {
+  margin: 4px 0 0;
   font-size: 14px;
-  background: var(--vc-surface);
-  color: var(--vc-ink-2);
-  box-shadow: inset 0 0 0 1px var(--vc-line-strong);
-  cursor: pointer;
+  line-height: 1.45;
+  color: var(--ds-muted);
 }
-.gu-chip:hover {
-  background: var(--vc-hover);
-}
-.gu-chip[aria-pressed="true"] {
-  background: var(--vc-accent);
-  color: var(--vc-surface);
-  box-shadow: none;
-}
-.gu-chip .gu-num {
-  opacity: 0.7;
-  margin-left: 5px;
+.ds-task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 12px;
 }
 
-.gu-row:focus-visible,
-.gu-legend-link:focus-visible,
-.gu-more:focus-visible,
-.gu-add:focus-visible,
-.gu-ghost:focus-visible,
-.gu-chip:focus-visible,
-.gu-back:focus-visible {
-  outline: 2px solid var(--vc-accent);
+/* Tiles: entry points to the modules of a hub. */
+.ds-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ds-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 58px;
+  height: 100%;
+  padding: 13px 14px;
+  border-radius: 14px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-line);
+  color: var(--ds-ink);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.ds-tile:hover {
+  color: var(--ds-ink);
+  border-color: var(--ds-line-strong);
+  background: var(--ds-hover);
+}
+.ds-tile-label {
+  font-weight: 600;
+  font-size: 14.5px;
+  line-height: 1.25;
+}
+.ds-tile-meta {
+  font-size: 12.5px;
+  color: var(--ds-muted);
+}
+.ds-tile-meta.is-alert {
+  color: var(--ds-accent-strong);
+  font-weight: 600;
+}
+.ds-tiles-label {
+  margin: 18px 2px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-muted);
+}
+
+/* Loading placeholder shaped like the content. */
+.ds-skeleton {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--ds-track) 0%, var(--ds-surface) 50%, var(--ds-track) 100%);
+  background-size: 200% 100%;
+  animation: ds-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes ds-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.ds-row:focus-visible,
+.ds-tile:focus-visible,
+.ds-link:focus-visible,
+.ds-btn:focus-visible,
+.ds-chip:focus-visible,
+.ds-back:focus-visible,
+.ds-summary:focus-visible {
+  outline: 2px solid var(--ds-accent-strong);
   outline-offset: 2px;
 }
-.gu-group .gu-row:focus-visible {
+.ds-group .ds-row:focus-visible {
   outline-offset: -2px;
 }
 
-.gu-stages > section:first-child .gu-h2 {
-  margin-top: 34px;
-}
-
+/* Two columns on desktop: the work on the left, the way in on the right. */
 @media (min-width: 960px) {
-  .u-main.gu-main {
+  .u-main.ds-wide {
     max-width: 1060px;
   }
-  .gu-h1 {
-    font-size: 46px;
+  .ds-h1 {
+    font-size: 44px;
   }
-  .gu-layout {
+  .ds-split {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     gap: 40px;
     align-items: start;
   }
-  .gu-stages > section:first-child .gu-h2 {
+  .ds-split > :last-child > .ds-h2:first-child {
     margin-top: 0;
   }
-  .gu-legend {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  }
-  .gu-chips {
+  .ds-chips {
     margin: 0 0 12px;
     padding: 2px 0;
     flex-wrap: wrap;
   }
-  .gu-list-body,
-  .gu-list .gu-header {
+  .ds-narrow {
     max-width: 760px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gu-seg,
-  .gu-row,
-  .gu-add,
-  .gu-ghost,
-  .gu-find {
+  .ds-meter > span,
+  .ds-row,
+  .ds-btn,
+  .ds-field,
+  .ds-tile {
     transition: none;
   }
+  .ds-skeleton {
+    animation: none;
+  }
+}
+
+/* Guests hub (/guests): the replies summary, a link into the list. */
+.ds-summary {
+  display: block;
+  color: var(--ds-ink);
+}
+.ds-summary:hover {
+  color: var(--ds-ink);
+  border-color: var(--ds-line-strong);
+}
+.ds-summary-count {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0;
+}
+.ds-summary-count b {
+  font-weight: 600;
+  font-size: 44px;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--ds-ink);
+  font-variant-numeric: tabular-nums;
+}
+.ds-summary-count span {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ds-ink-2);
+}
+.ds-summary-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+  color: var(--ds-ink-2);
+}
+.ds-summary-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
