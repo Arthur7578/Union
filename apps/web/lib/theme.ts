@@ -203,10 +203,11 @@ export function alpha(hex: string, a: number): string {
  * page puts `ds` on its root element and uses the `ds-*` classes in
  * app/globals.css. See apps/web/DESIGN.md › "Migrating a page".
  *
- * Contrast rules baked into the roles: `accentStrong`, `comingStrong`,
- * `maybe`, `waiting` and `muted` pass 4.5:1 as text on `canvas`, `surface`
- * and their own `*Soft` tint; `accent` and the plain fills are for shapes,
- * never for text. White on `accentStrong` is 6:1.
+ * Contrast rules baked into the roles: `ink`, `ink2`, `muted`,
+ * `accentStrong`, `comingStrong`, `maybe` and `waitingStrong` pass 4.5:1 as
+ * text on `canvas`, `surface` and their own `*Soft` tint; `accent`,
+ * `coming`, `cant` and `waiting` are fills, never text. White on
+ * `accentStrong` is 6:1.
  */
 export const DS = {
   canvas: T.bg,

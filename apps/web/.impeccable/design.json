@@ -1,79 +1,141 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-10T23:45:00Z",
+  "generatedAt": "2026-11-11T00:00:00Z",
   "title": "Design System: Union",
   "extensions": {
-    "scope": "The neutral-frame world on /guests and /guests/list only (trial, finish review pending). The rest of the app uses the older palette T in lib/theme.ts, not documented here; the shared shell is not part of this world yet.",
+    "scope": "Design system v2 (\"ds\"), rolled out page by page. Migrated so far: /guests, /guests/list. Every other screen and the app shell keep the incumbent T styles and components/ui.tsx until they migrate. Guest-facing palettes G and P are out of scope.",
+    "sources": {
+      "colors": "lib/theme.ts (DS, --ds-* in CSS_VARS)",
+      "font": "app/layout.tsx (Hanken Grotesk, --font-ds, preload false)",
+      "classes": "app/globals.css, section \"Union design system v2\""
+    },
     "colorMeta": {
-      "accent": {
-        "role": "primary",
-        "displayName": "Graphite",
-        "canonical": "#1B1B1A",
-        "tonalRamp": [
-          "#0B0B0A",
-          "#252524",
-          "#424241",
-          "#616160",
-          "#828281",
-          "#A5A5A4",
-          "#C9C9C8",
-          "#EEEEED"
-        ]
-      },
-      "accent-2": {
-        "role": "primary",
-        "displayName": "Maybe Stone",
-        "canonical": "#8C8B86",
-        "tonalRamp": [
-          "#0C0B08",
-          "#262521",
-          "#43423D",
-          "#62615C",
-          "#8C8B86",
-          "#A6A59F",
-          "#CAC9C3",
-          "#F0EFE9"
-        ]
-      },
-      "accent-soft": {
-        "role": "primary",
-        "displayName": "Graphite Wash",
-        "canonical": "#ECECEA",
-        "tonalRamp": [
-          "#0B0B0A",
-          "#252524",
-          "#424240",
-          "#616160",
-          "#828281",
-          "#A5A5A3",
-          "#C9C9C7",
-          "#EEEEEC"
-        ]
-      },
-      "focus": {
-        "role": "primary",
-        "displayName": "Focus Halo",
-        "canonical": "rgba(27,27,26,0.18)"
-      },
-      "ground": {
+      "canvas": {
         "role": "neutral",
-        "displayName": "Paper Ground",
-        "canonical": "#F6F6F4",
+        "displayName": "Cream Canvas",
+        "canonical": "#FAF5F1",
+        "purpose": "Page ground.",
+        "oklch": "oklch(97.3% 0.008 61.5)",
         "tonalRamp": [
-          "#0B0B0A",
-          "#252524",
-          "#424240",
-          "#616160",
-          "#828281",
-          "#A5A5A3",
-          "#C9C9C7",
-          "#EEEEEC"
+          "#0E0A08",
+          "#282421",
+          "#45413E",
+          "#64605D",
+          "#86817E",
+          "#A9A4A0",
+          "#CDC8C4",
+          "#F2EEEA"
         ]
       },
       "surface": {
         "role": "neutral",
-        "displayName": "Card White",
+        "displayName": "Cream Card",
+        "canonical": "#FFFCFA",
+        "purpose": "Cards, groups, tasks, tiles, fields, ghost buttons, chips.",
+        "oklch": "oklch(99.3% 0.004 56.4)",
+        "tonalRamp": [
+          "#0D0B09",
+          "#272523",
+          "#444140",
+          "#63615F",
+          "#848280",
+          "#A7A4A2",
+          "#CBC8C6",
+          "#F0EEEC"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Warm Ink",
+        "canonical": "#43353A",
+        "purpose": "Titles and primary text.",
+        "oklch": "oklch(34.6% 0.022 354.9)",
+        "tonalRamp": [
+          "#12070C",
+          "#2E2126",
+          "#4C3D43",
+          "#6C5C62",
+          "#8E7D83",
+          "#B1A0A6",
+          "#D5C4CA",
+          "#F9EAEF"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Warm Ink Soft",
+        "canonical": "#5C4B50",
+        "purpose": "Secondary copy that reads as content.",
+        "oklch": "oklch(43.2% 0.024 358.6)",
+        "tonalRamp": [
+          "#13070B",
+          "#2F2025",
+          "#4D3D42",
+          "#6D5C61",
+          "#8F7D82",
+          "#B39FA5",
+          "#D7C3C9",
+          "#FAE9EE"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Warm Grey",
+        "canonical": "#6E5E62",
+        "purpose": "Subtitles, metadata, quiet text, placeholders.",
+        "oklch": "oklch(49.9% 0.022 1.1)",
+        "tonalRamp": [
+          "#13070B",
+          "#2E2124",
+          "#4C3D41",
+          "#6C5C60",
+          "#8E7D81",
+          "#B1A0A4",
+          "#D6C4C8",
+          "#F9EAEE"
+        ]
+      },
+      "track": {
+        "role": "neutral",
+        "displayName": "Sand Track",
+        "canonical": "#EFE7DF",
+        "purpose": "Meter track and waiting segment, calm icon, skeleton.",
+        "oklch": "oklch(93.2% 0.014 67.7)",
+        "tonalRamp": [
+          "#0F0A06",
+          "#2A241E",
+          "#47413A",
+          "#676059",
+          "#88817A",
+          "#ABA49C",
+          "#CFC8C0",
+          "#F4EDE7"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(67,53,58,0.08)",
+        "purpose": "Borders and row dividers (ink 8%)."
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Hairline Strong",
+        "canonical": "rgba(67,53,58,0.15)",
+        "purpose": "Inset outlines of ghost controls (ink 15%)."
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Hover Wash",
+        "canonical": "rgba(67,53,58,0.035)",
+        "purpose": "Hover fill (ink 3.5%)."
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "White",
         "canonical": "#FFFFFF",
+        "purpose": "Label on Rosewood Deep.",
+        "oklch": "oklch(100.0% 0.000 89.9)",
         "tonalRamp": [
           "#0B0B0B",
           "#252525",
@@ -85,199 +147,414 @@
           "#EEEEEE"
         ]
       },
-      "ink": {
-        "role": "neutral",
-        "displayName": "Near-Black Ink",
-        "canonical": "#1B1B1A",
+      "accent": {
+        "role": "primary",
+        "displayName": "Rosewood",
+        "canonical": "#B07C82",
+        "purpose": "Fills and dots only; never text.",
+        "oklch": "oklch(64.0% 0.065 11.4)",
         "tonalRamp": [
-          "#0B0B0A",
-          "#252524",
-          "#424241",
-          "#616160",
-          "#828281",
-          "#A5A5A4",
-          "#C9C9C8",
-          "#EEEEED"
+          "#1F0005",
+          "#3F151D",
+          "#603239",
+          "#825158",
+          "#A57278",
+          "#CA959B",
+          "#F0B8BE",
+          "#FFE1E5"
         ]
       },
-      "ink-2": {
-        "role": "neutral",
-        "displayName": "Soft Ink",
-        "canonical": "#45443F",
+      "accent-strong": {
+        "role": "primary",
+        "displayName": "Rosewood Deep",
+        "canonical": "#8A545C",
+        "purpose": "Filled button, links, selected chip, focus outline, rosewood text.",
+        "oklch": "oklch(50.9% 0.073 10.3)",
         "tonalRamp": [
-          "#0C0B07",
-          "#262521",
-          "#43423D",
-          "#62615C",
-          "#83827D",
-          "#A6A59F",
-          "#CAC9C3",
-          "#F0EFE8"
+          "#210005",
+          "#41121D",
+          "#623039",
+          "#854F57",
+          "#A97078",
+          "#CE929A",
+          "#F4B6BE",
+          "#FFDFE5"
         ]
       },
-      "muted": {
-        "role": "neutral",
-        "displayName": "Quiet Grey",
-        "canonical": "#686660",
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Rosewood Blush",
+        "canonical": "#F2E1E0",
+        "purpose": "Tint behind rosewood text; selection.",
+        "oklch": "oklch(92.3% 0.019 21.6)",
         "tonalRamp": [
-          "#0D0B07",
-          "#272520",
-          "#44423C",
-          "#63615B",
-          "#84827C",
-          "#A7A59E",
-          "#CBC9C2",
-          "#F1EEE7"
+          "#120808",
+          "#2E2221",
+          "#4C3E3E",
+          "#6C5D5C",
+          "#8D7E7D",
+          "#B1A1A0",
+          "#D5C5C4",
+          "#F9EBEA"
         ]
       },
-      "track": {
-        "role": "neutral",
-        "displayName": "Empty Track",
-        "canonical": "#ECECEA",
+      "focus": {
+        "role": "primary",
+        "displayName": "Rosewood Halo",
+        "canonical": "rgba(176,124,130,0.3)",
+        "purpose": "Field focus halo (rosewood 30%)."
+      },
+      "coming": {
+        "role": "secondary",
+        "displayName": "Sage",
+        "canonical": "#7E9A82",
+        "purpose": "Coming: fills and dots.",
+        "oklch": "oklch(65.8% 0.047 149.0)",
         "tonalRamp": [
-          "#0B0B0A",
-          "#252524",
-          "#424240",
-          "#616160",
-          "#828281",
-          "#A5A5A3",
-          "#C9C9C7",
-          "#EEEEEC"
+          "#001002",
+          "#132B18",
+          "#304934",
+          "#4F6953",
+          "#6F8B73",
+          "#91AE95",
+          "#B5D2B9",
+          "#DEF6E1"
+        ]
+      },
+      "coming-strong": {
+        "role": "secondary",
+        "displayName": "Deep Sage",
+        "canonical": "#4F6A54",
+        "purpose": "Coming: text and initials.",
+        "oklch": "oklch(49.6% 0.047 150.0)",
+        "tonalRamp": [
+          "#001002",
+          "#122B18",
+          "#2F4935",
+          "#4E6953",
+          "#6F8B74",
+          "#91AE96",
+          "#B4D2B9",
+          "#DEF6E1"
+        ]
+      },
+      "coming-soft": {
+        "role": "secondary",
+        "displayName": "Sage Mist",
+        "canonical": "#E7EFE6",
+        "purpose": "Coming: face tint.",
+        "oklch": "oklch(94.4% 0.015 142.2)",
+        "tonalRamp": [
+          "#080D07",
+          "#212720",
+          "#3E443D",
+          "#5D635C",
+          "#7E857D",
+          "#A0A79F",
+          "#C4CCC3",
+          "#EAF1E9"
+        ]
+      },
+      "maybe": {
+        "role": "secondary",
+        "displayName": "Dusty Blue",
+        "canonical": "#5C648A",
+        "purpose": "Maybe: fill and text.",
+        "oklch": "oklch(51.2% 0.061 274.9)",
+        "tonalRamp": [
+          "#060624",
+          "#1D2242",
+          "#383F62",
+          "#575F84",
+          "#7780A7",
+          "#99A3CC",
+          "#BDC7F2",
+          "#E4EDFF"
+        ]
+      },
+      "maybe-soft": {
+        "role": "secondary",
+        "displayName": "Blue Mist",
+        "canonical": "#E4E7EE",
+        "purpose": "Maybe: face tint.",
+        "oklch": "oklch(92.8% 0.010 267.4)",
+        "tonalRamp": [
+          "#090B0F",
+          "#23252A",
+          "#404247",
+          "#5F6167",
+          "#808289",
+          "#A2A5AB",
+          "#C6C9D0",
+          "#ECEEF4"
         ]
       },
       "cant": {
-        "role": "neutral",
-        "displayName": "Can't-Come Stone",
-        "canonical": "#C9C7C1",
+        "role": "secondary",
+        "displayName": "Sand Rose",
+        "canonical": "#C7A9A2",
+        "purpose": "Can't: fills only; text falls back to muted.",
+        "oklch": "oklch(75.9% 0.037 33.3)",
         "tonalRamp": [
-          "#0C0B07",
-          "#262520",
-          "#44423D",
-          "#63615C",
-          "#84827D",
-          "#A7A59F",
-          "#CBC9C3",
-          "#F0EEE8"
+          "#180503",
+          "#351E19",
+          "#543B35",
+          "#755A54",
+          "#977B74",
+          "#BB9D96",
+          "#E0C1BA",
+          "#FFE8E2"
         ]
       },
-      "ring": {
-        "role": "neutral",
-        "displayName": "Pending Ring",
-        "canonical": "#D6D4CE",
+      "cant-soft": {
+        "role": "secondary",
+        "displayName": "Sand Mist",
+        "canonical": "#F1E7E3",
+        "purpose": "Can't: face tint.",
+        "oklch": "oklch(93.5% 0.012 43.3)",
         "tonalRamp": [
-          "#0C0B07",
-          "#262520",
-          "#44423D",
-          "#63615C",
-          "#84827D",
-          "#A7A59F",
-          "#CBC9C3",
-          "#F0EEE8"
+          "#100A07",
+          "#2A2320",
+          "#48403D",
+          "#685F5C",
+          "#89807D",
+          "#ACA39F",
+          "#D0C7C3",
+          "#F5EDE9"
         ]
       },
-      "line": {
-        "role": "neutral",
-        "displayName": "Hairline",
-        "canonical": "rgba(27,27,26,0.08)"
+      "waiting": {
+        "role": "secondary",
+        "displayName": "Amber Ring",
+        "canonical": "#DDB27C",
+        "purpose": "Waiting: outlines only.",
+        "oklch": "oklch(79.0% 0.086 72.4)",
+        "tonalRamp": [
+          "#1F0100",
+          "#3D1B00",
+          "#5D3900",
+          "#7F5922",
+          "#A27A45",
+          "#C79D67",
+          "#ECC18A",
+          "#FFE8BC"
+        ]
       },
-      "line-strong": {
-        "role": "neutral",
-        "displayName": "Strong Hairline",
-        "canonical": "rgba(27,27,26,0.14)"
+      "waiting-strong": {
+        "role": "secondary",
+        "displayName": "Burnt Amber",
+        "canonical": "#9A5B23",
+        "purpose": "Waiting: text.",
+        "oklch": "oklch(53.3% 0.108 58.4)",
+        "tonalRamp": [
+          "#270000",
+          "#480E00",
+          "#6A2F00",
+          "#8D4F14",
+          "#B2713B",
+          "#D7945E",
+          "#FEB881",
+          "#FFE1B5"
+        ]
       },
-      "hover": {
-        "role": "neutral",
-        "displayName": "Hover Wash",
-        "canonical": "rgba(27,27,26,0.035)"
-      },
-      "chrome": {
-        "role": "neutral",
-        "displayName": "Shell Chrome",
-        "canonical": "rgba(246,246,244,0.92)"
+      "waiting-soft": {
+        "role": "secondary",
+        "displayName": "Amber Mist",
+        "canonical": "#FBEEE2",
+        "purpose": "Waiting: tint.",
+        "oklch": "oklch(95.6% 0.021 65.3)",
+        "tonalRamp": [
+          "#110903",
+          "#2C231A",
+          "#4A4036",
+          "#6A5F55",
+          "#8C8075",
+          "#AFA397",
+          "#D3C7BB",
+          "#F7ECE3"
+        ]
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Page title; 46px from 960px, 26px on sub-pages."
+        "purpose": "The page title, one per page; 44px from 960px."
       },
       "numeral": {
         "displayName": "Numeral",
-        "purpose": "The one big answered count, in graphite, tabular."
+        "purpose": "The one figure a hub leads with; tabular."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "A statement replacing the numeral; empty-state titles."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Sentence replacing the numeral; empty-state titles."
+        "purpose": "Section headings, sentence case."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Section headings above list groups."
-      },
-      "row-title": {
-        "displayName": "Row title",
-        "purpose": "Name or tool in a list row, single line."
+        "purpose": "Row and task titles."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Couple line, legend labels, quiet prose."
+        "purpose": "Quiet paragraphs and task bodies, in muted."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Buttons, chips, section links."
+        "purpose": "Buttons, chips, links, tile labels."
       },
       "caption": {
         "displayName": "Caption",
-        "purpose": "Row subtitles and notes."
+        "purpose": "Row metadata, tile meta, tile group labels."
       }
+    },
+    "contrast": {
+      "method": "WCAG 2.x relative luminance",
+      "canvas": "#FAF5F1",
+      "surface": "#FFFCFA",
+      "rows": [
+        {
+          "role": "ink",
+          "canvas": 10.72,
+          "surface": 11.36
+        },
+        {
+          "role": "ink-2",
+          "canvas": 7.53,
+          "surface": 7.98
+        },
+        {
+          "role": "muted",
+          "canvas": 5.64,
+          "surface": 5.97,
+          "cant-soft": 5.02,
+          "track": 4.99
+        },
+        {
+          "role": "accent-strong",
+          "canvas": 5.54,
+          "surface": 5.87,
+          "accent-soft": 4.74
+        },
+        {
+          "role": "coming-strong",
+          "canvas": 5.51,
+          "surface": 5.84,
+          "coming-soft": 5.08
+        },
+        {
+          "role": "maybe",
+          "canvas": 5.32,
+          "surface": 5.64,
+          "maybe-soft": 4.65
+        },
+        {
+          "role": "waiting-strong",
+          "canvas": 4.98,
+          "surface": 5.28,
+          "waiting-soft": 4.73,
+          "track": 4.41,
+          "note": "not on track"
+        },
+        {
+          "role": "white on accent-strong",
+          "ratio": 5.99
+        },
+        {
+          "role": "accent",
+          "canvas": 3.21,
+          "surface": 3.4,
+          "accent-soft": 2.75,
+          "note": "shapes only"
+        },
+        {
+          "role": "coming",
+          "canvas": 2.84,
+          "surface": 3.01,
+          "coming-soft": 2.62,
+          "note": "shapes only"
+        },
+        {
+          "role": "cant",
+          "canvas": 2.02,
+          "surface": 2.14,
+          "cant-soft": 1.8,
+          "note": "shapes only"
+        },
+        {
+          "role": "waiting",
+          "canvas": 1.81,
+          "surface": 1.92,
+          "waiting-soft": 1.72,
+          "note": "outlines only"
+        }
+      ]
     },
     "shadows": [
       {
-        "name": "panel-lift",
-        "value": "0 1px 2px var(--vc-shadow), 0 12px 32px var(--vc-shadow)",
-        "purpose": "Reply and empty-state panels only; --vc-shadow is ink at 5%."
+        "name": "card-lift",
+        "value": "0 1px 2px rgba(67,53,58,0.06), 0 10px 28px rgba(67,53,58,0.06)",
+        "purpose": "ds-card only: the lead summary and empty states."
       },
       {
-        "name": "primary-glow",
-        "value": "0 2px 8px var(--vc-accent-shadow)",
-        "purpose": "Primary button at rest (graphite at 12%); 0 4px 12px on hover."
+        "name": "button-glow",
+        "value": "0 2px 8px rgba(138,84,92,0.2)",
+        "purpose": "Filled button at rest."
+      },
+      {
+        "name": "button-glow-hover",
+        "value": "0 4px 14px rgba(138,84,92,0.2)",
+        "purpose": "Filled button on hover."
       },
       {
         "name": "inset-outline",
-        "value": "inset 0 0 0 1px var(--vc-line-strong)",
-        "purpose": "Chips, ghost and back buttons, search field."
+        "value": "inset 0 0 0 1px rgba(67,53,58,0.15)",
+        "purpose": "Ghost buttons, chips, fields, back button."
       },
       {
-        "name": "focus-halo",
-        "value": "inset 0 0 0 1.5px var(--vc-accent), 0 0 0 4px var(--vc-focus)",
-        "purpose": "Search field focus."
+        "name": "field-focus",
+        "value": "inset 0 0 0 1.5px #8A545C, 0 0 0 4px rgba(176,124,130,0.3)",
+        "purpose": "Field focus."
+      },
+      {
+        "name": "focus-outline",
+        "value": "outline: 2px solid #8A545C; outline-offset: 2px",
+        "purpose": "Focus-visible on rows, tiles, links, buttons, chips, back, summary (-2px inside groups)."
       }
     ],
     "motion": [
       {
-        "name": "bar-grow",
-        "value": "flex-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Reply bar segments growing into place."
+        "name": "state",
+        "value": "0.15s ease",
+        "purpose": "Background, border, shadow and underline transitions."
       },
       {
         "name": "press",
         "value": "transform 0.12s ease, scale(0.98)",
-        "purpose": "Button press."
+        "purpose": "Buttons when pressed."
       },
       {
-        "name": "state",
-        "value": "0.15s ease",
-        "purpose": "Background, shadow and underline state changes."
+        "name": "meter-fill",
+        "value": "flex-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Meter segments easing to their counts."
+      },
+      {
+        "name": "shimmer",
+        "value": "1.4s ease-in-out infinite",
+        "purpose": "Skeleton loading."
       },
       {
         "name": "reduced-motion",
-        "value": "transition: none",
-        "purpose": "Under prefers-reduced-motion for bar, rows, buttons, field."
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Removes meter, row, button, field, tile transitions and stops the shimmer."
       }
     ],
     "breakpoints": [
       {
         "name": "desktop",
-        "value": "960px"
+        "value": "960px",
+        "purpose": "ds-wide main to 1060px, ds-split two columns (1.15fr / 1fr, 40px gap), ds-narrow 760px, display 44px, chips wrap."
       }
     ]
   },
@@ -286,109 +563,133 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The one filled action in an area, in graphite.",
-      "html": "<button class=\"ds-btn ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Add guest</button>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 18px;border-radius:12px;border:none;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;font-weight:600;font-size:14.5px;cursor:pointer;transition:transform .12s ease,background-color .15s ease,box-shadow .15s ease}.ds-btn:active{transform:scale(.98)}.ds-btn:focus-visible{outline:2px solid var(--vc-accent);outline-offset:2px}.ds-btn-primary{background:var(--vc-accent);color:var(--vc-surface);box-shadow:0 2px 8px var(--vc-accent-shadow)}.ds-btn-primary:hover{box-shadow:0 4px 12px var(--vc-accent-shadow)}.ds-btn-primary:disabled{opacity:.6;cursor:default}"
+      "description": "The one filled action per area.",
+      "html": "<button class=\"ds-btn\">Send a reminder</button>",
+      "css": ".ds-btn{font-family: \"Hanken Grotesk\", system-ui, sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 18px;border-radius:12px;border:none;font-weight:600;font-size:14.5px;cursor:pointer;background:#8A545C;color:#FFFFFF;box-shadow:0 2px 8px rgba(138,84,92,0.2);transition:transform .12s ease,box-shadow .15s ease}.ds-btn:hover{box-shadow:0 4px 14px rgba(138,84,92,0.2)}.ds-btn:active{transform:scale(0.98)}.ds-btn:focus-visible{outline:2px solid #8A545C;outline-offset:2px}"
     },
     {
       "name": "Ghost Button",
       "kind": "button",
       "refersTo": "button-ghost",
-      "description": "Secondary action: white with an inset strong hairline.",
-      "html": "<button class=\"ds-btn ds-btn-ghost\">Share the group link</button>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 18px;border-radius:12px;border:none;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;font-weight:600;font-size:14.5px;cursor:pointer;transition:transform .12s ease,background-color .15s ease,box-shadow .15s ease}.ds-btn:active{transform:scale(.98)}.ds-btn:focus-visible{outline:2px solid var(--vc-accent);outline-offset:2px}.ds-btn-ghost{background:var(--vc-surface);color:var(--vc-ink);box-shadow:inset 0 0 0 1px var(--vc-line-strong)}.ds-btn-ghost:hover{background:var(--vc-hover)}"
+      "description": "Every other action in an area.",
+      "html": "<button class=\"ds-btn-ghost\">Add</button>",
+      "css": ".ds-btn-ghost{font-family: \"Hanken Grotesk\", system-ui, sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 18px;border-radius:12px;border:none;font-weight:600;font-size:14.5px;cursor:pointer;background:#FFFCFA;color:#43353A;box-shadow:inset 0 0 0 1px rgba(67,53,58,0.15);transition:transform .12s ease,background-color .15s ease}.ds-btn-ghost:hover{background:rgba(67,53,58,0.035)}.ds-btn-ghost:active{transform:scale(0.98)}.ds-btn-ghost:focus-visible{outline:2px solid #8A545C;outline-offset:2px}"
     },
     {
       "name": "Search Field",
       "kind": "input",
-      "refersTo": "search-field",
-      "description": "Find any guest; focus turns the outline graphite with a soft halo.",
-      "html": "<label class=\"ds-find\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#686660\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-3.5-3.5\"/></svg><input type=\"search\" placeholder=\"Find a guest\"></label>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-find{display:flex;align-items:center;gap:10px;padding:0 16px;min-height:50px;border-radius:14px;background:var(--vc-surface);box-shadow:inset 0 0 0 1px var(--vc-line-strong);transition:box-shadow .15s ease;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif}.ds-find:focus-within{box-shadow:inset 0 0 0 1.5px var(--vc-accent),0 0 0 4px var(--vc-focus)}.ds-find input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-family:inherit;font-size:16px;color:var(--vc-ink);caret-color:var(--vc-accent);padding:13px 0}.ds-find input::placeholder{color:var(--vc-muted)}"
+      "refersTo": "field",
+      "description": "Search with a leading icon; rosewood focus halo.",
+      "html": "<label class=\"ds-field\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#6E5E62\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-3.5-3.5\"/></svg><input placeholder=\"Search guests\" aria-label=\"Search guests\"></label>",
+      "css": ".ds-field{display:flex;align-items:center;gap:10px;padding:0 16px;min-height:50px;border-radius:14px;background:#FFFCFA;box-shadow:inset 0 0 0 1px rgba(67,53,58,0.15);transition:box-shadow .15s ease}.ds-field:focus-within{box-shadow:inset 0 0 0 1.5px #8A545C,0 0 0 4px rgba(176,124,130,0.3)}.ds-field input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-family: \"Hanken Grotesk\", system-ui, sans-serif;font-size:16px;color:#43353A;caret-color:#8A545C;padding:13px 0}.ds-field input::placeholder{color:#6E5E62}"
     },
     {
       "name": "Filter Chips",
       "kind": "chip",
       "refersTo": "chip",
-      "description": "Reply filters on the list; the pressed one fills with graphite.",
-      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\" aria-pressed=\"true\">All<span class=\"ds-n\">48</span></button><button class=\"ds-chip\" aria-pressed=\"false\">Coming<span class=\"ds-n\">21</span></button><button class=\"ds-chip\" aria-pressed=\"false\">Waiting<span class=\"ds-n\">19</span></button></div>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-chips{display:flex;gap:6px}.ds-chip{min-height:38px;padding:0 14px;border-radius:10px;border:none;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;font-weight:600;font-size:14px;background:var(--vc-surface);color:var(--vc-ink-2);box-shadow:inset 0 0 0 1px var(--vc-line-strong);cursor:pointer}.ds-chip:hover{background:var(--vc-hover)}.ds-chip[aria-pressed=true]{background:var(--vc-accent);color:var(--vc-surface);box-shadow:none}.ds-chip:focus-visible{outline:2px solid var(--vc-accent);outline-offset:2px}.ds-n{opacity:.7;margin-left:5px;font-variant-numeric:tabular-nums}"
+      "description": "Toggle filters with aria-pressed; selected fills rosewood deep.",
+      "html": "<div class=\"ds-chips\" role=\"group\" aria-label=\"Replies\"><button class=\"ds-chip\" aria-pressed=\"true\">All <span class=\"ds-chip-n\">48</span></button><button class=\"ds-chip\" aria-pressed=\"false\">Coming <span class=\"ds-chip-n\">21</span></button><button class=\"ds-chip\" aria-pressed=\"false\">Waiting <span class=\"ds-chip-n\">19</span></button></div>",
+      "css": ".ds-chips{display:flex;gap:6px;flex-wrap:wrap}.ds-chip{font-family: \"Hanken Grotesk\", system-ui, sans-serif;display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:0 14px;border-radius:10px;border:none;font-weight:600;font-size:14px;background:#FFFCFA;color:#5C4B50;box-shadow:inset 0 0 0 1px rgba(67,53,58,0.15);cursor:pointer}.ds-chip:hover{background:rgba(67,53,58,0.035)}.ds-chip[aria-pressed=\"true\"]{background:#8A545C;color:#FFFFFF;box-shadow:none}.ds-chip-n{opacity:.75;font-variant-numeric:tabular-nums}.ds-chip:focus-visible{outline:2px solid #8A545C;outline-offset:2px}"
     },
     {
-      "name": "Guest List Group",
-      "kind": "nav",
-      "refersTo": "list-group",
-      "description": "White group of 60px rows divided by hairlines; reply avatars in graphite, stone and neutrals.",
-      "html": "<ul class=\"ds-group\"><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-face is-attending\">C</span><span class=\"ds-txt\"><span class=\"ds-t\">Camille Martin</span><span class=\"ds-s\"><b class=\"ds-yes\">Coming</b> · 2h ago</span></span><span class=\"ds-chev\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 6l6 6-6 6\"/></svg></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-face is-maybe\">J</span><span class=\"ds-txt\"><span class=\"ds-t\">Jules Bernard</span><span class=\"ds-s\">Maybe · yesterday</span></span><span class=\"ds-chev\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 6l6 6-6 6\"/></svg></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-face is-pending\">L</span><span class=\"ds-txt\"><span class=\"ds-t\">Léa Petit</span><span class=\"ds-s\">Family</span></span><span class=\"ds-chev\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 6l6 6-6 6\"/></svg></span></a></li></ul>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-group{list-style:none;margin:0;padding:0;background:var(--vc-surface);border:1px solid var(--vc-line);border-radius:18px;overflow:hidden;font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif}.ds-group>li+li{border-top:1px solid var(--vc-line)}.ds-row{display:flex;align-items:center;gap:12px;min-height:60px;padding:11px 16px;color:var(--vc-ink);text-decoration:none;transition:background-color .15s ease}.ds-row:hover{background:var(--vc-hover)}.ds-row:focus-visible{outline:2px solid var(--vc-accent);outline-offset:-2px}.ds-txt{flex:1;min-width:0}.ds-t{display:block;font-weight:600;font-size:15px}.ds-s{display:block;font-size:13px;color:var(--vc-muted);margin-top:1px}.ds-yes{color:var(--vc-accent);font-weight:600}.ds-chev{display:flex;color:var(--vc-ring)}.ds-row:hover .ds-chev{color:var(--vc-accent)}.ds-face{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600;font-size:15px}.ds-face.is-attending{background:var(--vc-accent-soft);color:var(--vc-accent)}.ds-face.is-maybe{background:var(--vc-surface);color:var(--vc-accent);box-shadow:inset 0 0 0 1.5px var(--vc-accent-2)}.ds-face.is-pending{background:var(--vc-surface);color:var(--vc-muted);box-shadow:inset 0 0 0 1.5px var(--vc-ring)}"
-    },
-    {
-      "name": "Reply Panel",
+      "name": "Guest Row Group",
       "kind": "card",
-      "refersTo": "panel",
-      "description": "Signature: the big answered numeral in graphite, one split reply bar, legend links.",
-      "html": "<section class=\"ds-panel\"><div class=\"ds-head\"><span class=\"ds-numeral\">29</span><span class=\"ds-of\">answered of 48</span></div><div class=\"ds-bar\"><span style=\"flex-grow:21;background:var(--vc-accent)\"></span><span style=\"flex-grow:3;background:var(--vc-accent-2)\"></span><span style=\"flex-grow:5;background:#C9C7C1\"></span><span style=\"flex-grow:19;background:var(--vc-track)\"></span></div><ul class=\"ds-legend\"><li><a href=\"#\"><i style=\"background:var(--vc-accent)\"></i>Coming<b>21</b></a></li><li><a href=\"#\"><i style=\"background:var(--vc-accent-2)\"></i>Maybe<b>3</b></a></li><li><a href=\"#\"><i style=\"background:#C9C7C1\"></i>Can't come<b>5</b></a></li><li><a href=\"#\"><i style=\"box-shadow:inset 0 0 0 1.5px var(--vc-ring)\"></i>Waiting<b>19</b></a></li></ul></section>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-panel{background:var(--vc-surface);border:1px solid var(--vc-line);border-radius:20px;padding:24px 22px 20px;box-shadow:0 1px 2px var(--vc-shadow),0 12px 32px var(--vc-shadow);font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;color:var(--vc-ink)}.ds-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.ds-numeral{font-weight:500;font-size:76px;line-height:.82;letter-spacing:-.045em;color:var(--vc-accent);font-variant-numeric:tabular-nums}.ds-of{font-size:16px;font-weight:500;color:var(--vc-ink-2)}.ds-bar{display:flex;gap:3px;height:10px;margin-top:22px}.ds-bar span{flex-basis:0;min-width:0;border-radius:5px}.ds-legend{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 18px}.ds-legend a{display:flex;align-items:center;gap:9px;min-height:42px;padding:0 8px;margin:0 -8px;border-radius:10px;font-size:14.5px;font-weight:500;color:var(--vc-ink-2);text-decoration:none}.ds-legend a:hover{background:var(--vc-hover);color:var(--vc-ink)}.ds-legend a:focus-visible{outline:2px solid var(--vc-accent);outline-offset:2px}.ds-legend i{width:10px;height:10px;border-radius:50%;flex-shrink:0}.ds-legend b{margin-left:auto;font-weight:600;color:var(--vc-ink);font-variant-numeric:tabular-nums}"
+      "refersTo": "group",
+      "description": "Hairline-divided list of rows with status faces.",
+      "html": "<ul class=\"ds-group\"><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-face is-attending\">CL</span><span class=\"ds-row-main\"><span class=\"ds-row-title\">Camille Laurent</span><span class=\"ds-row-sub\">Plus one</span></span><span class=\"ds-status is-attending\">Coming</span><span class=\"ds-chev\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 6l6 6-6 6\"/></svg></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-face is-pending\">TM</span><span class=\"ds-row-main\"><span class=\"ds-row-title\">Tom Martin</span><span class=\"ds-row-sub ds-status is-pending\">No email</span></span><span class=\"ds-status is-pending\">Waiting</span><span class=\"ds-chev\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 6l6 6-6 6\"/></svg></span></a></li></ul>",
+      "css": ".ds-group{list-style:none;margin:0;padding:0;background:#FFFCFA;border:1px solid rgba(67,53,58,0.08);border-radius:18px;overflow:hidden;font-family: \"Hanken Grotesk\", system-ui, sans-serif;}.ds-group>li+li{border-top:1px solid rgba(67,53,58,0.08)}.ds-row{display:flex;align-items:center;gap:12px;min-height:60px;padding:11px 16px;color:#43353A;text-decoration:none;transition:background-color .15s ease}.ds-row:hover{background:rgba(67,53,58,0.035)}.ds-row:focus-visible{outline:2px solid #8A545C;outline-offset:-2px}.ds-row-main{flex:1;min-width:0}.ds-row-title{display:block;font-weight:600;font-size:15px}.ds-row-sub{display:block;font-size:13px;color:#6E5E62;margin-top:1px}.ds-face{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600;font-size:15px;background:#F2E1E0;color:#8A545C}.ds-face.is-attending{background:#E7EFE6;color:#4F6A54}.ds-face.is-pending{background:#FFFCFA;color:#9A5B23;box-shadow:inset 0 0 0 1.5px #DDB27C}.ds-status{font-weight:600;font-size:13px}.ds-status.is-attending{color:#4F6A54}.ds-status.is-pending{color:#9A5B23}.ds-chev{display:flex;color:rgba(67,53,58,0.15)}.ds-row:hover .ds-chev{color:#8A545C}"
+    },
+    {
+      "name": "Replies Summary",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The hub lead card: one numeral, a split meter, a legend.",
+      "html": "<a class=\"ds-summary\" href=\"#\"><p class=\"ds-summary-count\"><b>29</b><span>of 48 invited have answered</span></p><div class=\"ds-meter\" role=\"img\" aria-label=\"Replies: Coming 21, Maybe 3, Can't 5, Waiting 19\"><span style=\"flex-grow:21;background:#7E9A82\"></span><span style=\"flex-grow:3;background:#5C648A\"></span><span style=\"flex-grow:5;background:#C7A9A2\"></span><span style=\"flex-grow:19;background:#EFE7DF\"></span></div><ul class=\"ds-legend\"><li><i style=\"background:#7E9A82\"></i>Coming <b>21</b></li><li><i style=\"background:#5C648A\"></i>Maybe <b>3</b></li><li><i style=\"background:#C7A9A2\"></i>Can't <b>5</b></li><li><i style=\"box-shadow:inset 0 0 0 2px #DDB27C\"></i>Waiting <b>19</b></li></ul></a>",
+      "css": ".ds-summary{display:block;font-family: \"Hanken Grotesk\", system-ui, sans-serif;background:#FFFCFA;border:1px solid rgba(67,53,58,0.08);border-radius:20px;padding:20px;box-shadow:0 1px 2px rgba(67,53,58,0.06),0 10px 28px rgba(67,53,58,0.06);color:#43353A;text-decoration:none}.ds-summary:hover{border-color:rgba(67,53,58,0.15)}.ds-summary:focus-visible{outline:2px solid #8A545C;outline-offset:2px}.ds-summary-count{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0}.ds-summary-count b{font-weight:600;font-size:44px;line-height:.9;letter-spacing:-0.04em;font-variant-numeric:tabular-nums}.ds-summary-count span{font-size:15px;font-weight:500;color:#5C4B50}.ds-meter{display:flex;gap:3px;height:8px;margin-top:16px}.ds-meter>span{flex-basis:0;min-width:0;border-radius:4px}.ds-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:12px 0 0;padding:0;list-style:none;font-size:13.5px;color:#5C4B50}.ds-legend li{display:inline-flex;align-items:center;gap:6px}.ds-legend i{width:10px;height:10px;border-radius:50%}.ds-legend b{font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Task Card",
+      "kind": "custom",
+      "refersTo": "task",
+      "description": "One thing that needs the couple, with one action.",
+      "html": "<article class=\"ds-task\"><span class=\"ds-task-icon\" aria-hidden=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 6h16v12H4z\"/><path d=\"M4 7l8 6 8-6\"/></svg></span><div><h3 class=\"ds-task-title\">19 guests have not answered</h3><p class=\"ds-task-body\">Send them a friendly reminder by email.</p><div class=\"ds-task-actions\"><button class=\"ds-task-btn\">Send a reminder</button><button class=\"ds-task-link\">Not now</button></div></div></article>",
+      "css": ".ds-task{display:flex;gap:14px;align-items:flex-start;background:#FFFCFA;border:1px solid rgba(67,53,58,0.08);border-radius:18px;padding:16px;font-family: \"Hanken Grotesk\", system-ui, sans-serif;}.ds-task-icon{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#F2E1E0;color:#8A545C}.ds-task-title{margin:0;font-weight:600;font-size:15.5px;line-height:1.3;color:#43353A}.ds-task-body{margin:4px 0 0;font-size:14px;line-height:1.45;color:#6E5E62}.ds-task-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:12px}.ds-task-btn{font-family: \"Hanken Grotesk\", system-ui, sans-serif;min-height:40px;padding:0 14px;border-radius:12px;border:none;font-weight:600;font-size:14px;background:#8A545C;color:#FFFFFF;box-shadow:0 2px 8px rgba(138,84,92,0.2);cursor:pointer}.ds-task-btn:focus-visible,.ds-task-link:focus-visible{outline:2px solid #8A545C;outline-offset:2px}.ds-task-link{font-family: \"Hanken Grotesk\", system-ui, sans-serif;background:none;border:none;padding:0;font-weight:600;font-size:14px;color:#8A545C;cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;transition:text-decoration-color .15s ease}.ds-task-link:hover{text-decoration-color:currentColor}"
+    },
+    {
+      "name": "Module Tiles",
+      "kind": "nav",
+      "refersTo": "tile",
+      "description": "Two-column entry points to a hub's modules.",
+      "html": "<ul class=\"ds-tiles\"><li><a class=\"ds-tile\" href=\"#\"><span class=\"ds-tile-label\">Guest list</span><span class=\"ds-tile-meta\">48 guests</span></a></li><li><a class=\"ds-tile\" href=\"#\"><span class=\"ds-tile-label\">Duplicates</span><span class=\"ds-tile-meta is-alert\">2 to check</span></a></li></ul>",
+      "css": ".ds-tiles{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family: \"Hanken Grotesk\", system-ui, sans-serif;}.ds-tile{display:flex;flex-direction:column;justify-content:space-between;gap:6px;min-height:58px;height:100%;padding:13px 14px;border-radius:14px;background:#FFFCFA;border:1px solid rgba(67,53,58,0.08);color:#43353A;text-decoration:none;transition:background-color .15s ease,border-color .15s ease}.ds-tile:hover{border-color:rgba(67,53,58,0.15);background:rgba(67,53,58,0.035)}.ds-tile:focus-visible{outline:2px solid #8A545C;outline-offset:2px}.ds-tile-label{font-weight:600;font-size:14.5px;line-height:1.25}.ds-tile-meta{font-size:12.5px;color:#6E5E62}.ds-tile-meta.is-alert{color:#8A545C;font-weight:600}"
     },
     {
       "name": "Page Header",
       "kind": "custom",
-      "refersTo": "display",
-      "description": "Title with the couple's names and date beneath, in quiet grey.",
-      "html": "<header class=\"ds-header\"><div><h1 class=\"ds-h1\">Guests</h1><div class=\"ds-couple\">Camille &amp; Hugo · 12 June 2027</div></div></header>",
-      "css": ":host{--vc-ground:#F6F6F4;--vc-surface:#FFFFFF;--vc-ink:#1B1B1A;--vc-ink-2:#45443F;--vc-muted:#686660;--vc-track:#ECECEA;--vc-ring:#D6D4CE;--vc-line:rgba(27,27,26,.08);--vc-line-strong:rgba(27,27,26,.14);--vc-hover:rgba(27,27,26,.035);--vc-shadow:rgba(27,27,26,.05);--vc-accent:#1B1B1A;--vc-accent-2:#8C8B86;--vc-accent-soft:#ECECEA;--vc-focus:rgba(27,27,26,.18);--vc-accent-shadow:rgba(27,27,26,.12)}.ds-header{font-family:var(--font-vc), 'Hanken Grotesk', system-ui, sans-serif;padding:0 2px}.ds-h1{font-weight:600;font-size:40px;line-height:1.05;letter-spacing:-.03em;color:var(--vc-ink);margin:0}.ds-couple{margin-top:8px;font-size:14.5px;font-weight:500;color:var(--vc-muted)}"
+      "refersTo": "typography.display",
+      "description": "Title with the couple's names and date, one action on the right.",
+      "html": "<header class=\"ds-header\"><div><h1 class=\"ds-h1\">Guests</h1><div class=\"ds-sub\">Camille &amp; Hugo · 12 June 2027</div></div><button class=\"ds-hbtn\">Add</button></header>",
+      "css": ".ds-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:0 2px;font-family: \"Hanken Grotesk\", system-ui, sans-serif;}.ds-h1{font-weight:600;font-size:38px;line-height:1.05;letter-spacing:-0.03em;color:#43353A;margin:0;text-wrap:balance}.ds-sub{margin-top:6px;font-size:14.5px;font-weight:500;color:#6E5E62}.ds-hbtn{font-family: \"Hanken Grotesk\", system-ui, sans-serif;min-height:44px;padding:0 18px;border-radius:12px;border:none;font-weight:600;font-size:14.5px;background:#FFFCFA;color:#43353A;box-shadow:inset 0 0 0 1px rgba(67,53,58,0.15);cursor:pointer}.ds-hbtn:hover{background:rgba(67,53,58,0.035)}.ds-hbtn:focus-visible{outline:2px solid #8A545C;outline-offset:2px}"
     }
   ],
   "narrative": {
-    "northStar": "The Neutral Frame",
-    "overview": "Union's interface takes no wedding style of its own. The frame is near-white ground, white cards with hairline borders, near-black ink and one calm grotesque with tabular numerals; it should sit equally well beside a bohemian, black-tie, minimal or rustic wedding. The personality comes from the couple: their names and date in the page header, and their guests. Theme neutrality is a binding product principle (PRODUCT.md, principle 5), confirmed after a themed trial read as childish and divisive.\n\nThere is one fixed accent, graphite, the same for every couple. It carries the actions, the answered count and the \"yes\" in the replies; a lighter stone marks \"maybe\". Nothing about the colour varies from one wedding to the next.\n\nDensity is calm and phone-first: one column on a phone, large readable numbers, rows tall enough for a thumb (60px), and at most one filled action per area. Depth is soft and ambient, never decorative.",
+    "northStar": "The Couple's Desk",
+    "overview": "**Creative North Star: \"The Couple's Desk\"**\n\nA calm, warm working surface that belongs to Union and to nobody's wedding. Cream canvas, white-cream cards drawn with hairlines, warm ink, one modern grotesque, and a single rosewood voice for the action that matters. The palette is Union's incumbent colours (rosewood, cream, warm ink, sage, dusty blue, sand, amber), renamed by role and given the darker shades that make text pass WCAG AA.\n\nUnion is theme-neutral (PRODUCT.md, principle 5): the interface never takes on a wedding style, so it cannot exclude a bohemian, black-tie, minimal or rustic couple. Personality comes from the couple's own details (their names and date under the page title), never from the chrome. A themed \"garden marquee\" trial and a black-and-white neutral frame were both rejected; this is the middle path.\n\nThe density is phone-first and Operate-mode: short visits, one-tap actions, large type for the one number that matters, quiet type for everything else. On desktop the same content opens into two columns rather than growing new furniture.",
     "keyCharacteristics": [
-      "A neutral, very slightly warm grey frame with no hue at all.",
-      "One fixed graphite accent for actions and \"yes\", a lighter stone for \"maybe\".",
-      "One face, Hanken Grotesk, semibold headings with tight negative tracking, tabular figures for every count.",
-      "White cards on a near-white ground, separated by hairlines and a faint ambient shadow.",
-      "Generous radii (10 to 20px) and 44px-plus touch targets."
+      "Union's own colours named by role; text only in the roles that pass AA.",
+      "One face (Hanken Grotesk) at a few tight sizes, weight 600 for anything that names something.",
+      "Flat hairline surfaces; only the summary card and the filled button lift.",
+      "One filled rosewood button per area; everything else is ghost or link.",
+      "Reply status always uses the same four-colour vocabulary: coming, maybe, can't, waiting."
     ],
     "rules": [
       {
-        "name": "The One Accent Rule",
-        "body": "Graphite is the only accent in the world, and it is fixed. Status is told with graphite plus neutrals (coming = graphite, maybe = stone, declined = can't-come stone, waiting = bare track), never with green, amber or red.",
+        "name": "The AA Text Rule",
+        "body": "Text takes only `ink`, `ink-2`, `muted`, `accent-strong`, `coming-strong`, `maybe` or `waiting-strong`. `accent`, `coming`, `cant` and `waiting` are for fills, dots and rings, never for letters.",
         "section": "colors"
       },
       {
-        "name": "The Variables Rule",
-        "body": "Components read `var(--vc-*)` (or `V` in inline styles); they never write a hex. A new colour is added to `V` and exposed through `CSS_VARS`.",
+        "name": "The Rosewood Voice Rule",
+        "body": "Rosewood Deep marks what you can act on: the one filled button, links, the selected chip, the focused element. It is never decoration.",
         "section": "colors"
       },
       {
-        "name": "The Tabular Count Rule",
-        "body": "Every number that counts guests (the numeral, legend counts, chip counts, the invited total) uses tabular figures.",
+        "name": "The Waiting Ring Rule",
+        "body": "Not answering is an absence, so it is drawn hollow: an amber ring on the pending face and the legend dot, and plain track in the meter. Only the answers get solid colour.",
+        "section": "colors"
+      },
+      {
+        "name": "The Sentence-Case Heading Rule",
+        "body": "Section headings are Headline type in sentence case. No uppercase, letter-spaced eyebrow or kicker above or in place of a heading.",
         "section": "typography"
       },
       {
-        "name": "The Sentence Case Rule",
-        "body": "Headings and labels are sentence case at reading size. There are no uppercase, tracked-out labels in this world.",
+        "name": "The One Number Rule",
+        "body": "A hub leads with at most one Numeral; everything else is Title size or below.",
         "section": "typography"
       },
       {
         "name": "The Quiet Lift Rule",
-        "body": "Shadows are diffuse and low-opacity; list groups and rows sit flat with hairlines. Only one panel per view carries the lift.",
+        "body": "Groups, rows, tasks and tiles are flat with a 1px hairline. Only the lead card and the filled button cast a shadow, so the eye goes to the summary and to the action.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "Do put `gu-main` and `guestsTypeClass` on the page root of every surface in this world, so it gets the neutral ground and Hanken Grotesk.",
-      "Do use graphite for actions, the answered count, \"yes\" and the selected state; stone only for \"maybe\".",
-      "Do keep touch targets at 44px or more for buttons and 60px for list rows, and 16px text in inputs.",
-      "Do use tabular figures for every count.",
-      "Do honour `prefers-reduced-motion` for the bar, rows, buttons and field transitions."
+      "Do take every colour from `DS` / `--ds-*` by role; hex lives only in `lib/theme.ts`.",
+      "Do set text in the AA roles only (see the contrast table); keep `accent`, `coming`, `cant` and `waiting` for shapes.",
+      "Do give each area one filled Rosewood Deep button; make the rest ghost buttons or links.",
+      "Do show reply status with the shared four-state vocabulary (face, status, dot, meter) and the `is-attending | is-maybe | is-declined | is-pending` modifiers.",
+      "Do put the couple's names and date under the page title; that is where personality lives.",
+      "Do use tabular figures for counts and skeletons shaped like the content while loading.",
+      "Do keep touch targets at 44px (40px for small buttons and the back button) and inputs at 16px text."
     ],
     "donts": [
-      "Don't give the interface a wedding style: no romantic cream and serif, garden-party motifs or black-tie ornament (PRODUCT.md, principle 5).",
-      "Don't add a second hue: no brand colour beside graphite, no green, amber or red status colours in this world.",
-      "Don't vary the accent; it is one fixed graphite for every couple.",
-      "Don't add a second typeface.",
-      "Don't write a hex in a component; read `var(--vc-*)` or `V`."
+      "Don't mix `T` styles or `components/ui.tsx` pieces with `ds-*` classes inside one page.",
+      "Don't add wedding motifs, themed ornaments or a per-wedding colour to the interface (PRODUCT.md principle 5).",
+      "Don't set uppercase, letter-spaced eyebrows or kickers above headings; headings are sentence case.",
+      "Don't put `waiting-strong` text on `track` (4.41:1) or any text in `accent`, `coming`, `cant` or `waiting`.",
+      "Don't add shadows to groups, rows, tasks or tiles; only the lead card and the filled button lift.",
+      "Don't show a placeholder zero while data loads."
     ]
   }
 }
