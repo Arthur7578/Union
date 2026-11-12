@@ -139,3 +139,9 @@
   .tf,.tf-in-up,.tf-in-down,.tf-out-up,.tf-out-down,.tf-choice.is-blink{animation:none}
   .tf-progress span{transition:none}
 }
+
+/* the guest's answer, once behind them: a reminder and the way back to it */
+.tf-answer{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:999px;border:1px solid var(--da-line);
+  background:var(--da-glass);cursor:pointer;font-family:inherit;font-size:15px;color:var(--da-olive-deep);max-width:52vw;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tf-answer:hover{background:var(--da-sage-pale)}
+.tf-answer svg{flex:none;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linejoin:round}

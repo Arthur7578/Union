@@ -49,6 +49,8 @@ function open(
     allowMaybe?: boolean;
     labelMaybe?: string;
     initial?: RsvpReply;
+    /** Already answered on the page's RSVP card. */
+    answer?: "attending" | "maybe" | "declined";
   } = {},
 ) {
   return render(
@@ -68,6 +70,8 @@ function open(
         guestFirstName="Arthur"
         coupleNames="Maya & Daniel"
         replyEmail={opts.replyEmail}
+        answer={opts.answer}
+        skipIntro={Boolean(opts.answer)}
         initial={opts.initial ?? pending}
         initialAnswers={opts.initialAnswers ?? {}}
         companions={opts.companions ?? []}
@@ -396,7 +400,8 @@ describe("RsvpFlow and the optional maybe answer", () => {
     enter();
 
     await question("Will Guinevere join us\\?");
-    fireEvent.click(screen.getByRole("button", { name: /Not sure yet/ }));
+    // The companion's own choices (Arthur's answer sits at the top as well).
+    fireEvent.click(screen.getByRole("button", { name: /Not sure yet/, pressed: false }));
     await question("Any dietary restrictions");
     expect(screen.getByText(/For Guinevere/)).toBeInTheDocument();
     enter();
@@ -480,5 +485,38 @@ describe("RsvpFlow and the optional maybe answer", () => {
       "submit_rsvp_response",
       expect.objectContaining({ p_status: "attending", p_companions: [] }),
     );
+  });
+});
+
+describe("RsvpFlow opened from an answer on the page's RSVP card", () => {
+  it("opens on the question that follows the answer", async () => {
+    open({ answer: "attending" });
+    expect(await question("dietary")).toBeInTheDocument();
+  });
+
+  it("asks a guest with no email for it, then goes on past the answer already given", async () => {
+    const replyEmail: ReplyEmail = {
+      show: true,
+      required: false,
+      email: "",
+      setEmail: () => {},
+      error: null,
+      save: () => Promise.resolve(true),
+    };
+    open({ answer: "attending", replyEmail });
+    await question("Your email");
+    enter();
+    expect(await question("dietary")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /will you join us/ })).not.toBeInTheDocument();
+  });
+
+  it("shows the answer at the top, which leads back to the first question to change it", async () => {
+    open({ answer: "attending" });
+    await question("dietary");
+    fireEvent.click(screen.getByRole("button", { name: "Change my answer: Attending" }));
+    expect(await question("Arthur, will you join us\\?")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Attending/, pressed: true })).toBeInTheDocument();
+    // On the question itself, the answer needs no reminder.
+    expect(screen.queryByRole("button", { name: "Change my answer: Attending" })).not.toBeInTheDocument();
   });
 });

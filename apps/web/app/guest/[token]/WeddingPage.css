@@ -1,0 +1,141 @@
+/* The wedding page: the parts after the faire-part, in the same stationery as
+   GuestPortal.css (colours from GUEST_DA_VARS, fonts from the guest fonts).
+   One memorable thing on top of the hub's arch: the RSVP card at the end,
+   a scalloped card with a "received" stamp. Everything else stays quiet. */
+
+.wp-main{padding-bottom:120px}
+/* arriving from the faire-part: the first part rises onto the card's paper */
+.wp-main.is-arriving > .gh-section:first-child{animation:gh-rise .7s .05s cubic-bezier(.16,1,.3,1) both}
+
+/* section bar: chips under the top bar */
+.wp-chips{position:sticky;top:calc(var(--top) + env(safe-area-inset-top,0px));z-index:45;display:flex;gap:6px;
+  overflow-x:auto;scrollbar-width:none;padding:8px 16px;background:var(--da-paper);border-bottom:1px solid var(--da-line-soft)}
+.wp-chips::-webkit-scrollbar{display:none}
+.wp-chips button{flex:none;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--da-line);background:transparent;cursor:pointer;
+  font-size:14px;color:var(--da-ink-soft);transition:background .2s,color .2s,border-color .2s}
+.wp-chips button:hover{color:var(--da-olive-deep)}
+.gh .wp-chips button[aria-current="true"]{background:var(--da-olive);border-color:var(--da-olive);color:var(--da-on-olive)}
+.wp-main .gh-section{scroll-margin-top:calc(var(--top) + 64px)}
+
+.wp-small{margin:32px 0 10px;font-weight:400;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--da-olive-deep)}
+.wp-note{margin:6px 0 0;font-size:15px;font-style:italic;color:var(--da-ink-soft)}
+.wp-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:22px}
+.wp-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Le mot */
+.wp-word p{margin:0 0 14px;font-size:18px;text-wrap:pretty}
+.wp-word .wp-sign{margin:4px 0 0;text-align:right;font-family:var(--script);font-size:36px;line-height:1.1;color:var(--da-olive-deep)}
+.wp-count{margin:26px 0 0;display:flex;align-items:baseline;justify-content:center;gap:12px;padding:18px 0;
+  border-top:1px solid var(--da-line);border-bottom:1px solid var(--da-line);text-align:left}
+.wp-count b{font-weight:400;font-size:52px;line-height:1;color:var(--da-olive-deep);font-variant-numeric:tabular-nums lining-nums}
+.wp-count span{font-style:italic;color:var(--da-ink-soft);max-width:13em;line-height:1.25}
+
+/* Le week-end */
+.wp-day{margin:0 0 24px}
+.wp-day-head{display:flex;align-items:center;gap:12px;margin:0 0 4px;font-weight:400;font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--da-olive-deep)}
+.wp-day-head::after{content:"";flex:1;height:1px;background:var(--da-line)}
+.wp-events{list-style:none;margin:0;padding:0}
+.wp-event{display:grid;grid-template-columns:58px minmax(0,1fr);gap:12px;padding:12px 0;border-bottom:1px dashed var(--da-line)}
+.wp-event:last-child{border-bottom:0}
+.wp-event time{font-size:18px;color:var(--da-olive);font-variant-numeric:tabular-nums lining-nums}
+.wp-event h4{margin:0;font-weight:500;font-size:19px;line-height:1.3}
+.wp-event p{margin:2px 0 0;font-size:16px;line-height:1.45;color:var(--da-ink-soft)}
+.wp-event .wp-event-place{font-style:italic}
+
+/* Le lieu */
+.wp-venue{text-align:center;background:var(--da-card);border:1px solid var(--da-line);border-radius:200px 200px 14px 14px;padding:36px 18px 20px}
+.wp-venue-name{margin:0;font-weight:400;font-size:22px;letter-spacing:.12em;text-transform:uppercase;color:var(--da-olive-deep)}
+.wp-venue-address{margin:6px 0 0;color:var(--da-ink-soft)}
+.wp-maps{display:flex;gap:8px;margin-top:16px}
+.wp-maps a{flex:1;min-height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid var(--da-olive);
+  text-decoration:none;font-size:15px;color:var(--da-olive-deep);background:var(--da-paper)}
+.wp-maps a:hover{background:var(--da-sage-pale)}
+.wp-shuttle{margin-top:14px;padding:14px 16px;border-radius:12px;border:1px solid var(--da-sage);background:var(--da-card)}
+.wp-shuttle .wp-small{margin-top:0}
+.wp-shuttle p{margin:0}
+.wp-ways{list-style:none;margin:0;padding:0}
+.wp-ways li{padding:12px 0;border-bottom:1px dashed var(--da-line)}
+.wp-ways li:last-child{border-bottom:0}
+.wp-ways b,.wp-ways h4{display:block;margin:0;font-size:18px;font-weight:500}
+.wp-ways span{display:block;font-size:16px;line-height:1.45;color:var(--da-ink-soft)}
+
+/* La tenue */
+.wp-dress{text-align:center;background:var(--da-card);border:1px solid var(--da-line);border-radius:14px;padding:24px 18px}
+.wp-dress p{margin:8px 0 0;color:var(--da-ink-soft)}
+.wp-dress .wp-dress-code{margin:0;font-family:var(--script);font-size:44px;line-height:1.1;color:var(--da-olive-deep)}
+.wp-dress .wp-dress-note{font-style:italic}
+.wp-swatches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 10px;margin:22px 0 4px;padding:0;list-style:none}
+.wp-swatches li{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--da-ink-soft)}
+.wp-swatches i{display:block;width:56px;height:68px;border-radius:46% 54% 40% 60% / 55% 45% 55% 45%;
+  box-shadow:inset 0 -8px 14px rgba(0,0,0,.08),0 0 0 1px var(--da-line-soft)}
+
+/* Ta réponse: the scalloped card */
+.wp-card-wrap{transform:rotate(-1deg);filter:drop-shadow(0 2px 2px var(--da-shadow)) drop-shadow(0 16px 22px var(--da-shadow))}
+.wp-card{--r:10px;position:relative;padding:30px 24px 26px;background:var(--da-card);
+  /* a die cut along the top and bottom edges, straight sides: plain repeat-x
+     only, which every engine draws the same (Safari draws "round" masks
+     with cut scallops at the edge) */
+  -webkit-mask:radial-gradient(circle closest-side,#000 96%,#0000) center top/calc(2*var(--r)) calc(2*var(--r)) repeat-x,
+    radial-gradient(circle closest-side,#000 96%,#0000) center bottom/calc(2*var(--r)) calc(2*var(--r)) repeat-x,
+    linear-gradient(#000 0 0) center/100% calc(100% - 2*var(--r)) no-repeat;
+          mask:radial-gradient(circle closest-side,#000 96%,#0000) center top/calc(2*var(--r)) calc(2*var(--r)) repeat-x,
+    radial-gradient(circle closest-side,#000 96%,#0000) center bottom/calc(2*var(--r)) calc(2*var(--r)) repeat-x,
+    linear-gradient(#000 0 0) center/100% calc(100% - 2*var(--r)) no-repeat}
+.wp-card-title{margin:0;font-weight:400;font-size:24px;letter-spacing:.14em;line-height:1.15;text-transform:uppercase;color:var(--da-olive-deep);text-wrap:balance}
+.wp-card-head{position:relative}
+/* room for the "received" stamp, only once there is one */
+.wp-card.is-replied .wp-card-title,.wp-card.is-replied .wp-card-head{padding-right:76px}
+.wp-card-head p{margin:6px 0 0;font-size:16px;line-height:1.4;color:var(--da-ink-soft)}
+.gh .wp-card-head .wp-card-thanks{margin:10px 0 0;font-family:var(--script);font-size:40px;line-height:1.05;color:var(--da-olive-deep)}
+.wp-card-sub{margin:10px 0 0;font-size:16px;font-style:italic;color:var(--da-ink-soft)}
+.wp-stamp{position:absolute;top:-34px;right:0;transform:rotate(-12deg);padding:2px 8px;border:2px solid var(--da-olive);border-radius:6px;
+  font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:var(--da-olive-deep)}
+.wp-opts{display:grid;gap:10px;margin-top:20px}
+.wp-opt{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 16px;border-radius:14px;border:1px solid var(--da-line);
+  background:var(--da-paper);cursor:pointer;font-size:18px;text-align:left;transition:border-color .2s,background .2s}
+.wp-opt::before{content:"";flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--da-sage-deep)}
+.wp-opt:hover{border-color:var(--da-olive);background:var(--da-sage-pale)}
+.wp-card-note{margin:14px 0 0;text-align:center;font-size:15px;font-style:italic;color:var(--da-ink-soft)}
+.wp-shortcuts{display:grid;gap:10px;margin-top:16px}
+.wp-shortcuts .gh-btn{width:100%;white-space:normal;text-align:center}
+.wp-summary{margin:16px 0 0;padding:12px 14px;border-radius:12px;background:var(--da-sage-pale);font-size:16px;line-height:1.45}
+
+/* the dock: the reply, fixed at the bottom */
+.wp-dock{position:fixed;z-index:60;left:0;right:0;bottom:0;display:flex;justify-content:center;
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(180deg,transparent,var(--da-paper) 40%);transition:transform .25s ease,opacity .25s ease}
+.wp-dock.is-away{transform:translateY(110%);opacity:0;pointer-events:none}
+.wp-dock-cta{width:min(100%,440px);min-height:52px;box-shadow:0 10px 24px -12px var(--da-shadow)}
+.wp-dock-status{display:flex;align-items:center;justify-content:space-between;gap:10px;width:min(100%,440px);min-height:52px;
+  padding:0 6px 0 18px;border-radius:999px;background:var(--da-card);border:1px solid var(--da-sage);box-shadow:0 10px 24px -14px var(--da-shadow)}
+.wp-dock-status b{font-weight:500;color:var(--da-olive-deep)}
+
+/* sheet: add to calendar */
+.wp-scrim{position:fixed;inset:0;z-index:1100;display:flex;align-items:flex-end;justify-content:center;background:var(--da-scrim);animation:gh-fade .2s ease both}
+.wp-sheet{position:relative;width:min(100%,520px);max-height:88vh;overflow-y:auto;background:var(--da-paper);border-radius:22px 22px 0 0;
+  padding:10px 22px calc(22px + env(safe-area-inset-bottom,0px));animation:wp-up .32s cubic-bezier(.2,.8,.2,1) both}
+@keyframes wp-up{from{transform:translateY(100%)}to{transform:none}}
+.wp-grab{display:block;width:40px;height:4px;border-radius:2px;background:var(--da-line);margin:0 auto 14px}
+.wp-sheet-title{margin:0;font-weight:400;font-size:20px;letter-spacing:.16em;text-transform:uppercase;color:var(--da-olive-deep)}
+.wp-sheet-lead{margin:4px 0 14px;font-style:italic;color:var(--da-ink-soft)}
+.wp-cal-list{list-style:none;margin:0 0 16px;padding:0}
+.wp-cal-list label{display:flex;gap:12px;align-items:center;min-height:52px;border-bottom:1px dashed var(--da-line);cursor:pointer}
+.wp-cal-list input{width:20px;height:20px;accent-color:var(--da-olive);flex:none}
+.wp-cal-list label span{font-size:18px;font-weight:400;line-height:1.3;color:var(--da-ink)}
+.wp-cal-list small{display:block;font-size:14px;font-weight:400;color:var(--da-ink-soft)}
+.wp-sheet-actions{display:grid;gap:10px}
+.wp-sheet-actions .gh-btn{width:100%;text-decoration:none}
+.wp-sheet-actions .gh-btn:disabled{opacity:.5;cursor:not-allowed}
+.wp-sheet-note{margin:0;min-height:1.4em;font-size:14px;font-style:italic;color:var(--da-ink-soft);text-align:center}
+.wp-sheet-close{position:absolute;top:12px;right:14px;width:44px;height:44px;border-radius:50%;border:0;background:var(--da-paper-deep);cursor:pointer;display:grid;place-items:center}
+.wp-sheet-close svg{width:16px;height:16px;fill:none;stroke:var(--da-ink);stroke-width:1.4;stroke-linecap:round}
+
+@media (prefers-reduced-motion:reduce){
+  .wp-dock{transition:none}
+}
+
+/* the organiser's preview band: says what this is, and the way back */
+.wp-preview{text-transform:none;letter-spacing:.02em;font-size:13px;line-height:1.4}
+.wp-preview p{margin:0}
+.wp-preview p + p{margin-top:4px}
+.wp-preview a{color:inherit;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
