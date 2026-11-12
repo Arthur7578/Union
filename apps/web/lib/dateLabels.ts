@@ -5,7 +5,7 @@ const tag = (locale: Locale) => (locale === "fr" ? "fr-FR" : "en-US");
 /**
  * The time zone a form's dates are picked and read in. Fixed for now: every
  * wedding on Union is in France. Showing them in each device's own zone made
- * the server and the phone disagree on the day. A zone per wedding: issue #115.
+ * the server and the phone disagree on the day. A zone per wedding: issue #116.
  */
 export const FORM_TIME_ZONE = "Europe/Paris";
 
