@@ -28,9 +28,6 @@
 /* type */
 .gh-h2{margin:0;font-family:var(--script);font-weight:400;font-size:clamp(42px,10.5vw,56px);line-height:1.05;color:var(--da-olive-deep)}
 .gh-lead{margin:10px auto 0;max-width:30em;font-size:18px;font-style:italic;color:var(--da-ink-soft);text-wrap:pretty}
-.gh-link{border:0;background:none;padding:2px 0;cursor:pointer;font:inherit;font-size:16px;
-  color:var(--da-olive-deep);text-decoration:underline;text-decoration-color:var(--da-sage);text-underline-offset:4px;transition:text-decoration-color .2s}
-.gh-link:hover{text-decoration-color:var(--da-olive)}
 
 /* buttons: one filled action per block, the others outlined */
 .gh-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid var(--da-olive);border-radius:999px;
@@ -39,7 +36,6 @@
 .gh .gh-btn{color:var(--da-on-olive)}
 .gh-btn:hover{background:var(--da-olive-deep)}
 .gh-btn:active{transform:scale(.98)}
-.gh-btn--big{padding:16px 30px;padding-left:calc(30px + .16em)}
 .gh .gh-btn--ghost{background:transparent;color:var(--da-olive-deep)}
 .gh-btn--ghost:hover{background:var(--da-sage-pale)}
 .gh-btn--small{padding:9px 18px;padding-left:calc(18px + .16em);font-size:12px}
@@ -94,7 +90,6 @@
 .gh-section{max-width:600px;margin:0 auto;padding:64px 16px 8px;scroll-margin-top:var(--top)}
 .gh-head{text-align:center;margin-bottom:28px}
 .gh-center{text-align:center;margin-bottom:20px}
-.gh-subhead{margin:36px 0 14px;font-weight:400;font-size:22px;color:var(--da-ink)}
 .gh-empty{text-align:center;font-style:italic;color:var(--da-ink-soft);padding:24px 0}
 
 /* the one card */
@@ -121,15 +116,6 @@
   .gh-task{grid-template-columns:auto 1fr;row-gap:12px}
   .gh-task > .gh-btn{grid-column:2;justify-self:start}
 }
-
-/* the day's schedule */
-.gh-schedule{list-style:none;margin:12px 0 0;padding:0}
-.gh-schedule li{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--da-line-soft)}
-.gh-schedule li:first-child{border-top:0;padding-top:4px}
-.gh-ways li{grid-template-columns:1fr}
-.gh-time{font-size:16px;color:var(--da-olive-deep)}
-.gh-what{display:block;font-size:17px}
-.gh-note{display:block;font-size:15px;font-style:italic;color:var(--da-ink-soft)}
 
 /* faq */
 .gh-faq{text-align:left;border-top:1px solid var(--da-line)}

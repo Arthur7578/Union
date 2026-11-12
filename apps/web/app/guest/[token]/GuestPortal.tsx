@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   EMPTY_GUEST_PAGE,
   canAddChildren,
@@ -12,20 +11,19 @@ import {
   rsvpCardLine,
 } from "@union/shared";
 import type { AnsweredRsvpStatus, FormAnswers, GuestModuleKey } from "@union/shared";
-import { LocaleToggle } from "@/components/guest/LocaleToggle";
 import { OliveBranch } from "@/components/guest/OliveBranch";
-import { useReplayWelcome, useWelcomeContinues, useWelcomeResponses } from "@/components/guest/WelcomeGate";
+import { useWelcomeContinues, useWelcomeResponses } from "@/components/guest/WelcomeGate";
 import { formatGuestAddress } from "@/lib/guestAddress";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { useLocale } from "@/lib/i18n/client";
 import { coupleText, coupleTextOr, rsvpDefaults, rsvpWording } from "@/lib/i18n/text";
 import { takeRsvpHandoff } from "@/lib/rsvpHandoff";
-import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { GUEST_DA_VARS } from "@/lib/theme";
 import { CustomFormFlow, type Respondent } from "./CustomFormFlow";
 import { DressSection } from "./DressSection";
 import { FaqSection } from "./FaqSection";
 import { type FormItem } from "./FormList";
+import { PageTopBar } from "./PageTopBar";
 import { ReplyDock } from "./ReplyDock";
 import { ReplySection } from "./ReplySection";
 import { VenueSection } from "./VenueSection";
@@ -55,15 +53,9 @@ interface GuestPortalProps {
 type CustomForm = NonNullable<DBInvitation["custom_forms"]>[number];
 
 export function GuestPortal({ token, invitation, isDemo, emailMissing = false, preview = false }: GuestPortalProps) {
-  const replayWelcome = useReplayWelcome();
   const { t, locale } = useLocale();
   const hub = t.guestHub;
   const page = t.weddingPage;
-  const router = useRouter();
-  const [hasAuthSession, setHasAuthSession] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const addressText = formatGuestAddress(invitation.wedding);
   const guestPage = invitation.guest_page ?? EMPTY_GUEST_PAGE;
@@ -152,50 +144,6 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false, p
   const daysLeft = useDaysLeft(invitation.wedding.event_date);
   // A guest the couple has no email for is asked for one as part of the RSVP.
   const replyEmail = useReplyEmail({ token, emailMissing, isDemo });
-
-  useEffect(() => {
-    let mounted = true;
-    const supabase = getBrowserSupabase();
-    void supabase.auth.getSession().then(({ data }) => {
-      if (mounted) setHasAuthSession(Boolean(data.session));
-    });
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) setHasAuthSession(Boolean(session));
-    });
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // The menu closes on any tap outside it, and on Escape.
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onDown = (e: PointerEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
-    document.addEventListener("pointerdown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menuOpen]);
-
-  const handleGuestSignOut = async () => {
-    setSigningOut(true);
-    try {
-      const { error } = await getBrowserSupabase().auth.signOut({ scope: "local" });
-      if (error) throw error;
-      router.push("/");
-    } catch (error) {
-      console.error("Failed to sign out guest:", error);
-      setSigningOut(false);
-    }
-  };
 
   const { partner_one: partnerOne, partner_two: partnerTwo } = invitation.wedding;
   const coupleNames = `${partnerOne} & ${partnerTwo}`;
@@ -391,57 +339,7 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false, p
           <div className="gh-demo">{hub.demo}</div>
         ) : null}
 
-        <header className="gh-top">
-          <span className="gh-mono" aria-label={coupleNames}>
-            {partnerOne?.charAt(0)}
-            <i aria-hidden="true" />
-            {partnerTwo?.charAt(0)}
-          </span>
-          <div className="gh-top-actions">
-            <LocaleToggle />
-            {(replayWelcome || (hasAuthSession && !isDemo)) && (
-              <div className="gh-menu" ref={menuRef}>
-                <button
-                  type="button"
-                  className="gh-menu-btn"
-                  aria-label={hub.menu}
-                  aria-expanded={menuOpen}
-                  onClick={() => setMenuOpen((o) => !o)}
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M5 9h14M5 15h14" />
-                  </svg>
-                </button>
-                {menuOpen && (
-                  <div className="gh-menu-pop" role="menu">
-                    {replayWelcome && (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          replayWelcome();
-                        }}
-                      >
-                        {t.welcome.seeAgain}
-                      </button>
-                    )}
-                    {hasAuthSession && !isDemo && (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        disabled={signingOut}
-                        onClick={() => void handleGuestSignOut()}
-                      >
-                        {signingOut ? t.common.signingOut : t.common.signOut}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </header>
+        <PageTopBar partnerOne={partnerOne} partnerTwo={partnerTwo} isDemo={isDemo} />
 
         {showNav && (
           <nav className="wp-chips" aria-label={hub.sections}>
