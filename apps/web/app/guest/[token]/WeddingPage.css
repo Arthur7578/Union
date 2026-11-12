@@ -11,11 +11,11 @@
 .wp-chips{position:sticky;top:calc(var(--top) + env(safe-area-inset-top,0px));z-index:45;display:flex;gap:6px;
   overflow-x:auto;scrollbar-width:none;padding:8px 16px;background:var(--da-paper);border-bottom:1px solid var(--da-line-soft)}
 .wp-chips::-webkit-scrollbar{display:none}
-.wp-chips button{flex:none;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--da-line);background:transparent;cursor:pointer;
+.wp-chips button{flex:none;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--da-line);background:transparent;cursor:pointer;
   font-size:14px;color:var(--da-ink-soft);transition:background .2s,color .2s,border-color .2s}
 .wp-chips button:hover{color:var(--da-olive-deep)}
 .gh .wp-chips button[aria-current="true"]{background:var(--da-olive);border-color:var(--da-olive);color:var(--da-on-olive)}
-.wp-main .gh-section{scroll-margin-top:calc(var(--top) + 56px)}
+.wp-main .gh-section{scroll-margin-top:calc(var(--top) + 64px)}
 
 .wp-small{margin:32px 0 10px;font-weight:400;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--da-olive-deep)}
 .wp-note{margin:6px 0 0;font-size:15px;font-style:italic;color:var(--da-ink-soft)}

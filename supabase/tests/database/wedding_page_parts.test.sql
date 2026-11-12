@@ -33,7 +33,7 @@ select lives_ok(
 select lives_ok(
   $$ update public.weddings set guest_modules = '{}'
       where id = '20000000-0000-0000-0000-000000000090' $$,
-  'an empty map is every part on'
+  'an empty map is accepted: every part takes its default'
 );
 
 -- ---------- refused ----------

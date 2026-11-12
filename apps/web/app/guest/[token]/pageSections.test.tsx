@@ -191,6 +191,17 @@ describe("ReplySection", () => {
     expect(onAnswer).toHaveBeenCalledWith("maybe");
   });
 
+  it("lets the couple's subtitle speak alone when there is no deadline to give", () => {
+    reply({ closesAt: null });
+    expect(screen.getByText("Dis-nous si tu viens.")).toBeInTheDocument();
+    expect(screen.queryByText("Merci de nous répondre")).not.toBeInTheDocument();
+  });
+
+  it("asks for a reply itself when the couple wrote no subtitle and set no deadline", () => {
+    reply({ closesAt: null, summary: "" });
+    expect(screen.getByText("Merci de nous répondre")).toBeInTheDocument();
+  });
+
   it("offers no maybe when the couple doesn't", () => {
     reply({ allowMaybe: false });
     expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Oui, avec joie", "Non, avec regret"]);

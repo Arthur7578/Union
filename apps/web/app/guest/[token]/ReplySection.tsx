@@ -81,17 +81,25 @@ export function ReplySection({
             </h3>
             {!replied ? (
               <>
-                <div className="wp-card-head">
-                  <p>
-                    {rsvpWindow === "closed" && deadline
+                {/* Without a deadline to give, the couple's own subtitle is
+                    the call to reply: no second one above it. */}
+                {(() => {
+                  const line =
+                    rsvpWindow === "closed" && deadline
                       ? copy.repliesClosed(deadline)
                       : rsvpWindow === "scheduled" && opens
                         ? copy.repliesOpen(opens)
                         : deadline
                           ? copy.replyBy(deadline)
-                          : copy.replyPlease}
-                  </p>
-                </div>
+                          : live && summary
+                            ? null
+                            : copy.replyPlease;
+                  return line ? (
+                    <div className="wp-card-head">
+                      <p>{line}</p>
+                    </div>
+                  ) : null;
+                })()}
                 {/* The couple's subtitle asks for a reply: only while one can
                     be given. Once closed, what to do instead. */}
                 {live && summary ? <p className="wp-card-sub">{summary}</p> : null}
