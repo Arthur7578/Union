@@ -2,7 +2,7 @@
 
 import { useLocale } from "@/lib/i18n/client";
 import type { RsvpStatus } from "@/lib/submitRsvp";
-import { shortDate } from "@/lib/dateLabels";
+import { closingDay } from "@/lib/dateLabels";
 import type { RsvpWindow } from "./ReplySection";
 
 /**
@@ -34,7 +34,7 @@ export function ReplyDock({
   const copy = t.weddingPage;
   const hub = t.guestHub;
   if (rsvpWindow === "hidden" || rsvpWindow === "scheduled") return null;
-  const deadline = shortDate(closesAt, locale);
+  const deadline = closingDay(closesAt, locale);
   const live = rsvpWindow === "live";
 
   const statusText =

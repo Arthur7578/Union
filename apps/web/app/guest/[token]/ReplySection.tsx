@@ -6,7 +6,7 @@ import { useLocale } from "@/lib/i18n/client";
 import type { RsvpStatus } from "@/lib/submitRsvp";
 import { CalendarSheet } from "./CalendarSheet";
 import { FormList, type FormItem } from "./FormList";
-import { dayLabel, shortDate } from "@/lib/dateLabels";
+import { closingDay, dayLabel, shortDate } from "@/lib/dateLabels";
 import { SectionHead } from "./SectionHead";
 
 export type RsvpWindow = "hidden" | "scheduled" | "live" | "closed";
@@ -61,7 +61,7 @@ export function ReplySection({
 }) {
   const { t, locale } = useLocale();
   const copy = t.weddingPage;
-  const deadline = shortDate(closesAt, locale);
+  const deadline = closingDay(closesAt, locale);
   const opens = shortDate(opensAt, locale);
   const replied = status !== "pending";
   const live = rsvpWindow === "live";

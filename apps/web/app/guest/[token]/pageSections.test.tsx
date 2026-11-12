@@ -172,7 +172,7 @@ describe("ReplySection", () => {
         labels={labels}
         allowMaybe
         opensAt={null}
-        closesAt="2027-05-12"
+        closesAt="2027-05-12T21:59:59.000Z"
         onAnswer={onAnswer}
         onEdit={onEdit}
         otherForms={[]}
@@ -186,7 +186,7 @@ describe("ReplySection", () => {
     const { onAnswer } = reply();
     expect(screen.getByRole("heading", { name: "RSVP de Présence" })).toBeInTheDocument();
     expect(screen.getByText("Dis-nous si tu viens.")).toBeInTheDocument();
-    expect(screen.getByText("Merci de répondre avant le 12 mai")).toBeInTheDocument();
+    expect(screen.getByText("Merci de répondre jusqu'au 12 mai")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Peut-être" }));
     expect(onAnswer).toHaveBeenCalledWith("maybe");
   });
@@ -240,7 +240,7 @@ describe("ReplySection, once a guest who is coming has replied", () => {
         labels={labels}
         allowMaybe
         opensAt={null}
-        closesAt="2027-05-12"
+        closesAt="2027-05-12T21:59:59.000Z"
         onAnswer={() => {}}
         onEdit={() => {}}
         otherForms={[]}
@@ -274,13 +274,13 @@ describe("ReplySection, once a guest who is coming has replied", () => {
 describe("ReplyDock, the reply fixed at the bottom", () => {
   const dock = (over: Partial<React.ComponentProps<typeof ReplyDock>> = {}) => {
     const onReply = vi.fn();
-    inFrench(<ReplyDock window="live" status="pending" closesAt="2027-05-12" away={false} onReply={onReply} {...over} />);
+    inFrench(<ReplyDock window="live" status="pending" closesAt="2027-05-12T21:59:59.000Z" away={false} onReply={onReply} {...over} />);
     return onReply;
   };
 
   it("asks for a reply, with the deadline", () => {
     const onReply = dock();
-    fireEvent.click(screen.getByRole("button", { name: "Répondre · avant le 12 mai" }));
+    fireEvent.click(screen.getByRole("button", { name: "Répondre · jusqu'au 12 mai" }));
     expect(onReply).toHaveBeenCalled();
   });
 
@@ -290,7 +290,7 @@ describe("ReplyDock, the reply fixed at the bottom", () => {
     expect(screen.getByRole("button", { name: "Modifier" })).toBeInTheDocument();
     cleanup();
     dock({ status: "maybe" });
-    expect(screen.getByText("Peut-être · à confirmer avant le 12 mai")).toBeInTheDocument();
+    expect(screen.getByText("Peut-être · à confirmer jusqu'au 12 mai")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Confirmer" })).toBeInTheDocument();
     cleanup();
     dock({ status: "declined" });

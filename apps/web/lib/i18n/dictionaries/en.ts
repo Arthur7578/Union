@@ -260,7 +260,7 @@ export const en = {
       previewGuestName: "Sam",
       previewNoGuest: "Add at least one guest to see your page as they will.",
       previewError: "Couldn't load the preview.",
-      replyOpen: (date: string | null) => (date ? `Open · replies by ${date}` : "Open"),
+      replyOpen: (date: string | null) => (date ? `Open · replies through ${date}` : "Open"),
       replyClosed: (date: string) => `Closed since ${date}: your guests can no longer reply`,
       replyScheduled: (date: string) => `Opens on ${date}: your guests can't reply yet`,
       replyDraft: "Not published: your guests don't see the RSVP card",

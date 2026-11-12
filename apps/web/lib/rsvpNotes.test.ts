@@ -16,15 +16,15 @@ afterAll(() => {
 
 const fr = getDictionary("fr").guests.modules;
 const en = getDictionary("en").guests.modules;
-// Picked as "29 octobre" and "12 mai" in the form builder: the start of those days, Paris time.
-const closedForm = { published: true, closes_at: "2026-10-28T23:00:00.000Z" };
-const openForm = { published: true, closes_at: "2027-05-11T22:00:00.000Z" };
+// Picked as "29 octobre" and "12 mai" in the form builder: the end of those days, Paris time.
+const closedForm = { published: true, closes_at: "2026-10-29T22:59:59.000Z" };
+const openForm = { published: true, closes_at: "2027-05-12T21:59:59.000Z" };
 const scheduledForm = { published: true, opens_at: "2027-01-09T23:00:00.000Z" };
 
 describe("the Your reply row, for each state of the RSVP", () => {
   it("open: until when, with an ordinary Edit link", () => {
     expect(organiserRsvpStatus(openForm, "live", "fr", fr)).toEqual({
-      text: "Ouvert · réponses avant le 12 mai",
+      text: "Ouvert · réponses jusqu'au 12 mai inclus",
       tone: "on",
       blocked: false,
     });

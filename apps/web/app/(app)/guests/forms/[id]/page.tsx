@@ -253,8 +253,8 @@ export default function FormBuilderPage() {
         setTitle(f.title);
         setPublished(f.published);
         setPerPerson(f.per_person);
-        setOpensAt(toDateInput(f.opens_at));
-        setClosesAt(toDateInput(f.closes_at));
+        setOpensAt(toDateInput(f.opens_at, "opens"));
+        setClosesAt(toDateInput(f.closes_at, "closes"));
       })
       .catch(() => ok && setNotFound(true));
     return () => {
@@ -451,7 +451,7 @@ export default function FormBuilderPage() {
     }
   };
 
-  const status = formStatus({ ...form, published, opens_at: fromDateInput(opensAt), closes_at: fromDateInput(closesAt) });
+  const status = formStatus({ ...form, published, opens_at: fromDateInput(opensAt, "opens"), closes_at: fromDateInput(closesAt, "closes") });
 
   const save = async () => {
     setSaving(true);
@@ -461,8 +461,8 @@ export default function FormBuilderPage() {
       const updated = await updateForm(form.id, {
         title: title.trim() || form.title,
         published,
-        opens_at: fromDateInput(opensAt),
-        closes_at: fromDateInput(closesAt),
+        opens_at: fromDateInput(opensAt, "opens"),
+        closes_at: fromDateInput(closesAt, "closes"),
         questions,
         ...(form.kind === "rsvp"
           ? { rsvp_copy: rsvpCopyState }
