@@ -243,6 +243,7 @@ export const en = {
         dress: { label: "What to wear", sub: "Dress code and palette" },
         faq: { label: "Questions", sub: "Your frequent questions" },
       },
+      travelSample: "Activated · shows sample trips for now",
       ready: "Ready",
       empty: "Empty · hidden from your guests",
       activated: "Activated",

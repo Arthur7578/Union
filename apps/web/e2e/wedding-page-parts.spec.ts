@@ -108,7 +108,10 @@ test("a closed RSVP is said to the couple, with the way to its dates, and in the
 
   // The preview shows what guests see, and says why there is nothing to press.
   await page.getByRole("link", { name: "See as a guest" }).click();
-  await page.getByRole("button", { name: "See the rest" }).click();
+  // Nothing written and carpooling off: the faire-part ends on "respond"
+  // alone, and with replies closed it leads to the page, not to the form.
+  await page.getByRole("button", { name: "Respond to the invitation" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByText(/^Replies closed on October 29: your guests see the RSVP card but can't reply\./)).toBeVisible();
   const card = page.getByRole("article", { name: "Attendance RSVP" });
   await expect(card).toContainText(/Replies closed on October 29/);
@@ -117,4 +120,30 @@ test("a closed RSVP is said to the couple, with the way to its dates, and in the
   await expect(card).not.toContainText("Let us know if you and your companions will join us.");
   await expect(card).toContainText("Something changed? Let Maya & Daniel know directly.");
   await expect(page.getByRole("link", { name: "Edit the dates" })).toHaveAttribute("href", `/guests/forms/${seeded.forms.rsvp}`);
+});
+
+test("carpooling is off until the couple turns it on, and says its trips are samples", async ({ page }) => {
+  const seeded = await seedWedding({ household: [{ key: "lea", firstName: "Lea" }] });
+
+  // Nothing chosen: no carpool board for the guest.
+  await page.goto(`/guest/${seeded.guests.lea.token}`);
+  await expect(page.getByRole("article", { name: "Attendance RSVP" })).toBeVisible();
+  await expect(page.locator("#gh-travel")).toHaveCount(0);
+
+  await signInAsOwner(page, seeded);
+  await page.goto("/guests/modules");
+  const carpool = page.getByRole("switch", { name: "Travel & board" });
+  await expect(carpool).toHaveAttribute("aria-checked", "false");
+  await carpool.click();
+  await expect(page.getByRole("group", { name: "Travel & board" })).toContainText("shows sample trips for now");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect
+    .poll(async () => {
+      const { data } = await seeded.owner.from("weddings").select("guest_modules").eq("id", seeded.weddingId).single();
+      return data?.guest_modules;
+    })
+    .toEqual({ travel: true });
+
+  await page.goto(`/guest/${seeded.guests.lea.token}`);
+  await expect(page.locator("#gh-travel")).toBeVisible();
 });

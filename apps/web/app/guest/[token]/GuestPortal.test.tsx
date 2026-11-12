@@ -301,10 +301,7 @@ describe("GuestPortal's RSVP card once the guest has replied (#85)", () => {
     hub(invitation({ status: "attending", rsvpForm: rsvpForm({ closes_at: "2000-01-01T00:00:00Z" }) }));
     const card = await rsvpCard();
     expect(metaOf(card)).toBe("Attending");
-    // Nothing to change it with; what is left are the guest's shortcuts
-    // (the carpool board here), which change no reply.
-    expect(within(card).queryByRole("button", { name: /Change/ })).not.toBeInTheDocument();
-    expect(within(card).getAllByRole("button").map((b) => b.textContent)).toEqual(["Find a carpool"]);
+    expect(within(card).queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("keeps one name per person for a household", async () => {

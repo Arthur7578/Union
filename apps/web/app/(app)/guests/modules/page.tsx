@@ -194,7 +194,9 @@ function GuestModulesForm({ wedding, refresh }: { wedding: Wedding; refresh: () 
   const status = (key: GuestModuleKey): { text: string; tone: "on" | "off" | "warn" } => {
     if (!modules[key]) return { text: t.deactivated, tone: "off" };
     const filled = hasContent(key);
-    if (key === "travel" || filled === null) return { text: t.activated, tone: "on" };
+    // The carpool board has no real trips yet (issue #109): say so when on.
+    if (key === "travel") return { text: t.travelSample, tone: "warn" };
+    if (filled === null) return { text: t.activated, tone: "on" };
     return filled ? { text: t.ready, tone: "on" } : { text: t.empty, tone: "warn" };
   };
 

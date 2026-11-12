@@ -152,6 +152,8 @@ export default async function GuestExperiencePage({
         // The demo couple runs with "maybe" on, so the third reply button is
         // part of what the demo actually demonstrates.
         allow_rsvp_maybe: true,
+        // The demo shows every part, the carpool board and its sample posts included.
+        guest_modules: { travel: true },
       },
       guest: {
         id: "demo-guest-id",

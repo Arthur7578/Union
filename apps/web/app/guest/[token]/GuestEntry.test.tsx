@@ -68,9 +68,9 @@ const entry = (opts: { seen: boolean; emailMissing?: boolean; isDemo?: boolean; 
     </LocaleProvider>,
   );
 
-// The carpool part is on and never empty, so this wedding has a page to read:
-// the faire-part offers the rest of it, and replying right away.
-const respond = () => screen.getByRole("button", { name: "Reply right away" });
+// Nothing is written for this wedding and carpooling is off by default: the
+// page has no part to read, so the faire-part ends on "respond" alone.
+const respond = () => screen.getByRole("button", { name: "Respond to the invitation" });
 
 describe("GuestEntry", () => {
   it("shows the invitation, then the hub, with no identity step", async () => {
@@ -100,21 +100,22 @@ describe("GuestEntry", () => {
   it("skips the welcome for a guest whose invitation says they have seen it", async () => {
     entry({ seen: true });
 
-    expect(screen.queryByRole("button", { name: "Reply right away" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Respond to the invitation" })).not.toBeInTheDocument();
     expect(await screen.findByText("the hub")).toBeInTheDocument();
   });
 
-  it("goes on to the page from the faire-part", async () => {
-    entry({ seen: false });
+  it("goes on to the page from the faire-part, once the page has a part to read", async () => {
+    // Carpooling turned on: a part that always has something to show.
+    entry({ seen: false, modules: { travel: true } });
+    expect(screen.getByRole("button", { name: "Reply right away" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "See the rest" }));
     expect(await screen.findByText("the hub")).toBeInTheDocument();
   });
 
-  it("ends on respond alone when every part of the page is off, as before", async () => {
-    const off = { word: false, weekend: false, venue: false, travel: false, dress: false, faq: false };
-    entry({ seen: false, modules: off });
+  it("ends on respond alone when the page has nothing to read, as before", async () => {
+    entry({ seen: false });
     expect(screen.queryByRole("button", { name: "See the rest" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Respond to the invitation" }));
+    fireEvent.click(respond());
     expect(await screen.findByText("the hub")).toBeInTheDocument();
   });
 

@@ -23,6 +23,7 @@ export type {
   StoredRsvpQuestion,
 } from "./questions";
 export {
+  GUEST_MODULE_DEFAULTS,
   GUEST_MODULE_KEYS,
   enabledGuestModules,
   isGuestModuleKey,

@@ -239,6 +239,7 @@ export const fr: Dictionary = {
         dress: { label: "La tenue", sub: "Dress code et palette" },
         faq: { label: "Questions", sub: "Vos questions fréquentes" },
       },
+      travelSample: "Activé · affiche des trajets d'exemple pour l'instant",
       ready: "Prêt",
       empty: "Vide · masqué pour vos invités",
       activated: "Activé",
