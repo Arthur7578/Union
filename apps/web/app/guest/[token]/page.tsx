@@ -5,9 +5,11 @@ import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import Link from "next/link";
 import { guestLinkPath } from "@union/shared";
+import { parseGuestPage } from "@union/shared";
 import type {
   FormAnswers,
   FormGuestCopy,
+  GuestPageContent,
   Invitation,
   LocalizedText,
   RsvpQuestion,
@@ -20,6 +22,10 @@ import { G, T, alpha } from "@/lib/theme";
 export const dynamic = "force-dynamic";
 
 export type DBInvitation = Invitation & {
+  /** The couple's guest page content (get_guest_page): their word, how to
+   *  get there, the weekend, the dress code, their questions and their stays.
+   *  Absent when it couldn't be loaded; the hub then shows what it has. */
+  guest_page?: GuestPageContent;
   /** Guest-facing wording overrides for the primary RSVP block, as locale
    *  maps. Null means "use the system default" for the guest's language,
    *  never a blank/empty label; a map missing the guest's locale falls back
@@ -75,6 +81,34 @@ export type DBInvitation = Invitation & {
      *  their guest id. Only ever their own household. */
     companion_answers?: Record<string, FormAnswers> | null;
   }>;
+};
+
+/** What the demo couple wrote for their guests, so the demo shows every part
+ *  of the hub. Real weddings read theirs from get_guest_page. */
+const DEMO_GUEST_PAGE: GuestPageContent = {
+  page: {
+    welcome: null,
+    travel_train: { en: "Hood River has no station: Portland Union Station, then 1 h by car.", fr: "Pas de gare à Hood River : Portland Union Station, puis 1 h en voiture." },
+    travel_plane: { en: "Portland International (PDX), about 1 h away.", fr: "Aéroport de Portland (PDX), à environ 1 h." },
+    travel_car: { en: "Free parking on site.", fr: "Parking gratuit sur place." },
+    shuttle: null,
+    dress_code: { en: "Garden elegant", fr: "Chic champêtre" },
+    dress_text: { en: "The ceremony is on the grass: flat shoes are your friends.", fr: "La cérémonie est sur l'herbe : préfère les chaussures plates." },
+    dress_note: null,
+    palette: [],
+  },
+  moments: [
+    { id: "demo-m1", day_offset: 0, starts_at: "16:00", title: { en: "Guest arrival", fr: "Arrivée des invités" }, place: { en: "Welcome drinks", fr: "Boissons d'accueil" }, note: null },
+    { id: "demo-m2", day_offset: 0, starts_at: "16:30", title: { en: "The ceremony", fr: "La cérémonie" }, place: { en: "In the meadow garden", fr: "Dans le jardin" }, note: null },
+    { id: "demo-m3", day_offset: 0, starts_at: "17:30", title: { en: "Cocktails & dinner", fr: "Cocktail & dîner" }, place: null, note: null },
+  ],
+  faq: [
+    { id: "demo-f1", question: { en: "Are children welcome?", fr: "Les enfants sont-ils invités ?" }, answer: { en: "Yes, gladly. You can add them when you reply.", fr: "Oui, avec joie. Tu peux les ajouter en répondant." } },
+  ],
+  stays: [
+    { id: "demo-s1", name: "Hood River Hotel", price_note: "12 min from the venue" },
+    { id: "demo-s2", name: "Columbia Gorge Hotel & Spa", price_note: "15 min from the venue" },
+  ],
 };
 
 export default async function GuestExperiencePage({
@@ -154,15 +188,17 @@ export default async function GuestExperiencePage({
         answers: null,
         companion_answers: null,
       },
+      guest_page: DEMO_GUEST_PAGE,
     };
   } else {
     // Attempt to load from Supabase for all other tokens
     try {
       const supabase = getSupabase();
-      const [invitationResult, rsvpFormsResult, emailStatusResult] = await Promise.all([
+      const [invitationResult, rsvpFormsResult, emailStatusResult, guestPageResult] = await Promise.all([
         supabase.rpc("get_invitation", { p_token: token }),
         supabase.rpc("get_invitation_rsvp_forms", { p_token: token }),
         supabase.rpc("get_guest_email_status", { p_token: token }),
+        supabase.rpc("get_guest_page", { p_token: token }),
       ]);
 
       if (
@@ -181,8 +217,12 @@ export default async function GuestExperiencePage({
         if (rsvpFormsResult.error) {
           console.error("Failed to load RSVP follow-up questions:", rsvpFormsResult.error);
         }
+        if (guestPageResult.error) {
+          console.error("Failed to load the guest page content:", guestPageResult.error);
+        }
         invitation = {
           ...base,
+          guest_page: guestPageResult.error ? undefined : parseGuestPage(guestPageResult.data),
           rsvp_form:
             base.rsvp_form && rsvpForms?.primary
               ? { ...base.rsvp_form, ...rsvpForms.primary }

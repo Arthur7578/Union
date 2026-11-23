@@ -1,0 +1,51 @@
+name: Supabase keepalive
+
+# Supabase pauses Free plan projects that see too few database requests over
+# 7 days (https://supabase.com/docs/guides/platform/free-project-pausing).
+# Visiting the website is not enough, since cached pages never reach the
+# database. Once a day, this makes one real read through the REST API: row
+# level security returns an empty list to the public key, but Postgres still
+# runs the query.
+#
+# If Supabase does not answer with a 2xx (project paused, URL or key wrong),
+# the run fails and GitHub emails about the failed run.
+#
+# Needs two repository secrets, the same values as the web app's
+# NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+#   SUPABASE_URL              e.g. https://<ref>.supabase.co
+#   SUPABASE_PUBLISHABLE_KEY  sb_publishable_... (public key, never the secret one)
+
+on:
+  schedule:
+    - cron: "23 4 * * *" # every day, 04:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Query the database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Missing secret SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY."
+            exit 1
+          fi
+          status=$(curl -sS -o /dev/null -w "%{http_code}" \
+            --retry 3 --retry-delay 10 --retry-all-errors --max-time 30 \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            "${SUPABASE_URL%/}/rest/v1/weddings?select=id&limit=1") || status=000
+          echo "Supabase answered HTTP $status"
+          case "$status" in
+            2??) ;;
+            *)
+              echo "::error::Supabase answered HTTP $status. Is the project paused? https://supabase.com/dashboard/projects"
+              exit 1
+              ;;
+          esac
