@@ -21,11 +21,11 @@ name: Supabase keepalive
 
 on:
   schedule:
-    # Every other day (day of month 1, 3, 5, ...), so at most 2 days between
-    # runs, well inside Supabase's 7-day window. GitHub often starts scheduled
-    # runs hours late (this one used to start around 13:00 instead of 04:23)
-    # and can skip one, hence the margin.
-    - cron: "17 3 */2 * *"
+    # Every day: Supabase asks for "a few user requests to the database each
+    # day over the previous week". GitHub often starts scheduled runs hours
+    # late (this one used to start around 13:00 instead of 04:23) and can skip
+    # one, so a daily run keeps a margin.
+    - cron: "17 3 * * *"
   workflow_dispatch:
 
 permissions:
