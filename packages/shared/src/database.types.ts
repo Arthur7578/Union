@@ -548,6 +548,24 @@ export type Database = {
           },
         ]
       }
+      keepalive: {
+        Row: {
+          id: number
+          ping_count: number
+          pinged_at: string
+        }
+        Insert: {
+          id?: number
+          ping_count?: number
+          pinged_at?: string
+        }
+        Update: {
+          id?: number
+          ping_count?: number
+          pinged_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -978,6 +996,10 @@ export type Database = {
       hide_duplicate_cluster: {
         Args: { p_guest_ids: string[]; p_wedding_id: string }
         Returns: undefined
+      }
+      keepalive_ping: {
+        Args: Record<PropertyKey, never>
+        Returns: { ping_count: number; pinged_at: string }[]
       }
       list_hidden_merge_clusters: {
         Args: { p_wedding_id: string }
