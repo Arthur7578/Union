@@ -11,7 +11,8 @@ name: Apply branch migrations
 #
 # Which migrations: the files under supabase/migrations/ that the branch ADDS
 # compared with main (git diff from their merge base), skipping any version
-# already recorded in supabase_migrations.schema_migrations. It does not use
+# already recorded in supabase_migrations.schema_migrations (same version AND
+# same name; a version recorded under another name stops the run). It does not use
 # `supabase db push`: the production history and the repository's file names
 # do not match (early files are 0001_..., production recorded timestamps), so
 # db push would try to replay the whole history.
@@ -93,7 +94,8 @@ jobs:
             exit 0
           fi
 
-          recorded=$(psql_prod -tA -c "select version from supabase_migrations.schema_migrations")
+          # "version|name" for every migration production has recorded.
+          recorded=$(psql_prod -tA -F '|' -c "select version, coalesce(name, '') from supabase_migrations.schema_migrations")
           pending=()
           for f in "${added[@]}"; do
             file=$(basename "$f")
@@ -103,9 +105,19 @@ jobs:
               exit 1
             fi
             version=${file%%_*}
-            if grep -qxF "$version" <<<"$recorded"; then
-              summary "- \`$file\`: already applied, skipped"
-              continue
+            name=${file#*_}; name=${name%.sql}
+            # Production may have recorded this version for ANOTHER migration
+            # (two branches picked the same timestamp). Skipping it would leave
+            # this one unapplied while the run says it is done.
+            recorded_name=$(awk -F '|' -v v="$version" '$1 == v { print $2; exit }' <<<"$recorded")
+            if [ -n "$recorded_name" ] || grep -q "^$version|" <<<"$recorded"; then
+              if [ "$recorded_name" = "$name" ]; then
+                summary "- \`$file\`: already applied, skipped"
+                continue
+              fi
+              echo "::error file=$f::Version $version is already recorded in production for another migration (\"$recorded_name\"). Rename this file with a new timestamp."
+              summary "- \`$file\`: version taken by \`$recorded_name\` in production, rename the file"
+              exit 1
             fi
             if grep -qiE '^[[:space:]]*(begin|commit|rollback)[[:space:]]*;|concurrently' "$f"; then
               echo "::error file=$f::Has its own BEGIN/COMMIT or a CONCURRENTLY statement, which cannot run in the single transaction. Apply it by hand."
