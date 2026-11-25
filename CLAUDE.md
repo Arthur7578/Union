@@ -12,6 +12,8 @@ After a schema change, regenerate the shared types: `supabase gen types typescri
 
 Never apply a migration to a Supabase project (`apply_migration`, DDL through `execute_sql`, `merge_branch`) unless the user explicitly asks in that session. Writing the files is automatic; running them is the user's call. When you hand over, say that the migration has not been applied.
 
+When the user does ask, apply it with the **Apply branch migrations** workflow (`.github/workflows/supabase-migrate.yml`): trigger it on the PR's branch (GitHub `actions_run_trigger`, input `branch`), then check the run and report what it applied. Do not use `apply_migration`: the Supabase server asks a confirmation question that never reaches the user, and the call times out after 60 seconds. Do not route DDL through `execute_sql` to get around that question either. The workflow applies only the migrations the branch adds compared with main, in one transaction, and skips versions already recorded in production. Since production runs main's code until the merge, a migration applied before merging must not drop or rename anything main still uses.
+
 ## Product surface
 
 Web mobile is the main surface: guests and couples use Union on their phone first, desktop second.

@@ -1,0 +1,139 @@
+name: Apply branch migrations
+
+# Applies to the production Supabase database the migrations that a branch
+# adds, so a pull request can be tested on its preview before it is merged.
+#
+# Why this exists: the Supabase MCP tool `apply_migration` asks a
+# confirmation question that never reaches the Claude app, and gives up after
+# 60 seconds (seen 2026-11-24, session "Carton d'invitation mariage"). This
+# workflow is the way to apply a migration instead: the click on "Run
+# workflow" (or Claude starting it when asked) is the approval.
+#
+# Which migrations: the files under supabase/migrations/ that the branch ADDS
+# compared with main (git diff from their merge base), skipping any version
+# already recorded in supabase_migrations.schema_migrations. It does not use
+# `supabase db push`: the production history and the repository's file names
+# do not match (early files are 0001_..., production recorded timestamps), so
+# db push would try to replay the whole history.
+#
+# How: every pending file, then one history row per file, in ONE transaction
+# (psql --single-transaction). If any statement fails, nothing is applied and
+# nothing is recorded. A file with its own BEGIN/COMMIT or a CONCURRENTLY
+# statement cannot run inside that transaction, so the run refuses it.
+#
+# Only write migrations that the code on main can live with (add columns,
+# tables, functions; no drop or rename): production runs main's code until the
+# pull request is merged.
+#
+# Needs one repository secret:
+#   SUPABASE_DB_URL  the Session pooler connection string of the project
+#                    (Dashboard > Connect > Session pooler), password included.
+#                    The direct connection is IPv6 only; GitHub runners are not.
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch whose new migrations to apply (e.g. claude/my-feature)"
+        required: true
+        type: string
+      dry_run:
+        description: "Only list what would be applied"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Never two migration runs at the same time.
+concurrency:
+  group: supabase-production-migrations
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - name: Apply the branch's new migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::Missing repository secret SUPABASE_DB_URL."
+            exit 1
+          fi
+          summary() { echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          psql_prod() { psql "$SUPABASE_DB_URL" -X -v ON_ERROR_STOP=1 "$@"; }
+
+          git fetch --quiet origin main
+          base=$(git merge-base origin/main HEAD)
+          mapfile -t added < <(git diff --name-only --diff-filter=A "$base" HEAD -- 'supabase/migrations/*.sql' | sort)
+
+          # A migration already merged then edited on the branch is not re-run.
+          mapfile -t edited < <(git diff --name-only --diff-filter=M "$base" HEAD -- 'supabase/migrations/*.sql')
+          for f in "${edited[@]}"; do
+            echo "::warning file=$f::This migration already exists on main and was edited on the branch. Edits to an applied migration are never re-run; write a new migration instead."
+          done
+
+          summary "### Migrations of \`$BRANCH\`"
+          if [ ${#added[@]} -eq 0 ]; then
+            summary "The branch adds no migration. Nothing to do."
+            echo "The branch adds no migration."
+            exit 0
+          fi
+
+          recorded=$(psql_prod -tA -c "select version from supabase_migrations.schema_migrations")
+          pending=()
+          for f in "${added[@]}"; do
+            file=$(basename "$f")
+            # The name goes into SQL below: only plain migration names.
+            if ! [[ "$file" =~ ^[0-9]+_[a-z0-9_]+\.sql$ ]]; then
+              echo "::error file=$f::Migration names must look like 20261124120000_snake_case.sql."
+              exit 1
+            fi
+            version=${file%%_*}
+            if grep -qxF "$version" <<<"$recorded"; then
+              summary "- \`$file\`: already applied, skipped"
+              continue
+            fi
+            if grep -qiE '^[[:space:]]*(begin|commit|rollback)[[:space:]]*;|concurrently' "$f"; then
+              echo "::error file=$f::Has its own BEGIN/COMMIT or a CONCURRENTLY statement, which cannot run in the single transaction. Apply it by hand."
+              exit 1
+            fi
+            pending+=("$f")
+            summary "- \`$file\`: to apply"
+          done
+
+          if [ ${#pending[@]} -eq 0 ]; then
+            summary "Everything is already applied."
+            exit 0
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            summary "Dry run: nothing applied."
+            echo "Dry run, would apply: ${pending[*]}"
+            exit 0
+          fi
+
+          args=()
+          for f in "${pending[@]}"; do
+            file=$(basename "$f" .sql)
+            version=${file%%_*}
+            name=${file#*_}
+            args+=(-f "$f")
+            args+=(-c "insert into supabase_migrations.schema_migrations (version, name) values ('$version', '$name')")
+          done
+          psql_prod --single-transaction "${args[@]}"
+
+          summary "Applied ${#pending[@]} migration(s) to production."
+          echo "Applied: ${pending[*]}"
