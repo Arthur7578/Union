@@ -8,15 +8,26 @@ When the user asks to keep an idea for later, open a GitHub issue and give the u
 
 Whenever a task needs a schema change, write the migration yourself, without being asked: a timestamped file in `supabase/migrations/` and a matching pgTAP test in `supabase/tests/database/`. Follow the conventions of the user's `/new-migration` skill (you cannot invoke it, it is user-only): `YYYYMMDDHHMMSS_<name>.sql` sorting after the latest migration, a header comment saying what changes and why, RLS and explicit policies on new tables, `search_path` set and `execute` granted narrowly on `security definer` functions, and a test covering the allowed and the denied path.
 
-**Signed-out visitors (`anon`) get nothing unless a migration grants it.** Supabase gives `anon` every table privilege and `EXECUTE` on every function in `public` by default; `create_guest_with_links` was callable signed-out because of that (fixed in `20261112120000`). Since `20261123120000`, `anon` has no table, view or sequence privilege in `public`, and new functions are closed to it (and to `PUBLIC`) by default. Rules:
+**Signed-out visitors (`anon`) get nothing unless a migration grants it.** Supabase gives `anon` every table privilege and `EXECUTE` on every function in `public` by default; `create_guest_with_links` was callable signed-out because of that (fixed in `20261112120000`). Since `20261125120000`, `anon` has no table, view or sequence privilege in `public`, and new functions are closed to it (and to `PUBLIC`) by default. Rules:
 - Guests never touch tables directly: guest-link and group-link features go through `security definer` RPCs that take `p_token` or `p_join_code` first and are granted to `anon` one by one.
 - Keep writing `revoke execute on function … from public, anon;` then `grant … to authenticated` on organiser functions: explicit beats relying on defaults. `create or replace` keeps existing grants.
 - A function that relied on the implicit `PUBLIC` grant must now be granted explicitly to the roles that call it.
+- The one exception is `keepalive_ping()` (`20261123120000`): the keepalive job calls it with the publishable key, it takes no key and only bumps the one-row `keepalive` table. It is listed apart in the guard test below; do not add others there without a reason written next to them.
 - `supabase/tests/database/anon_function_grants.test.sql` fails CI if `anon` can reach a table, or can call a function that has no probe there. A new guest RPC needs a probe line in that file: the test then calls it with an unknown and a null key and fails if it changes data or returns the seeded wedding.
+
+Supabase security traps to check in every migration (from Supabase's own agent checklist, `supabase/agent-skills`):
+
+- A view bypasses RLS unless it is created `with (security_invoker = true)`.
+- An UPDATE needs a SELECT policy on the same rows; without one it silently updates 0 rows.
+- An UPDATE policy needs both `using` and `with check`, or a user can move a row to someone else.
+- Never base an access decision on `user_metadata` / `raw_user_meta_data`: the user can edit it. Use `app_metadata` or a table.
+- `auth.role()` is deprecated: target roles with `to authenticated` / `to anon` on the policy, plus an ownership check in `using` (the role alone authorizes every row).
 
 After a schema change, regenerate the shared types: `supabase gen types typescript --local > packages/shared/src/database.types.ts`.
 
 Never apply a migration to a Supabase project (`apply_migration`, DDL through `execute_sql`, `merge_branch`) unless the user explicitly asks in that session. Writing the files is automatic; running them is the user's call. When you hand over, say that the migration has not been applied.
+
+When the user does ask, apply it with the **Apply branch migrations** workflow (`.github/workflows/supabase-migrate.yml`): Claude cannot start it (the GitHub integration gets `403 Resource not accessible by integration` on workflow dispatch, checked 2026-11-25), so ask the user to run it on GitHub (Actions → Apply branch migrations → Run workflow, from `main`, input `branch` = the PR's branch, `dry_run` first if unsure). Then read the run's logs and report what it applied. Do not use `apply_migration`: the Supabase server asks a confirmation question that never reaches the user, and the call times out after 60 seconds. Do not route DDL through `execute_sql` to get around that question either. The workflow applies only the migrations the branch adds compared with main, in one transaction, and skips versions already recorded in production. Since production runs main's code until the merge, a migration applied before merging must not drop or rename anything main still uses.
 
 ## Product surface
 

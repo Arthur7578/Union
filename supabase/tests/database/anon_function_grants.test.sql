@@ -5,7 +5,8 @@ begin;
 --  1. Tables: RLS is on everywhere, and anon has no privilege on any table,
 --     view or sequence in public, existing or created later.
 --  2. Functions: anon can execute exactly the guest-link and group-link
---     RPCs probed below, and functions created later are closed to it.
+--     RPCs probed below plus the few listed exceptions (keepalive), and
+--     functions created later are closed to it.
 --  3. Probes: each of those RPCs is called as anon with a key that opens
 --     nothing (an unknown token or join code, then a null one) and must
 --     change no data in public and return nothing of the seeded wedding.
@@ -108,18 +109,25 @@ insert into anon_probes (fn, call) values
   ('submit_rsvp',               $$ public.submit_rsvp({token}, 'declined', 'intruder', 'intruder') $$),
   ('submit_rsvp_response',      $$ public.submit_rsvp_response({token}, '50000000-0000-0000-0000-000000000090', 'declined', '[]'::jsonb, '{}'::jsonb) $$);
 
+-- Anon-callable functions that are not guest RPCs, each with its reason.
+-- They take no key, so they are not probed here; their own test covers them.
+create temp table anon_exceptions (fn text primary key, reason text not null);
+insert into anon_exceptions (fn, reason) values
+  ('keepalive_ping', 'GitHub keepalive job, publishable key only; bumps the one-row keepalive table (20261123120000, keepalive_ping.test.sql)');
+
 select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute') $$,
-  $$ select fn from anon_probes $$,
-  'anon can execute exactly the probed guest-link and group-link functions'
+  $$ select fn from anon_probes union all select fn from anon_exceptions $$,
+  'anon can execute exactly the probed guest-link and group-link functions and the listed exceptions'
 );
 
 select is_empty(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')
+       and p.proname not in (select fn from anon_exceptions)
        and (p.proargnames is null or p.proargnames[1] not in ('p_token', 'p_join_code')) $$,
-  'every function anon can call takes a guest token or a join code first'
+  'every guest function anon can call takes a guest token or a join code first'
 );
 
 -- ---------- 3. probes ----------
