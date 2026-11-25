@@ -22,6 +22,13 @@ async function joinCode(seeded: Seeded, mode: "light" | "secure") {
   return data.join_code as string;
 }
 
+/** The group link always opens on the invitation's welcome first. */
+async function openJoinLink(page: Page, code: string) {
+  await page.goto(`/join/${code}`);
+  await page.getByRole("button", { name: "Respond to the invitation" }).click();
+  await expect(page.getByRole("heading", { name: "Find your invitation" })).toBeVisible();
+}
+
 async function typeFirstName(page: Page, name: string) {
   await page.getByLabel("First name").fill(name);
   await page.getByRole("button", { name: "Continue" }).click();
@@ -31,8 +38,7 @@ test("with the name-only link, a guest types their first name and lands on their
   const seeded = await seedWedding({ household: [{ key: "lea", firstName: "Lea" }] });
   const code = await joinCode(seeded, "light");
 
-  await page.goto(`/join/${code}`);
-  await expect(page.getByRole("heading", { name: "Find your invitation" })).toBeVisible();
+  await openJoinLink(page, code);
   await typeFirstName(page, "Lea");
 
   await expect(page).toHaveURL(new RegExp(`/guest/${seeded.guests.lea.token}$`));
@@ -43,7 +49,7 @@ test("a name the couple didn't invite opens nothing", async ({ page }) => {
   const seeded = await seedWedding({ household: [{ key: "lea", firstName: "Lea" }] });
   const code = await joinCode(seeded, "light");
 
-  await page.goto(`/join/${code}`);
+  await openJoinLink(page, code);
   await typeFirstName(page, "Intruder");
 
   await expect(page.getByRole("heading", { name: "We couldn't find your invitation" })).toBeVisible();
@@ -54,7 +60,7 @@ test("with the secure link, a matching name only leads to the email step", async
   const seeded = await seedWedding({ household: [{ key: "lea", firstName: "Lea" }] });
   const code = await joinCode(seeded, "secure");
 
-  await page.goto(`/join/${code}`);
+  await openJoinLink(page, code);
   await typeFirstName(page, "Lea");
 
   await expect(page.getByLabel("Email")).toBeVisible();
