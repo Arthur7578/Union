@@ -78,9 +78,9 @@ select ok(
 );
 
 select ok(
-  has_table_privilege('authenticated', 'public._anon_guard_probe_table', 'select')
-  and has_function_privilege('authenticated', 'public._anon_guard_probe_fn()', 'execute'),
-  'signed-in users keep their default grants on new objects'
+  has_function_privilege('authenticated', 'public._guest_modules_valid(jsonb)', 'execute')
+  and has_function_privilege('authenticated', 'public._rsvp_fields_valid(jsonb)', 'execute'),
+  'signed-in organisers can still run the check-constraint helpers anon lost'
 );
 
 drop table public._anon_guard_probe_table;
