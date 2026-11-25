@@ -28,5 +28,11 @@ alter default privileges for role postgres in schema public revoke all on sequen
 alter default privileges for role postgres in schema public revoke execute on functions from anon;
 alter default privileges for role postgres revoke execute on functions from public;
 
+-- These two run in check constraints on weddings and forms, so signed-in
+-- organisers need them. Some environments (Supabase's local stack in CI)
+-- give authenticated no default grant and only PUBLIC reached them, so the
+-- grant is written out.
 revoke execute on function public._guest_modules_valid(jsonb) from public, anon;
 revoke execute on function public._rsvp_fields_valid(jsonb) from public, anon;
+grant execute on function public._guest_modules_valid(jsonb) to authenticated, service_role;
+grant execute on function public._rsvp_fields_valid(jsonb) to authenticated, service_role;
