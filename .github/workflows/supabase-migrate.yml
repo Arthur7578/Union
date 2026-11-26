@@ -10,7 +10,9 @@ name: Apply branch migrations
 # workflow" (or Claude starting it when asked) is the approval.
 #
 # Which migrations: the files under supabase/migrations/ that the branch ADDS
-# compared with main (git diff from their merge base), skipping any version
+# compared with main (git diff from their merge base), or compared with the
+# optional `base` commit (a PR merged before its migrations were applied:
+# branch = main, base = main's last commit before the merge), skipping any version
 # already recorded in supabase_migrations.schema_migrations (same version AND
 # same name; a version recorded under another name stops the run). It does not use
 # `supabase db push`: the production history and the repository's file names
@@ -38,6 +40,11 @@ on:
         description: "Branch whose new migrations to apply (e.g. claude/my-feature)"
         required: true
         type: string
+      base:
+        description: "Optional: compare with this commit instead of main (for migrations merged before being applied; e.g. branch main, base = main's last commit before the merge)"
+        required: false
+        type: string
+        default: ""
       dry_run:
         description: "Only list what would be applied"
         required: false
@@ -68,6 +75,7 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           DRY_RUN: ${{ inputs.dry_run }}
           BRANCH: ${{ inputs.branch }}
+          BASE: ${{ inputs.base }}
         run: |
           set -euo pipefail
           if [ -z "${SUPABASE_DB_URL:-}" ]; then
@@ -78,7 +86,22 @@ jobs:
           psql_prod() { psql "$SUPABASE_DB_URL" -X -v ON_ERROR_STOP=1 "$@"; }
 
           git fetch --quiet origin main
-          base=$(git merge-base origin/main HEAD)
+          if [ -n "${BASE:-}" ]; then
+            # A pull request merged before its migrations were applied adds
+            # nothing compared with main any more: compare with the commit
+            # main was at before the merge instead. It must be an ancestor
+            # of what is checked out, so only that range's files are taken.
+            if ! base=$(git rev-parse --verify --quiet "${BASE}^{commit}"); then
+              echo "::error::base \"$BASE\" is not a commit of this repository."
+              exit 1
+            fi
+            if ! git merge-base --is-ancestor "$base" HEAD; then
+              echo "::error::base \"$BASE\" is not an ancestor of \"$BRANCH\"."
+              exit 1
+            fi
+          else
+            base=$(git merge-base origin/main HEAD)
+          fi
           mapfile -t added < <(git diff --name-only --diff-filter=A "$base" HEAD -- 'supabase/migrations/*.sql' | sort)
 
           # A migration already merged then edited on the branch is not re-run.
@@ -87,7 +110,7 @@ jobs:
             echo "::warning file=$f::This migration already exists on main and was edited on the branch. Edits to an applied migration are never re-run; write a new migration instead."
           done
 
-          summary "### Migrations of \`$BRANCH\`"
+          summary "### Migrations of \`$BRANCH\` since \`$(git rev-parse --short "$base")\`"
           if [ ${#added[@]} -eq 0 ]; then
             summary "The branch adds no migration. Nothing to do."
             echo "The branch adds no migration."
