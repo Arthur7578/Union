@@ -8,8 +8,13 @@ name: Supabase keepalive
 # History: from 2026-11-03 this job made ONE read a day (an empty list because
 # of RLS), every one answered 200, and Supabase still paused the project on
 # 2026-11-23. One empty read was not enough activity. So each run now makes
-# several requests, among them real writes through public.keepalive_ping()
+# several real writes through public.keepalive_ping()
 # (migration 20261123120000_keepalive_ping.sql), spread over about a minute.
+#
+# The job used to read /rest/v1/weddings too. Since migration
+# 20261125120000_anon_least_privilege.sql the publishable key (role anon)
+# has no privilege on any table, so that read would be refused every day.
+# keepalive_ping() is the job's only way in, granted to anon on purpose.
 #
 # If any request does not get a 2xx (project paused, URL or key wrong,
 # migration not applied), the run fails and GitHub emails about it.
@@ -36,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Write and read through the database
+      - name: Write through the database
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
@@ -65,7 +70,6 @@ jobs:
             request "write #$round" -X POST \
               -H "Content-Type: application/json" -d '{}' \
               "$base/rpc/keepalive_ping"
-            request "read  #$round" "$base/weddings?select=id&limit=1"
             if [ "$round" -lt 3 ]; then sleep 20; fi
           done
 
