@@ -53,21 +53,21 @@ test("a screen change with a changed browser spec passes", () => {
   assert.equal(r.status, 0, r.out);
 });
 
-test("a logic change with only a mobile app test changed fails: it does not test the web logic", () => {
-  const r = prRepo((write) => {
-    logicChange(write);
-    write("apps/mobile/src/thing.test.ts", 'test("x", () => {});\n');
-  });
-  assert.equal(r.status, 1, r.out);
-  assert.match(r.out, /changes logic/);
-});
-
-test("a logic change with a web or shared unit test changed passes", () => {
-  for (const file of ["apps/web/lib/logic.test.ts", "packages/shared/src/logic.test.ts"]) {
+test("a logic change with only a test no CI runner picks up fails (mobile app, shared package)", () => {
+  for (const file of ["apps/mobile/src/thing.test.ts", "packages/shared/src/logic.test.ts"]) {
     const r = prRepo((write) => {
       logicChange(write);
       write(file, 'test("x", () => {});\n');
     });
-    assert.equal(r.status, 0, `${file}\n${r.out}`);
+    assert.equal(r.status, 1, `${file}\n${r.out}`);
+    assert.match(r.out, /changes logic/);
   }
+});
+
+test("a logic change with a web unit test changed passes", () => {
+  const r = prRepo((write) => {
+    logicChange(write);
+    write("apps/web/lib/logic.test.ts", 'test("x", () => {});\n');
+  });
+  assert.equal(r.status, 0, r.out);
 });

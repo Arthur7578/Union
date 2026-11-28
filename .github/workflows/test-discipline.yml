@@ -30,6 +30,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Test the rules themselves
+        run: node --test .github/test-discipline/*.test.mjs
+
       - name: Check the rules
         env:
           BASE: ${{ github.event.pull_request.base.sha }}

@@ -12,8 +12,8 @@ Workflow `test-discipline.yml`, scripts dans `.github/test-discipline/`.
 
 | Règle | Ce qui la déclenche | Ce qu'il faut |
 |---|---|---|
-| Écran → test navigateur | `.tsx` modifié sous `apps/web/app` ou `apps/web/components` | du code de test ajouté dans `apps/web/e2e/` (un commentaire ne compte pas) |
-| Logique → test unitaire | `packages/shared/src`, `apps/web/lib`, `.ts` sous `apps/web/app` | du code ajouté dans un `*.test.ts(x)` |
+| Écran → test navigateur | `.tsx` modifié sous `apps/web/app` ou `apps/web/components` | du code de test ajouté dans un `*.spec.ts` de `apps/web/e2e/` (un helper de `support/`, un commentaire ne comptent pas) |
+| Logique → test unitaire | `packages/shared/src`, `apps/web/lib`, `.ts` sous `apps/web/app` | du code ajouté dans un `*.test.ts(x)` sous `apps/web` (le seul vitest que la CI lance ; les tests de `packages/shared` y vivent, dans `lib/`) |
 | Migration → pgTAP | nouveau fichier dans `supabase/migrations/` | un test ajouté ou modifié dans `supabase/tests/database/` |
 | Inventaire complet | chaque `page.tsx` | une ligne dans `docs/testing/flows.md` |
 | Cartes de tests vraies | `docs/specs/*/tests.md`, `flows.md` | chaque fichier de test cité existe ; chaque nom de test cité entre guillemets dans le tableau d'un `tests.md` existe |

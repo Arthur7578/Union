@@ -72,10 +72,11 @@ const list = (files) => files.map((c) => `  ${c.file}`).join("\n");
 
 // ------------------------------------------------- rule 1: screens → e2e
 const ui = touched(/^apps\/web\/(app|components)\/.*\.tsx$/).filter((c) => !isTest(c.file));
-const e2e = touched(/^apps\/web\/e2e\/.*\.ts$/);
+// A spec, not a helper under e2e/support: a helper change tests nothing alone.
+const e2e = touched(/^apps\/web\/e2e\/.*\.spec\.ts$/);
 if (ui.length && !e2e.length && !escaped("no-e2e", "Screens changed without a browser test")) {
   error(
-    `This PR changes screens but adds no test code in apps/web/e2e (comments and blank lines do not count). ` +
+    `This PR changes screens but adds no test code to a spec in apps/web/e2e (helpers, comments and blank lines do not count). ` +
       `Add or update the browser test of the flow it touches, or add the label no-e2e with a reason.\n${list(ui)}`,
   );
 }
@@ -86,10 +87,12 @@ if (ui.length && !e2e.length && !escaped("no-e2e", "Screens changed without a br
 const logic = touched(/^(packages\/shared\/src\/.*\.ts|apps\/web\/lib\/.*\.tsx?|apps\/web\/app\/.*\.ts)$/).filter(
   (c) => !isTest(c.file) && !/(database\.types|\/index|\/supabase)\.ts$/.test(c.file) && !/\.d\.ts$/.test(c.file),
 );
-const unit = touched(/\.test\.(ts|tsx)$/);
+// Only apps/web's vitest runs in CI (the shared package's tests live in
+// apps/web/lib): a test under apps/mobile or packages would not test this.
+const unit = touched(/^apps\/web\/.*\.test\.(ts|tsx)$/);
 if (logic.length && !unit.length && !escaped("no-unit", "Logic changed without a unit test")) {
   error(
-    `This PR changes logic but adds no unit test code (*.test.ts / *.test.tsx). ` +
+    `This PR changes logic but adds no unit test code (*.test.ts / *.test.tsx under apps/web). ` +
       `Add a vitest test for the behaviour it changes, or add the label no-unit with a reason.\n${list(logic)}`,
   );
 }
