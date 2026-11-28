@@ -29,11 +29,17 @@ export default defineConfig({
     // The guest forms skip their step animations under reduced motion, so a
     // test never presses Enter while a step is still sliding away.
     reducedMotion: "reduce",
-    ...devices["Desktop Chrome"],
     // Lets a machine with a preinstalled Chromium use it instead of
     // downloading Playwright's own.
     launchOptions: process.env.E2E_CHROMIUM_PATH ? { executablePath: process.env.E2E_CHROMIUM_PATH } : {},
   },
+  projects: [
+    // Everything on a desktop, except the envelope test, which is about phones.
+    { name: "desktop", testIgnore: /guest-envelope\.spec\.ts/, use: { ...devices["Desktop Chrome"] } },
+    // Guests open their links on a phone first (CLAUDE.md, Tests): the guest
+    // and group-link flows run again on an emulated phone, with touch.
+    { name: "phone", testMatch: /(guest|join)-[\w-]+\.spec\.ts/, use: { ...devices["Pixel 7"] } },
+  ],
   webServer: {
     command: `npm run build && npm run start -- -p ${port}`,
     url: `http://127.0.0.1:${port}`,

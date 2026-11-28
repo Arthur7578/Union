@@ -77,18 +77,20 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: apps/web
 
-      # Only what the app uses: the database, auth and the REST API.
-      - run: supabase start -x realtime,storage-api,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,studio,postgres-meta
+      # Only what the app uses: the database, auth, the REST API, and the
+      # mailbox (Mailpit) the sign-in test reads its code from.
+      - run: supabase start -x realtime,storage-api,imgproxy,edge-runtime,logflare,vector,supavisor,studio,postgres-meta
 
       - name: Point the tests at the local Supabase
         run: |
-          supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY|DB_URL)=' > supabase.env
+          supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY|DB_URL|MAILPIT_URL|INBUCKET_URL)=' > supabase.env
           set -a; . ./supabase.env; set +a
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f apps/web/e2e/support/grants.sql
           {
             echo "E2E_SUPABASE_URL=$API_URL"
             echo "E2E_SUPABASE_ANON_KEY=$ANON_KEY"
             echo "E2E_SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "E2E_MAILPIT_URL=${MAILPIT_URL:-${INBUCKET_URL:-http://127.0.0.1:54324}}"
           } >> "$GITHUB_ENV"
 
       - run: npm run e2e --workspace apps/web

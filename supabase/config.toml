@@ -5,6 +5,16 @@ project_id = "jriyeblycrzpozjuexvr"
 # deliberately not enabled here: local development and the CI database job don't
 # need it. See "Bot protection on sign-up" in the README.
 
+# The sign-in code has 8 digits, as on the hosted project (the sign-in form
+# only accepts 8). The local default is 6, which the form would refuse.
+[auth.email]
+otp_length = 8
+
+# The browser tests sign in through the form (e2e/sign-in.spec.ts), and each
+# run sends a few codes; the local default allows 2 emails an hour.
+[auth.rate_limit]
+email_sent = 100
+
 # Regular passwordless sign-in sends a numeric code. Existing users who are
 # invited as co-organisers also go through Supabase's magic-link template
 # (the dedicated invite template only creates new Auth users). Those calls

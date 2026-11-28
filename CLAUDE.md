@@ -40,7 +40,8 @@ The native Expo app (`apps/mobile`) is on hold: no features there unless asked. 
 The test bank must follow the product, not lag behind it. These rules apply to every change, whether it comes from the squad or from a one-off session.
 
 - **A change to a screen comes with a browser test.** If you change what a user sees or does (`apps/web/app/**` or `apps/web/components/**`), add or update the Playwright test of that flow in `apps/web/e2e/`. CI enforces it (`test-discipline` workflow); the label `no-e2e` is only for changes that cannot affect behavior, with the reason written in the PR.
-- **Guest flows are tested at phone size**, since that is how guests use them.
+- **Guest flows are tested at phone size**, since that is how guests use them. In `apps/web/playwright.config.ts`, files named `guest-*.spec.ts` or `join-*.spec.ts` also run in the `phone` project (emulated Pixel 7, touch); name a new guest flow test that way.
+- **Production is checked too, read-only** (`apps/web/e2e-prod/`, workflow **Production checks**, daily and after each **Apply branch migrations** run): signed-out access, guest RPCs, the guest and group links on a phone, every organiser page signed in, and the sign-in captcha's configuration. When you add an organiser page, add its path to `e2e-prod/organiser.spec.ts`. These tests must never write wedding data. They sign in with a one-time code made by the secret key, because a bot cannot pass the captcha.
 - **Every acceptance criterion has a test.** When a spec lists criteria (`docs/specs/<issue>/criteria.md`), each one maps to a test, and `docs/specs/<issue>/tests.md` says which.
 - **Never weaken a test to make it pass.** If a test is wrong, say why and fix the test in its own commit; do not edit an assertion to match buggy behavior.
 - **A bug fix starts with a test that reproduces the bug.**

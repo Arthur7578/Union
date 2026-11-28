@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:prod": "playwright test -c playwright.prod.config.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

@@ -16,6 +16,6 @@ export default defineConfig({
     // than rendered, so no DOM is needed.
     environment: "node",
     // Browser tests run under Playwright (`npm run e2e`), not here.
-    exclude: [...configDefaults.exclude, "e2e/**"],
+    exclude: [...configDefaults.exclude, "e2e/**", "e2e-prod/**"],
   },
 });

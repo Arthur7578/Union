@@ -26,6 +26,8 @@ export type Seeded = {
    *  wrote, with exactly the access the organiser has in the app. */
   owner: SupabaseClient;
   ownerSession: Session;
+  /** The organiser's sign-in email (for the sign-in form test). */
+  ownerEmail: string;
   forms: Record<string, string>;
   guests: Record<string, { id: string; token: string }>;
 };
@@ -137,7 +139,7 @@ export async function seedWedding(opts: {
     );
   }
 
-  return { weddingId, owner: db, ownerSession: signedIn.data.session, forms, guests };
+  return { weddingId, owner: db, ownerSession: signedIn.data.session, ownerEmail, forms, guests };
 }
 
 /** Hands the organiser's session to the app the way supabase-js stores it,
