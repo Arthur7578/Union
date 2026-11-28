@@ -37,14 +37,20 @@ The native Expo app (`apps/mobile`) is on hold: no features there unless asked. 
 
 ## Tests
 
-The test bank must follow the product, not lag behind it. These rules apply to every change, whether it comes from the squad or from a one-off session.
+The test bank must follow the product, not lag behind it. These rules apply to every change, whether it comes from the squad or from a one-off session. The method, the CI checks and how to run them locally: `docs/testing/README.md`.
 
-- **A change to a screen comes with a browser test.** If you change what a user sees or does (`apps/web/app/**` or `apps/web/components/**`), add or update the Playwright test of that flow in `apps/web/e2e/`. CI enforces it (`test-discipline` workflow); the label `no-e2e` is only for changes that cannot affect behavior, with the reason written in the PR.
-- **Guest flows are tested at phone size**, since that is how guests use them.
-- **Every acceptance criterion has a test.** When a spec lists criteria (`docs/specs/<issue>/criteria.md`), each one maps to a test, and `docs/specs/<issue>/tests.md` says which.
+- **A change to a screen comes with a browser test.** If you change what a user sees or does (`apps/web/app/**` or `apps/web/components/**`), add or update the Playwright test of that flow in `apps/web/e2e/`. CI enforces it (`test-discipline` workflow, `.github/test-discipline/check.mjs`): the change must be in a `*.spec.ts`; helpers under `e2e/support/`, comments and blank lines do not count.
+- **A change to logic comes with a unit test.** `packages/shared/src`, `apps/web/lib`, and the `.ts` files under `apps/web/app` (route handlers, actions): add or update a vitest test under `apps/web` (the only vitest CI runs; tests of `packages/shared` live in `apps/web/lib`). CI enforces it, and reports the share of changed logic lines the unit tests run (diff coverage).
+- **A new migration comes with a pgTAP test** (see "Database migrations"). CI enforces it.
+- **Every screen has a row in `docs/testing/flows.md`**, naming the tests that cover it or saying it is not covered. A new `page.tsx` needs its row in the same PR; when you add a test, update the row. CI checks every screen is listed and every file named exists.
+- Escape labels `no-e2e`, `no-unit`, `no-db-test` are only for changes that cannot affect behavior, and need a line `<label>: <reason>` in the PR description, or CI fails.
+- **Guest flows are tested at phone size**, since that is how guests use them: name their spec `guest-*.spec.ts` (or `join-*`, `invitation-*`) and Playwright runs it in the phone project; `couple-*` specs run on phone and desktop, the rest on desktop (`apps/web/playwright.config.ts`).
+- **Every acceptance criterion has a test.** When a spec lists criteria (`docs/specs/<issue>/criteria.md`), each one maps to a test, and `docs/specs/<issue>/tests.md` says which. CI checks that the test files and the test names quoted in its table exist.
 - **Never weaken a test to make it pass.** If a test is wrong, say why and fix the test in its own commit; do not edit an assertion to match buggy behavior.
-- **A bug fix starts with a test that reproduces the bug.**
+- **A bug fix starts with a test that reproduces the bug.** Label the PR `bug`: CI then runs the new test on main's code and fails if it passes there (it would not reproduce the bug).
+- **A flaky test is a bug.** CI fails when a browser test only passes on retry. Fix the test or the app; never skip, quarantine or add retries.
 - Unit tests (vitest) for logic, pgTAP for the database (see above), Playwright for flows.
+- When a PR is ready, the adversarial QA (`qa-adverse` workflow) comments with what it broke and the tests it proposes. It never blocks. The owner keeps tests with `/qa-keep Q1 Q3`; do not copy its proposals into a PR on your own.
 
 ## Squad pipeline
 

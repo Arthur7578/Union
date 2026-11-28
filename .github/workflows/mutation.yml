@@ -1,0 +1,66 @@
+name: Mutation testing
+
+# Weekly: are the unit tests strong enough to notice a bug? Stryker mutates
+# the shared and lib logic and runs vitest (config: stryker.config.mjs). The
+# result goes to one issue, "Mutation : tests à renforcer", updated each week
+# (docs/testing/README.md, layer 4). Never blocks a PR.
+
+on:
+  schedule:
+    # Sundays 03:17 UTC, outside the busy hours.
+    - cron: "17 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: mutation
+  cancel-in-progress: false
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Not in package.json: npm 10 fails to add them to the lockfile
+      # (arborist peer-set bug), and only this job needs them.
+      - run: npm install --no-save --legacy-peer-deps @stryker-mutator/core@10.1.1 @stryker-mutator/vitest-runner@10.1.1
+
+      - run: npx stryker run
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Update the mutation issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          node .github/test-discipline/mutation-summary.mjs reports/mutation/mutation.json > body.md
+          title="Mutation : tests à renforcer"
+          gh label create tests --color 0e8a16 --description "Test bank" --force > /dev/null 2>&1 || true
+          num=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label tests --search "in:title \"$title\"" --json number,title --jq "[.[] | select(.title == \"$title\")][0].number // empty")
+          if [[ -n "$num" ]]; then
+            gh issue edit "$num" --repo "$GITHUB_REPOSITORY" --body-file body.md > /dev/null
+            echo "Updated #$num"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label tests --body-file body.md
+          fi
+          head -3 body.md >> "$GITHUB_STEP_SUMMARY"
