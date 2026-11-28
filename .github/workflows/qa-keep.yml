@@ -1,0 +1,104 @@
+name: QA keep
+
+# `/qa-keep Q1 Q3` on a PR: adds the test files the adversarial QA proposed
+# for those findings (artifact of the last qa-adverse.yml run on this PR) to
+# the PR's branch, in one commit. Owner only.
+#
+# Pushes with SQUAD_GH_TOKEN so that CI runs on the new commit; without it the
+# push uses GITHUB_TOKEN and CI waits for the next push.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  keep:
+    if: >-
+      github.event.issue.pull_request &&
+      github.event.sender.login == github.repository_owner &&
+      startsWith(github.event.comment.body, '/qa-keep')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.issue.number }}
+      BODY: ${{ github.event.comment.body }}
+    steps:
+      - name: Find the PR's branch and the QA run
+        id: pr
+        run: |
+          set -euo pipefail
+          read -r head repo <<< "$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}" --jq '.head.ref + " " + .head.repo.full_name')"
+          if [[ "$repo" != "$GITHUB_REPOSITORY" ]]; then echo "::error::PR from a fork: nothing is pushed."; exit 1; fi
+          ids=$(head -1 <<< "$BODY" | sed 's#^/qa-keep##' | tr ',' ' ' | tr '[:lower:]' '[:upper:]' | grep -oE '\bQ[0-9]+\b' | sort -u | tr '\n' ' ')
+          if [[ -z "$ids" ]]; then echo "::error::No finding ID in the comment (expected: /qa-keep Q1 Q3)."; exit 1; fi
+          run=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow qa-adverse.yml --branch "$head" --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          if [[ -z "$run" ]]; then echo "::error::No successful QA adverse run on ${head}."; exit 1; fi
+          { echo "head=$head"; echo "ids=$ids"; echo "run=$run"; } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head }}
+          token: ${{ secrets.SQUAD_GH_TOKEN || github.token }}
+
+      - name: Add the chosen tests
+        id: add
+        env:
+          HEAD: ${{ steps.pr.outputs.head }}
+          IDS: ${{ steps.pr.outputs.ids }}
+          RUN: ${{ steps.pr.outputs.run }}
+          HAS_SQUAD_TOKEN: ${{ secrets.SQUAD_GH_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          dir="${RUNNER_TEMP}/qa-artifact"
+          gh run download "$RUN" --repo "$GITHUB_REPOSITORY" --name "qa-adverse-${PR}" --dir "$dir"
+          report="$dir/proposals/report.json"
+          added=(); skipped=()
+          for id in $IDS; do
+            files=$(jq -r --arg id "$id" '.findings[] | select((.id | ascii_upcase) == $id) | .files[]?' "$report")
+            if [[ -z "$files" ]]; then skipped+=("$id (pas de fichier)"); continue; fi
+            while read -r f; do
+              # Only new test files under the expected folders.
+              if ! [[ "$f" =~ ^(apps/web/|supabase/tests/database/) && "$f" =~ (\.spec\.ts|\.test\.tsx?|\.test\.sql)$ && "$f" != *..* ]]; then
+                skipped+=("$id: $f (chemin refusé)"); continue
+              fi
+              if [[ -e "$f" ]]; then skipped+=("$id: $f (existe déjà)"); continue; fi
+              mkdir -p "$(dirname "$f")"
+              cp "$dir/proposals/$f" "$f"
+              added+=("$f")
+            done <<< "$files"
+          done
+          if (( ${#added[@]} )); then
+            git config user.name "union-qa[bot]"
+            git config user.email "union-qa@users.noreply.github.com"
+            git add -- "${added[@]}"
+            git commit -q -m "test: keep QA proposals ${IDS% } (#${PR})"
+            git push -q origin "HEAD:${HEAD}"
+          fi
+          {
+            echo "<!-- union-qa-keep -->"
+            if (( ${#added[@]} )); then
+              echo "✅ Ajouté à la PR (commit \`$(git rev-parse --short HEAD)\`) :"
+              printf -- '- `%s`\n' "${added[@]}"
+            else
+              echo "Rien d'ajouté."
+            fi
+            if (( ${#skipped[@]} )); then echo; echo "Ignoré :"; printf -- '- %s\n' "${skipped[@]}"; fi
+            if [[ "$HAS_SQUAD_TOKEN" != "true" && ${#added[@]} -gt 0 ]]; then
+              echo; echo "⚠️ Poussé avec le jeton par défaut : la CI ne tourne pas sur ce commit tant qu'un autre push n'arrive pas (secret \`SQUAD_GH_TOKEN\` absent)."
+            fi
+          } > "${RUNNER_TEMP}/reply.md"
+
+      - name: Reply
+        if: always()
+        run: |
+          if [[ -s "${RUNNER_TEMP}/reply.md" ]]; then
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file "${RUNNER_TEMP}/reply.md"
+          else
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "❌ /qa-keep a échoué : [logs](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})."
+          fi

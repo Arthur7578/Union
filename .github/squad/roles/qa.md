@@ -34,10 +34,14 @@ say so and you will fix it in review mode.
 3. Explore the feature yourself: the app is built and running at
    `$APP_URL` against the local Supabase; seed data with the helpers in
    `apps/web/e2e/support/seed.ts`. Drive it with a Playwright script at phone
-   size, try the edge cases from `design.md`, and save screenshots of every
+   size, try the edge cases from `design.md` and the attacks of
+   `docs/testing/attack-list.md` that apply to the diff, and save screenshots of every
    screen and state to `$SQUAD_DIR/screens/` (the designer reviews them).
 4. For each bug you find, write a failing regression test, and commit it with
    message `test: regression for #$ISSUE (<short name>)`.
+5. Update `docs/testing/flows.md`: the rows of the screens the issue touches
+   name the tests that now cover them (CI checks that every screen has a row
+   and that every file it names exists).
 
 Use the `ui-audit` checklist (accessibility, responsive, performance at
 phone size) while exploring, and report what fails it.

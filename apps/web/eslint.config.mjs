@@ -19,7 +19,7 @@ const NAMED_IN_DECLARATION = `(?:color|background|border[\\w-]*|fill|stroke|outl
 const NO_INLINE_COLOUR = `Use a token from lib/theme.ts (T for the app, G for guest pages) instead of an inline colour — T.white for white, alpha(T.ink, 0.1) for a translucent one. If no token is close, add one there.`;
 
 const config = [
-  { ignores: [".next/", "node_modules/", "public/sw.js"] },
+  { ignores: [".next/", "node_modules/", "public/sw.js", "coverage/", "test-results/", "playwright-report/"] },
   ...nextCoreWebVitals,
   ...nextTypescript,
   {
