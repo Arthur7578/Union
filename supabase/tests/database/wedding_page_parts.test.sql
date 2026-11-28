@@ -1,6 +1,6 @@
 begin;
 
--- The wedding page parts (20261107190000): the guest modules map takes the
+-- The wedding page parts (20261108141039): the guest modules map takes the
 -- page's part keys, and every part may be off.
 
 create extension if not exists pgtap with schema extensions;

@@ -18,7 +18,7 @@
  * page leaves out a part with nothing written in it.
  *
  * The database enforces the same shape (`_guest_modules_valid`, migration
- * 20261107190000_wedding_page_parts). Every part may be off. Readers here are
+ * 20261108141039_wedding_page_parts). Every part may be off. Readers here are
  * permissive anyway: an unknown key, a non-boolean, or a null column resolves
  * to the default rather than throwing, because a malformed row must never
  * blank out a guest's invitation.
