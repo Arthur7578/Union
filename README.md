@@ -34,6 +34,8 @@ supabase/
 - **Invitations** — each guest gets a personal link to their invitation portal
   (RSVP, companions, the couple's forms, travel, logistics, FAQ); a generic group
   link lets guests find their own invitation; invites can be sent by SMS (Brevo).
+- **Optional "maybe" reply** — off by default; a couple turns it on per wedding
+  and guests get a third answer for "I don't know yet". See below.
 - **Forms** — the couple builds custom forms, words the RSVP block, and can add a
   late "still coming?" reconfirmation. Guest-facing copy is written per language,
   with optional machine translation (needs `ANTHROPIC_API_KEY`).
@@ -145,6 +147,49 @@ migration, swap the `lib/sample.ts` import for a real fetch, and drop the
 
 ---
 
+## The "maybe" RSVP reply
+
+A yes/no-only RSVP makes an unsure guest guess, and a guess revised later
+reaches the couple as a bare status flip with no hint the guest was ever
+unsure. `weddings.allow_rsvp_maybe` gives that uncertainty somewhere honest to
+live.
+
+- **Off by default.** A third answer changes what a headcount means: a couple
+  whose caterer needs a firm number by a date would rather chase an unsure
+  guest than bank an unsure yes. Until they opt in, the RSVP behaves exactly as
+  it did before the feature existed.
+- **Turned on** under `/guests/forms/<primary RSVP form>` → *Access & rights*.
+  The button's wording is a fourth named slot in `forms.rsvp_copy`
+  (`label_maybe`), alongside its attending/declined siblings and translated the
+  same way.
+- **Guests** get the third button for themselves and for each companion — a
+  party where one person is sure and another isn't is the ordinary case. A
+  maybe is still asked the couple's RSVP questions (the dietary one included),
+  for themselves and for each companion who may come; asking again later is
+  what makes people stop replying.
+- **Organisers** see maybes as their own count wherever RSVPs are counted, so
+  the headcount reads as a range (`headcount`–`headcountMax`) rather than one
+  number that can't be trusted. `headcount` still means firm yeses only. The
+  existing **reconfirmation** form is the intended way to turn maybes into firm
+  answers near the day.
+- **Turning it off** stops new maybe replies but never rewrites ones already
+  given — converting them would invent a commitment the guest never made.
+  Those guests keep the status until they answer again, and both the guest
+  portal and the organiser's own record still show it so it can be corrected.
+  A guest asked to firm up their own answer picks yes or no; a companion's old
+  maybe is simply left out of the household reply, since the server would
+  refuse it and the reply is a single transaction.
+
+The answer set lives in one place per layer: `public._rsvp_status_allowed` in
+SQL and `packages/shared/src/rsvpAnswers.ts` in the apps. The SQL check guards
+every path a *guest* replies through (`submit_rsvp`, `submit_companion_rsvp`
+and `submit_rsvp_response`); the shared module keeps the UI from offering a
+button the server would refuse. The organiser edits a guest's reply directly
+on the `rsvps` table under their own row-level access, so that path relies on
+the UI alone.
+
+---
+
 ## Backend (Supabase)
 
 Project: **Union** (`jriyeblycrzpozjuexvr`, `eu-west-3`).
@@ -162,8 +207,14 @@ link, the wedding's join code). The ones callable without signing in are:
 
 - `get_invitation(token)` — invitation details for the guest.
 - `submit_rsvp(…)` — upserts the guest's reply.
+- `submit_rsvp_response(…)` — the whole household's reply (statuses and answers)
+  in one transaction; this is what the invitation portal calls.
 - `submit_companion_rsvp(…)`, `rsvp_register_companion(…)`, `rsvp_merge_into(…)` —
   RSVPs for a guest's companions, and merging a self-registered duplicate.
+
+`rsvps.status` is the `rsvp_status` enum `pending | attending | maybe | declined`;
+the RPCs that record a reply refuse `maybe` unless the wedding has opted in (see
+below).
 - `submit_form_response(…)` — answers to the couple's custom forms.
 - `set_guest_locale(…)` — the guest's chosen language.
 - `get_wedding_by_join_code(code)`, `find_guest_for_join(code, first_name, last_name)`

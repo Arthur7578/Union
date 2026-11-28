@@ -29,7 +29,6 @@ export type FakeSupabase = {
   rpcCalls: string[];
 };
 
-const ORIGIN = "https://placeholder.supabase.co";
 const CORS = {
   "access-control-allow-origin": "*",
   "access-control-allow-headers": "*",
@@ -168,8 +167,17 @@ function cascadeDelete(tables: Tables, table: string, removed: Row[]) {
 
 export async function installFakeSupabase(
   context: BrowserContext,
-  options: { tables: Tables; user: ReturnType<typeof fakeUser> },
+  options: {
+    tables: Tables;
+    user: ReturnType<typeof fakeUser>;
+    /** The Supabase URL the app was built with (`e2eEnv().url`). Requests to
+     *  it are answered here instead of reaching whatever runs behind it. */
+    url: string;
+  },
 ): Promise<FakeSupabase> {
+  const origin = new URL(options.url).origin;
+  // supabase-js keeps the session under `sb-<first label of the host>-auth-token`.
+  const storageKey = `sb-${new URL(options.url).hostname.split(".")[0]}-auth-token`;
   const fake: FakeSupabase = {
     tables: structuredClone(options.tables),
     unhandled: [],
@@ -186,7 +194,7 @@ export async function installFakeSupabase(
         // Storage unavailable: the page will just redirect to sign-in.
       }
     },
-    ["sb-placeholder-auth-token", JSON.stringify(session)] as const,
+    [storageKey, JSON.stringify(session)] as const,
   );
 
   const json = (route: Route, status: number, body: unknown, extra = {}) =>
@@ -196,7 +204,7 @@ export async function installFakeSupabase(
       body: body === undefined ? "" : JSON.stringify(body),
     });
 
-  await context.route(`${ORIGIN}/**`, async (route) => {
+  await context.route(`${origin}/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const method = request.method();

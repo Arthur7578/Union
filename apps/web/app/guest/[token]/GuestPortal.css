@@ -88,6 +88,7 @@
 .gh-replied{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px}
 .gh-replied-status{font-family:var(--script);font-size:34px;line-height:1.1;color:var(--da-olive-deep)}
 .gh-replied-status.is-declined{color:var(--da-ink-soft)}
+.gh-replied-status.is-maybe{color:var(--da-ink)}
 .gh-discover{display:flex;flex-direction:column;align-items:center;gap:10px;border:0;background:none;cursor:pointer;
   font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--da-ink-soft);padding:6px 6px 0 calc(6px + .3em)}
 .gh-discover i{display:block;width:1px;height:34px;background:currentColor;opacity:.6;transform-origin:top;animation:gh-drip 2.2s cubic-bezier(.6,0,.2,1) infinite}
@@ -132,6 +133,7 @@
 .gh-schedule{list-style:none;margin:12px 0 0;padding:0}
 .gh-schedule li{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--da-line-soft)}
 .gh-schedule li:first-child{border-top:0;padding-top:4px}
+.gh-ways li{grid-template-columns:1fr}
 .gh-time{font-size:16px;color:var(--da-olive-deep)}
 .gh-what{display:block;font-size:17px}
 .gh-note{display:block;font-size:15px;font-style:italic;color:var(--da-ink-soft)}

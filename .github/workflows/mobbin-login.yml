@@ -1,0 +1,121 @@
+name: Mobbin login
+
+# Connects the squad to Mobbin's MCP server with Arthur's Mobbin account, and
+# keeps the connection alive. See docs/squad/README.md, "Mobbin".
+#
+#   1. Run with "start": the run's summary shows a link. Open it, sign in to
+#      Mobbin and authorize. The browser then lands on a page that does not
+#      load (http://localhost:53682/callback?...): copy that whole address.
+#   2. Run with "finish" and paste the address in "callback_url".
+#   Every week (and with "check"), the token is renewed; if Mobbin refuses,
+#   an issue asks Arthur to sign in again.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: start, finish (with the address) or check
+        required: true
+        type: choice
+        options: [start, finish, check]
+      callback_url:
+        description: For "finish" only, the full address the browser ended on
+        required: false
+  schedule:
+    - cron: "17 6 * * 1" # Mondays, 06:17 UTC
+
+permissions:
+  contents: read
+  issues: write
+
+# Shared with the squad's Mobbin-using stages: one token renewal at a time.
+concurrency:
+  group: squad-mobbin
+  cancel-in-progress: false
+
+jobs:
+  mobbin:
+    if: github.event_name == 'schedule' || github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ACTION: ${{ inputs.action || 'check' }}
+      # Writing the MOBBIN_OAUTH secret needs a token with the Secrets
+      # permission: GITHUB_TOKEN cannot write secrets.
+      GH_TOKEN: ${{ secrets.SQUAD_GH_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Start (get the sign-in link)
+        if: env.ACTION == 'start'
+        run: |
+          set -euo pipefail
+          node .github/squad/mobbin-oauth.mjs start > "$RUNNER_TEMP/pending.json" 2> "$RUNNER_TEMP/url.txt"
+          gh secret set MOBBIN_OAUTH_PENDING < "$RUNNER_TEMP/pending.json"
+          {
+            echo "## Connexion Mobbin — étape 1/2"
+            echo
+            echo "1. Ouvre ce lien, connecte-toi à Mobbin et autorise l'accès :"
+            echo
+            echo "   $(cat "$RUNNER_TEMP/url.txt")"
+            echo
+            echo "2. Le navigateur arrive ensuite sur une page qui ne charge pas (adresse en \`http://localhost:53682/callback?...\`). C'est normal : copie toute cette adresse."
+            echo "3. Relance ce workflow avec **finish** et colle l'adresse dans **callback_url**."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Finish (save the connection)
+        if: env.ACTION == 'finish'
+        env:
+          MOBBIN_OAUTH_PENDING: ${{ secrets.MOBBIN_OAUTH_PENDING }}
+          CALLBACK_URL: ${{ inputs.callback_url }}
+        run: |
+          set -euo pipefail
+          state=$(node .github/squad/mobbin-oauth.mjs finish "$CALLBACK_URL")
+          echo "::add-mask::$(jq -r .access_token <<< "$state")"
+          echo "::add-mask::$(jq -r .refresh_token <<< "$state")"
+          gh secret set MOBBIN_OAUTH <<< "$state"
+          gh secret delete MOBBIN_OAUTH_PENDING || true
+          echo "## Connexion Mobbin — enregistrée ✅" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check and keep alive
+        if: env.ACTION == 'check'
+        env:
+          MOBBIN_OAUTH: ${{ secrets.MOBBIN_OAUTH }}
+        run: |
+          set -uo pipefail
+          if [[ -z "$MOBBIN_OAUTH" ]]; then
+            echo "::notice::Mobbin is not connected yet (run this workflow with start)."
+            exit 0
+          fi
+          state=$(node .github/squad/mobbin-oauth.mjs check 2> "$RUNNER_TEMP/err.txt"); rc=$?
+          # The renewal may succeed and the MCP call fail: save the new token
+          # in any case, since the old one is spent.
+          if [[ -n "$state" ]]; then
+            echo "::add-mask::$(jq -r .access_token <<< "$state")"
+            echo "::add-mask::$(jq -r .refresh_token <<< "$state")"
+            gh secret set MOBBIN_OAUTH <<< "$state" || { echo "::error::Could not save the renewed Mobbin token"; exit 1; }
+          fi
+          if (( rc != 0 )); then
+            echo "::error::$(head -c 300 "$RUNNER_TEMP/err.txt")"
+            exit 1
+          fi
+          echo "## Mobbin — connexion OK ✅" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ask Arthur to sign in again
+        if: failure() && env.ACTION == 'check'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Mobbin : reconnexion nécessaire pour la squad"
+          if [[ -z "$(gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')" ]]; then
+            body="<!-- union-squad -->La connexion de la squad à Mobbin ne répond plus ([run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})). En attendant, les agents travaillent sans Mobbin."
+            body+=$'\n\n'"Pour la rétablir (2 minutes) : onglet **Actions** → **Mobbin login** → **Run workflow** avec **start**, puis suis les instructions du résumé du run."
+            gh issue create --title "$title" --body "$body"
+          fi

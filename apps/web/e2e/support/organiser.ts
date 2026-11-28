@@ -1,4 +1,5 @@
 import { test as base, expect } from "@playwright/test";
+import { e2eEnv } from "./env";
 import {
   fakeUser,
   installFakeSupabase,
@@ -146,6 +147,7 @@ export const test = base.extend<Fixtures>({
     const fake = await installFakeSupabase(context, {
       tables: WEDDING_FIXTURE,
       user: USER,
+      url: e2eEnv().url,
     });
     await use(fake);
     // A request the fake could not answer means the page asked for something

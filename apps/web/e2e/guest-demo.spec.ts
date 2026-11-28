@@ -19,25 +19,26 @@ test.describe("guest portal (demo link)", () => {
 
     await rsvp.getByRole("button", { name: "Attending" }).click();
     await expect(
-      rsvp.getByRole("heading", { name: "Any allergies or dietary needs?" }),
+      rsvp.getByRole("heading", { name: "Any dietary restrictions or allergies?" }),
     ).toBeVisible();
     await rsvp.getByRole("textbox").fill("Vegetarian");
     await rsvp.getByRole("button", { name: "OK" }).click();
 
     await expect(
+      rsvp.getByRole("heading", { name: "Anything else you would like us to know?" }),
+    ).toBeVisible();
+    await rsvp.getByRole("button", { name: "OK" }).click();
+
+    await expect(
       rsvp.getByRole("heading", { name: "Will Guinevere join us?" }),
     ).toBeVisible();
-    await rsvp.getByRole("button", { name: "Attending" }).click();
-    await rsvp.getByRole("button", { name: "OK" }).click();
+    await rsvp.getByRole("button", { name: "Attending", exact: true }).click();
 
-    // Her dietary question is optional: leave it blank.
-    await expect(
-      rsvp.getByRole("heading", { name: "Any allergies or dietary needs for Guinevere?" }),
-    ).toBeVisible();
+    // A companion who comes is asked her own questions before the reply goes.
+    await expect(rsvp.getByText("For Guinevere · Optional")).toBeVisible();
     await rsvp.getByRole("button", { name: "OK" }).click();
-
     await expect(
-      rsvp.getByRole("heading", { name: "A word for Maya & Daniel?" }),
+      rsvp.getByRole("heading", { name: "Anything else you would like us to know?" }),
     ).toBeVisible();
     await rsvp.getByRole("button", { name: "Send" }).click();
 
@@ -54,9 +55,15 @@ test.describe("guest portal (demo link)", () => {
     const rsvp = page.getByRole("dialog", { name: "Attendance RSVP" });
 
     await rsvp.getByRole("button", { name: "Declined" }).click();
+
+    // Straight to the closing message: no dietary question, no companion.
     await expect(
-      rsvp.getByRole("heading", { name: "Any allergies or dietary needs?" }),
+      rsvp.getByRole("heading", { name: "Anything else you would like us to know?" }),
+    ).toBeVisible();
+    await expect(
+      rsvp.getByRole("heading", { name: "Any dietary restrictions or allergies?" }),
     ).toHaveCount(0);
+    await expect(rsvp.getByRole("button", { name: "Send" })).toBeVisible();
   });
 
   test("shows the hub sections", async ({ page }) => {

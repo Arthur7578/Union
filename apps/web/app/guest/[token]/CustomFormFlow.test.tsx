@@ -2,7 +2,7 @@
 
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RsvpQuestion } from "@union/shared";
 import { LocaleProvider } from "@/lib/i18n/client";
 
@@ -16,6 +16,7 @@ vi.mock("@/lib/supabaseClient", () => ({
 
 import { CustomFormFlow } from "./CustomFormFlow";
 
+beforeEach(() => harness.rpc.mockClear());
 afterEach(cleanup);
 
 const questions: RsvpQuestion[] = [
@@ -54,6 +55,8 @@ describe("CustomFormFlow", () => {
           formId="form-1"
           heading="Dinner"
           questions={questions}
+          guestId="g-1"
+          respondents={[{ id: "g-1", name: "Arthur" }]}
           initial={{}}
           onSaved={onSaved}
           onClose={() => {}}
@@ -85,6 +88,56 @@ describe("CustomFormFlow", () => {
       p_form_id: "form-1",
       p_answers: answers,
     });
-    expect(onSaved).toHaveBeenCalledWith(answers);
+    expect(onSaved).toHaveBeenCalledWith({ "g-1": answers });
+    expect(screen.queryByText(/For you/)).not.toBeInTheDocument();
+  });
+
+  it("asks a per-person form for each person, then sends one response each", async () => {
+    const onSaved = vi.fn();
+    render(
+      <LocaleProvider initialLocale="en">
+        <CustomFormFlow
+          token="tok"
+          isDemo={false}
+          formId="form-1"
+          heading="Dinner"
+          questions={[questions[0]]}
+          guestId="g-1"
+          respondents={[
+            { id: "g-1", name: "Arthur" },
+            { id: "c-1", name: "Guinevere" },
+          ]}
+          initial={{ "c-1": { "q-meal": "o-fish" } }}
+          onSaved={onSaved}
+          onClose={() => {}}
+        />
+      </LocaleProvider>,
+    );
+
+    enter();
+    await screen.findByRole("heading", { name: "Your main course?" });
+    expect(screen.getByText(/For you/)).toBeInTheDocument();
+    await act(async () => {});
+    fireEvent.keyDown(window, { key: "b" });
+
+    await screen.findByText(/For Guinevere/);
+    // Opens on what was already answered for her.
+    expect(screen.getByRole("button", { name: /Fish/ })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    await screen.findByRole("heading", { name: "Thank you!" });
+    expect(harness.rpc).toHaveBeenCalledTimes(2);
+    expect(harness.rpc).toHaveBeenNthCalledWith(1, "submit_form_response", {
+      p_token: "tok",
+      p_form_id: "form-1",
+      p_answers: { "q-meal": "o-veg" },
+    });
+    expect(harness.rpc).toHaveBeenNthCalledWith(2, "submit_form_response", {
+      p_token: "tok",
+      p_form_id: "form-1",
+      p_answers: { "q-meal": "o-fish" },
+      p_for_guest_id: "c-1",
+    });
+    expect(onSaved).toHaveBeenCalledWith({ "g-1": { "q-meal": "o-veg" }, "c-1": { "q-meal": "o-fish" } });
   });
 });

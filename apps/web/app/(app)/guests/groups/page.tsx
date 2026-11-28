@@ -17,6 +17,7 @@ import {
   updateGuestGroup,
   type GuestWithRsvp,
 } from "@/lib/data";
+import { breakdownFor } from "@/lib/rsvpBreakdown";
 import { BackHeader } from "@/components/BackHeader";
 import {
   Card,
@@ -55,18 +56,6 @@ function paletteFor(color: string | null | undefined) {
   return PALETTE.find((p) => p.bg === color) ?? PALETTE[0];
 }
 
-type RsvpBreakdown = { attending: number; declined: number; pending: number };
-
-function breakdownFor(members: GuestWithRsvp[]): RsvpBreakdown {
-  const out: RsvpBreakdown = { attending: 0, declined: 0, pending: 0 };
-  for (const m of members) {
-    const s = m.rsvps?.status ?? "pending";
-    if (s === "attending") out.attending += 1;
-    else if (s === "declined") out.declined += 1;
-    else out.pending += 1;
-  }
-  return out;
-}
 
 export default function GroupsPage() {
   const { wedding } = useWedding();
@@ -606,9 +595,12 @@ export default function GroupsPage() {
                         fontSize: 11,
                         color: T.muted,
                       }}
-                      aria-label={`${bd.attending} attending, ${bd.pending} awaiting, ${bd.declined} declined`}
+                      aria-label={`${bd.attending} attending, ${bd.maybe} not sure yet, ${bd.pending} awaiting, ${bd.declined} declined`}
                     >
                       <BreakdownDot color={T.green} label={String(bd.attending)} />
+                      {bd.maybe > 0 && (
+                        <BreakdownDot color={T.blueInk} label={String(bd.maybe)} />
+                      )}
                       <BreakdownDot color={T.amber} label={String(bd.pending)} />
                       <BreakdownDot color={T.sand} label={String(bd.declined)} />
                     </div>
@@ -1064,6 +1056,9 @@ export default function GroupsPage() {
                         }}
                       >
                         <BreakdownDot color={T.green} label={String(bd.attending)} />
+                        {bd.maybe > 0 && (
+                          <BreakdownDot color={T.blueInk} label={String(bd.maybe)} />
+                        )}
                         <BreakdownDot color={T.amber} label={String(bd.pending)} />
                         <BreakdownDot color={T.sand} label={String(bd.declined)} />
                       </span>
@@ -1481,14 +1476,22 @@ function MemberRow({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const status = m.rsvps?.status ?? "pending";
-  const statusTone: "green" | "amber" | "sand" =
-    status === "attending" ? "green" : status === "declined" ? "sand" : "amber";
+  const statusTone: "green" | "amber" | "sand" | "blue" =
+    status === "attending"
+      ? "green"
+      : status === "maybe"
+        ? "blue"
+        : status === "declined"
+          ? "sand"
+          : "amber";
   const statusLabel =
     status === "attending"
       ? "Attending"
-      : status === "declined"
-        ? "Can't make it"
-        : "Awaiting";
+      : status === "maybe"
+        ? "Not sure yet"
+        : status === "declined"
+          ? "Can't make it"
+          : "Awaiting";
   const memberOfIds = new Set(m.groups?.map((r) => r.id) ?? []);
   const memberOfNames = new Set(m.groups?.map((r) => r.name) ?? []);
   const otherGroups = m.groups?.filter((r) => r.id !== currentGroupId) ?? [];

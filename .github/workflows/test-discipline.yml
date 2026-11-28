@@ -1,0 +1,118 @@
+name: Test discipline
+
+# Keeps the test bank in step with the product. Method and rules:
+# docs/testing/README.md. Scripts: .github/test-discipline/.
+#
+# - rules (blocking): a changed screen comes with browser-test code, changed
+#   logic with unit-test code, a new migration with a pgTAP test; every screen
+#   is in docs/testing/flows.md; files and test names quoted in the test maps
+#   exist; no squad prototype ships. Escape labels no-e2e / no-unit /
+#   no-db-test need a line "<label>: <reason>" in the PR description.
+# - diff-coverage: share of the changed logic lines the unit tests run.
+#   Warns by default; set the repository variable DIFF_COVERAGE_MODE=block to
+#   make it blocking.
+# - bug-repro (PRs labelled `bug`): the new test must fail on main's code.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled, edited, ready_for_review, converted_to_draft]
+
+permissions:
+  contents: read
+
+jobs:
+  discipline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test the rules themselves
+        run: node --test .github/test-discipline/*.test.mjs
+
+      - name: Check the rules
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node .github/test-discipline/check.mjs "$BASE" "$HEAD"
+
+  diff-coverage:
+    # Labels and description edits do not change coverage.
+    if: contains(fromJSON('["opened","synchronize","reopened","ready_for_review"]'), github.event.action)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Installed here rather than in package.json: npm 10 fails to add it
+      # to the lockfile (arborist peer-set bug), and only this job needs it.
+      - run: npm install --no-save --legacy-peer-deps @vitest/coverage-v8@4.1.11
+
+      - run: npx vitest run --coverage
+        working-directory: apps/web
+
+      - name: Measure the changed lines
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          MIN_DIFF_COVERAGE: ${{ vars.MIN_DIFF_COVERAGE || '80' }}
+          DIFF_COVERAGE_MODE: ${{ vars.DIFF_COVERAGE_MODE || 'warn' }}
+        run: node .github/test-discipline/diff-coverage.mjs "$BASE" "$HEAD"
+
+  bug-repro:
+    if: contains(github.event.pull_request.labels.*.name, 'bug') && contains(fromJSON('["opened","synchronize","reopened","labeled","ready_for_review"]'), github.event.action)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+
+      - run: supabase start -x realtime,storage-api,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,studio,postgres-meta
+
+      - name: Point the browser tests at the local Supabase
+        run: |
+          supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY|DB_URL)=' > supabase.env
+          set -a; . ./supabase.env; set +a
+          {
+            echo "DB_URL=$DB_URL"
+            echo "E2E_SUPABASE_URL=$API_URL"
+            echo "E2E_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "E2E_SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+
+      - name: The new test fails on main's code
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/test-discipline/red-on-base.sh "$BASE" "$HEAD"

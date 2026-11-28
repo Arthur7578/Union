@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  EMPTY_GUEST_PAGE,
   canAddChildren,
   canAddPartner as mayAddPartner,
   enabledGuestModules,
+  mayAttend,
   normalizeQuestions,
+  rsvpCardLine,
 } from "@union/shared";
 import type { FormAnswers, GuestModuleKey } from "@union/shared";
 import { LocaleToggle } from "@/components/guest/LocaleToggle";
@@ -15,16 +18,16 @@ import { useReplayWelcome, useWelcomeResponses } from "@/components/guest/Welcom
 import { formatGuestAddress } from "@/lib/guestAddress";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { useLocale } from "@/lib/i18n/client";
-import { coupleText, coupleTextOr, rsvpDefaults } from "@/lib/i18n/text";
+import { coupleText, coupleTextOr, rsvpDefaults, rsvpWording } from "@/lib/i18n/text";
 import { takeRsvpHandoff } from "@/lib/rsvpHandoff";
 import { getBrowserSupabase } from "@/lib/supabaseClient";
 import { GUEST_DA_VARS } from "@/lib/theme";
-import { CustomFormFlow } from "./CustomFormFlow";
+import { CustomFormFlow, type Respondent } from "./CustomFormFlow";
 import { FaqSection } from "./FaqSection";
 import { FormList, type FormItem } from "./FormList";
 import { LogisticsSection } from "./LogisticsSection";
 import { useReplyEmail } from "./ReplyEmailField";
-import { RsvpFlow, type RsvpReply } from "./RsvpFlow";
+import { RsvpFlow, type RsvpAnswers, type RsvpReply } from "./RsvpFlow";
 import { SectionHead } from "./SectionHead";
 import { TravelSection } from "./TravelSection";
 import type { DBInvitation } from "./page";
@@ -115,12 +118,19 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   // The guest's reply as last saved, so the hub shows it without a reload.
   const [reply, setReply] = useState<RsvpReply>(() => ({
     status: invitation.guest.rsvp_status,
-    dietary: invitation.guest.dietary_notes || "",
-    message: invitation.guest.message || "",
-    companions: Object.fromEntries(
-      invitation.companions.map((c) => [c.id, { rsvp_status: c.rsvp_status, dietary_notes: c.dietary_notes || "" }]),
-    ),
+    companions: Object.fromEntries(invitation.companions.map((c) => [c.id, { rsvp_status: c.rsvp_status }])),
   }));
+  // Answers to each RSVP form's questions (the first ask and the final
+  // check-in ask their own), per person, as last saved — so reopening a form
+  // starts from what was sent, not from blank fields that would overwrite it.
+  const [rsvpAnswers, setRsvpAnswers] = useState<Record<string, RsvpAnswers>>(() => {
+    const byForm: Record<string, RsvpAnswers> = {};
+    for (const form of [invitation.rsvp_form, invitation.rsvp_reconfirmation]) {
+      if (!form?.id) continue;
+      byForm[form.id] = { ...(form.companion_answers ?? {}), [invitation.guest.id]: form.answers ?? {} };
+    }
+    return byForm;
+  });
 
   // Companions — local state (not just the invitation prop) so a partner or
   // child added mid-RSVP shows up at once.
@@ -143,7 +153,19 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   // answer. A guest who has already replied lands on the hub, their answer on
   // show; so does anyone opening the link again later (the flag is one-shot).
   const welcomeResponses = useWelcomeResponses();
-  const answerNow = reply.status === "pending" && moduleOn("forms");
+  // The RSVP follows the same published + opens/closes window as any other
+  // form: its answers are saved through the form, which refuses them outside
+  // it. Unpublished, it isn't shown at all.
+  const primaryForm = invitation.rsvp_form ?? null;
+  const rsvpWindow: "hidden" | "scheduled" | "live" | "closed" = (() => {
+    if (primaryForm?.published === false) return "hidden";
+    const at = new Date();
+    if (primaryForm?.opens_at && new Date(primaryForm.opens_at) > at) return "scheduled";
+    if (primaryForm?.closes_at && new Date(primaryForm.closes_at) < at) return "closed";
+    return "live";
+  })();
+  const rsvpLive = rsvpWindow === "live";
+  const answerNow = reply.status === "pending" && moduleOn("forms") && rsvpLive;
   useEffect(() => {
     // Next frame: the hub paints once, then the form slides in over it. The
     // flag is taken there too, so an effect React runs twice in development
@@ -217,17 +239,18 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
       )
     : null;
   const addressText = formatGuestAddress(invitation.wedding);
+  const guestPage = invitation.guest_page ?? EMPTY_GUEST_PAGE;
   const place = invitation.wedding.venue_name || addressText;
 
   // RSVP wording — the couple's own copy in this guest's language if they've
   // written one, else Union's default copy in that language. Wording is the
   // *only* thing an override can change: which rsvp_status an answer submits
   // is fixed in code.
-  const primaryDefaults = rsvpDefaults(locale, "primary");
-  const rsvpTitle = coupleTextOr(invitation.rsvp_form?.title, locale, primaryDefaults.title);
-  const rsvpSubtitle = coupleTextOr(invitation.rsvp_form?.subtitle, locale, primaryDefaults.subtitle);
-  const labelAttending = coupleTextOr(invitation.rsvp_form?.label_attending, locale, primaryDefaults.labelAttending);
-  const labelDeclined = coupleTextOr(invitation.rsvp_form?.label_declined, locale, primaryDefaults.labelDeclined);
+  const { title: rsvpTitle, subtitle: rsvpSubtitle, labelAttending, labelMaybe, labelDeclined } =
+    rsvpWording(invitation.rsvp_form, locale);
+  // "Maybe" is the couple's decision. A server that doesn't send the flag (one
+  // older than the column) reads as off: the two-answer RSVP guests had before.
+  const allowMaybe = invitation.wedding.allow_rsvp_maybe === true;
 
   // The optional late "still coming?" touchpoint — shown only when the couple
   // has published it and it's within its window.
@@ -262,30 +285,65 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
   });
   const canAddKids = canAddChildren({ allowed: invitation.permissions.can_add_kids, remaining: kidsRemaining });
 
-  const statusLabel = (status: RsvpReply["status"]) =>
-    status === "attending" ? labelAttending : status === "declined" ? labelDeclined : hub.statusPending;
+  // Everyone a custom form is answered for: just the guest, or — when the
+  // couple asks it once per person — them and each relative who is coming.
+  const respondentsFor = (f: CustomForm): Respondent[] => {
+    const self = { id: invitation.guest.id, name: guestFirstName };
+    if (!f.per_person) return [self];
+    return [
+      self,
+      ...companions
+        .filter((c) => mayAttend(reply.companions[c.id]?.rsvp_status))
+        .map((c) => ({ id: c.id, name: c.first_name })),
+    ];
+  };
+  /** The answers on record for one person of a custom form, if any. */
+  const answersOf = (f: CustomForm, personId: string) =>
+    personId === invitation.guest.id ? f.answers : (f.companion_answers?.[personId] ?? null);
+
+  // The RSVP form the open flow answers: its questions are the couple's, and
+  // the final check-in asks its own.
+  const activeRsvpForm = rsvpOpen === "reconfirmation" ? reconfirmation : (invitation.rsvp_form ?? null);
+  const activeRsvpFormId = activeRsvpForm?.id || null;
+
 
   const scrollTo = (key: GuestModuleKey) =>
     document.getElementById(sectionId(key))?.scrollIntoView({ behavior: "smooth", block: "start" });
 
-  // The guest's household answer in one line ("Arthur : Présent, Guinevere :
-  // Absent"), leaving out anyone who hasn't been answered for yet.
-  const householdAnswer = [
-    { name: guestFirstName, status: reply.status },
-    ...companions.map((c) => ({ name: c.first_name, status: reply.companions[c.id]?.rsvp_status ?? "pending" })),
-  ]
-    .filter((p) => p.status !== "pending")
-    .map((p) => `${p.name}${locale === "fr" ? "\u00a0:" : ":"} ${statusLabel(p.status)}`)
-    .join(", ");
+  // The guest's answer in one line: their own answer when invited alone, one
+  // name per person for a household ("Arthur : Présent, Guinevere : Absent").
+  const replyLine =
+    reply.status === "pending"
+      ? rsvpSubtitle
+      : rsvpCardLine({
+          guest: { name: guestFirstName, status: reply.status },
+          companions: companions.map((c) => ({
+            name: c.first_name,
+            status: reply.companions[c.id]?.rsvp_status ?? "pending",
+          })),
+          label: (status) => ({ attending: labelAttending, maybe: labelMaybe, declined: labelDeclined })[status],
+          locale,
+        });
 
   const formItems: FormItem[] = [
-    {
-      key: "rsvp",
-      title: rsvpTitle,
-      meta: reply.status === "pending" ? rsvpSubtitle : householdAnswer,
-      state: reply.status === "pending" ? "todo" : "done",
-      onOpen: () => openRsvp("primary"),
-    },
+    ...(rsvpWindow === "hidden"
+      ? []
+      : [
+          {
+            key: "rsvp",
+            title: rsvpTitle,
+            meta: replyLine,
+            state:
+              rsvpWindow === "scheduled"
+                ? ("soon" as const)
+                : reply.status !== "pending"
+                  ? ("done" as const)
+                  : rsvpWindow === "closed"
+                    ? ("closed" as const)
+                    : ("todo" as const),
+            onOpen: rsvpLive ? () => openRsvp("primary") : undefined,
+          },
+        ]),
     // No record says whether a guest has done the final check-in, so it
     // stays "to do" for as long as the couple keeps it open.
     ...(reconfirmationLive
@@ -302,13 +360,20 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
       : []),
     ...customForms.map((f): FormItem => {
       const open = customFormState(f);
+      // Counts replies on record, not filled-in fields: an all-optional form
+      // sent back empty is a considered "nothing to declare".
+      const people = respondentsFor(f);
+      const answered = people.filter((p) => answersOf(f, p.id) != null).length;
+      const progress = people.length > 1 && answered > 0 ? hub.answeredFor(answered, people.length) : null;
       return {
         key: f.id,
         title: customFormHeading(f),
         meta:
+          progress ??
           coupleText(f.guest_copy?.subtitle, locale) ??
           (f.questions.length ? hub.questions(f.questions.length) : undefined),
-        state: open === "scheduled" ? "soon" : open === "closed" ? "closed" : f.answers ? "done" : "todo",
+        state:
+          open === "scheduled" ? "soon" : open === "closed" ? "closed" : answered === people.length ? "done" : "todo",
         onOpen: open === "live" ? () => setOpenFormId(f.id) : undefined,
       };
     }),
@@ -388,17 +453,21 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
         {moduleOn("forms") && (
           <div className="gh-hero-cta">
             {reply.status === "pending" ? (
-              <button type="button" className="gh-btn gh-btn--big" onClick={() => openRsvp("primary")}>
-                {hub.respond}
-              </button>
+              rsvpLive ? (
+                <button type="button" className="gh-btn gh-btn--big" onClick={() => openRsvp("primary")}>
+                  {hub.respond}
+                </button>
+              ) : null
             ) : (
               <p className="gh-replied">
                 <span className={`gh-replied-status is-${reply.status}`}>
-                  {reply.status === "attending" ? hub.coming : hub.notComing}
+                  {reply.status === "attending" ? hub.coming : reply.status === "maybe" ? hub.maybe : hub.notComing}
                 </span>
-                <button type="button" className="gh-link" onClick={() => openRsvp("primary")}>
-                  {hub.editReply}
-                </button>
+                {rsvpLive ? (
+                  <button type="button" className="gh-link" onClick={() => openRsvp("primary")}>
+                    {hub.editReply}
+                  </button>
+                ) : null}
               </p>
             )}
           </div>
@@ -421,13 +490,15 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
             )}
             {key === "travel" && <TravelSection guestName={guestFullName} />}
             {key === "logistics" && (
-              <LogisticsSection venueName={invitation.wedding.venue_name} addressText={addressText} />
+              <LogisticsSection
+                venueName={invitation.wedding.venue_name}
+                addressText={addressText}
+                eventDate={invitation.wedding.event_date}
+                content={guestPage}
+              />
             )}
             {key === "faq" && (
-              <FaqSection
-                formsLabel={moduleOn("forms") ? hub.nav.forms : null}
-                travelLabel={moduleOn("travel") ? hub.nav.travel : null}
-              />
+              <FaqSection content={guestPage} />
             )}
           </section>
         ))}
@@ -460,14 +531,20 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
           skipIntro={rsvpFromWelcome}
           token={token}
           isDemo={isDemo}
+          formId={activeRsvpFormId}
+          questions={normalizeQuestions(activeRsvpForm?.questions, DEFAULT_LOCALE)}
+          guestId={invitation.guest.id}
           title={rsvpOpen === "reconfirmation" ? reconfirmTitle : rsvpTitle}
           subtitle={rsvpOpen === "reconfirmation" ? reconfirmSubtitle : rsvpSubtitle}
           labelAttending={labelAttending}
+          labelMaybe={labelMaybe}
           labelDeclined={labelDeclined}
+          allowMaybe={allowMaybe}
           guestFirstName={guestFirstName}
           coupleNames={coupleNames}
           replyEmail={replyEmail}
           initial={reply}
+          initialAnswers={(activeRsvpFormId && rsvpAnswers[activeRsvpFormId]) || {}}
           companions={companions}
           canAddPartner={canAddPartner}
           canAddKids={canAddKids}
@@ -475,7 +552,12 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
             setCompanions((prev) => [...prev, companion]);
             if (kind === "child") setKidsRemaining((k) => (k !== null ? Math.max(k - 1, 0) : k));
           }}
-          onSaved={setReply}
+          onSaved={(saved, answers) => {
+            setReply(saved);
+            if (activeRsvpFormId) {
+              setRsvpAnswers((prev) => ({ ...prev, [activeRsvpFormId]: { ...prev[activeRsvpFormId], ...answers } }));
+            }
+          }}
           onClose={() => setRsvpOpen(null)}
         />
       )}
@@ -488,9 +570,21 @@ export function GuestPortal({ token, invitation, isDemo, emailMissing = false }:
           heading={customFormHeading(openForm)}
           subtitle={coupleText(openForm.guest_copy?.subtitle, locale)}
           questions={openForm.questions}
-          initial={openForm.answers ?? {}}
-          onSaved={(answers: FormAnswers) =>
-            setCustomForms((prev) => prev.map((f) => (f.id === openForm.id ? { ...f, answers } : f)))
+          guestId={invitation.guest.id}
+          respondents={respondentsFor(openForm)}
+          initial={Object.fromEntries(respondentsFor(openForm).map((p) => [p.id, answersOf(openForm, p.id) ?? {}]))}
+          onSaved={(byPerson: Record<string, FormAnswers>) =>
+            setCustomForms((prev) =>
+              prev.map((f) => {
+                if (f.id !== openForm.id) return f;
+                const { [invitation.guest.id]: own, ...relatives } = byPerson;
+                return {
+                  ...f,
+                  answers: own ?? f.answers,
+                  companion_answers: { ...(f.companion_answers ?? {}), ...relatives },
+                };
+              }),
+            )
           }
           onClose={() => setOpenFormId(null)}
         />

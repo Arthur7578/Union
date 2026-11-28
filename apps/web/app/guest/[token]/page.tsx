@@ -5,13 +5,16 @@ import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import Link from "next/link";
 import { guestLinkPath } from "@union/shared";
+import { parseGuestPage } from "@union/shared";
 import type {
   FormAnswers,
   FormGuestCopy,
+  GuestPageContent,
   Invitation,
   LocalizedText,
   RsvpQuestion,
 } from "@union/shared";
+import { defaultPrimaryRsvpQuestions } from "@/lib/rsvpQuestions";
 import { GuestEntry } from "./GuestEntry";
 import { G, T, alpha } from "@/lib/theme";
 
@@ -19,24 +22,42 @@ import { G, T, alpha } from "@/lib/theme";
 export const dynamic = "force-dynamic";
 
 export type DBInvitation = Invitation & {
+  /** The couple's guest page content (get_guest_page): their word, how to
+   *  get there, the weekend, the dress code, their questions and their stays.
+   *  Absent when it couldn't be loaded; the hub then shows what it has. */
+  guest_page?: GuestPageContent;
   /** Guest-facing wording overrides for the primary RSVP block, as locale
    *  maps. Null means "use the system default" for the guest's language,
    *  never a blank/empty label; a map missing the guest's locale falls back
    *  through the others before reaching that default. */
   rsvp_form?: {
+    id: string;
     title: LocalizedText | null;
     subtitle: LocalizedText | null;
     label_attending: LocalizedText | null;
+    /** Only read when the wedding has `allow_rsvp_maybe` on — the wording for
+     *  a button that isn't being shown is kept, not applied. */
+    label_maybe: LocalizedText | null;
     label_declined: LocalizedText | null;
+    published: boolean;
+    opens_at: string | null;
+    closes_at: string | null;
+    questions: RsvpQuestion[];
+    answers: FormAnswers | null;
+    companion_answers: Record<string, FormAnswers> | null;
   } | null;
   /** The optional late "still coming?" touchpoint. Only shown when
    *  published and within its opens_at/closes_at window. */
   rsvp_reconfirmation?: {
+    id: string;
     title: LocalizedText | null;
     subtitle: LocalizedText | null;
     published: boolean;
     opens_at: string | null;
     closes_at: string | null;
+    questions: RsvpQuestion[];
+    answers: FormAnswers | null;
+    companion_answers: Record<string, FormAnswers> | null;
   } | null;
   /** Published 'custom' forms for this wedding, with the guest's own answers
    *  (if they've already submitted). Empty until the couple publishes one.
@@ -50,8 +71,44 @@ export type DBInvitation = Invitation & {
     published: boolean;
     opens_at: string | null;
     closes_at: string | null;
+    /** True when the couple asks this form once per person — the guest
+     *  answers for themselves and for each relative they're bringing, the
+     *  way the RSVP block already works. False means one answer for the
+     *  whole invitation, which is how every form behaved before this. */
+    per_person?: boolean;
     answers: FormAnswers | null;
+    /** Answers already on record for this guest's own relatives, keyed by
+     *  their guest id. Only ever their own household. */
+    companion_answers?: Record<string, FormAnswers> | null;
   }>;
+};
+
+/** What the demo couple wrote for their guests, so the demo shows every part
+ *  of the hub. Real weddings read theirs from get_guest_page. */
+const DEMO_GUEST_PAGE: GuestPageContent = {
+  page: {
+    welcome: null,
+    travel_train: { en: "Hood River has no station: Portland Union Station, then 1 h by car.", fr: "Pas de gare à Hood River : Portland Union Station, puis 1 h en voiture." },
+    travel_plane: { en: "Portland International (PDX), about 1 h away.", fr: "Aéroport de Portland (PDX), à environ 1 h." },
+    travel_car: { en: "Free parking on site.", fr: "Parking gratuit sur place." },
+    shuttle: null,
+    dress_code: { en: "Garden elegant", fr: "Chic champêtre" },
+    dress_text: { en: "The ceremony is on the grass: flat shoes are your friends.", fr: "La cérémonie est sur l'herbe : préfère les chaussures plates." },
+    dress_note: null,
+    palette: [],
+  },
+  moments: [
+    { id: "demo-m1", day_offset: 0, starts_at: "16:00", title: { en: "Guest arrival", fr: "Arrivée des invités" }, place: { en: "Welcome drinks", fr: "Boissons d'accueil" }, note: null },
+    { id: "demo-m2", day_offset: 0, starts_at: "16:30", title: { en: "The ceremony", fr: "La cérémonie" }, place: { en: "In the meadow garden", fr: "Dans le jardin" }, note: null },
+    { id: "demo-m3", day_offset: 0, starts_at: "17:30", title: { en: "Cocktails & dinner", fr: "Cocktail & dîner" }, place: null, note: null },
+  ],
+  faq: [
+    { id: "demo-f1", question: { en: "Are children welcome?", fr: "Les enfants sont-ils invités ?" }, answer: { en: "Yes, gladly. You can add them when you reply.", fr: "Oui, avec joie. Tu peux les ajouter en répondant." } },
+  ],
+  stays: [
+    { id: "demo-s1", name: "Hood River Hotel", price_note: "12 min from the venue" },
+    { id: "demo-s2", name: "Columbia Gorge Hotel & Spa", price_note: "15 min from the venue" },
+  ],
 };
 
 export default async function GuestExperiencePage({
@@ -85,6 +142,9 @@ export default async function GuestExperiencePage({
           area: null,
           country: "United States",
         },
+        // The demo couple runs with "maybe" on, so the third reply button is
+        // part of what the demo actually demonstrates.
+        allow_rsvp_maybe: true,
       },
       guest: {
         id: "demo-guest-id",
@@ -113,14 +173,32 @@ export default async function GuestExperiencePage({
         kids_remaining: 0,
       },
       self_merge_candidates: [],
+      // The questions a new wedding starts with, so the demo RSVP asks them.
+      rsvp_form: {
+        id: "demo-rsvp-form",
+        title: null,
+        subtitle: null,
+        label_attending: null,
+        label_maybe: null,
+        label_declined: null,
+        published: true,
+        opens_at: null,
+        closes_at: null,
+        questions: defaultPrimaryRsvpQuestions(),
+        answers: null,
+        companion_answers: null,
+      },
+      guest_page: DEMO_GUEST_PAGE,
     };
   } else {
     // Attempt to load from Supabase for all other tokens
     try {
       const supabase = getSupabase();
-      const [invitationResult, emailStatusResult] = await Promise.all([
+      const [invitationResult, rsvpFormsResult, emailStatusResult, guestPageResult] = await Promise.all([
         supabase.rpc("get_invitation", { p_token: token }),
+        supabase.rpc("get_invitation_rsvp_forms", { p_token: token }),
         supabase.rpc("get_guest_email_status", { p_token: token }),
+        supabase.rpc("get_guest_page", { p_token: token }),
       ]);
 
       if (
@@ -129,8 +207,50 @@ export default async function GuestExperiencePage({
         !emailStatusResult.error &&
         emailStatusResult.data
       ) {
-        // Since get_invitation returns a JSONB object, cast it directly to DBInvitation
-        invitation = invitationResult.data as unknown as DBInvitation;
+        const base = invitationResult.data as unknown as DBInvitation;
+        const rsvpForms = !rsvpFormsResult.error && rsvpFormsResult.data
+          ? rsvpFormsResult.data as unknown as {
+              primary: Pick<NonNullable<DBInvitation["rsvp_form"]>, "id" | "published" | "opens_at" | "closes_at" | "questions" | "answers" | "companion_answers"> | null;
+              reconfirmation: Pick<NonNullable<DBInvitation["rsvp_reconfirmation"]>, "id" | "questions" | "answers" | "companion_answers"> | null;
+            }
+          : null;
+        if (rsvpFormsResult.error) {
+          console.error("Failed to load RSVP follow-up questions:", rsvpFormsResult.error);
+        }
+        if (guestPageResult.error) {
+          console.error("Failed to load the guest page content:", guestPageResult.error);
+        }
+        invitation = {
+          ...base,
+          guest_page: guestPageResult.error ? undefined : parseGuestPage(guestPageResult.data),
+          rsvp_form:
+            base.rsvp_form && rsvpForms?.primary
+              ? { ...base.rsvp_form, ...rsvpForms.primary }
+              : base.rsvp_form
+                ? {
+                    ...base.rsvp_form,
+                    id: "",
+                    published: true,
+                    opens_at: null,
+                    closes_at: null,
+                    questions: [],
+                    answers: null,
+                    companion_answers: {},
+                  }
+                : null,
+          rsvp_reconfirmation:
+            base.rsvp_reconfirmation && rsvpForms?.reconfirmation
+              ? { ...base.rsvp_reconfirmation, ...rsvpForms.reconfirmation }
+              : base.rsvp_reconfirmation
+                ? {
+                    ...base.rsvp_reconfirmation,
+                    id: "",
+                    questions: [],
+                    answers: null,
+                    companion_answers: {},
+                  }
+                : null,
+        };
         emailMissing = Boolean(
           (emailStatusResult.data as { email_missing?: boolean }).email_missing,
         );

@@ -6,6 +6,9 @@ import { colors, fontSize, fontWeight, radius, spacing } from "../theme/theme";
 
 const TONE: Record<RsvpStatus, { bg: string; fg: string }> = {
   attending: { bg: colors.successBg, fg: colors.success },
+  // A held answer, not a warning — but it does need to read as unresolved,
+  // which is what this palette's warning tone carries.
+  maybe: { bg: colors.warningBg, fg: colors.warning },
   declined: { bg: colors.dangerBg, fg: colors.danger },
   pending: { bg: colors.surfaceAlt, fg: colors.textMuted },
 };

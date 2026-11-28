@@ -102,10 +102,12 @@ export type Database = {
           id: string
           kind: string
           opens_at: string | null
+          per_person: boolean
           published: boolean
           purpose: string
           questions: Json
           rsvp_copy: Json
+          rsvp_fields: Json
           sort_order: number
           title: string
           wedding_id: string
@@ -117,10 +119,12 @@ export type Database = {
           id?: string
           kind?: string
           opens_at?: string | null
+          per_person?: boolean
           published?: boolean
           purpose?: string
           questions?: Json
           rsvp_copy?: Json
+          rsvp_fields?: Json
           sort_order?: number
           title: string
           wedding_id: string
@@ -132,10 +136,12 @@ export type Database = {
           id?: string
           kind?: string
           opens_at?: string | null
+          per_person?: boolean
           published?: boolean
           purpose?: string
           questions?: Json
           rsvp_copy?: Json
+          rsvp_fields?: Json
           sort_order?: number
           title?: string
           wedding_id?: string
@@ -213,6 +219,132 @@ export type Database = {
             foreignKeyName: "guest_groups_wedding_id_fkey"
             columns: ["wedding_id"]
             isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guest_page_faq: {
+        Row: {
+          answer: Json
+          created_at: string
+          id: string
+          question: Json
+          sort_order: number
+          wedding_id: string
+        }
+        Insert: {
+          answer: Json
+          created_at?: string
+          id?: string
+          question: Json
+          sort_order?: number
+          wedding_id: string
+        }
+        Update: {
+          answer?: Json
+          created_at?: string
+          id?: string
+          question?: Json
+          sort_order?: number
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_page_faq_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guest_page_moments: {
+        Row: {
+          created_at: string
+          day_offset: number
+          id: string
+          note: Json | null
+          place: Json | null
+          starts_at: string | null
+          title: Json
+          wedding_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_offset?: number
+          id?: string
+          note?: Json | null
+          place?: Json | null
+          starts_at?: string | null
+          title: Json
+          wedding_id: string
+        }
+        Update: {
+          created_at?: string
+          day_offset?: number
+          id?: string
+          note?: Json | null
+          place?: Json | null
+          starts_at?: string | null
+          title?: Json
+          wedding_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_page_moments_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: false
+            referencedRelation: "weddings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guest_pages: {
+        Row: {
+          dress_code: Json | null
+          dress_note: Json | null
+          dress_text: Json | null
+          palette: Json
+          shuttle: Json | null
+          travel_car: Json | null
+          travel_plane: Json | null
+          travel_train: Json | null
+          updated_at: string
+          wedding_id: string
+          welcome: Json | null
+        }
+        Insert: {
+          dress_code?: Json | null
+          dress_note?: Json | null
+          dress_text?: Json | null
+          palette?: Json
+          shuttle?: Json | null
+          travel_car?: Json | null
+          travel_plane?: Json | null
+          travel_train?: Json | null
+          updated_at?: string
+          wedding_id: string
+          welcome?: Json | null
+        }
+        Update: {
+          dress_code?: Json | null
+          dress_note?: Json | null
+          dress_text?: Json | null
+          palette?: Json
+          shuttle?: Json | null
+          travel_car?: Json | null
+          travel_plane?: Json | null
+          travel_train?: Json | null
+          updated_at?: string
+          wedding_id?: string
+          welcome?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_pages_wedding_id_fkey"
+            columns: ["wedding_id"]
+            isOneToOne: true
             referencedRelation: "weddings"
             referencedColumns: ["id"]
           },
@@ -415,6 +547,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      keepalive: {
+        Row: {
+          id: number
+          ping_count: number
+          pinged_at: string
+        }
+        Insert: {
+          id?: number
+          ping_count?: number
+          pinged_at?: string
+        }
+        Update: {
+          id?: number
+          ping_count?: number
+          pinged_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -627,6 +777,7 @@ export type Database = {
           address_visibility: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children: boolean
           allow_guests_add_partner: boolean
+          allow_rsvp_maybe: boolean
           autonomy: string
           ceremony_reserved_rows: number
           ceremony_rows: number
@@ -659,6 +810,7 @@ export type Database = {
           address_visibility?: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
+          allow_rsvp_maybe?: boolean
           autonomy?: string
           ceremony_reserved_rows?: number
           ceremony_rows?: number
@@ -691,6 +843,7 @@ export type Database = {
           address_visibility?: Database["public"]["Enums"]["address_visibility"]
           allow_guests_add_children?: boolean
           allow_guests_add_partner?: boolean
+          allow_rsvp_maybe?: boolean
           autonomy?: string
           ceremony_reserved_rows?: number
           ceremony_rows?: number
@@ -836,11 +989,17 @@ export type Database = {
         Returns: Json
       }
       get_guest_email_status: { Args: { p_token: string }; Returns: Json }
+      get_guest_page: { Args: { p_token: string }; Returns: Json }
       get_invitation: { Args: { p_token: string }; Returns: Json }
+      get_invitation_rsvp_forms: { Args: { p_token: string }; Returns: Json }
       get_wedding_by_join_code: { Args: { p_join_code: string }; Returns: Json }
       hide_duplicate_cluster: {
         Args: { p_guest_ids: string[]; p_wedding_id: string }
         Returns: undefined
+      }
+      keepalive_ping: {
+        Args: Record<PropertyKey, never>
+        Returns: { ping_count: number; pinged_at: string }[]
       }
       list_hidden_merge_clusters: {
         Args: { p_wedding_id: string }
@@ -886,7 +1045,12 @@ export type Database = {
         Returns: Json
       }
       submit_form_response: {
-        Args: { p_answers: Json; p_form_id: string; p_token: string }
+        Args: {
+          p_answers: Json
+          p_for_guest_id?: string
+          p_form_id: string
+          p_token: string
+        }
         Returns: Json
       }
       submit_rsvp: {
@@ -898,6 +1062,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      submit_rsvp_response: {
+        Args: {
+          p_answers?: Json
+          p_companions?: Json
+          p_form_id: string | null
+          p_status: string
+          p_token: string
+        }
+        Returns: Json
+      }
       unhide_duplicate_cluster: {
         Args: { p_guest_ids: string[]; p_wedding_id: string }
         Returns: undefined
@@ -906,7 +1080,7 @@ export type Database = {
     Enums: {
       address_visibility: "hidden" | "area" | "partial" | "full"
       guest_relationship_kind: "parent_of" | "partner_of"
-      rsvp_status: "pending" | "attending" | "declined"
+      rsvp_status: "pending" | "attending" | "maybe" | "declined"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1036,7 +1210,7 @@ export const Constants = {
     Enums: {
       address_visibility: ["hidden", "area", "partial", "full"],
       guest_relationship_kind: ["parent_of", "partner_of"],
-      rsvp_status: ["pending", "attending", "declined"],
+      rsvp_status: ["pending", "attending", "maybe", "declined"],
     },
   },
 } as const
