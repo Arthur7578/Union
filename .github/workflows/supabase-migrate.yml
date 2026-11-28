@@ -10,8 +10,12 @@ name: Apply branch migrations
 # workflow" (or Claude starting it when asked) is the approval.
 #
 # Which migrations: the files under supabase/migrations/ that the branch ADDS
-# compared with main (git diff from their merge base), skipping any version
-# already recorded in supabase_migrations.schema_migrations. It does not use
+# compared with main (git diff from their merge base), or compared with the
+# optional `base` commit (a PR merged before its migrations were applied:
+# branch = main, base = main's last commit before the merge), skipping any version
+# already recorded in supabase_migrations.schema_migrations (same version AND
+# same name; a version recorded under another name, or a name recorded under
+# another version, stops the run). It does not use
 # `supabase db push`: the production history and the repository's file names
 # do not match (early files are 0001_..., production recorded timestamps), so
 # db push would try to replay the whole history.
@@ -37,6 +41,11 @@ on:
         description: "Branch whose new migrations to apply (e.g. claude/my-feature)"
         required: true
         type: string
+      base:
+        description: "Optional: compare with this commit instead of main (for migrations merged before being applied; e.g. branch main, base = main's last commit before the merge)"
+        required: false
+        type: string
+        default: ""
       dry_run:
         description: "Only list what would be applied"
         required: false
@@ -67,6 +76,7 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           DRY_RUN: ${{ inputs.dry_run }}
           BRANCH: ${{ inputs.branch }}
+          BASE: ${{ inputs.base }}
         run: |
           set -euo pipefail
           if [ -z "${SUPABASE_DB_URL:-}" ]; then
@@ -77,7 +87,22 @@ jobs:
           psql_prod() { psql "$SUPABASE_DB_URL" -X -v ON_ERROR_STOP=1 "$@"; }
 
           git fetch --quiet origin main
-          base=$(git merge-base origin/main HEAD)
+          if [ -n "${BASE:-}" ]; then
+            # A pull request merged before its migrations were applied adds
+            # nothing compared with main any more: compare with the commit
+            # main was at before the merge instead. It must be an ancestor
+            # of what is checked out, so only that range's files are taken.
+            if ! base=$(git rev-parse --verify --quiet "${BASE}^{commit}"); then
+              echo "::error::base \"$BASE\" is not a commit of this repository."
+              exit 1
+            fi
+            if ! git merge-base --is-ancestor "$base" HEAD; then
+              echo "::error::base \"$BASE\" is not an ancestor of \"$BRANCH\"."
+              exit 1
+            fi
+          else
+            base=$(git merge-base origin/main HEAD)
+          fi
           mapfile -t added < <(git diff --name-only --diff-filter=A "$base" HEAD -- 'supabase/migrations/*.sql' | sort)
 
           # A migration already merged then edited on the branch is not re-run.
@@ -86,14 +111,15 @@ jobs:
             echo "::warning file=$f::This migration already exists on main and was edited on the branch. Edits to an applied migration are never re-run; write a new migration instead."
           done
 
-          summary "### Migrations of \`$BRANCH\`"
+          summary "### Migrations of \`$BRANCH\` since \`$(git rev-parse --short "$base")\`"
           if [ ${#added[@]} -eq 0 ]; then
             summary "The branch adds no migration. Nothing to do."
             echo "The branch adds no migration."
             exit 0
           fi
 
-          recorded=$(psql_prod -tA -c "select version from supabase_migrations.schema_migrations")
+          # "version|name" for every migration production has recorded.
+          recorded=$(psql_prod -tA -F '|' -c "select version, coalesce(name, '') from supabase_migrations.schema_migrations")
           pending=()
           for f in "${added[@]}"; do
             file=$(basename "$f")
@@ -103,9 +129,28 @@ jobs:
               exit 1
             fi
             version=${file%%_*}
-            if grep -qxF "$version" <<<"$recorded"; then
-              summary "- \`$file\`: already applied, skipped"
-              continue
+            name=${file#*_}; name=${name%.sql}
+            # Production may have recorded this version for ANOTHER migration
+            # (two branches picked the same timestamp). Skipping it would leave
+            # this one unapplied while the run says it is done.
+            recorded_name=$(awk -F '|' -v v="$version" '$1 == v { print $2; exit }' <<<"$recorded")
+            if [ -n "$recorded_name" ] || grep -q "^$version|" <<<"$recorded"; then
+              if [ "$recorded_name" = "$name" ]; then
+                summary "- \`$file\`: already applied, skipped"
+                continue
+              fi
+              echo "::error file=$f::Version $version is already recorded in production for another migration (\"$recorded_name\"). Rename this file with a new timestamp."
+              summary "- \`$file\`: version taken by \`$recorded_name\` in production, rename the file"
+              exit 1
+            fi
+            # The same name recorded under ANOTHER version usually means this
+            # migration was already applied some other way (MCP, SQL editor)
+            # under a different timestamp. Running it again would replay it.
+            other_version=$(awk -F '|' -v n="$name" '$2 == n { print $1; exit }' <<<"$recorded")
+            if [ -n "$other_version" ]; then
+              echo "::error file=$f::A migration named \"$name\" is already recorded in production as version $other_version. If it is this one (same SQL), rename the file to ${other_version}_${name}.sql; if it is a different migration, give it another name."
+              summary "- \`$file\`: name already recorded as \`$other_version\` in production, rename the file"
+              exit 1
             fi
             if grep -qiE '^[[:space:]]*(begin|commit|rollback)[[:space:]]*;|concurrently' "$f"; then
               echo "::error file=$f::Has its own BEGIN/COMMIT or a CONCURRENTLY statement, which cannot run in the single transaction. Apply it by hand."

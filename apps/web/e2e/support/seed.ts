@@ -18,8 +18,11 @@ export type SeedGuest = {
   relation?: "partner_of" | "parent_of";
   /** An RSVP already on record for them. */
   rsvp?: "attending" | "declined";
-  /** Leave the invitation welcome (the faire-part card) unseen, so their link opens on it. */
+  /** False for a guest who hasn't opened the invitation yet: their link
+   *  shows the welcome first. Defaults to true. */
   welcomeSeen?: boolean;
+  /** False for a guest with no email on record. Defaults to true. */
+  email?: boolean;
 };
 
 export type Seeded = {
@@ -46,9 +49,9 @@ function must<T>(result: { data: T; error: unknown }): T {
 
 /**
  * A wedding of its own for one test: an organiser who owns it, its RSVP form
- * and any custom forms, and one invited guest with their household. Every
- * guest has an email and has already seen the welcome, so their link opens
- * straight on the hub.
+ * and any custom forms, and one invited guest with their household. Unless
+ * told otherwise, every guest has an email and has already seen the welcome,
+ * so their link opens straight on the hub.
  */
 export async function seedWedding(opts: {
   rsvpQuestions?: Question[];
@@ -120,13 +123,11 @@ export async function seedWedding(opts: {
         wedding_id: weddingId,
         invite_token: guests[g.key].token,
         first_name: g.firstName,
-        email: `${g.key}-${run}@e2e.test`,
+        email: g.email === false ? null : `${g.key}-${run}@e2e.test`,
       }),
     );
     // As the guest's own link does once they've opened the welcome.
-    if (g.welcomeSeen !== false) {
-      must(await db.rpc("mark_welcome_seen", { p_token: guests[g.key].token }));
-    }
+    if (g.welcomeSeen !== false) must(await db.rpc("mark_welcome_seen", { p_token: guests[g.key].token }));
     if (g.rsvp) {
       must(await db.from("rsvps").insert({ guest_id: guests[g.key].id, status: g.rsvp }));
     }
@@ -147,9 +148,25 @@ export async function seedWedding(opts: {
   return { weddingId, owner: db, ownerSession: signedIn.data.session, forms, guests };
 }
 
+/**
+ * An organiser who has just signed up: a confirmed login and no wedding yet,
+ * for the onboarding. `client` is signed in as them.
+ */
+export async function seedOrganiser() {
+  const { url, anonKey } = e2eEnv();
+  const email = `couple-${randomUUID().slice(0, 8)}@e2e.test`;
+  const password = `pw-${randomUUID()}`;
+  const created = await authAdmin().createUser({ email, password, email_confirm: true });
+  if (created.error || !created.data.user) throw created.error ?? new Error("No user created");
+  const client = createClient(url, anonKey, { auth: { persistSession: false } });
+  const signedIn = await client.auth.signInWithPassword({ email, password });
+  if (signedIn.error || !signedIn.data.session) throw signedIn.error ?? new Error("No session");
+  return { userId: created.data.user.id, client, session: signedIn.data.session };
+}
+
 /** Hands the organiser's session to the app the way supabase-js stores it,
  *  before any page script runs. */
-export async function signInAsOwner(page: Page, seeded: Seeded) {
+export async function signInAsOwner(page: Page, seeded: Pick<Seeded, "ownerSession">) {
   const storageKey = `sb-${new URL(e2eEnv().url).hostname.split(".")[0]}-auth-token`;
   await page.addInitScript(
     ([key, value]) => window.localStorage.setItem(key, value),

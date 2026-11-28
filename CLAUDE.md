@@ -8,6 +8,13 @@ When the user asks to keep an idea for later, open a GitHub issue and give the u
 
 Whenever a task needs a schema change, write the migration yourself, without being asked: a timestamped file in `supabase/migrations/` and a matching pgTAP test in `supabase/tests/database/`. Follow the conventions of the user's `/new-migration` skill (you cannot invoke it, it is user-only): `YYYYMMDDHHMMSS_<name>.sql` sorting after the latest migration, a header comment saying what changes and why, RLS and explicit policies on new tables, `search_path` set and `execute` granted narrowly on `security definer` functions, and a test covering the allowed and the denied path.
 
+**Signed-out visitors (`anon`) get nothing unless a migration grants it.** Supabase gives `anon` every table privilege and `EXECUTE` on every function in `public` by default; `create_guest_with_links` was callable signed-out because of that (fixed in `20261112120000`). Since `20261125120000`, `anon` has no table, view or sequence privilege in `public`, and new functions are closed to it (and to `PUBLIC`) by default. Rules:
+- Guests never touch tables directly: guest-link and group-link features go through `security definer` RPCs that take `p_token` or `p_join_code` first and are granted to `anon` one by one.
+- Keep writing `revoke execute on function … from public, anon;` then `grant … to authenticated` on organiser functions: explicit beats relying on defaults. `create or replace` keeps existing grants.
+- A function that relied on the implicit `PUBLIC` grant must now be granted explicitly to the roles that call it.
+- The one exception is `keepalive_ping()` (`20261123120000`): the keepalive job calls it with the publishable key, it takes no key and only bumps the one-row `keepalive` table. It is listed apart in the guard test below; do not add others there without a reason written next to them.
+- `supabase/tests/database/anon_function_grants.test.sql` fails CI if `anon` can reach a table, or can call a function that has no probe there. A new guest RPC needs a probe line in that file: the test then calls it with an unknown and a null key and fails if it changes data or returns the seeded wedding.
+
 Supabase security traps to check in every migration (from Supabase's own agent checklist, `supabase/agent-skills`):
 
 - A view bypasses RLS unless it is created `with (security_invoker = true)`.
@@ -20,7 +27,7 @@ After a schema change, regenerate the shared types: `supabase gen types typescri
 
 Never apply a migration to a Supabase project (`apply_migration`, DDL through `execute_sql`, `merge_branch`) unless the user explicitly asks in that session. Writing the files is automatic; running them is the user's call. When you hand over, say that the migration has not been applied.
 
-When the user does ask, apply it with the **Apply branch migrations** workflow (`.github/workflows/supabase-migrate.yml`): trigger it on the PR's branch (GitHub `actions_run_trigger`, input `branch`), then check the run and report what it applied. Do not use `apply_migration`: the Supabase server asks a confirmation question that never reaches the user, and the call times out after 60 seconds. Do not route DDL through `execute_sql` to get around that question either. The workflow applies only the migrations the branch adds compared with main, in one transaction, and skips versions already recorded in production. Since production runs main's code until the merge, a migration applied before merging must not drop or rename anything main still uses.
+When the user does ask, apply it with the **Apply branch migrations** workflow (`.github/workflows/supabase-migrate.yml`): Claude cannot start it (the GitHub integration gets `403 Resource not accessible by integration` on workflow dispatch, checked 2026-11-25), so ask the user to run it on GitHub (Actions → Apply branch migrations → Run workflow, from `main`, input `branch` = the PR's branch, `dry_run` first if unsure). Then read the run's logs and report what it applied. Do not use `apply_migration`: the Supabase server asks a confirmation question that never reaches the user, and the call times out after 60 seconds. Do not route DDL through `execute_sql` to get around that question either. The workflow applies only the migrations the branch adds compared with main, in one transaction, and skips versions already recorded in production. Since production runs main's code until the merge, a migration applied before merging must not drop or rename anything main still uses.
 
 ## Product surface
 
@@ -30,14 +37,20 @@ The native Expo app (`apps/mobile`) is on hold: no features there unless asked. 
 
 ## Tests
 
-The test bank must follow the product, not lag behind it. These rules apply to every change, whether it comes from the squad or from a one-off session.
+The test bank must follow the product, not lag behind it. These rules apply to every change, whether it comes from the squad or from a one-off session. The method, the CI checks and how to run them locally: `docs/testing/README.md`.
 
-- **A change to a screen comes with a browser test.** If you change what a user sees or does (`apps/web/app/**` or `apps/web/components/**`), add or update the Playwright test of that flow in `apps/web/e2e/`. CI enforces it (`test-discipline` workflow); the label `no-e2e` is only for changes that cannot affect behavior, with the reason written in the PR.
-- **Guest flows are tested at phone size**, since that is how guests use them.
-- **Every acceptance criterion has a test.** When a spec lists criteria (`docs/specs/<issue>/criteria.md`), each one maps to a test, and `docs/specs/<issue>/tests.md` says which.
+- **A change to a screen comes with a browser test.** If you change what a user sees or does (`apps/web/app/**` or `apps/web/components/**`), add or update the Playwright test of that flow in `apps/web/e2e/`. CI enforces it (`test-discipline` workflow, `.github/test-discipline/check.mjs`): the change must be in a `*.spec.ts`; helpers under `e2e/support/`, comments and blank lines do not count.
+- **A change to logic comes with a unit test.** `packages/shared/src`, `apps/web/lib`, and the `.ts` files under `apps/web/app` (route handlers, actions): add or update a vitest test under `apps/web` (the only vitest CI runs; tests of `packages/shared` live in `apps/web/lib`). CI enforces it, and reports the share of changed logic lines the unit tests run (diff coverage).
+- **A new migration comes with a pgTAP test** (see "Database migrations"). CI enforces it.
+- **Every screen has a row in `docs/testing/flows.md`**, naming the tests that cover it or saying it is not covered. A new `page.tsx` needs its row in the same PR; when you add a test, update the row. CI checks every screen is listed and every file named exists.
+- Escape labels `no-e2e`, `no-unit`, `no-db-test` are only for changes that cannot affect behavior, and need a line `<label>: <reason>` in the PR description, or CI fails.
+- **Guest flows are tested at phone size**, since that is how guests use them: name their spec `guest-*.spec.ts` (or `join-*`, `invitation-*`) and Playwright runs it in the phone project; `couple-*` specs run on phone and desktop, the rest on desktop (`apps/web/playwright.config.ts`).
+- **Every acceptance criterion has a test.** When a spec lists criteria (`docs/specs/<issue>/criteria.md`), each one maps to a test, and `docs/specs/<issue>/tests.md` says which. CI checks that the test files and the test names quoted in its table exist.
 - **Never weaken a test to make it pass.** If a test is wrong, say why and fix the test in its own commit; do not edit an assertion to match buggy behavior.
-- **A bug fix starts with a test that reproduces the bug.**
+- **A bug fix starts with a test that reproduces the bug.** Label the PR `bug`: CI then runs the new test on main's code and fails if it passes there (it would not reproduce the bug).
+- **A flaky test is a bug.** CI fails when a browser test only passes on retry. Fix the test or the app; never skip, quarantine or add retries.
 - Unit tests (vitest) for logic, pgTAP for the database (see above), Playwright for flows.
+- When a PR is ready, the adversarial QA (`qa-adverse` workflow) comments with what it broke and the tests it proposes. It never blocks. The owner keeps tests with `/qa-keep Q1 Q3`; do not copy its proposals into a PR on your own.
 
 ## Squad pipeline
 

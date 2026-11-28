@@ -21,7 +21,6 @@ out/
 *.p12
 *.key
 *.mobileprovision
-*.orig.*
 
 # env
 .env
@@ -47,3 +46,10 @@ yarn-error.*
 # playwright
 apps/web/test-results/
 apps/web/playwright-report/
+
+# test tooling (coverage, mutation testing, local Supabase state)
+apps/web/coverage/
+reports/
+.stryker-tmp/
+supabase/.branches/
+supabase/.temp/
