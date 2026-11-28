@@ -21,7 +21,12 @@ export default defineConfig({
   workers: 1,
   timeout: 60_000,
   expect: { timeout: 10_000 },
+  // On CI a failed test is retried once so a flaky test shows up as "flaky"
+  // rather than "failed"; failOnFlakyTests still turns the run red. A flaky
+  // test is a bug of the test or of the app: fix it, never skip it
+  // (docs/testing/README.md).
   retries: process.env.CI ? 1 : 0,
+  failOnFlakyTests: !!process.env.CI,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: `http://127.0.0.1:${port}`,

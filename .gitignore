@@ -54,3 +54,4 @@ apps/web/reports/
 apps/web/.stryker-tmp/
 supabase/.branches/
 supabase/.temp/
+reports/

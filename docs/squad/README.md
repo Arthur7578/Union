@@ -107,5 +107,5 @@ La squad ne devine pas mieux que toi. Une issue utile dit : **qui** (persona), *
 
 ## Plus tard
 
-- **Boucle production → backlog** : analyse hebdomadaire Contentsquare + erreurs Vercel qui propose des issues. Les connecteurs Contentsquare et Vercel existent côté Claude (claude.ai) mais pas dans GitHub Actions ; la piste la plus simple est une tâche planifiée Claude qui lit ces données et ouvre des issues labellisées `proposé-par-agent`.
+- **Boucle production → backlog** : la partie erreurs Vercel existe (tâche planifiée, voir `docs/testing/README.md`, couche 4) ; reste Contentsquare.
 - **Tests sur Safari mobile** (WebKit) en plus de Chromium, une fois les parcours critiques couverts.
