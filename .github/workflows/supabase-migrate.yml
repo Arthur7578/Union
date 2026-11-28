@@ -14,7 +14,8 @@ name: Apply branch migrations
 # optional `base` commit (a PR merged before its migrations were applied:
 # branch = main, base = main's last commit before the merge), skipping any version
 # already recorded in supabase_migrations.schema_migrations (same version AND
-# same name; a version recorded under another name stops the run). It does not use
+# same name; a version recorded under another name, or a name recorded under
+# another version, stops the run). It does not use
 # `supabase db push`: the production history and the repository's file names
 # do not match (early files are 0001_..., production recorded timestamps), so
 # db push would try to replay the whole history.
@@ -140,6 +141,15 @@ jobs:
               fi
               echo "::error file=$f::Version $version is already recorded in production for another migration (\"$recorded_name\"). Rename this file with a new timestamp."
               summary "- \`$file\`: version taken by \`$recorded_name\` in production, rename the file"
+              exit 1
+            fi
+            # The same name recorded under ANOTHER version usually means this
+            # migration was already applied some other way (MCP, SQL editor)
+            # under a different timestamp. Running it again would replay it.
+            other_version=$(awk -F '|' -v n="$name" '$2 == n { print $1; exit }' <<<"$recorded")
+            if [ -n "$other_version" ]; then
+              echo "::error file=$f::A migration named \"$name\" is already recorded in production as version $other_version. If it is this one (same SQL), rename the file to ${other_version}_${name}.sql; if it is a different migration, give it another name."
+              summary "- \`$file\`: name already recorded as \`$other_version\` in production, rename the file"
               exit 1
             fi
             if grep -qiE '^[[:space:]]*(begin|commit|rollback)[[:space:]]*;|concurrently' "$f"; then
