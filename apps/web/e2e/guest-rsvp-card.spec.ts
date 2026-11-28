@@ -2,19 +2,18 @@ import { expect, test, type Page } from "@playwright/test";
 import { seedWedding } from "./support/seed";
 
 /**
- * The hub's RSVP card once a guest has replied (#85): a guest invited alone
+ * The RSVP card at the end of the wedding page, once a guest has replied (#85): a guest invited alone
  * reads their own answer, a household one name per person. Phone size, since
  * that is how guests open their link.
  */
 
 test.use({ viewport: { width: 390, height: 844 } });
 
-/** The RSVP card: the checklist item whose heading is the RSVP's title. */
-const rsvpCard = (page: Page) =>
-  page.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3, name: "Attendance RSVP" }) });
+/** The RSVP card, headed with the RSVP's title. */
+const rsvpCard = (page: Page) => page.getByRole("article", { name: "Attendance RSVP" });
 
 /** The RSVP card's one-line answer. */
-const rsvpLine = (page: Page) => rsvpCard(page).locator(".gh-card-meta");
+const rsvpLine = (page: Page) => rsvpCard(page).locator(".wp-summary");
 
 test("a guest invited alone sees their answer, not their name", async ({ page }) => {
   const seeded = await seedWedding({

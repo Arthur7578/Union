@@ -42,7 +42,9 @@ test("with the name-only link, a guest types their first name and lands on their
   await typeFirstName(page, "Lea");
 
   await expect(page).toHaveURL(new RegExp(`/guest/${seeded.guests.lea.token}$`));
-  await expect(page.getByRole("heading", { level: 3, name: "Attendance RSVP" })).toBeVisible();
+  // "Respond" carries through: with no part to read, her RSVP opens, in her name.
+  const rsvp = page.getByRole("dialog", { name: "Attendance RSVP" });
+  await expect(rsvp.getByRole("heading", { level: 2, name: "Lea, will you join us?" })).toBeVisible();
 });
 
 test("a name the couple didn't invite opens nothing", async ({ page }) => {

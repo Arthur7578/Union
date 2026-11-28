@@ -68,7 +68,9 @@ test("a couple sets up their wedding, adds a household, and the guest they invit
   await guest.goto(path!);
   await expect(guest.getByRole("heading", { level: 1, name: "Noor, you have received an invitation" })).toBeVisible();
   await guest.getByRole("button", { name: "Respond to the invitation" }).last().click();
-  await expect(guest.getByRole("heading", { level: 1, name: "Maya & Daniel" })).toBeVisible();
+  // The wedding page is behind the RSVP, inert while it is open: drawn, but
+  // out of the accessibility tree, so it is found by its markup.
+  await expect(guest.locator("h1", { hasText: /^Maya\s*&\s*Daniel$/ })).toBeVisible();
 
   // Responding from the invitation opens the RSVP on its first question.
   const dialog = guest.getByRole("dialog", { name: "Attendance RSVP" });

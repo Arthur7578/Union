@@ -37,9 +37,10 @@ test("a guest opening their link for the first time meets the invitation, then t
 
   await page.getByRole("button", { name: "Respond to the invitation" }).last().click();
 
-  // Responding goes straight to the RSVP, over the hub.
+  // Responding goes straight to the RSVP, over the wedding page (inert behind
+  // it: drawn, but out of the accessibility tree, so found by its markup).
   await expect(page.getByRole("dialog", { name: "Attendance RSVP" })).toBeVisible();
-  await expect(hubTitle(page)).toBeVisible();
+  await expect(page.locator("h1", { hasText: /^Maya\s*&\s*Daniel$/ })).toBeVisible();
   await expect.poll(() => welcomeSeenAt(seeded, "lea")).not.toBeNull();
 });
 

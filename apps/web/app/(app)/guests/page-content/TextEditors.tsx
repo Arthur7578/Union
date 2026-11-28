@@ -26,7 +26,6 @@ export function WelcomeEditor({ weddingId, initial, locale, sourceLocale }: Comm
       id="pc-welcome"
       title={t.welcomeTitle}
       lead={t.welcomeLead}
-      note={t.laterNote}
       state={state}
       onSave={() => run(() => savePageFields(weddingId, { welcome }, sourceLocale))}
     >

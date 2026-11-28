@@ -13,7 +13,8 @@ Quand tu ajoutes un écran, ajoute sa ligne dans la même PR. Quand tu ajoutes u
 
 | Écran | Parcours | Navigateur | Unitaire | État | Priorité |
 |---|---|---|---|---|---|
-| `/guest/[token]` | Arrivée (faire-part puis hub, retour, lien invalide), RSVP (oui, non, peut-être, foyer, modification), hub (sections selon les modules, formulaires publiés, infos pratiques), formulaires, contenu de la page, carte RSVP | `apps/web/e2e/guest-arrival.spec.ts`, `apps/web/e2e/guest-rsvp.spec.ts`, `apps/web/e2e/guest-hub.spec.ts`, `apps/web/e2e/guest-forms.spec.ts`, `apps/web/e2e/guest-page-content.spec.ts`, `apps/web/e2e/guest-rsvp-card.spec.ts` 📱 | `apps/web/app/guest/[token]/GuestPortal.test.tsx`, `apps/web/app/guest/[token]/RsvpFlow.test.tsx`, `apps/web/app/guest/[token]/CustomFormFlow.test.tsx`, `apps/web/components/guest/GuestWelcome.test.tsx`, `apps/web/components/guest/WelcomeGate.test.tsx` | ✅ | P1 |
+| `/guest/[token]` | Arrivée (faire-part puis page, retour, lien invalide), RSVP (oui, non, peut-être, foyer, modification, fenêtre fermée), page du mariage (parties selon les interrupteurs, puces, formulaires après un oui, raccourcis du merci), formulaires, contenu de la page, carte RSVP | `apps/web/e2e/guest-arrival.spec.ts`, `apps/web/e2e/guest-rsvp.spec.ts`, `apps/web/e2e/guest-hub.spec.ts`, `apps/web/e2e/guest-forms.spec.ts`, `apps/web/e2e/guest-page-content.spec.ts`, `apps/web/e2e/guest-rsvp-card.spec.ts`, `apps/web/e2e/wedding-page.spec.ts` 📱 | `apps/web/app/guest/[token]/GuestPortal.test.tsx`, `apps/web/app/guest/[token]/pageSections.test.tsx`, `apps/web/app/guest/[token]/rsvpWindow.test.ts`, `apps/web/app/guest/[token]/RsvpFlow.test.tsx`, `apps/web/app/guest/[token]/CustomFormFlow.test.tsx`, `apps/web/components/guest/GuestWelcome.test.tsx`, `apps/web/components/guest/WelcomeGate.test.tsx` | ✅ | P1 |
+| `/guest/preview` | Voir comme un invité : la page du couple lue par un de ses liens, en première visite, rien n'est écrit ; RSVP fermé expliqué | `apps/web/e2e/wedding-page-parts.spec.ts` (390 px) | `apps/web/app/guest/[token]/previewInvitation.test.ts` | ✅ | P2 |
 | `/join/[code]` | Lien de groupe : prénom, lien sécurisé (jusqu'à l'étape e-mail), nom inconnu, code inconnu, retour par le lien personnel | `apps/web/e2e/join-link.spec.ts`, `apps/web/e2e/guest-arrival.spec.ts` 📱 | `apps/web/app/join/[code]/JoinExperience.test.tsx` | ✅ | P1 |
 | `/rsvp/[token]` | Ancien lien RSVP | — | `apps/web/app/rsvp/[token]/page.test.tsx` | 🟡 | P2 |
 | `/offline` | Page hors ligne | — | — | ❌ | P3 |
@@ -35,7 +36,7 @@ Quand tu ajoutes un écran, ajoute sa ligne dans la même PR. Quand tu ajoutes u
 | `/guests/duplicates` | Doublons | — | — | ❌ | P3 |
 | `/guests/groups` | Foyers et groupes | — | — | ❌ | P1 |
 | `/guests/group-link` | Lien de groupe | — | — | ❌ | P1 |
-| `/guests/modules` | Modules invités activés | `apps/web/e2e/organiser-access.spec.ts` | — | 🟡 | P2 |
+| `/guests/modules` | Expérience invité : un interrupteur par partie (prête ou vide), état du RSVP et lien vers ses dates, covoiturage éteint par défaut | `apps/web/e2e/wedding-page-parts.spec.ts`, `apps/web/e2e/organiser-access.spec.ts` | `apps/web/lib/rsvpNotes.test.ts` | ✅ | P2 |
 | `/guests/forms` | Liste des formulaires | — | — | ❌ | P2 |
 | `/guests/forms/[id]` | Constructeur de formulaire | `apps/web/e2e/guest-forms.spec.ts` | — | 🟡 | P1 |
 | `/guests/rsvp-form` | Formulaire RSVP | — | — | ❌ | P1 |

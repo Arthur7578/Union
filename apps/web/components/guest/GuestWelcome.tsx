@@ -13,6 +13,8 @@ interface GuestWelcomeProps {
   venueName?: string | null;
   address?: string | null;
   onRespond: () => void;
+  /** The wedding page has more to read after the faire-part. */
+  onContinue?: () => void;
 }
 
 /** Welcome screen shown to a guest opening their group or individual link. */
@@ -24,6 +26,7 @@ export function GuestWelcome({
   venueName,
   address,
   onRespond,
+  onContinue,
 }: GuestWelcomeProps) {
   const { locale } = useLocale();
   const weddingDate = eventDate
@@ -43,6 +46,7 @@ export function GuestWelcome({
       place={venueName || address}
       venue={[venueName, address].filter(Boolean).join(", ")}
       onRespond={onRespond}
+      onContinue={onContinue}
     />
   );
 }

@@ -19,6 +19,10 @@ interface FairePartEnvelopeProps {
   /** Venue name and address, shown on the back of the card. */
   venue?: string | null;
   onRespond: () => void;
+  /** When the wedding page has more to read: the card grows to cover the
+   *  screen and becomes the page's paper, then this hands over to the page.
+   *  Without it, the sequence ends on "respond" alone, as before. */
+  onContinue?: () => void;
 }
 
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
@@ -43,11 +47,43 @@ export function FairePartEnvelope({
   place,
   venue,
   onRespond,
+  onContinue,
 }: FairePartEnvelopeProps) {
   const { t: dict } = useLocale();
   const t = dict.welcome;
   const rootRef = useRef<HTMLDivElement>(null);
+  const growing = useRef(false);
   const hasName = Boolean(guestName);
+
+  // "La suite": the back of the card grows from where it lies to the whole
+  // screen and fades into the page's paper, then the page takes over. Under
+  // reduced motion, a short fade instead of the growth.
+  const continueToPage = () => {
+    const root = rootRef.current;
+    const card = root?.querySelector<HTMLElement>('[data-id="card"]');
+    if (!root || !card || !onContinue || growing.current) return;
+    growing.current = true;
+    const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const r = card.getBoundingClientRect();
+    const sheet = document.createElement("div");
+    sheet.className = "grow";
+    sheet.setAttribute("aria-hidden", "true");
+    sheet.append(document.createElement("i"));
+    root.append(sheet);
+    const done = () => onContinue();
+    if (reduced || typeof sheet.animate !== "function") {
+      sheet.style.inset = "0";
+      if (typeof sheet.animate !== "function") return done();
+      sheet.firstElementChild!.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: "forwards" });
+      sheet.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: "forwards" }).finished.then(done, done);
+      return;
+    }
+    const from = { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, borderRadius: "3px" };
+    const to = { left: "0px", top: "0px", width: `${innerWidth}px`, height: `${innerHeight}px`, borderRadius: "0px" };
+    const timing = { duration: 650, easing: "cubic-bezier(.65,0,.35,1)", fill: "forwards" as const };
+    sheet.firstElementChild!.animate([{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1 }], timing);
+    sheet.animate([from, to], timing).finished.then(done, done);
+  };
 
   useEffect(() => {
     const root = rootRef.current;
@@ -305,7 +341,18 @@ export function FairePartEnvelope({
       </main>
 
       <div className="cta" data-id="cta">
-        <button className="primary" type="button" onClick={onRespond}>{t.respond}</button>
+        {onContinue ? (
+          <>
+            <button className="primary" type="button" onClick={continueToPage}>
+              {t.continue}
+            </button>
+            <button className="secondary" type="button" onClick={onRespond}>
+              {t.respondNow}
+            </button>
+          </>
+        ) : (
+          <button className="primary" type="button" onClick={onRespond}>{t.respond}</button>
+        )}
         <p className="note">{t.flipHint}</p>
       </div>
     </div>

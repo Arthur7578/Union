@@ -24,6 +24,17 @@ export function useWelcomeResponses() {
   return useContext(Responses);
 }
 
+const Continues = createContext(0);
+
+/**
+ * How many times "see the rest" has been chosen on the faire-part: the page
+ * watches it to land the guest on its first part, where the card's growth
+ * left them.
+ */
+export function useWelcomeContinues() {
+  return useContext(Continues);
+}
+
 /**
  * The invitation comes first: the faire-part welcome shows before any identity
  * or e-mail step, and "Respond to the invitation" hands over to `children`
@@ -47,6 +58,7 @@ export function WelcomeGate({
   eventDate,
   venueName,
   address,
+  hasPage = false,
   children,
 }: {
   /** The guest's invitation token (personal link). */
@@ -60,6 +72,9 @@ export function WelcomeGate({
   eventDate?: string | null;
   venueName?: string | null;
   address?: string | null;
+  /** The wedding page has parts to read: the faire-part offers "see the rest"
+   *  as well as "respond". */
+  hasPage?: boolean;
   children: React.ReactNode;
 }) {
   const { locale } = useLocale();
@@ -67,6 +82,7 @@ export function WelcomeGate({
   const [override, setOverride] = useState<"welcome" | "done" | null>(null);
   const state = override ?? (seen ? "done" : "welcome");
   const [responses, setResponses] = useState(0);
+  const [continues, setContinues] = useState(0);
   // Once shown, the hub stays mounted (hidden) while the welcome is replayed,
   // so what the guest did there — a reply just sent — survives the replay.
   const [entered, setEntered] = useState(state === "done");
@@ -83,6 +99,17 @@ export function WelcomeGate({
       .then(undefined, () => {});
   }, [locale, token, isDemo]);
 
+  // Leaving the faire-part, either way, is remembered on the guest.
+  const leave = () => {
+    if (token && !isDemo) {
+      void getBrowserSupabase()
+        .rpc("mark_welcome_seen", { p_token: token })
+        .then(undefined, () => {});
+    }
+    setOverride("done");
+    setEntered(true);
+  };
+
   const welcome =
     state === "welcome" ? (
       <GuestWelcome
@@ -93,17 +120,19 @@ export function WelcomeGate({
         venueName={venueName}
         address={address}
         onRespond={() => {
-          if (token && !isDemo) {
-            void getBrowserSupabase()
-              .rpc("mark_welcome_seen", { p_token: token })
-              .then(undefined, () => {});
-          }
           if (token) markRsvpHandoff(token);
           window.scrollTo(0, 0);
-          setOverride("done");
-          setEntered(true);
+          leave();
           setResponses((n) => n + 1);
         }}
+        onContinue={
+          hasPage
+            ? () => {
+                leave();
+                setContinues((n) => n + 1);
+              }
+            : undefined
+        }
       />
     ) : null;
 
@@ -113,7 +142,9 @@ export function WelcomeGate({
       {welcome}
       <div hidden={state === "welcome"}>
         <Responses.Provider value={responses}>
-          <ReplayWelcome.Provider value={replay}>{children}</ReplayWelcome.Provider>
+          <Continues.Provider value={continues}>
+            <ReplayWelcome.Provider value={replay}>{children}</ReplayWelcome.Provider>
+          </Continues.Provider>
         </Responses.Provider>
       </div>
     </>

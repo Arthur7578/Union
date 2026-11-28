@@ -2,19 +2,21 @@ import { expect, test, type Page } from "@playwright/test";
 import { seedWedding, type Seeded } from "./support/seed";
 
 /**
- * The RSVP from the guest's hub (#93): yes, no, maybe; a household where each
+ * The RSVP from the guest's wedding page (#93): yes, no, maybe; a household where each
  * person is answered for; changing an answer. Each test reads the database
  * back as the organiser, to check the answer landed on the right people and
  * nowhere else. Runs on a phone (playwright.config.ts, project "phone").
  */
 
-/** The RSVP card on the hub. */
-const rsvpCard = (page: Page) =>
-  page.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3, name: "Attendance RSVP" }) });
+/** The RSVP card at the end of the wedding page. */
+const rsvpCard = (page: Page) => page.getByRole("article", { name: "Attendance RSVP" });
 
-async function openRsvp(page: Page, seeded: Seeded, guestKey: string, button = "Reply") {
+/** Opens the RSVP and starts it: from the reply bar at the bottom of
+ *  the page before a reply, from "Change my reply" on the card after one. */
+async function openRsvp(page: Page, seeded: Seeded, guestKey: string, mode: "reply" | "edit" = "reply") {
   await page.goto(`/guest/${seeded.guests[guestKey].token}`);
-  await rsvpCard(page).getByRole("button", { name: button }).click();
+  if (mode === "reply") await page.getByRole("button", { name: "Reply", exact: true }).click();
+  else await rsvpCard(page).getByRole("button", { name: "Change my reply" }).click();
   const dialog = page.getByRole("dialog", { name: "Attendance RSVP" });
   await dialog.getByRole("button", { name: "Start", exact: true }).click();
   return dialog;
@@ -71,7 +73,7 @@ test("a guest invited alone says they're coming, and only their own answer is re
   await expect.poll(() => statuses(seeded)).toEqual({ lea: ["attending"], pat: ["declined"] });
 
   await dialog.getByRole("button", { name: "Back to the invitation" }).click();
-  await expect(rsvpCard(page).locator(".gh-card-meta")).toHaveText(/^Attending$/);
+  await expect(rsvpCard(page).locator(".wp-summary")).toHaveText(/^Attending$/);
 });
 
 test("a guest invited alone can decline", async ({ page }) => {
@@ -119,11 +121,11 @@ test("a household answers for each person, and each answer lands on the right pe
 test("a guest changes their answer, and the new one replaces the old", async ({ page }) => {
   const seeded = await seedWedding({ household: [{ key: "lea", firstName: "Lea", rsvp: "attending" }] });
 
-  const dialog = await openRsvp(page, seeded, "lea", "Edit");
+  const dialog = await openRsvp(page, seeded, "lea", "edit");
   await answer(dialog, /^Lea, will you join us\?$/, "Declined");
 
   // One answer per person, the latest.
   await expect.poll(() => statuses(seeded)).toEqual({ lea: ["declined"] });
   await dialog.getByRole("button", { name: "Back to the invitation" }).click();
-  await expect(rsvpCard(page).locator(".gh-card-meta")).toHaveText(/^Declined$/);
+  await expect(rsvpCard(page).locator(".wp-summary")).toHaveText(/^Declined$/);
 });

@@ -6,7 +6,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { takeRsvpHandoff } from "@/lib/rsvpHandoff";
-import { WelcomeGate, useReplayWelcome, useWelcomeResponses } from "./WelcomeGate";
+import { WelcomeGate, useReplayWelcome, useWelcomeContinues, useWelcomeResponses } from "./WelcomeGate";
 
 /**
  * The invitation comes before any identity or e-mail step: the welcome shows
@@ -32,12 +32,14 @@ afterEach(cleanup);
 function Hub() {
   const replay = useReplayWelcome();
   const responses = useWelcomeResponses();
+  const continues = useWelcomeContinues();
   // Stands in for what a guest does on the hub (a reply sent).
   const [clicks, setClicks] = useState(0);
   return (
     <div>
       <p>the hub</p>
       <p>responses: {responses}</p>
+      <p>continues: {continues}</p>
       <button onClick={() => setClicks((n) => n + 1)}>clicked {clicks}</button>
       {replay && <button onClick={replay}>replay</button>}
     </div>
@@ -134,5 +136,32 @@ describe("WelcomeGate", () => {
     expect(harness.rpc).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "EN" }));
     expect(harness.rpc).toHaveBeenCalledWith("set_guest_locale", { p_token: "tok", p_locale: "en" });
+  });
+
+  it("offers the rest of the page only when the wedding page has something to read", () => {
+    render(gate({ token: "tok", seen: false }));
+    expect(screen.queryByRole("button", { name: "See the rest" })).not.toBeInTheDocument();
+    expect(respond()).toBeInTheDocument();
+    cleanup();
+    render(gate({ token: "tok", seen: false, hasPage: true }));
+    expect(screen.getByRole("button", { name: "See the rest" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reply right away" })).toBeInTheDocument();
+  });
+
+  it("goes on to the page without opening the RSVP, and remembers the welcome was seen", () => {
+    render(gate({ token: "tok", seen: false, hasPage: true }));
+    fireEvent.click(screen.getByRole("button", { name: "See the rest" }));
+    expect(screen.getByText("the hub")).toBeVisible();
+    expect(screen.getByText("continues: 1")).toBeInTheDocument();
+    expect(screen.getByText("responses: 0")).toBeInTheDocument();
+    expect(takeRsvpHandoff("tok")).toBe(false);
+    expect(harness.rpc).toHaveBeenCalledWith("mark_welcome_seen", { p_token: "tok" });
+  });
+
+  it("still answers straight away from the faire-part when the page has more", () => {
+    render(gate({ token: "tok", seen: false, hasPage: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Reply right away" }));
+    expect(screen.getByText("responses: 1")).toBeInTheDocument();
+    expect(takeRsvpHandoff("tok")).toBe(true);
   });
 });

@@ -14,7 +14,15 @@ async function seedWithDate(): Promise<Seeded> {
   const seeded = await seedWedding({ household: [{ key: "lea", firstName: "Lea" }] });
   const { error } = await seeded.owner
     .from("weddings")
-    .update({ event_date: "2027-06-12", venue_name: "The Olive Farm" })
+    .update({
+      event_date: "2027-06-12",
+      venue_name: "The Olive Farm",
+      address_line: "1 Orchard Lane",
+      address_postal_code: "84220",
+      address_city: "Gordes",
+      address_country: "France",
+      address_visibility: "full",
+    })
     .eq("id", seeded.weddingId);
   if (error) throw error;
   return seeded;
@@ -72,7 +80,7 @@ test("what the couple writes reaches their guest, and nothing already known is a
   if (error) throw error;
 
   await page.goto(`/guest/${seeded.guests.lea.token}`);
-  const day = page.locator("li", { has: page.getByRole("heading", { name: "Saturday, June 12" }) });
+  const day = page.getByRole("region", { name: "Saturday, June 12" });
   await expect(day).toContainText("16:30");
   await expect(day).toContainText("The ceremony");
   await expect(day).toContainText("Under the olive trees");
@@ -83,7 +91,7 @@ test("what the couple writes reaches their guest, and nothing already known is a
 
   // Never another wedding's demo content, nor the couple's bookkeeping. (The
   // travel board still shows sample posts of its own: not part of this.)
-  await expect(page.locator("#gh-logistics, #gh-faq").getByText(/Hood River/)).toHaveCount(0);
+  await expect(page.locator("#gh-weekend, #gh-venue, #gh-faq").getByText(/Hood River/)).toHaveCount(0);
   await expect(page.getByText("Deposit paid")).toHaveCount(0);
   // The shuttle waits for a yes.
   await expect(page.getByText("Leaves Avignon TGV at 3 pm.")).toHaveCount(0);
@@ -102,8 +110,11 @@ test("a wedding with nothing written shows its venue and no one else's answers",
   const seeded = await seedWithDate();
   await page.goto(`/guest/${seeded.guests.lea.token}`);
   await expect(page.getByRole("heading", { name: "The venue" })).toBeVisible();
-  await expect(page.getByText("The couple hasn't added any questions yet. Something to ask? Write to them directly.")).toBeVisible();
-  await expect(page.locator("#gh-logistics, #gh-faq").getByText(/Hood River/)).toHaveCount(0);
+  // A part with nothing written in it is left out, title and all.
+  await expect(page.locator("#gh-faq")).toHaveCount(0);
+  await expect(page.locator("#gh-weekend")).toHaveCount(0);
+  // (The carpool board still shows sample posts of its own: issue #109.)
+  await expect(page.locator(".gh-section:not(#gh-travel)").getByText(/Hood River/)).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Where to stay" })).toHaveCount(0);
 });
 

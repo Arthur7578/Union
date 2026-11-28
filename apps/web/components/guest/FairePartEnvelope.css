@@ -108,6 +108,11 @@
 .fp-root .primary{width:min(100%,440px);border:0;border-radius:999px;padding:16px 22px;background:var(--olive);color:#F4EFE7;font-weight:600;font-size:16px;letter-spacing:.01em;
   box-shadow:0 10px 24px -10px rgba(40,38,28,.55);transition:transform .15s ease,background .15s ease}
 .fp-root .primary:active{transform:scale(.98);background:var(--olive-lo)}
+.fp-root .secondary{border:0;background:none;padding:8px 12px;min-height:44px;font-size:15px;font-weight:500;color:var(--olive-lo);
+  text-decoration:underline;text-decoration-color:rgba(58,58,48,.3);text-underline-offset:4px}
+/* "la suite": the back of the card, grown to the whole screen, fading into the page's paper */
+.fp-root .grow{position:fixed;z-index:50;background:var(--img-card) center/100% 100% no-repeat;pointer-events:none}
+.fp-root .grow i{position:absolute;inset:0;background:#F6F3EC;opacity:0}
 .fp-root .note{margin:0;font-size:13px;color:var(--ink-soft);text-align:center;max-width:36ch}
 
 .fp-root .lang{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:12px;z-index:40}

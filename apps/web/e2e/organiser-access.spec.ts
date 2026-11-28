@@ -34,10 +34,10 @@ test("an organiser turns a guest module off and it is saved", async ({ page }) =
   await signInAsOwner(page, seeded);
 
   await page.goto("/guests/modules");
-  const faq = page.getByRole("switch", { name: "FAQs" });
+  const faq = page.getByRole("switch", { name: "Questions" });
   await expect(faq).toHaveAttribute("aria-checked", "true");
   await faq.click();
-  await page.getByRole("button", { name: "Save modules" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
 
   await expect
     .poll(async () => {

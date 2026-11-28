@@ -5,7 +5,6 @@ import { resolveGuestLocale } from "@/lib/i18n/guestLocale";
 import { LocaleProvider } from "@/lib/i18n/client";
 import Link from "next/link";
 import { guestLinkPath } from "@union/shared";
-import { parseGuestPage } from "@union/shared";
 import type {
   FormAnswers,
   FormGuestCopy,
@@ -16,7 +15,8 @@ import type {
 } from "@union/shared";
 import { defaultPrimaryRsvpQuestions } from "@/lib/rsvpQuestions";
 import { GuestEntry } from "./GuestEntry";
-import { G, T, alpha } from "@/lib/theme";
+import { loadInvitation } from "./loadInvitation";
+import { G, P, T, alpha } from "@/lib/theme";
 
 // Always fetch fresh invitation data (no static caching of personal links).
 export const dynamic = "force-dynamic";
@@ -84,18 +84,25 @@ export type DBInvitation = Invitation & {
 };
 
 /** What the demo couple wrote for their guests, so the demo shows every part
- *  of the hub. Real weddings read theirs from get_guest_page. */
+ *  of the wedding page. Real weddings read theirs from get_guest_page. */
 const DEMO_GUEST_PAGE: GuestPageContent = {
   page: {
-    welcome: null,
+    welcome: {
+      en: "We met at a table too small for everyone, and we've been gathering the people we love ever since.\n\nSo we chose the Gorge, an orchard barn and a whole afternoon to do it properly. We can't wait to see you there.",
+      fr: "On s'est rencontrés autour d'une table trop petite pour tout le monde, et depuis on réunit les gens qu'on aime dès qu'on peut.\n\nAlors on a choisi la Gorge, une grange au milieu des vergers et tout un après-midi pour le faire bien. On a hâte de t'y voir.",
+    },
     travel_train: { en: "Hood River has no station: Portland Union Station, then 1 h by car.", fr: "Pas de gare à Hood River : Portland Union Station, puis 1 h en voiture." },
     travel_plane: { en: "Portland International (PDX), about 1 h away.", fr: "Aéroport de Portland (PDX), à environ 1 h." },
     travel_car: { en: "Free parking on site.", fr: "Parking gratuit sur place." },
     shuttle: null,
     dress_code: { en: "Garden elegant", fr: "Chic champêtre" },
     dress_text: { en: "The ceremony is on the grass: flat shoes are your friends.", fr: "La cérémonie est sur l'herbe : préfère les chaussures plates." },
-    dress_note: null,
-    palette: [],
+    dress_note: { en: "White, we leave to Maya.", fr: "Le blanc, on le laisse à Maya." },
+    palette: [
+      { color: P.sage, name: { en: "Sage", fr: "Sauge" } },
+      { color: P.olive, name: { en: "Olive", fr: "Olive" } },
+      { color: P.dustyBlue, name: { en: "Dusty blue", fr: "Bleu poudré" } },
+    ],
   },
   moments: [
     { id: "demo-m1", day_offset: 0, starts_at: "16:00", title: { en: "Guest arrival", fr: "Arrivée des invités" }, place: { en: "Welcome drinks", fr: "Boissons d'accueil" }, note: null },
@@ -145,6 +152,8 @@ export default async function GuestExperiencePage({
         // The demo couple runs with "maybe" on, so the third reply button is
         // part of what the demo actually demonstrates.
         allow_rsvp_maybe: true,
+        // The demo shows every part, the carpool board and its sample posts included.
+        guest_modules: { travel: true },
       },
       guest: {
         id: "demo-guest-id",
@@ -193,67 +202,10 @@ export default async function GuestExperiencePage({
   } else {
     // Attempt to load from Supabase for all other tokens
     try {
-      const supabase = getSupabase();
-      const [invitationResult, rsvpFormsResult, emailStatusResult, guestPageResult] = await Promise.all([
-        supabase.rpc("get_invitation", { p_token: token }),
-        supabase.rpc("get_invitation_rsvp_forms", { p_token: token }),
-        supabase.rpc("get_guest_email_status", { p_token: token }),
-        supabase.rpc("get_guest_page", { p_token: token }),
-      ]);
-
-      if (
-        !invitationResult.error &&
-        invitationResult.data &&
-        !emailStatusResult.error &&
-        emailStatusResult.data
-      ) {
-        const base = invitationResult.data as unknown as DBInvitation;
-        const rsvpForms = !rsvpFormsResult.error && rsvpFormsResult.data
-          ? rsvpFormsResult.data as unknown as {
-              primary: Pick<NonNullable<DBInvitation["rsvp_form"]>, "id" | "published" | "opens_at" | "closes_at" | "questions" | "answers" | "companion_answers"> | null;
-              reconfirmation: Pick<NonNullable<DBInvitation["rsvp_reconfirmation"]>, "id" | "questions" | "answers" | "companion_answers"> | null;
-            }
-          : null;
-        if (rsvpFormsResult.error) {
-          console.error("Failed to load RSVP follow-up questions:", rsvpFormsResult.error);
-        }
-        if (guestPageResult.error) {
-          console.error("Failed to load the guest page content:", guestPageResult.error);
-        }
-        invitation = {
-          ...base,
-          guest_page: guestPageResult.error ? undefined : parseGuestPage(guestPageResult.data),
-          rsvp_form:
-            base.rsvp_form && rsvpForms?.primary
-              ? { ...base.rsvp_form, ...rsvpForms.primary }
-              : base.rsvp_form
-                ? {
-                    ...base.rsvp_form,
-                    id: "",
-                    published: true,
-                    opens_at: null,
-                    closes_at: null,
-                    questions: [],
-                    answers: null,
-                    companion_answers: {},
-                  }
-                : null,
-          rsvp_reconfirmation:
-            base.rsvp_reconfirmation && rsvpForms?.reconfirmation
-              ? { ...base.rsvp_reconfirmation, ...rsvpForms.reconfirmation }
-              : base.rsvp_reconfirmation
-                ? {
-                    ...base.rsvp_reconfirmation,
-                    id: "",
-                    questions: [],
-                    answers: null,
-                    companion_answers: {},
-                  }
-                : null,
-        };
-        emailMissing = Boolean(
-          (emailStatusResult.data as { email_missing?: boolean }).email_missing,
-        );
+      const loaded = await loadInvitation(getSupabase(), token);
+      if (loaded) {
+        invitation = loaded.invitation;
+        emailMissing = loaded.emailMissing;
       }
     } catch (e) {
       console.error("Failed to load invitation from Supabase:", e);
