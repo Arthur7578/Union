@@ -1,16 +1,22 @@
 name: Test discipline
 
-# Two rules that keep the test bank in step with the product:
-# 1. A PR that changes what a user sees (pages or components of the web app)
-#    also changes or adds a browser test in apps/web/e2e. If a change really
-#    cannot affect behavior (a pure style token, a comment), add the label
-#    `no-e2e` and say why in the PR.
-# 2. A PR ready for review carries no squad prototype (apps/web/public/squad-proto).
+# Keeps the test bank in step with the product. Method and rules:
+# docs/testing/README.md. Scripts: .github/test-discipline/.
+#
+# - rules (blocking): a changed screen comes with browser-test code, changed
+#   logic with unit-test code, a new migration with a pgTAP test; every screen
+#   is in docs/testing/flows.md; files and test names quoted in the test maps
+#   exist; no squad prototype ships. Escape labels no-e2e / no-unit /
+#   no-db-test need a line "<label>: <reason>" in the PR description.
+# - diff-coverage: share of the changed logic lines the unit tests run.
+#   Warns by default; set the repository variable DIFF_COVERAGE_MODE=block to
+#   make it blocking.
+# - bug-repro (PRs labelled `bug`): the new test must fail on main's code.
 
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, labeled, unlabeled, edited, ready_for_review, converted_to_draft]
 
 permissions:
   contents: read
@@ -29,26 +35,81 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           DRAFT: ${{ github.event.pull_request.draft }}
-          NO_E2E: ${{ contains(github.event.pull_request.labels.*.name, 'no-e2e') }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node .github/test-discipline/check.mjs "$BASE" "$HEAD"
+
+  diff-coverage:
+    # Labels and description edits do not change coverage.
+    if: contains(fromJSON('["opened","synchronize","reopened","ready_for_review"]'), github.event.action)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Installed here rather than in package.json: npm 10 fails to add it
+      # to the lockfile (arborist peer-set bug), and only this job needs it.
+      - run: npm install --no-save --legacy-peer-deps @vitest/coverage-v8@4.1.11
+
+      - run: npx vitest run --coverage
+        working-directory: apps/web
+
+      - name: Measure the changed lines
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          MIN_DIFF_COVERAGE: ${{ vars.MIN_DIFF_COVERAGE || '80' }}
+          DIFF_COVERAGE_MODE: ${{ vars.DIFF_COVERAGE_MODE || 'warn' }}
+        run: node .github/test-discipline/diff-coverage.mjs "$BASE" "$HEAD"
+
+  bug-repro:
+    if: contains(github.event.pull_request.labels.*.name, 'bug') && contains(fromJSON('["opened","synchronize","reopened","labeled","ready_for_review"]'), github.event.action)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+
+      - run: supabase start -x realtime,storage-api,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,studio,postgres-meta
+
+      - name: Point the browser tests at the local Supabase
         run: |
-          set -euo pipefail
-          changed=$(git diff --name-only "$BASE...$HEAD")
-          ui=$(echo "$changed" | grep -E '^apps/web/(app|components)/.*\.tsx$' | grep -vE '\.test\.tsx$' || true)
-          e2e=$(echo "$changed" | grep -E '^apps/web/e2e/' || true)
-          status=0
+          supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY|DB_URL)=' > supabase.env
+          set -a; . ./supabase.env; set +a
+          {
+            echo "DB_URL=$DB_URL"
+            echo "E2E_SUPABASE_URL=$API_URL"
+            echo "E2E_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "E2E_SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
 
-          if [[ -n "$ui" && -z "$e2e" ]]; then
-            if [[ "$NO_E2E" == "true" ]]; then
-              echo "::notice::UI files changed without a browser test; allowed by the no-e2e label."
-            else
-              echo "::error::This PR changes screens but no browser test in apps/web/e2e. Add or update the test of the flow it touches, or add the label no-e2e with a reason."
-              echo "${ui//$'\n'/$'\n'  }"
-              status=1
-            fi
-          fi
-
-          if [[ "$DRAFT" != "true" ]] && git ls-tree -r --name-only "$HEAD" | grep -q '^apps/web/public/squad-proto/'; then
-            echo "::error::Remove apps/web/public/squad-proto/ before marking the PR ready: prototypes must not ship."
-            status=1
-          fi
-          exit $status
+      - name: The new test fails on main's code
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/test-discipline/red-on-base.sh "$BASE" "$HEAD"

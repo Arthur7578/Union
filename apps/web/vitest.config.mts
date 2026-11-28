@@ -17,5 +17,16 @@ export default defineConfig({
     environment: "node",
     // Browser tests run under Playwright (`npm run e2e`), not here.
     exclude: [...configDefaults.exclude, "e2e/**"],
+    // Only with `vitest run --coverage` (CI's diff-coverage job installs the
+    // provider on the fly, see docs/testing/README.md). Logic files only:
+    // what .github/test-discipline/diff-coverage.mjs measures.
+    coverage: {
+      provider: "v8",
+      allowExternal: true,
+      include: ["lib/**/*.{ts,tsx}", "app/**/*.ts", `${fileURLToPath(new URL("../../packages/shared/src", import.meta.url))}/**/*.ts`],
+      exclude: ["**/*.test.{ts,tsx}", "**/*.d.ts", "**/database.types.ts"],
+      reporter: ["lcov", "text-summary"],
+      reportsDirectory: "coverage",
+    },
   },
 });

@@ -47,3 +47,10 @@ yarn-error.*
 # playwright
 apps/web/test-results/
 apps/web/playwright-report/
+
+# test tooling (coverage, mutation testing, local Supabase state)
+apps/web/coverage/
+apps/web/reports/
+apps/web/.stryker-tmp/
+supabase/.branches/
+supabase/.temp/
