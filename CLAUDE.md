@@ -44,7 +44,7 @@ The test bank must follow the product, not lag behind it. These rules apply to e
 - **A new migration comes with a pgTAP test** (see "Database migrations"). CI enforces it.
 - **Every screen has a row in `docs/testing/flows.md`**, naming the tests that cover it or saying it is not covered. A new `page.tsx` needs its row in the same PR; when you add a test, update the row. CI checks every screen is listed and every file named exists.
 - Escape labels `no-e2e`, `no-unit`, `no-db-test` are only for changes that cannot affect behavior, and need a line `<label>: <reason>` in the PR description, or CI fails.
-- **Guest flows are tested at phone size**, since that is how guests use them.
+- **Guest flows are tested at phone size**, since that is how guests use them: name their spec `guest-*.spec.ts` (or `join-*`, `invitation-*`) and Playwright runs it in the phone project; `couple-*` specs run on phone and desktop, the rest on desktop (`apps/web/playwright.config.ts`).
 - **Every acceptance criterion has a test.** When a spec lists criteria (`docs/specs/<issue>/criteria.md`), each one maps to a test, and `docs/specs/<issue>/tests.md` says which. CI checks that the test files and the test names quoted in its table exist.
 - **Never weaken a test to make it pass.** If a test is wrong, say why and fix the test in its own commit; do not edit an assertion to match buggy behavior.
 - **A bug fix starts with a test that reproduces the bug.** Label the PR `bug`: CI then runs the new test on main's code and fails if it passes there (it would not reproduce the bug).

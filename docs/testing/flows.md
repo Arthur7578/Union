@@ -2,7 +2,7 @@
 
 Un écran par ligne, chaque écran de `apps/web/app` y est (la CI le vérifie : `.github/test-discipline/check.mjs`, règle 4). Une ligne dit ce qui protège l'écran contre une régression, ou qu'il n'est pas protégé.
 
-- **Navigateur** : test Playwright de `apps/web/e2e/` (📱 = joué à taille téléphone).
+- **Navigateur** : test Playwright de `apps/web/e2e/` (📱 = joué à taille téléphone : fichiers `guest-*`, `join-*`, `invitation-*` ; les `couple-*` tournent en téléphone et en desktop ; voir `apps/web/playwright.config.ts`).
 - **Unitaire** : test vitest de l'écran ou de ses composants.
 - **État** : ✅ parcours principal couvert de bout en bout · 🟡 partiel (composant ou un seul cas) · ❌ non couvert.
 - **Priorité** : P1 = un invité ou un couple bloqué, ou une donnée montrée à la mauvaise personne, si ça casse. P2 = gênant. P3 = rare ou secondaire.
@@ -13,9 +13,8 @@ Quand tu ajoutes un écran, ajoute sa ligne dans la même PR. Quand tu ajoutes u
 
 | Écran | Parcours | Navigateur | Unitaire | État | Priorité |
 |---|---|---|---|---|---|
-| `/invitation` | Faire-part et entrée de l'invité | — | `apps/web/components/guest/GuestWelcome.test.tsx`, `apps/web/components/guest/WelcomeGate.test.tsx` | 🟡 | P1 |
-| `/guest/[token]` | Hub invité, RSVP, formulaires, infos et FAQ, carte RSVP | `apps/web/e2e/guest-forms.spec.ts`, `apps/web/e2e/guest-page-content.spec.ts`, `apps/web/e2e/guest-rsvp-card.spec.ts` 📱 | `apps/web/app/guest/[token]/GuestPortal.test.tsx`, `apps/web/app/guest/[token]/RsvpFlow.test.tsx`, `apps/web/app/guest/[token]/CustomFormFlow.test.tsx` | 🟡 | P1 |
-| `/join/[code]` | Lien de groupe : prénom, lien sécurisé, nom inconnu | `apps/web/e2e/join-link.spec.ts` | `apps/web/app/join/[code]/JoinExperience.test.tsx` | 🟡 | P1 |
+| `/guest/[token]` | Arrivée (faire-part puis hub, retour, lien invalide), RSVP (oui, non, peut-être, foyer, modification), hub (sections selon les modules, formulaires publiés, infos pratiques), formulaires, contenu de la page, carte RSVP | `apps/web/e2e/guest-arrival.spec.ts`, `apps/web/e2e/guest-rsvp.spec.ts`, `apps/web/e2e/guest-hub.spec.ts`, `apps/web/e2e/guest-forms.spec.ts`, `apps/web/e2e/guest-page-content.spec.ts`, `apps/web/e2e/guest-rsvp-card.spec.ts` 📱 | `apps/web/app/guest/[token]/GuestPortal.test.tsx`, `apps/web/app/guest/[token]/RsvpFlow.test.tsx`, `apps/web/app/guest/[token]/CustomFormFlow.test.tsx`, `apps/web/components/guest/GuestWelcome.test.tsx`, `apps/web/components/guest/WelcomeGate.test.tsx` | ✅ | P1 |
+| `/join/[code]` | Lien de groupe : prénom, lien sécurisé (jusqu'à l'étape e-mail), nom inconnu, code inconnu, retour par le lien personnel | `apps/web/e2e/join-link.spec.ts`, `apps/web/e2e/guest-arrival.spec.ts` 📱 | `apps/web/app/join/[code]/JoinExperience.test.tsx` | ✅ | P1 |
 | `/rsvp/[token]` | Ancien lien RSVP | — | `apps/web/app/rsvp/[token]/page.test.tsx` | 🟡 | P2 |
 | `/offline` | Page hors ligne | — | — | ❌ | P3 |
 
@@ -25,13 +24,14 @@ Quand tu ajoutes un écran, ajoute sa ligne dans la même PR. Quand tu ajoutes u
 |---|---|---|---|---|---|
 | `/` | Accueil, redirection selon la session | — | — | ❌ | P2 |
 | `/sign-in` | Connexion | — | — | ❌ | P1 |
-| `/onboarding` | Création du mariage | — | — | ❌ | P1 |
+| `/onboarding` | Création du mariage | `apps/web/e2e/couple-journey.spec.ts` 📱 + desktop | — | ✅ | P1 |
 | `/choose-wedding` | Choix du mariage | — | — | ❌ | P2 |
+| `/invitation` | Un compte invité à co-organiser un mariage arrive sur ce mariage | — | — | ❌ | P2 |
 | `/accept-invite` | Un collaborateur accepte l'invitation | — | `apps/web/app/api/invite-collaborator/route.test.ts` | 🟡 | P2 |
 | `/today` | Tableau de bord du jour | — | — | ❌ | P2 |
-| `/guests` | Liste des invités | `apps/web/e2e/organiser-access.spec.ts` | — | 🟡 | P1 |
-| `/guests/new` | Ajouter un invité | `apps/web/e2e/organiser-access.spec.ts` | — | 🟡 | P1 |
-| `/guests/[id]` | Fiche invité, lien personnel | — | — | ❌ | P1 |
+| `/guests` | Liste des invités | `apps/web/e2e/organiser-access.spec.ts`, `apps/web/e2e/couple-journey.spec.ts` | — | 🟡 | P1 |
+| `/guests/new` | Ajouter un invité, avec son partenaire | `apps/web/e2e/organiser-access.spec.ts`, `apps/web/e2e/couple-journey.spec.ts` 📱 + desktop | — | ✅ | P1 |
+| `/guests/[id]` | Fiche invité, lien personnel | `apps/web/e2e/couple-journey.spec.ts` (le lien seulement) | — | 🟡 | P1 |
 | `/guests/duplicates` | Doublons | — | — | ❌ | P3 |
 | `/guests/groups` | Foyers et groupes | — | — | ❌ | P1 |
 | `/guests/group-link` | Lien de groupe | — | — | ❌ | P1 |

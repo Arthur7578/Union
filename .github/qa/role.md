@@ -35,8 +35,9 @@ assumptions in the report.
 2. Try your attacks for real. Write Playwright specs and run them against the
    running app:
    `cd apps/web && E2E_PORT=$APP_PORT npx playwright test e2e/<file> --retries 0`
-   (CI must stay unset so Playwright reuses the running server). Guest screens
-   at phone size: `test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })`.
+   (CI must stay unset so Playwright reuses the running server). A file named
+   `guest-…` runs on a phone (project "phone" in `apps/web/playwright.config.ts`),
+   any other name on desktop: name guest-side proposals accordingly.
    For logic, write vitest tests (`cd apps/web && npx vitest run <file>`). For
    the database, query it with `psql "$DB_URL"` (local only).
 3. Keep what is worth keeping, at most **8 findings**, most severe first:
@@ -57,7 +58,9 @@ assumptions in the report.
 ## Files you may write
 
 Only **new** test files, at the path they would have if kept:
-- browser: `apps/web/e2e/qa-<id>-<slug>.spec.ts` (e.g. `qa-q1-double-tap-rsvp.spec.ts`),
+- browser: `apps/web/e2e/guest-qa-<id>-<slug>.spec.ts` for a guest screen (runs on a
+  phone, e.g. `guest-qa-q1-double-tap-rsvp.spec.ts`), `apps/web/e2e/qa-<id>-<slug>.spec.ts`
+  for the couple's screens (desktop),
 - unit: next to the code, `<name>.qa.test.ts` or `.qa.test.tsx`,
 - database: `supabase/tests/database/qa_<id>_<slug>.test.sql`.
 
@@ -82,7 +85,7 @@ Write `$QA_OUT/report.json`, exactly this shape:
       "steps": "How to reproduce, in French, short.",
       "where": "file:line or screen URL",
       "attack": "The attack-list category, or \"new\" if none fits",
-      "files": ["apps/web/e2e/qa-q1-....spec.ts"],
+      "files": ["apps/web/e2e/guest-qa-q1-....spec.ts"],
       "test": "the test's name",
       "verified": "fails-now | passes-now | not-run"
     }

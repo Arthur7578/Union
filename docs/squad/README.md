@@ -101,7 +101,7 @@ La squad ne devine pas mieux que toi. Une issue utile dit : **qui** (persona), *
 ## Limites connues
 
 - La boucle relance tous les tests de bout en bout à chaque tour : un run de build prend du temps (souvent plus d'une heure si plusieurs tours). [Likely]
-- Les tests de bout en bout couvrent encore peu de parcours. Tant que ce n'est pas rattrapé (issues « Étape 0 »), le QA explore à la main et les régressions hors du périmètre de l'issue peuvent passer. [Certain]
+- Les tests de bout en bout couvrent les parcours invités essentiels et le parcours de base du couple (issues « Étape 0 » #91 à #95, le 2026-11-28), mais pas encore la plupart des écrans du couple : voir `docs/testing/flows.md`. Hors de ces parcours, une régression hors du périmètre de l'issue peut passer. [Certain]
 - Le reviewer externe ne voit que le diff (tronqué au-delà d'environ 250 000 caractères) et les specs, pas tout le repo.
 - Un plafond de tours atteint n'est pas un échec silencieux : la PR reste en brouillon avec le label `squad:needs-human` et la liste des derniers points bloquants.
 

@@ -41,16 +41,27 @@ out +=
   "Stryker modifie la logique exprès (un `>` devient `>=`, une condition devient `true`…) puis lance les tests unitaires. " +
   "Un mutant **survivant** est un bug que nos tests n’auraient pas vu. **Sans couverture** : aucun test ne passe sur cette ligne.\n\n";
 out += "Pour traiter : choisis un fichier ci-dessous, et demande à une session Claude d’ajouter les assertions qui tuent ces mutants (sans toucher au code testé).\n\n";
-out += "| Fichier | Score | Survivants |\n|---|---|---|\n";
-const ranked = files.filter((f) => f.total).sort((a, b) => a.score - b.score || b.total - a.total);
-for (const f of ranked) out += `| \`${f.file}\` | ${f.score} % | ${f.survivors.length} / ${f.total} |\n`;
+const survived = (f) => f.survivors.filter((m) => m.status === "Survived").length;
+const noCov = (f) => f.survivors.length - survived(f);
+const covered = files.filter((f) => f.total && noCov(f) < f.total);
+const untested = files.filter((f) => f.total && noCov(f) === f.total).sort((a, b) => b.total - a.total);
 
-out += "\n### Les fichiers les plus faibles\n\n";
+out += "### Fichiers testés\n\n| Fichier | Score | Survivants (tests trop faibles) | Lignes jamais exécutées |\n|---|---|---|---|\n";
+const ranked = covered.sort((a, b) => survived(b) - survived(a) || a.score - b.score);
+for (const f of ranked) out += `| \`${f.file}\` | ${f.score} % | ${survived(f)} | ${noCov(f)} |\n`;
+if (untested.length) {
+  out += "\n### Fichiers sans aucun test unitaire\n\n";
+  out += "Souvent de l'accès aux données (couvert, au mieux, par les tests navigateur). À tester en unitaire si la logique y est pure.\n\n";
+  out += untested.map((f) => `- \`${f.file}\` (${f.total} mutants)`).join("\n") + "\n";
+}
+
+out += "\n### Les survivants à traiter d'abord\n\nDes tests passent sur ces lignes mais ne remarquent pas la mutation : il leur manque une assertion.\n\n";
 let shown = 0;
-for (const f of ranked.filter((x) => x.survivors.length).slice(0, 5)) {
-  out += `<details><summary><code>${f.file}</code> — ${f.survivors.length} survivant(s)</summary>\n\n| Ligne | État | Mutation | Code |\n|---|---|---|---|\n`;
+for (const f of ranked.filter((x) => survived(x)).slice(0, 5)) {
+  f.survivors = f.survivors.filter((m) => m.status === "Survived");
+  out += `<details><summary><code>${f.file}</code> — ${f.survivors.length} survivant(s)</summary>\n\n| Ligne | Mutation | Code |\n|---|---|---|\n`;
   for (const s of f.survivors.slice(0, 25)) {
-    out += `| ${s.line} | ${s.status === "NoCoverage" ? "sans couverture" : "survivant"} | ${cell(s.mutator)} → \`${cell(s.replacement)}\` | \`${cell(s.code)}\` |\n`;
+    out += `| ${s.line} | ${cell(s.mutator)} → \`${cell(s.replacement)}\` | \`${cell(s.code)}\` |\n`;
     shown++;
   }
   if (f.survivors.length > 25) out += `\n_…et ${f.survivors.length - 25} autres dans le rapport complet._\n`;

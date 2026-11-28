@@ -12,6 +12,11 @@ import { e2eEnv } from "./e2e/support/env";
  * (the three values come from `supabase status -o env`).
  */
 const env = e2eEnv();
+
+/** Guests open their link on a phone: their flows run on a phone, the
+ *  couple's on desktop, and `couple-*` journeys on both (issue #91). */
+const PHONE_FLOWS = /\/(guest|join|invitation)-[^/]*\.spec\.ts$/;
+const BOTH = /\/couple-[^/]*\.spec\.ts$/;
 const port = Number(process.env.E2E_PORT ?? 3100);
 
 export default defineConfig({
@@ -34,11 +39,24 @@ export default defineConfig({
     // The guest forms skip their step animations under reduced motion, so a
     // test never presses Enter while a step is still sliding away.
     reducedMotion: "reduce",
-    ...devices["Desktop Chrome"],
     // Lets a machine with a preinstalled Chromium use it instead of
     // downloading Playwright's own.
     launchOptions: process.env.E2E_CHROMIUM_PATH ? { executablePath: process.env.E2E_CHROMIUM_PATH } : {},
   },
+  projects: [
+    {
+      name: "phone",
+      testMatch: [PHONE_FLOWS, BOTH],
+      // Chromium with a phone's screen, touch and user agent. A Pixel rather
+      // than an iPhone preset: those switch the browser to WebKit.
+      use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
+    },
+    {
+      name: "desktop",
+      testIgnore: PHONE_FLOWS,
+      use: { ...devices["Desktop Chrome"] },
+    },
+  ],
   webServer: {
     command: `npm run build && npm run start -- -p ${port}`,
     url: `http://127.0.0.1:${port}`,

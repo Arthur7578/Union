@@ -21,7 +21,6 @@ out/
 *.p12
 *.key
 *.mobileprovision
-*.orig.*
 
 # env
 .env
@@ -50,8 +49,7 @@ apps/web/playwright-report/
 
 # test tooling (coverage, mutation testing, local Supabase state)
 apps/web/coverage/
-apps/web/reports/
-apps/web/.stryker-tmp/
+reports/
+.stryker-tmp/
 supabase/.branches/
 supabase/.temp/
-reports/
