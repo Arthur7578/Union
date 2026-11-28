@@ -72,6 +72,11 @@ export default function GuestsPage() {
       sub: t.guests.tools.modulesSub,
     },
     {
+      href: "/guests/faire-part",
+      label: t.guests.tools.fairePartLabel,
+      sub: t.guests.tools.fairePartSub,
+    },
+    {
       href: "/guests/page-content",
       label: t.guests.tools.pageContentLabel,
       sub: t.guests.tools.pageContentSub,

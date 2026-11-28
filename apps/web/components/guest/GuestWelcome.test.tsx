@@ -26,34 +26,91 @@ const welcome = (props: Partial<React.ComponentProps<typeof GuestWelcome>>, loca
 describe("GuestWelcome", () => {
   // jsdom has no layout, so the sequence sits at its end: the card shows its back and
   // the front is hidden. Queries below reach hidden elements on purpose.
-  it("shows the couple, the date in the guest's language and the place", () => {
-    welcome({ eventDate: "2027-06-12", venueName: "Wildflower Barn", address: "Hood River" });
+  const front = () => document.querySelector(".recto")!;
+  const back = () => document.querySelector(".verso")!;
+  const provence = { area: "Provence", country: "France" };
+
+  it("shows the couple, the date in the guest's language and the place on the front", () => {
+    welcome({ eventDate: "2027-06-12", place: provence });
     expect(screen.getByRole("heading", { level: 2, hidden: true })).toHaveTextContent(/Maya\s*&\s*Daniel/);
+    expect(front()).toHaveTextContent("are delighted to invite you to celebrate their wedding");
     expect(screen.getByText("June 12, 2027")).toBeInTheDocument();
-    expect(screen.getByText("Wildflower Barn")).toBeInTheDocument();
-    expect(screen.getByText("Wildflower Barn, Hood River")).toBeInTheDocument();
+    expect(screen.getByText("In Provence ♡")).toBeInTheDocument();
   });
 
-  it("formats the date in French for a French guest", () => {
+  it("writes the front in French, with a range of days", () => {
+    welcome({ eventDate: "2027-06-11", eventEndDate: "2027-06-13", place: provence }, "fr");
+    expect(front()).toHaveTextContent("ont la joie de t'inviter à célébrer leur mariage");
+    expect(screen.getByText("11 — 13 juin 2027")).toBeInTheDocument();
+    expect(screen.getByText("En Provence ♡")).toBeInTheDocument();
+  });
+
+  it("names the city, with its own preposition, when there is no area", () => {
+    welcome({ eventDate: "2027-06-12", place: { city: "Trets" } }, "fr");
+    expect(screen.getByText("À Trets ♡")).toBeInTheDocument();
+  });
+
+  it("writes the back from the default wording", () => {
+    welcome(
+      { guestName: "Léa", eventDate: "2027-06-11", eventEndDate: "2027-06-13", place: provence },
+      "fr",
+    );
+    expect(back().textContent).toBe(
+      [
+        "Léa,",
+        "Il y a des moments que l'on a particulièrement envie de partager avec les personnes qui comptent pour nous.",
+        "Nous serions très heureux de te retrouver en Provence, du 11 au 13 juin 2027, pour célébrer notre mariage et partager trois jours de fête, de joie et de beaux souvenirs.",
+        "Nous espérons de tout cœur que tu pourras être des nôtres. Nous avons hâte de vivre ces beaux moments avec toi.",
+        "Avec toute notre affection,",
+        "Maya & Daniel",
+      ].join(""),
+    );
+  });
+
+  it("uses the couple's own wording where they wrote some, and the default elsewhere", () => {
+    welcome(
+      {
+        guestName: "Léa",
+        copy: { greeting: { fr: "Chère {{guest_first_name}},", en: "Dear {{guest_first_name}}," } },
+      },
+      "fr",
+    );
+    expect(back()).toHaveTextContent("Chère Léa,");
+    expect(back()).toHaveTextContent("Avec toute notre affection,");
+  });
+
+  it("opens straight on the text on a group link, where no guest is named", () => {
+    welcome({}, "fr");
+    expect(document.querySelector(".greet")).toBeNull();
+    expect(back().firstElementChild).toHaveTextContent(/^Il y a des moments/);
+  });
+
+  it("leaves out what is not known, without leaving a gap in the sentence", () => {
     welcome({ eventDate: "2027-06-12" }, "fr");
-    expect(screen.getByText("12 juin 2027")).toBeInTheDocument();
-  });
-
-  it("falls back to the address when the venue name is withheld", () => {
-    welcome({ venueName: null, address: "Provence, France" });
-    expect(screen.getAllByText("Provence, France").length).toBeGreaterThan(0);
+    expect(back()).toHaveTextContent(
+      "Nous serions très heureux de te retrouver le 12 juin 2027, pour célébrer notre mariage et partager une journée de fête",
+    );
+    cleanup();
+    welcome({ place: { city: "Trets" } }, "fr");
+    expect(back()).toHaveTextContent(
+      "Nous serions très heureux de te retrouver à Trets, pour célébrer notre mariage et partager des moments de fête",
+    );
+    cleanup();
+    welcome({}, "fr");
+    expect(back()).toHaveTextContent("Nous serions très heureux de te retrouver pour célébrer notre mariage");
   });
 
   it("shows no date or place line when none is disclosed", () => {
     welcome({});
     expect(document.querySelector(".when")).toBeNull();
     expect(document.querySelector(".where")).toBeNull();
-    expect(document.querySelector(".foot")).toBeNull();
   });
 
   it("leaves out a missing partner without a dangling ampersand", () => {
     welcome({ partnerTwo: null });
     expect(screen.getByRole("heading", { level: 2, hidden: true })).not.toHaveTextContent("&");
+    expect(document.querySelector(".sign")).toHaveTextContent("Maya");
+    expect(document.querySelector(".sign")).not.toHaveTextContent("&");
   });
 
   it("carries no prototype sample data", () => {

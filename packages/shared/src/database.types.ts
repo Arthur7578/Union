@@ -784,6 +784,7 @@ export type Database = {
           created_at: string
           default_locale: string
           event_date: string | null
+          faire_part_copy: Json
           guest_count_target: number | null
           guest_join_auth_mode: string
           guest_modules: Json
@@ -817,6 +818,7 @@ export type Database = {
           created_at?: string
           default_locale?: string
           event_date?: string | null
+          faire_part_copy?: Json
           guest_count_target?: number | null
           guest_join_auth_mode?: string
           guest_modules?: Json
@@ -850,6 +852,7 @@ export type Database = {
           created_at?: string
           default_locale?: string
           event_date?: string | null
+          faire_part_copy?: Json
           guest_count_target?: number | null
           guest_join_auth_mode?: string
           guest_modules?: Json
@@ -884,6 +887,10 @@ export type Database = {
     Functions: {
       accept_pending_invites: { Args: Record<PropertyKey, never>; Returns: undefined }
       consume_translation_quota: { Args: { p_form_id: string }; Returns: string }
+      consume_wedding_translation_quota: {
+        Args: { p_wedding_id: string }
+        Returns: string
+      }
       invitation_recipient_exists: {
         Args: { p_email: string; p_wedding_id: string }
         Returns: boolean

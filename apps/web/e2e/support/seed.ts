@@ -59,6 +59,8 @@ export async function seedWedding(opts: {
    *  `{ label_declined: { en: "Can't make it" } }`. */
   rsvpCopy?: Record<string, Record<string, string>>;
   customForms?: Array<{ key: string; title: string; perPerson: boolean; questions: Question[] }>;
+  /** More columns for the wedding row, e.g. its date or the address it discloses. */
+  wedding?: Record<string, unknown>;
   household: SeedGuest[];
 }): Promise<Seeded> {
   const { url, anonKey } = e2eEnv();
@@ -80,6 +82,7 @@ export async function seedWedding(opts: {
       owner_id: user.id,
       partner_one: "Maya",
       partner_two: "Daniel",
+      ...opts.wedding,
     }),
   );
 
@@ -169,6 +172,13 @@ export async function signInAsOwner(page: Page, seeded: Pick<Seeded, "ownerSessi
     ([key, value]) => window.localStorage.setItem(key, value),
     [storageKey, JSON.stringify(seeded.ownerSession)] as const,
   );
+}
+
+/** The couple's own wording of the faire-part as stored on the wedding. */
+export async function fairePartCopy(seeded: Seeded) {
+  const { data, error } = await seeded.owner.from("weddings").select("faire_part_copy").eq("id", seeded.weddingId).single();
+  if (error) throw error;
+  return data.faire_part_copy as Record<string, unknown>;
 }
 
 /** The answers on record for one guest of one form, or null. */

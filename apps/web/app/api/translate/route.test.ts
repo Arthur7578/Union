@@ -360,3 +360,46 @@ describe("POST /api/translate", () => {
     });
   });
 });
+
+describe("POST /api/translate for a wedding's faire-part", () => {
+  const WEDDING_ID = "22222222-2222-4222-8222-222222222222";
+  const weddingBody = {
+    weddingId: WEDDING_ID,
+    from: "fr",
+    to: "en",
+    items: [{ id: "greeting", text: "Cher {{guest_first_name}}," }],
+  };
+
+  beforeEach(() => {
+    mocks.maybeSingle.mockResolvedValue({ data: { id: WEDDING_ID }, error: null });
+    mocks.parse.mockResolvedValue({
+      parsed_output: { translations: [{ id: "greeting", text: "Dear {{guest_first_name}}," }] },
+    });
+  });
+
+  it("checks the wedding, spends the wedding allowance and translates", async () => {
+    const res = await post(weddingBody);
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ translations: { greeting: "Dear {{guest_first_name}}," } });
+    expect(mocks.from).toHaveBeenCalledWith("weddings");
+    expect(mocks.rpc).toHaveBeenCalledWith("consume_wedding_translation_quota", {
+      p_wedding_id: WEDDING_ID,
+    });
+    expect(mocks.parse.mock.calls[0][0].system).toContain("invitation card");
+  });
+
+  it("is not found for a wedding the caller cannot edit", async () => {
+    mocks.maybeSingle.mockResolvedValue({ data: null, error: null });
+    const res = await post(weddingBody);
+    expect(res.status).toBe(404);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.parse).not.toHaveBeenCalled();
+  });
+
+  it("takes one scope, not both", async () => {
+    const res = await post({ ...weddingBody, formId: FORM_ID });
+    expect(res.status).toBe(400);
+    expect(mocks.parse).not.toHaveBeenCalled();
+  });
+});
